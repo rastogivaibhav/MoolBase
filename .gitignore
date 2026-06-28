@@ -1,0 +1,33 @@
+# Build outputs
+build*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+Testing/
+CTestTestfile.cmake
+cmake_install.cmake
+Makefile
+
+# Binaries and objects
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Generated local DB files
+graphene.data
+graphene.wal
+MANIFEST
+LOCK
+*.db/
+*.graphenedb/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+*.swp

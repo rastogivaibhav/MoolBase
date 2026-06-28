@@ -1,0 +1,16 @@
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+CMake Error at CMakeLists.txt:23 (message):
+  GRAPHENEDB_USE_FAISS=ON but FAISS headers/library were not found.  Install
+  FAISS or turn the option OFF.
+
+
+-- Configuring incomplete, errors occurred!
+exit_code=1

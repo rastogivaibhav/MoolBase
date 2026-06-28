@@ -1,0 +1,26 @@
+Internal ctest changing into directory: /mnt/data/rc4work/graphenedb_v1/build-rc4
+Test project /mnt/data/rc4work/graphenedb_v1/build-rc4
+      Start  1: graphenedb_tests
+ 1/10 Test  #1: graphenedb_tests .............................   Passed    0.03 sec
+      Start  2: graphenedb_rc_crash_tests
+ 2/10 Test  #2: graphenedb_rc_crash_tests ....................   Passed    0.02 sec
+      Start  3: graphenedb_rc_fuzz_tests
+ 3/10 Test  #3: graphenedb_rc_fuzz_tests .....................   Passed    0.08 sec
+      Start  4: graphenedb_rc_kosh_adapter_tests
+ 4/10 Test  #4: graphenedb_rc_kosh_adapter_tests .............   Passed    0.02 sec
+      Start  5: graphenedb_rc_stress_tests
+ 5/10 Test  #5: graphenedb_rc_stress_tests ...................   Passed    1.12 sec
+      Start  6: graphenedb_rc_lock_rotation_metadata_tests
+ 6/10 Test  #6: graphenedb_rc_lock_rotation_metadata_tests ...   Passed    0.04 sec
+      Start  7: graphenedb_rc_process_kill_tests
+ 7/10 Test  #7: graphenedb_rc_process_kill_tests .............   Passed    0.23 sec
+      Start  8: graphenedb_rc_real_kosh_adapter_tests
+ 8/10 Test  #8: graphenedb_rc_real_kosh_adapter_tests ........   Passed    0.01 sec
+      Start  9: graphenedb_rc_soak_tests
+ 9/10 Test  #9: graphenedb_rc_soak_tests .....................   Passed    2.11 sec
+      Start 10: graphenedb_rc_1m_storage_smoke
+10/10 Test #10: graphenedb_rc_1m_storage_smoke ...............   Passed    0.17 sec
+
+100% tests passed, 0 tests failed out of 10
+
+Total Test time (real) =   3.86 sec

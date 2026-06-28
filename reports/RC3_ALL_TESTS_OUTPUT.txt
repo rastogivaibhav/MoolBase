@@ -1,0 +1,47 @@
+-- Configuring done (0.0s)
+-- Generating done (0.1s)
+-- Build files have been written to: /mnt/data/rc3_work/graphenedb_v1/build-release
+[  8%] Built target graphenedb
+[ 14%] Built target graphenedb_rc_crash_tests
+[ 20%] Built target graphenedb_cli
+[ 25%] Built target graphenedb_rc_fuzz_tests
+[ 31%] Built target graphenedb_rc_real_kosh_adapter_tests
+[ 42%] Built target graphenedb_rc_lock_rotation_metadata_tests
+[ 42%] Built target graphenedb_rc_kosh_adapter_tests
+[ 48%] Built target graphenedb_rc_1m_storage_tests
+[ 54%] Built target graphenedb_uniqueness_demo
+[ 65%] Built target graphenedb_tests
+[ 65%] Built target graphenedb_api_coding_memory
+[ 71%] Built target graphenedb_rc_process_kill_tests
+[ 80%] Built target graphenedb_rc_stress_tests
+[ 82%] Built target graphenedb_api_team_brain
+[ 88%] Built target graphenedb_rc_soak_tests
+[ 94%] Built target graphenedb_api_incident_memory
+[100%] Built target graphenedb_bench
+Release build complete: /mnt/data/rc3_work/graphenedb_v1/build-release
+Internal ctest changing into directory: /mnt/data/rc3_work/graphenedb_v1/build-release
+Test project /mnt/data/rc3_work/graphenedb_v1/build-release
+      Start  1: graphenedb_tests
+ 1/10 Test  #1: graphenedb_tests .............................   Passed    0.06 sec
+      Start  2: graphenedb_rc_crash_tests
+ 2/10 Test  #2: graphenedb_rc_crash_tests ....................   Passed    0.03 sec
+      Start  3: graphenedb_rc_fuzz_tests
+ 3/10 Test  #3: graphenedb_rc_fuzz_tests .....................   Passed    0.14 sec
+      Start  4: graphenedb_rc_kosh_adapter_tests
+ 4/10 Test  #4: graphenedb_rc_kosh_adapter_tests .............   Passed    0.02 sec
+      Start  5: graphenedb_rc_stress_tests
+ 5/10 Test  #5: graphenedb_rc_stress_tests ...................   Passed    2.26 sec
+      Start  6: graphenedb_rc_lock_rotation_metadata_tests
+ 6/10 Test  #6: graphenedb_rc_lock_rotation_metadata_tests ...   Passed    0.05 sec
+      Start  7: graphenedb_rc_process_kill_tests
+ 7/10 Test  #7: graphenedb_rc_process_kill_tests .............   Passed    0.24 sec
+      Start  8: graphenedb_rc_real_kosh_adapter_tests
+ 8/10 Test  #8: graphenedb_rc_real_kosh_adapter_tests ........   Passed    0.02 sec
+      Start  9: graphenedb_rc_soak_tests
+ 9/10 Test  #9: graphenedb_rc_soak_tests .....................   Passed    2.20 sec
+      Start 10: graphenedb_rc_1m_storage_smoke
+10/10 Test #10: graphenedb_rc_1m_storage_smoke ...............   Passed    0.26 sec
+
+100% tests passed, 0 tests failed out of 10
+
+Total Test time (real) =   5.31 sec

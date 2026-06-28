@@ -1,0 +1,29 @@
+rc_stress_gate=true
+incidents=100000 nodes=300000 edges=200000 dim=8
+ingest_ms=14435.9 ingest_nodes_per_sec=20781.5
+vector_p50_ms=15.6933 vector_p95_ms=15.8906 vector_p99_ms=15.8906
+causal_p50_ms=4.52337 causal_p95_ms=5.40994 causal_p99_ms=5.40994
+causal_hit_rate=1 avg_candidate_pct=6.25
+	Command being timed: "./build_fast/graphenedb_rc_stress_tests --incidents 100000 --queries 5 --dim 8 --reopen 0"
+	User time (seconds): 10.72
+	System time (seconds): 3.34
+	Percent of CPU this job got: 95%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:14.74
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 190356
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 0
+	Voluntary context switches: 0
+	Involuntary context switches: 0
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

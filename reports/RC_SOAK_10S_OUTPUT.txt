@@ -1,0 +1,2 @@
+rc_soak_gate_passed=true
+seconds=10 writes=25931 searches=2594 deletes=267 compactions=26 nodes=25664 edges=8464

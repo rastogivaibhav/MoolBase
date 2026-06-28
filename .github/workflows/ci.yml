@@ -1,0 +1,44 @@
+name: GrapheneDB CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  release-build-test:
+    name: Release build/test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=ON
+      - name: Build
+        run: cmake --build build-release --config Release -j 2
+      - name: Test
+        run: ctest --test-dir build-release -C Release --output-on-failure
+      - name: Run uniqueness demo
+        if: runner.os != 'Windows'
+        run: ./build-release/graphenedb_uniqueness_demo
+
+  sanitizer-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ make
+      - name: ASAN/UBSAN selected gates
+        run: JOBS=2 ./scripts/run_sanitizers.sh
+
+  fuzz-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y cmake clang make
+      - name: Fuzz smoke
+        run: RUNS=100 ./scripts/run_fuzz_smoke.sh

@@ -1,0 +1,1 @@
+rc_lock_rotation_metadata_gate_passed=true

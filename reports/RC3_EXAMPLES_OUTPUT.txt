@@ -1,0 +1,36 @@
+--- graphenedb_uniqueness_demo ---
+=== Same question, three retrieval styles ===
+Question: Why did checkout fail after the GCP migration?
+
+1) Vector-only style
+  score=0.999999 node=2 :: INC-1421: checkout timeout after GCP migration; customers saw payment failures.
+  score=0.999696 node=4 :: INC-1440: similar checkout timeout, but root cause was DNS propagation outside the migration path.
+  score=0.996895 node=3 :: Old note: checkout failure was thought to be database pool exhaustion before DEP-771 evidence arrived.
+
+2) Graph-only style
+  Known link path: root ADR -> deployment -> incident symptom
+  But graph-only does not rank semantic closeness or know query intent.
+
+3) Graphene causal-memory style
+  target_root=0 confidence=1.00681 paths=4 snapshot=9
+  why=semantic similarity to candidate memories
+  why=signature-plane candidate reduction
+  why=causal path from root memory to anchor memory
+  why=contains contradiction path; confidence reduced
+  path nodes: 0 1 2 | edges: 0 1 | contradiction=no
+  path nodes: 0 3 | edges: 2 | contradiction=yes
+  path nodes: 0 1 | edges: 0 | contradiction=no
+  path nodes: 0 | edges: | contradiction=no
+
+Conclusion: vector search finds similar chunks; graph traversal finds links; Graphene returns an evidence path with confidence and contradiction awareness.
+--- graphenedb_api_coding_memory ---
+coding_memory_target=0 confidence=0.914639
+why=semantic similarity to candidate memories
+why=signature-plane candidate reduction
+why=causal path from root memory to anchor memory
+--- graphenedb_api_incident_memory ---
+metadata_gateway_count=2
+incident_target=0 confidence=0.913674
+--- graphenedb_api_team_brain ---
+current_decisions=1
+team_brain_target=0 confidence=1.18723

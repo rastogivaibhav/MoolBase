@@ -1,0 +1,76 @@
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /mnt/data/rc4work/graphenedb_v1/build-asan-ubsan
+[ 16%] Building CXX object CMakeFiles/graphenedb.dir/src/db.cpp.o
+[ 33%] Building CXX object CMakeFiles/graphenedb.dir/src/kosh_adapter.cpp.o
+[ 50%] Building CXX object CMakeFiles/graphenedb.dir/src/platform_posix.cpp.o
+[ 66%] Linking CXX static library libgraphenedb.a
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_tests.dir/tests/test_graphenedb.cpp.o
+[100%] Linking CXX executable graphenedb_tests
+[100%] Built target graphenedb_tests
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_rc_crash_tests.dir/tests/test_rc_gate_crash.cpp.o
+[100%] Linking CXX executable graphenedb_rc_crash_tests
+[100%] Built target graphenedb_rc_crash_tests
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_rc_fuzz_tests.dir/tests/test_rc_gate_fuzz.cpp.o
+[100%] Linking CXX executable graphenedb_rc_fuzz_tests
+[100%] Built target graphenedb_rc_fuzz_tests
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_rc_lock_rotation_metadata_tests.dir/tests/test_rc_gate_lock_rotation_metadata.cpp.o
+[100%] Linking CXX executable graphenedb_rc_lock_rotation_metadata_tests
+[100%] Built target graphenedb_rc_lock_rotation_metadata_tests
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_rc_real_kosh_adapter_tests.dir/tests/test_rc_gate_real_kosh_adapter.cpp.o
+[100%] Linking CXX executable graphenedb_rc_real_kosh_adapter_tests
+[100%] Built target graphenedb_rc_real_kosh_adapter_tests
+Internal ctest changing into directory: /mnt/data/rc4work/graphenedb_v1/build-asan-ubsan
+Test project /mnt/data/rc4work/graphenedb_v1/build-asan-ubsan
+    Start 1: graphenedb_tests
+1/5 Test #1: graphenedb_tests .............................   Passed    0.19 sec
+    Start 2: graphenedb_rc_crash_tests
+2/5 Test #2: graphenedb_rc_crash_tests ....................   Passed    0.06 sec
+    Start 3: graphenedb_rc_fuzz_tests
+3/5 Test #3: graphenedb_rc_fuzz_tests .....................   Passed    0.20 sec
+    Start 6: graphenedb_rc_lock_rotation_metadata_tests
+4/5 Test #6: graphenedb_rc_lock_rotation_metadata_tests ...   Passed    0.22 sec
+    Start 8: graphenedb_rc_real_kosh_adapter_tests
+5/5 Test #8: graphenedb_rc_real_kosh_adapter_tests ........   Passed    0.07 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   0.73 sec
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /mnt/data/rc4work/graphenedb_v1/build-tsan
+[ 16%] Building CXX object CMakeFiles/graphenedb.dir/src/kosh_adapter.cpp.o
+[ 33%] Building CXX object CMakeFiles/graphenedb.dir/src/db.cpp.o
+[ 50%] Building CXX object CMakeFiles/graphenedb.dir/src/platform_posix.cpp.o
+[ 66%] Linking CXX static library libgraphenedb.a
+[ 66%] Built target graphenedb
+[ 83%] Building CXX object CMakeFiles/graphenedb_tests.dir/tests/test_graphenedb.cpp.o
+[100%] Linking CXX executable graphenedb_tests
+gmake[3]: *** Deleting file 'graphenedb_tests'
+gmake[3]: *** [CMakeFiles/graphenedb_tests.dir/build.make:102: graphenedb_tests] Terminated
+gmake[2]: *** [CMakeFiles/Makefile2:184: CMakeFiles/graphenedb_tests.dir/all] Terminated
+gmake[1]: *** [CMakeFiles/Makefile2:191: CMakeFiles/graphenedb_tests.dir/rule] Terminated
+gmake: *** [Makefile:205: graphenedb_tests] Terminated

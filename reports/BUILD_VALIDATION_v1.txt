@@ -1,0 +1,22 @@
+GrapheneDB v1 build validation
+Date: 2026-06-23
+
+Release build:
+- cmake configure: PASS
+- cmake build: PASS
+- ctest: PASS
+
+Sanitizers:
+- ASAN/UBSAN ctest: PASS
+- TSAN ctest: PASS
+
+FAISS strict option:
+- GRAPHENEDB_USE_FAISS=ON without FAISS: FAILS LOUDLY AS DESIGNED
+
+Benchmark sample:
+nodes=15000 edges=10000
+ingest_ms=6838
+vector_p95_ms=2.02396 causal_p95_ms=0.274491 causal_hit_rate=1
+
+Test output:
+graphenedb_tests_passed=true

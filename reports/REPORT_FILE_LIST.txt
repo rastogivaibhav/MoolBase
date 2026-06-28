@@ -1,0 +1,12 @@
+total 12K
+-rw-r--r-- 1 root root  431 Jun 23 20:09 BUILD_VALIDATION_v1.txt
+-rw-r--r-- 1 root root  984 Jun 23 22:08 RC_ASAN_UBSAN_OUTPUT.txt
+-rw-r--r-- 1 root root  297 Jun 23 22:09 RC_CLI_SMOKE_OUTPUT.txt
+-rw-r--r-- 1 root root  784 Jun 23 22:08 RC_CTEST_RELEASE_OUTPUT.txt
+-rw-r--r-- 1 root root  589 Jun 23 22:08 RC_FAISS_OPTION_OUTPUT.txt
+-rw-r--r-- 1 root root 4.8K Jun 23 22:09 RC_GATE_PACK_REPORT.md
+-rw-r--r-- 1 root root  308 Jun 23 22:07 RC_STRESS_100K_OUTPUT.txt
+-rw-r--r-- 1 root root  982 Jun 23 22:08 RC_TSAN_OUTPUT.txt
+-rw-r--r-- 1 root root    0 Jun 23 22:09 REPORT_FILE_LIST.txt
+-rw-r--r-- 1 root root  102 Jun 23 20:09 bench_5000x3_output.txt
+-rw-r--r-- 1 root root   29 Jun 23 20:09 test_output.txt

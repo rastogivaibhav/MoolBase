@@ -1,0 +1,3 @@
+nodes=15000 edges=10000
+ingest_ms=6838
+vector_p95_ms=2.02396 causal_p95_ms=0.274491 causal_hit_rate=1

@@ -1,0 +1,7 @@
+rc_stress_gate=true
+incidents=33334 nodes=100002 edges=66668 dim=64
+ingest_ms=16677.9 ingest_nodes_per_sec=5996.07
+vector_p50_ms=13.5944 vector_p95_ms=14.5454 vector_p99_ms=14.9298
+causal_p50_ms=2.44371 causal_p95_ms=2.6959 causal_p99_ms=2.84004
+causal_hit_rate=1 avg_candidate_pct=6.25001
+reopen_ms=2277.07

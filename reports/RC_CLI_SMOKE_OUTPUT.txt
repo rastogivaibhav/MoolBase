@@ -1,0 +1,15 @@
+initialized
+0
+1
+0
+GrapheneDB v1
+path=/tmp/graphenedb_cli_gate
+dimension=8
+version=3
+nodes_visible=2
+edges_visible=1
+planes=1
+target=0 confidence=1.28208 paths=2
+why=semantic similarity to candidate memories
+why=signature-plane candidate reduction
+why=causal path from root memory to anchor memory

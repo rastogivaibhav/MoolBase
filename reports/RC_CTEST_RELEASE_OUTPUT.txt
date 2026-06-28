@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /mnt/data/graphenedb_gate_work/graphenedb_v1/build
+Test project /mnt/data/graphenedb_gate_work/graphenedb_v1/build
+    Start 1: graphenedb_tests
+1/5 Test #1: graphenedb_tests ...................   Passed    0.07 sec
+    Start 2: graphenedb_rc_crash_tests
+2/5 Test #2: graphenedb_rc_crash_tests ..........   Passed    0.03 sec
+    Start 3: graphenedb_rc_fuzz_tests
+3/5 Test #3: graphenedb_rc_fuzz_tests ...........   Passed    0.14 sec
+    Start 4: graphenedb_rc_kosh_adapter_tests
+4/5 Test #4: graphenedb_rc_kosh_adapter_tests ...   Passed    0.02 sec
+    Start 5: graphenedb_rc_stress_tests
+5/5 Test #5: graphenedb_rc_stress_tests .........   Passed    3.04 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   3.32 sec
