@@ -29,6 +29,25 @@ GrapheneDB is not a SQL database, distributed service, Qdrant replacement, Neo4j
 
 The current branch has a public developer-preview candidate with local evidence passing and `public_developer_preview: 0` pending items in `reports/GA_STATUS_REPORT.md`. It is still not enterprise GA. Enterprise GA remains blocked on long soak/fuzz, approved-host target-scale runs, real filesystem failure evidence on target hosts, release governance, and final vector backend decisions.
 
+## Immediate Next Step For Handoff
+
+The prepared branch is `codex/rc5-developer-preview`, pushed to `origin`.
+
+The next agent should:
+
+1. Open a GitHub pull request from `codex/rc5-developer-preview` into `master`.
+2. Describe it as the RC5 public developer-preview candidate, explicitly not enterprise GA.
+3. Cite the preserved evidence:
+   - `reports/GA_STATUS_REPORT.md`
+   - `reports/preview-hardware/20260707-141656/PREVIEW_HARDWARE_SUMMARY.md`
+   - `reports/ga-readiness/20260707-142146/GA_READINESS_SUMMARY.md`
+   - `reports/ga-evidence/20260707-142233.zip`
+4. Monitor CI and fix only CI, portability, packaging, or reviewer issues needed to land the PR.
+5. Merge to `master` when CI/review are acceptable.
+6. Tag or draft the developer-preview release as `GrapheneDB v0.5.0-rc5 - embedded causal/lattice-memory DB for controlled pilots`.
+
+Do not expand scope into enterprise GA in this PR. The enterprise-GA backlog remains the long-running approved-host soak/fuzz/target-scale/filesystem/signing work in `docs/NEXT_GA_EXECUTION_PLAN.md`.
+
 ## Engineering Constraints
 
 - Preserve the embedded-library boundary unless the product plan changes.

@@ -143,6 +143,8 @@ Agent/developer orientation files are provided at the repository root:
 - [`CLAUDE.md`](CLAUDE.md) for Claude-style coding agents.
 - [`AGENTS.md`](AGENTS.md) for Codex-style coding agents.
 
+Handoff next step: open a PR from `codex/rc5-developer-preview` into `master`, present it as the RC5 public developer-preview candidate, link the preserved evidence in `reports/GA_STATUS_REPORT.md`, and fix only CI or reviewer issues needed to merge. Enterprise-GA work remains a separate follow-up track.
+
 ## One-command validation scripts
 
 | Script | Purpose |

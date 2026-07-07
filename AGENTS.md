@@ -42,6 +42,21 @@ For specific domains:
 - Do not add broad product claims. Public-preview and enterprise-GA status must match `reports/GA_STATUS_REPORT.md`.
 - Do not commit build directories, `graphify-out/`, Python bytecode, or historical scratch evidence. Commit only intentional release evidence.
 
+## Immediate Next Step For Handoff
+
+The RC5 developer-preview branch has been prepared and pushed as `codex/rc5-developer-preview`.
+
+The next agent should do exactly this:
+
+1. Open a GitHub pull request from `codex/rc5-developer-preview` into `master`.
+2. In the PR description, state that this is a public developer-preview candidate, not enterprise GA.
+3. Link the current evidence: `reports/GA_STATUS_REPORT.md`, `reports/preview-hardware/20260707-141656/PREVIEW_HARDWARE_SUMMARY.md`, `reports/ga-readiness/20260707-142146/GA_READINESS_SUMMARY.md`, and `reports/ga-evidence/20260707-142233.zip`.
+4. Wait for CI. If CI fails, fix only the failing gate or portability issue. Do not add new features during PR stabilization.
+5. If CI passes and review is acceptable, merge to `master`.
+6. After merge, create the developer-preview tag or release using the label in `docs/GA_READINESS_SCORECARD.md`: `GrapheneDB v0.5.0-rc5 - embedded causal/lattice-memory DB for controlled pilots`.
+
+Do not start enterprise-GA work in this PR. Enterprise GA remains a separate follow-up track: approved-host full readiness, 24-hour soak, multi-hour fuzzing, target-scale profiles, real filesystem failure evidence, signing/license review, and final vector-backend decisions.
+
 ## Verification
 
 For a normal Windows release smoke:
