@@ -119,6 +119,30 @@ Extraction TSV import:
 ./build-release/graphenedb_cli extract-tsv /tmp/gdb-demo 3 research-pack ./extraction.tsv
 ```
 
+## Developer orientation
+
+GrapheneDB is a compact embedded C++ database, not a service. The core code lives in `include/graphene/` and `src/`, with a CLI in `tools/graphenedb_cli.cpp`, C ABI glue in `include/graphene/c_api.h` and `src/c_api.cpp`, benchmarks in `bench/`, and release/operator automation in `scripts/`.
+
+The fastest way to understand the repository is:
+
+1. Read this README for product scope and maturity.
+2. Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for storage, WAL, snapshots, retrieval, and CLI structure.
+3. Read [`docs/GRAPHENE_LATTICE_MODEL.md`](docs/GRAPHENE_LATTICE_MODEL.md), [`docs/LATTICE_RETRIEVAL.md`](docs/LATTICE_RETRIEVAL.md), and [`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md) for the RC5 additions.
+4. Read [`docs/NEXT_GA_EXECUTION_PLAN.md`](docs/NEXT_GA_EXECUTION_PLAN.md) and [`reports/GA_STATUS_REPORT.md`](reports/GA_STATUS_REPORT.md) before changing release claims.
+
+Developer rules of thumb:
+
+- Preserve the embedded-library boundary: do not add a network server, auth layer, SQL layer, or distributed cluster behavior unless the release plan explicitly changes.
+- Keep durable format changes intentional and documented in [`docs/STORAGE_FORMAT.md`](docs/STORAGE_FORMAT.md), with fixtures or migration tests where applicable.
+- Treat `put_batch()` and `put_extraction()` as public API surface; add tests before changing semantics.
+- Prefer deterministic tests and preserved report output for release gates.
+- Generated build directories are ignored. Preserved release evidence belongs under `reports/` only when it is intentionally part of a release candidate.
+
+Agent/developer orientation files are provided at the repository root:
+
+- [`CLAUDE.md`](CLAUDE.md) for Claude-style coding agents.
+- [`AGENTS.md`](AGENTS.md) for Codex-style coding agents.
+
 ## One-command validation scripts
 
 | Script | Purpose |
