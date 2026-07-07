@@ -1,0 +1,17 @@
+-- Configuring done (1.2s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/Users/vrast/Documents/Projects/test/New folder/graphenedb_v1/build-enterprise-ga
+ninja: no work to do.
+vector_index_requested=auto
+vector_index=kdtree
+rc_1m_storage_gate=true
+nodes=20 docs=1 inserted_edges=24 dim=8 queries=1
+vector_index_requested=auto
+vector_index=kdtree
+ingest_ms=2.7417 total_close_ms=6.3033
+vector_p50_ms=0.0214 vector_p95_ms=0.0214
+causal_lattice_p50_ms=0.3152 causal_lattice_p95_ms=0.3152
+metadata_service_p50_ms=0.0076 metadata_service_p95_ms=0.0076
+causal_root_hit_rate=0 avg_lattice_neighbors=4 avg_lattice_score=1.14089
+cross_layer_edges=3 defect_nodes=2 defect_edges=3 synthetic_edges=2
+reopen_ms=3.1448

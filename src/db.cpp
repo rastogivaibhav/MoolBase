@@ -1,4 +1,6 @@
 #include "graphene/db.hpp"
+#include "graphene/faiss_index.hpp"
+#include "graphene/lattice_placement.hpp"
 #include "graphene/platform.hpp"
 #include "graphene/vector_index.hpp"
 #include "graphene/kdtree_index.hpp"
@@ -7,6 +9,7 @@
 #include <cerrno>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -185,9 +188,88 @@ double cosine(const std::vector<float>& a, const std::vector<float>& b) {
 
 std::string bool_s(bool b) { return b ? "1" : "0"; }
 
+bool env_enabled(const char* name) {
+  const char* v = std::getenv(name);
+  return v && std::string(v) == "1";
+}
+
+std::string serialize_lattice(const std::optional<LatticeCoord>& coord) {
+  if (!coord) return "none";
+  return std::to_string(coord->q) + "," + std::to_string(coord->r) + "," + std::to_string(coord->layer);
+}
+
+bool parse_lattice(const std::string& s, std::optional<LatticeCoord>* out) {
+  if (s == "none" || s.empty()) {
+    *out = std::nullopt;
+    return true;
+  }
+  std::stringstream ss(s);
+  std::string q, r, layer;
+  if (!std::getline(ss, q, ',')) return false;
+  if (!std::getline(ss, r, ',')) return false;
+  if (!std::getline(ss, layer, ',')) return false;
+  std::string extra;
+  if (std::getline(ss, extra, ',')) return false;
+  try {
+    *out = LatticeCoord{std::stoi(q), std::stoi(r), std::stoi(layer)};
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool are_same_layer_hex_neighbors(const LatticeCoord& a, const LatticeCoord& b) {
+  if (a.layer != b.layer) return false;
+  const int dq = b.q - a.q;
+  const int dr = b.r - a.r;
+  return (dq == 1 && dr == 0) || (dq == 1 && dr == -1) ||
+         (dq == 0 && dr == -1) || (dq == -1 && dr == 0) ||
+         (dq == -1 && dr == 1) || (dq == 0 && dr == 1);
+}
+
+bool are_cross_layer_neighbors(const LatticeCoord& a, const LatticeCoord& b, LayerCoupling coupling) {
+  if (a.layer == b.layer) return false;
+  if (coupling == LayerCoupling::None || coupling == LayerCoupling::SameLayer) return false;
+  const int dq = std::abs(b.q - a.q);
+  const int dr = std::abs(b.r - a.r);
+  return dq <= 1 && dr <= 1;
+}
+
+bool is_lattice_bond(BondType bond) {
+  return bond == BondType::Sigma || bond == BondType::Pi || bond == BondType::VanDerWaals ||
+         bond == BondType::Defect || bond == BondType::Synthetic;
+}
+
+const char* vector_index_kind_name(VectorIndexKind kind) {
+  switch (kind) {
+    case VectorIndexKind::Auto: return "auto";
+    case VectorIndexKind::Flat: return "flat";
+    case VectorIndexKind::KDTree: return "kdtree";
+    case VectorIndexKind::Faiss: return "faiss";
+  }
+  return "unknown";
+}
+
 } // namespace
 
 struct GrapheneDB::Impl {
+  struct LatticeCoordHash {
+    size_t operator()(const LatticeCoord& c) const {
+      uint64_t h = 1469598103934665603ull;
+      auto mix = [&](int32_t v) {
+        uint32_t u = static_cast<uint32_t>(v);
+        for (int i = 0; i < 4; ++i) {
+          h ^= static_cast<unsigned char>((u >> (i * 8)) & 0xff);
+          h *= 1099511628211ull;
+        }
+      };
+      mix(c.q);
+      mix(c.r);
+      mix(c.layer);
+      return static_cast<size_t>(h);
+    }
+  };
+
   mutable std::shared_mutex mu;
   bool open{false};
   fs::path dir, wal_path, data_path, manifest_path, lock_path;
@@ -206,6 +288,41 @@ struct GrapheneDB::Impl {
   std::unordered_map<uint32_t, std::vector<uint32_t>> out_edges;
   std::unordered_map<uint64_t, std::vector<uint32_t>> planes;
   std::unordered_map<std::string, std::vector<uint32_t>> metadata_index;
+  std::unordered_map<LatticeCoord, uint32_t, LatticeCoordHash> lattice_nodes;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> lattice_edges;
+
+  VectorIndexKind resolve_vector_index_kind() const {
+    VectorIndexKind kind = opt.vector_index_kind;
+    if (kind == VectorIndexKind::Auto) {
+      kind = opt.dimension <= 32 ? VectorIndexKind::KDTree : VectorIndexKind::Flat;
+    }
+    return kind;
+  }
+
+  Status validate_vector_index_support() const {
+    VectorIndexKind kind = resolve_vector_index_kind();
+    if (kind != VectorIndexKind::Faiss) return Status::ok();
+#ifdef GRAPHENEDB_HAS_FAISS
+    return Status::ok();
+#else
+    return Status::error(
+      ErrorCode::UnsupportedMode,
+      "FAISS vector index requested but GrapheneDB was built without FAISS support");
+#endif
+  }
+
+  std::unique_ptr<VectorIndex> make_vector_index() const {
+    VectorIndexKind kind = resolve_vector_index_kind();
+    if (kind == VectorIndexKind::Faiss) {
+#ifdef GRAPHENEDB_HAS_FAISS
+      return std::make_unique<FaissVectorIndex>(opt.dimension);
+#else
+      return std::make_unique<FlatVectorIndex>(opt.dimension);
+#endif
+    }
+    if (kind == VectorIndexKind::KDTree) return std::make_unique<KDTreeVectorIndex>(opt.dimension);
+    return std::make_unique<FlatVectorIndex>(opt.dimension);
+  }
 
   void ensure_node_slot(uint32_t id) {
     if (nodes.size() <= id) {
@@ -237,6 +354,28 @@ struct GrapheneDB::Impl {
     }
   }
 
+  void apply_committed_node(const Node& n) {
+    ensure_node_slot(n.id);
+    nodes[n.id] = n;
+    planes[n.signature].push_back(n.id);
+    index_node_metadata(n);
+    if (n.lattice) lattice_nodes[*n.lattice] = n.id;
+    ++live_node_count;
+    if (vector_index) (void)vector_index->add(n.id, n.vector);
+  }
+
+  void apply_committed_edge(const Edge& e) {
+    ensure_edge_slot(e.id);
+    edges[e.id] = e;
+    out_edges[e.from].push_back(e.id);
+    in_edges[e.to].push_back(e.id);
+    if (is_lattice_bond(e.bond_type)) {
+      lattice_edges[e.from].push_back(e.id);
+      lattice_edges[e.to].push_back(e.id);
+    }
+    ++live_edge_count;
+  }
+
   Status checkpoint_unlocked() {
     uint64_t snap = version ? version - 1 : 0;
     fs::path tmp = data_path.string() + ".tmp";
@@ -245,8 +384,14 @@ struct GrapheneDB::Impl {
       if (!out) return Status::error(ErrorCode::IoError, "cannot write data tmp");
       for (const auto& n : nodes) if (visible_node(n, snap)) out << make_frame(node_payload(n, "DATA_NODE"));
       for (const auto& e : edges) if (visible_edge(e, nodes, snap)) out << make_frame(edge_payload(e, "DATA_EDGE"));
+      if (env_enabled("GRAPHENEDB_TEST_FAIL_CHECKPOINT_WRITE")) {
+        return Status::error(ErrorCode::IoError, "injected checkpoint write failure");
+      }
       out.flush();
       if (!out) return Status::error(ErrorCode::IoError, "failed flushing data tmp");
+    }
+    if (env_enabled("GRAPHENEDB_TEST_FAIL_CHECKPOINT_RENAME")) {
+      return Status::error(ErrorCode::IoError, "injected checkpoint rename failure");
     }
     std::error_code ec;
     fs::rename(tmp, data_path, ec);
@@ -278,23 +423,95 @@ struct GrapheneDB::Impl {
     if (wal_fd != platform::kInvalidFile) { platform::close_file(wal_fd); wal_fd = platform::kInvalidFile; }
   }
 
+  Status rollback_wal_append_unlocked(uint64_t size_before) {
+    close_wal_fd_unlocked();
+    std::error_code ec;
+    fs::resize_file(wal_path, size_before, ec);
+    if (ec) return Status::error(ErrorCode::IoError, "rollback WAL append failed: " + ec.message());
+    return open_wal_fd_unlocked();
+  }
+
   Status append_wal_unlocked(const std::vector<std::string>& payloads) {
+    if (env_enabled("GRAPHENEDB_TEST_FAIL_WAL_APPEND")) {
+      return Status::error(ErrorCode::IoError, "injected WAL append failure");
+    }
     auto ost = open_wal_fd_unlocked();
     if (!ost) return ost;
+    std::error_code ec;
+    uint64_t size_before = fs::exists(wal_path, ec) ? fs::file_size(wal_path, ec) : 0;
+    if (ec) return Status::error(ErrorCode::IoError, "cannot stat WAL before append: " + ec.message());
     std::string blob;
     for (const auto& p : payloads) blob += make_frame(p);
+    if (env_enabled("GRAPHENEDB_TEST_FAIL_WAL_WRITE")) {
+      return Status::error(ErrorCode::IoError, "injected WAL write failure");
+    }
     auto wst = platform::write_all(wal_fd, blob.data(), blob.size());
-    if (!wst) return Status::error(wst.code, "write WAL failed: " + wst.message);
+    if (!wst) {
+      auto rst = rollback_wal_append_unlocked(size_before);
+      if (!rst) return rst;
+      return Status::error(wst.code, "write WAL failed: " + wst.message);
+    }
     if (opt.fsync_on_commit) {
+      if (env_enabled("GRAPHENEDB_TEST_FAIL_WAL_FSYNC")) {
+        auto rst = rollback_wal_append_unlocked(size_before);
+        if (!rst) return rst;
+        return Status::error(ErrorCode::IoError, "injected WAL fsync failure");
+      }
       auto fst = platform::flush(wal_fd);
-      if (!fst) return Status::error(fst.code, "fsync WAL failed: " + fst.message);
+      if (!fst) {
+        auto rst = rollback_wal_append_unlocked(size_before);
+        if (!rst) return rst;
+        return Status::error(fst.code, "fsync WAL failed: " + fst.message);
+      }
+    }
+    return Status::ok();
+  }
+
+  Status validate_lattice_node_input(const NodeInput& input) const {
+    if (opt.require_lattice && !input.lattice) {
+      return Status::error(ErrorCode::InvalidInput, "lattice coordinate required");
+    }
+    if (input.lattice) {
+      auto it = lattice_nodes.find(*input.lattice);
+      if (it != lattice_nodes.end()) {
+        return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
+      }
+    }
+    return Status::ok();
+  }
+
+  Status validate_lattice_edge_input(const EdgeInput& input, uint64_t snap) const {
+    if (!std::isfinite(input.bond_strength) || input.bond_strength < 0.0 || input.bond_strength > 1.0) {
+      return Status::error(ErrorCode::InvalidInput, "bond_strength must be between 0 and 1");
+    }
+    if (!is_lattice_bond(input.bond_type)) return Status::ok();
+    if (input.from >= nodes.size() || input.to >= nodes.size() || !visible_node(nodes[input.from], snap) || !visible_node(nodes[input.to], snap)) {
+      return Status::error(ErrorCode::EdgeInvalid, "lattice edge endpoints must exist and be visible");
+    }
+    const auto& from = nodes[input.from];
+    const auto& to = nodes[input.to];
+    if (!from.lattice || !to.lattice) {
+      return Status::error(ErrorCode::EdgeInvalid, "lattice bond requires lattice coordinates on both endpoints");
+    }
+    if (input.bond_type == BondType::Defect || input.bond_type == BondType::Synthetic) return Status::ok();
+    if (input.bond_type == BondType::VanDerWaals) {
+      if (!are_cross_layer_neighbors(*from.lattice, *to.lattice, input.layer_coupling)) {
+        return Status::error(ErrorCode::EdgeInvalid, "VanDerWaals bond requires valid cross-layer neighbor and coupling");
+      }
+      return Status::ok();
+    }
+    if (!are_same_layer_hex_neighbors(*from.lattice, *to.lattice)) {
+      return Status::error(ErrorCode::EdgeInvalid, "Sigma/Pi bond requires same-layer hex-neighbor coordinates");
+    }
+    if (input.layer_coupling != LayerCoupling::None && input.layer_coupling != LayerCoupling::SameLayer) {
+      return Status::error(ErrorCode::EdgeInvalid, "same-layer lattice bond cannot use cross-layer coupling");
     }
     return Status::ok();
   }
 
   void rebuild_indexes() {
-    in_edges.clear(); out_edges.clear(); planes.clear(); metadata_index.clear();
-    vector_index = std::make_unique<KDTreeVectorIndex>(opt.dimension);
+    in_edges.clear(); out_edges.clear(); planes.clear(); metadata_index.clear(); lattice_nodes.clear(); lattice_edges.clear();
+    vector_index = make_vector_index();
     live_node_count = 0; live_edge_count = 0;
     next_node_id = 0; next_edge_id = 0; version = std::max<uint64_t>(version, 1);
     uint64_t current_snap = 0;
@@ -315,6 +532,7 @@ struct GrapheneDB::Impl {
       if (n.deleted_version != kInfVersion) version = std::max(version, n.deleted_version + 1);
       planes[n.signature].push_back(n.id);
       index_node_metadata(n);
+      if (n.lattice && visible_node(n, current_snap)) lattice_nodes[*n.lattice] = n.id;
       if (visible_node(n, current_snap)) {
         ++live_node_count;
         if (vector_index) (void)vector_index->add(n.id, n.vector);
@@ -327,7 +545,13 @@ struct GrapheneDB::Impl {
       if (e.deleted_version != kInfVersion) version = std::max(version, e.deleted_version + 1);
       out_edges[e.from].push_back(e.id);
       in_edges[e.to].push_back(e.id);
-      if (visible_edge(e, nodes, current_snap)) ++live_edge_count;
+      if (visible_edge(e, nodes, current_snap)) {
+        ++live_edge_count;
+        if (is_lattice_bond(e.bond_type)) {
+          lattice_edges[e.from].push_back(e.id);
+          lattice_edges[e.to].push_back(e.id);
+        }
+      }
     }
     txid = std::max(txid, version + 1);
   }
@@ -355,6 +579,7 @@ struct GrapheneDB::Impl {
            std::to_string(n.deleted_version) + "\t" + std::to_string(n.signature) + "\t" +
            std::to_string(n.incident) + "\t" + bool_s(n.root) + "\t" + bool_s(n.symptom) + "\t" +
            bool_s(n.impact) + "\t" + hex_encode(n.content) + "\t" + serialize_vector(n.vector) + "\t" +
+           serialize_lattice(n.lattice) + "\t" + std::to_string(static_cast<int>(n.defect_type)) + "\t" +
            serialize_metadata(n.metadata);
   }
 
@@ -363,6 +588,10 @@ struct GrapheneDB::Impl {
            std::to_string(e.to) + "\t" + std::to_string(static_cast<int>(e.origin)) + "\t" +
            std::to_string(static_cast<int>(e.role)) + "\t" + std::to_string(e.confidence) + "\t" +
            std::to_string(e.created_version) + "\t" + std::to_string(e.deleted_version) + "\t" +
+           std::to_string(static_cast<int>(e.bond_type)) + "\t" +
+           std::to_string(static_cast<int>(e.defect_type)) + "\t" +
+           std::to_string(static_cast<int>(e.layer_coupling)) + "\t" +
+           std::to_string(e.bond_strength) + "\t" +
            serialize_metadata(e.metadata);
   }
 
@@ -404,7 +633,7 @@ struct GrapheneDB::Impl {
         return Status::ok();
       }
       if (op == "PUT_NODE" || op == "DATA_NODE") {
-        if (p.size() != 12) return Status::error(ErrorCode::DataCorrupt, "bad node record field count");
+        if (p.size() != 12 && p.size() != 14) return Status::error(ErrorCode::DataCorrupt, "bad node record field count");
         Node n;
         n.id = static_cast<uint32_t>(std::stoul(p[1]));
         n.created_version = std::stoull(p[2]);
@@ -416,7 +645,13 @@ struct GrapheneDB::Impl {
         n.impact = p[8] == "1";
         if (!hex_decode(p[9], &n.content)) return Status::error(ErrorCode::DataCorrupt, "bad content encoding");
         if (!parse_vector(p[10], &n.vector)) return Status::error(ErrorCode::DataCorrupt, "bad vector encoding");
-        if (!parse_metadata(p[11], &n.metadata)) return Status::error(ErrorCode::DataCorrupt, "bad metadata encoding");
+        size_t metadata_field = 11;
+        if (p.size() == 14) {
+          if (!parse_lattice(p[11], &n.lattice)) return Status::error(ErrorCode::DataCorrupt, "bad lattice encoding");
+          n.defect_type = static_cast<DefectType>(std::stoi(p[12]));
+          metadata_field = 13;
+        }
+        if (!parse_metadata(p[metadata_field], &n.metadata)) return Status::error(ErrorCode::DataCorrupt, "bad metadata encoding");
         std::string reason;
         if (!vector_valid(n.vector, &reason)) return Status::error(ErrorCode::DimensionMismatch, reason);
         ensure_node_slot(n.id);
@@ -424,7 +659,7 @@ struct GrapheneDB::Impl {
         return Status::ok();
       }
       if (op == "PUT_EDGE" || op == "DATA_EDGE") {
-        if (p.size() != 10) return Status::error(ErrorCode::DataCorrupt, "bad edge record field count");
+        if (p.size() != 10 && p.size() != 14) return Status::error(ErrorCode::DataCorrupt, "bad edge record field count");
         Edge e;
         e.id = static_cast<uint32_t>(std::stoul(p[1]));
         e.from = static_cast<uint32_t>(std::stoul(p[2]));
@@ -434,7 +669,15 @@ struct GrapheneDB::Impl {
         e.confidence = std::stod(p[6]);
         e.created_version = std::stoull(p[7]);
         e.deleted_version = std::stoull(p[8]);
-        if (!parse_metadata(p[9], &e.metadata)) return Status::error(ErrorCode::DataCorrupt, "bad edge metadata");
+        size_t metadata_field = 9;
+        if (p.size() == 14) {
+          e.bond_type = static_cast<BondType>(std::stoi(p[9]));
+          e.defect_type = static_cast<DefectType>(std::stoi(p[10]));
+          e.layer_coupling = static_cast<LayerCoupling>(std::stoi(p[11]));
+          e.bond_strength = std::stod(p[12]);
+          metadata_field = 13;
+        }
+        if (!parse_metadata(p[metadata_field], &e.metadata)) return Status::error(ErrorCode::DataCorrupt, "bad edge metadata");
         if (e.from >= nodes.size() || e.to >= nodes.size()) return Status::error(ErrorCode::EdgeInvalid, "edge endpoint missing during replay");
         ensure_edge_slot(e.id);
         edges[e.id] = std::move(e);
@@ -478,7 +721,11 @@ struct GrapheneDB::Impl {
 
   Status write_manifest() const {
     std::ostringstream os;
-    os << "graphenedb_manifest_v1\n";
+    os << "graphenedb_manifest_v" << kManifestFormatVersion << "\n";
+    os << "storage_format=" << kStorageFormatVersion << "\n";
+    os << "wal_frame_format=" << kWalFrameFormatVersion << "\n";
+    os << "lattice_format=" << kLatticeFormatVersion << "\n";
+    os << "extraction_format=" << kExtractionFormatVersion << "\n";
     os << "dimension=" << opt.dimension << "\n";
     os << "version=" << version << "\n";
     os << "next_node_id=" << next_node_id << "\n";
@@ -492,6 +739,9 @@ struct GrapheneDB::Impl {
     out << body;
     out.flush();
     out.close();
+    if (env_enabled("GRAPHENEDB_TEST_FAIL_MANIFEST_RENAME")) {
+      return Status::error(ErrorCode::IoError, "injected manifest rename failure");
+    }
     fs::rename(tmp, manifest_path);
     return Status::ok();
   }
@@ -499,14 +749,74 @@ struct GrapheneDB::Impl {
   Status read_manifest(uint32_t* dim, uint64_t* next_txid) const {
     if (!fs::exists(manifest_path)) return Status::ok();
     std::ifstream in(manifest_path);
+    if (!in) return Status::error(ErrorCode::IoError, "cannot read manifest");
     std::string line;
+    std::string body;
+    std::string checksum_text;
+    bool saw_header = false;
+    bool saw_dimension = false;
+    bool saw_next_txid = false;
+    auto parse_u64 = [](const std::string& text, uint64_t* out) {
+      size_t pos = 0;
+      uint64_t v = std::stoull(text, &pos);
+      if (pos != text.size()) throw std::invalid_argument("trailing characters");
+      *out = v;
+    };
     while (std::getline(in, line)) {
-      if (line.rfind("dimension=", 0) == 0) {
-        *dim = static_cast<uint32_t>(std::stoul(line.substr(10)));
-      } else if (line.rfind("next_txid=", 0) == 0 && next_txid) {
-        *next_txid = std::stoull(line.substr(10));
+      if (line.empty()) continue;
+      if (line.rfind("checksum=", 0) == 0) {
+        checksum_text = line.substr(9);
+        continue;
+      }
+      body += line + "\n";
+      if (!saw_header) {
+        if (line != "graphenedb_manifest_v" + std::to_string(kManifestFormatVersion)) {
+          return Status::error(ErrorCode::DataCorrupt, "bad manifest header");
+        }
+        saw_header = true;
+        continue;
+      }
+      try {
+        if (line.rfind("storage_format=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(15), &v);
+          if (v > kStorageFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported storage format");
+        } else if (line.rfind("wal_frame_format=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(17), &v);
+          if (v > kWalFrameFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported WAL frame format");
+        } else if (line.rfind("lattice_format=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(15), &v);
+          if (v > kLatticeFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported lattice format");
+        } else if (line.rfind("extraction_format=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(18), &v);
+          if (v > kExtractionFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported extraction format");
+        } else if (line.rfind("dimension=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(10), &v);
+          if (v > UINT32_MAX) return Status::error(ErrorCode::DataCorrupt, "manifest dimension out of range");
+          *dim = static_cast<uint32_t>(v);
+          saw_dimension = true;
+        } else if (line.rfind("next_txid=", 0) == 0) {
+          uint64_t v = 0; parse_u64(line.substr(10), &v);
+          if (next_txid) *next_txid = v;
+          saw_next_txid = true;
+        } else if (line.rfind("version=", 0) == 0 || line.rfind("next_node_id=", 0) == 0 || line.rfind("next_edge_id=", 0) == 0) {
+          uint64_t ignored = 0;
+          parse_u64(line.substr(line.find('=') + 1), &ignored);
+        }
+      } catch (const std::exception& e) {
+        return Status::error(ErrorCode::DataCorrupt, std::string("bad manifest numeric field: ") + e.what());
       }
     }
+    if (!saw_header) return Status::error(ErrorCode::DataCorrupt, "missing manifest header");
+    if (checksum_text.empty()) return Status::error(ErrorCode::DataCorrupt, "missing manifest checksum");
+    try {
+      uint64_t expected = 0;
+      parse_u64(checksum_text, &expected);
+      if (expected != fnv1a(body)) return Status::error(ErrorCode::DataCorrupt, "manifest checksum mismatch");
+    } catch (const std::exception& e) {
+      return Status::error(ErrorCode::DataCorrupt, std::string("bad manifest checksum: ") + e.what());
+    }
+    if (!saw_dimension) return Status::error(ErrorCode::DataCorrupt, "missing manifest dimension");
+    if (!saw_next_txid) return Status::error(ErrorCode::DataCorrupt, "missing manifest next_txid");
     return Status::ok();
   }
 
@@ -515,9 +825,11 @@ struct GrapheneDB::Impl {
     if (fs::exists(lock_path, ec)) {
       bool removed_stale = false;
       if (opt.recover_stale_lock) {
-        std::ifstream in(lock_path);
         uint64_t pid = 0;
-        in >> pid;
+        {
+          std::ifstream in(lock_path);
+          in >> pid;
+        }
         if (pid > 1 && !platform::process_is_alive(pid)) {
           fs::remove(lock_path, ec);
           removed_stale = !fs::exists(lock_path, ec);
@@ -583,6 +895,41 @@ struct GrapheneDB::Impl {
     }
     return path;
   }
+
+  std::unordered_map<uint32_t, double> propagate_lattice_activation(const std::vector<SearchResult>& anchors, size_t inspect, QueryMode mode, uint64_t snap) const {
+    std::unordered_map<uint32_t, double> activation;
+    if (!opt.tuning.enable_lattice_retrieval || opt.tuning.lattice_max_hops == 0) return activation;
+    struct State { uint32_t node; uint32_t depth; double score; };
+    std::vector<State> queue;
+    for (size_t i = 0; i < inspect && i < anchors.size(); ++i) {
+      if (anchors[i].node_id >= nodes.size() || !visible_node(nodes[anchors[i].node_id], snap)) continue;
+      activation[anchors[i].node_id] = std::max(activation[anchors[i].node_id], anchors[i].score);
+      queue.push_back({anchors[i].node_id, 0, anchors[i].score});
+    }
+    for (size_t qi = 0; qi < queue.size(); ++qi) {
+      const auto cur = queue[qi];
+      if (cur.depth >= opt.tuning.lattice_max_hops) continue;
+      auto it = lattice_edges.find(cur.node);
+      if (it == lattice_edges.end()) continue;
+      for (uint32_t eid : it->second) {
+        if (eid >= edges.size() || !visible_edge(edges[eid], nodes, snap)) continue;
+        const auto& e = edges[eid];
+        if (mode == QueryMode::Empirical && (e.origin == EdgeOrigin::Hypothetical || e.role == EdgeRole::Analogical)) continue;
+        uint32_t next = e.from == cur.node ? e.to : e.from;
+        double penalty = 1.0;
+        if (e.bond_type == BondType::Defect || e.defect_type != DefectType::None) penalty *= opt.tuning.lattice_defect_penalty;
+        if (nodes[e.from].lattice && nodes[e.to].lattice && nodes[e.from].lattice->layer != nodes[e.to].lattice->layer) penalty *= opt.tuning.lattice_cross_layer_penalty;
+        double score = cur.score * opt.tuning.lattice_decay * e.bond_strength * penalty;
+        if (score <= 0.0) continue;
+        auto prev = activation.find(next);
+        if (prev == activation.end() || score > prev->second) {
+          activation[next] = score;
+          queue.push_back({next, cur.depth + 1, score});
+        }
+      }
+    }
+    return activation;
+  }
 };
 
 GrapheneDB::GrapheneDB() : impl_(new Impl()) {}
@@ -598,6 +945,8 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
   impl_->manifest_path = path / "MANIFEST";
   impl_->lock_path = path / "LOCK";
   impl_->opt = options;
+  auto vst = impl_->validate_vector_index_support();
+  if (!vst) return vst;
   std::error_code ec;
   fs::create_directories(path, ec);
   if (ec) return Status::error(ErrorCode::IoError, "cannot create DB dir: " + ec.message());
@@ -643,6 +992,8 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
   std::string reason;
   if (!impl_->vector_valid(input.vector, &reason)) return Status::error(ErrorCode::DimensionMismatch, reason);
+  auto lst = impl_->validate_lattice_node_input(input);
+  if (!lst) return lst;
   if (input.content.size() > 16 * 1024 * 1024) return Status::error(ErrorCode::InvalidInput, "content too large");
   Node n;
   n.id = impl_->next_node_id++;
@@ -651,6 +1002,8 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   n.signature = input.signature;
   n.incident = input.incident;
   n.root = input.root; n.symptom = input.symptom; n.impact = input.impact;
+  n.lattice = input.lattice;
+  n.defect_type = input.defect_type;
   n.created_version = impl_->version++;
   n.metadata = input.metadata;
   uint64_t tx = impl_->txid++;
@@ -661,12 +1014,7 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   };
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
-  impl_->ensure_node_slot(n.id);
-  impl_->nodes[n.id] = n;
-  impl_->planes[n.signature].push_back(n.id);
-  impl_->index_node_metadata(n);
-  ++impl_->live_node_count;
-  if (impl_->vector_index) { auto vst = impl_->vector_index->add(n.id, n.vector); if (!vst) return vst; }
+  impl_->apply_committed_node(n);
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out_id) *out_id = n.id;
@@ -681,23 +1029,358 @@ Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
     return Status::error(ErrorCode::EdgeInvalid, "edge endpoints must exist and be visible");
   }
   if (!std::isfinite(input.confidence) || input.confidence < 0.0 || input.confidence > 1.0) return Status::error(ErrorCode::InvalidInput, "confidence must be between 0 and 1");
+  auto lst = impl_->validate_lattice_edge_input(input, snap);
+  if (!lst) return lst;
   Edge e;
   e.id = impl_->next_edge_id++;
   e.from = input.from; e.to = input.to; e.origin = input.origin; e.role = input.role; e.confidence = input.confidence;
+  e.bond_type = input.bond_type; e.defect_type = input.defect_type; e.layer_coupling = input.layer_coupling; e.bond_strength = input.bond_strength;
   e.created_version = impl_->version++;
   e.metadata = input.metadata;
   uint64_t tx = impl_->txid++;
   std::vector<std::string> frames = {"BEGIN\t" + std::to_string(tx), "PUT_EDGE\t" + std::to_string(tx) + "\t" + impl_->edge_payload(e, "PUT_EDGE").substr(std::string("PUT_EDGE\t").size()), "COMMIT\t" + std::to_string(tx)};
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
-  impl_->ensure_edge_slot(e.id);
-  impl_->edges[e.id] = e;
-  impl_->out_edges[e.from].push_back(e.id);
-  impl_->in_edges[e.to].push_back(e.id);
-  ++impl_->live_edge_count;
+  impl_->apply_committed_edge(e);
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out_id) *out_id = e.id;
+  return Status::ok();
+}
+
+Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
+  std::unique_lock lock(impl_->mu);
+  if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
+  if (input.nodes.empty() && input.edges.empty()) {
+    if (out) *out = {};
+    return Status::ok();
+  }
+
+  std::vector<Node> new_nodes;
+  std::vector<Edge> new_edges;
+  new_nodes.reserve(input.nodes.size());
+  new_edges.reserve(input.edges.size());
+  std::unordered_set<uint32_t> batch_node_ids;
+  std::unordered_set<std::string> batch_lattice_keys;
+
+  auto lattice_key = [](const LatticeCoord& c) {
+    return std::to_string(c.q) + "," + std::to_string(c.r) + "," + std::to_string(c.layer);
+  };
+
+  uint32_t next_node = impl_->next_node_id;
+  uint64_t next_version = impl_->version;
+  for (const auto& ni : input.nodes) {
+    std::string reason;
+    if (!impl_->vector_valid(ni.vector, &reason)) return Status::error(ErrorCode::DimensionMismatch, reason);
+    if (ni.content.size() > 16 * 1024 * 1024) return Status::error(ErrorCode::InvalidInput, "content too large");
+    if (impl_->opt.require_lattice && !ni.lattice) return Status::error(ErrorCode::InvalidInput, "lattice coordinate required");
+    if (ni.lattice) {
+      if (impl_->lattice_nodes.find(*ni.lattice) != impl_->lattice_nodes.end()) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
+      if (!batch_lattice_keys.insert(lattice_key(*ni.lattice)).second) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate in batch");
+    }
+    Node n;
+    n.id = next_node++;
+    n.content = ni.content;
+    n.vector = ni.vector;
+    n.signature = ni.signature;
+    n.incident = ni.incident;
+    n.root = ni.root; n.symptom = ni.symptom; n.impact = ni.impact;
+    n.metadata = ni.metadata;
+    n.lattice = ni.lattice;
+    n.defect_type = ni.defect_type;
+    n.created_version = next_version++;
+    new_nodes.push_back(n);
+    batch_node_ids.insert(n.id);
+  }
+
+  auto node_visible_in_batch = [&](uint32_t id) {
+    uint64_t snap = impl_->version - 1;
+    if (id < impl_->nodes.size() && visible_node(impl_->nodes[id], snap)) return true;
+    return batch_node_ids.count(id) > 0;
+  };
+  auto node_for_batch = [&](uint32_t id) -> const Node* {
+    if (id < impl_->nodes.size()) {
+      uint64_t snap = impl_->version - 1;
+      if (visible_node(impl_->nodes[id], snap)) return &impl_->nodes[id];
+    }
+    for (const auto& n : new_nodes) if (n.id == id) return &n;
+    return nullptr;
+  };
+
+  uint32_t next_edge = impl_->next_edge_id;
+  for (const auto& ei : input.edges) {
+    if (!node_visible_in_batch(ei.from) || !node_visible_in_batch(ei.to)) {
+      return Status::error(ErrorCode::EdgeInvalid, "edge endpoints must exist and be visible");
+    }
+    if (!std::isfinite(ei.confidence) || ei.confidence < 0.0 || ei.confidence > 1.0) return Status::error(ErrorCode::InvalidInput, "confidence must be between 0 and 1");
+    if (!std::isfinite(ei.bond_strength) || ei.bond_strength < 0.0 || ei.bond_strength > 1.0) return Status::error(ErrorCode::InvalidInput, "bond_strength must be between 0 and 1");
+    if (is_lattice_bond(ei.bond_type)) {
+      const Node* from = node_for_batch(ei.from);
+      const Node* to = node_for_batch(ei.to);
+      if (!from || !to || !from->lattice || !to->lattice) return Status::error(ErrorCode::EdgeInvalid, "lattice bond requires lattice coordinates on both endpoints");
+      if (ei.bond_type == BondType::VanDerWaals) {
+        if (!are_cross_layer_neighbors(*from->lattice, *to->lattice, ei.layer_coupling)) return Status::error(ErrorCode::EdgeInvalid, "VanDerWaals bond requires valid cross-layer neighbor and coupling");
+      } else if (ei.bond_type != BondType::Defect && ei.bond_type != BondType::Synthetic) {
+        if (!are_same_layer_hex_neighbors(*from->lattice, *to->lattice)) return Status::error(ErrorCode::EdgeInvalid, "Sigma/Pi bond requires same-layer hex-neighbor coordinates");
+      }
+    }
+    Edge e;
+    e.id = next_edge++;
+    e.from = ei.from; e.to = ei.to; e.origin = ei.origin; e.role = ei.role; e.confidence = ei.confidence;
+    e.metadata = ei.metadata;
+    e.bond_type = ei.bond_type; e.defect_type = ei.defect_type; e.layer_coupling = ei.layer_coupling; e.bond_strength = ei.bond_strength;
+    e.created_version = next_version++;
+    new_edges.push_back(e);
+  }
+
+  uint64_t tx = impl_->txid++;
+  std::vector<std::string> frames;
+  frames.reserve(2 + new_nodes.size() + new_edges.size());
+  frames.push_back("BEGIN\t" + std::to_string(tx));
+  for (const auto& n : new_nodes) frames.push_back("PUT_NODE\t" + std::to_string(tx) + "\t" + impl_->node_payload(n, "PUT_NODE").substr(std::string("PUT_NODE\t").size()));
+  for (const auto& e : new_edges) frames.push_back("PUT_EDGE\t" + std::to_string(tx) + "\t" + impl_->edge_payload(e, "PUT_EDGE").substr(std::string("PUT_EDGE\t").size()));
+  frames.push_back("COMMIT\t" + std::to_string(tx));
+  auto st = impl_->append_wal_unlocked(frames);
+  if (!st) return st;
+
+  impl_->next_node_id = next_node;
+  impl_->next_edge_id = next_edge;
+  impl_->version = next_version;
+  for (const auto& n : new_nodes) impl_->apply_committed_node(n);
+  for (const auto& e : new_edges) impl_->apply_committed_edge(e);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) return rst;
+  if (out) {
+    out->node_ids.clear();
+    out->edge_ids.clear();
+    for (const auto& n : new_nodes) out->node_ids.push_back(n.id);
+    for (const auto& e : new_edges) out->edge_ids.push_back(e.id);
+  }
+  return Status::ok();
+}
+
+Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult* out) {
+  std::unique_lock lock(impl_->mu);
+  if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
+  if (input.schema_version != kExtractionSchemaVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported extraction schema version");
+  if (input.source_id.empty()) return Status::error(ErrorCode::InvalidInput, "source_id is required");
+  if (input.nodes.empty() && input.relations.empty()) {
+    if (out) *out = {};
+    return Status::ok();
+  }
+
+  auto scoped_external = [&](const std::string& external_id) {
+    return input.source_id + "\x1e" + external_id;
+  };
+  auto metadata_key = [](const std::string& key, const std::string& value) {
+    return key + "\x1f" + value;
+  };
+  uint64_t snap = impl_->version - 1;
+  auto find_existing_external = [&](const std::string& scoped) -> std::optional<uint32_t> {
+    auto it = impl_->metadata_index.find(metadata_key("graphene_scoped_external_id", scoped));
+    if (it == impl_->metadata_index.end()) return std::nullopt;
+    for (uint32_t id : it->second) {
+      if (id < impl_->nodes.size() && visible_node(impl_->nodes[id], snap)) return id;
+    }
+    return std::nullopt;
+  };
+
+  std::unordered_set<std::string> input_ids;
+  std::unordered_map<std::string, uint32_t> external_to_node_id;
+  std::vector<uint32_t> existing_node_ids;
+  std::vector<Node> new_nodes;
+  std::vector<Edge> new_edges;
+  std::unordered_set<std::string> batch_lattice_keys;
+  std::unordered_set<std::string> batch_relation_keys;
+
+  auto lattice_key = [](const LatticeCoord& c) {
+    return std::to_string(c.q) + "," + std::to_string(c.r) + "," + std::to_string(c.layer);
+  };
+  auto lattice_occupied = [&](const LatticeCoord& c) {
+    return impl_->lattice_nodes.find(c) != impl_->lattice_nodes.end() || batch_lattice_keys.count(lattice_key(c)) > 0;
+  };
+  uint32_t placement_probe = 0;
+  auto next_open_lattice = [&]() {
+    while (true) {
+      LatticeCoord c{static_cast<int32_t>(placement_probe++), 0, input.layer};
+      if (!lattice_occupied(c)) return c;
+    }
+  };
+
+  uint32_t next_node = impl_->next_node_id;
+  uint64_t next_version = impl_->version;
+  for (uint32_t i = 0; i < input.nodes.size(); ++i) {
+    const auto& en = input.nodes[i];
+    if (en.external_id.empty()) return Status::error(ErrorCode::InvalidInput, "extraction node external_id is required");
+    if (!input_ids.insert(en.external_id).second) return Status::error(ErrorCode::InvalidInput, "duplicate extraction external_id");
+    std::string scoped = scoped_external(en.external_id);
+    auto existing = find_existing_external(scoped);
+    if (existing) {
+      if (!input.idempotent) return Status::error(ErrorCode::InvalidInput, "extraction external_id already exists");
+      external_to_node_id[en.external_id] = *existing;
+      existing_node_ids.push_back(*existing);
+      continue;
+    }
+
+    NodeInput ni;
+    ni.content = en.content;
+    ni.vector = en.vector;
+    ni.signature = en.signature ? en.signature : input.signature;
+    ni.incident = en.incident ? en.incident : input.incident;
+    ni.root = en.role == ExtractionRole::Root;
+    ni.symptom = en.role == ExtractionRole::Symptom;
+    ni.impact = en.role == ExtractionRole::Impact;
+    ni.metadata = en.metadata;
+    ni.metadata["graphene_source_id"] = input.source_id;
+    ni.metadata["graphene_external_id"] = en.external_id;
+    ni.metadata["graphene_scoped_external_id"] = scoped;
+    ni.metadata["graphene_ingest"] = "extraction-v1";
+    ni.metadata["graphene_extraction_schema"] = std::to_string(input.schema_version);
+    if (!input.source_uri.empty()) ni.metadata["graphene_source_uri"] = input.source_uri;
+    if (!input.extraction_run_id.empty()) ni.metadata["graphene_extraction_run_id"] = input.extraction_run_id;
+    ni.lattice = en.lattice;
+    if (!ni.lattice && input.place_missing_lattice) ni.lattice = next_open_lattice();
+    ni.defect_type = en.defect_type;
+
+    std::string reason;
+    if (!impl_->vector_valid(ni.vector, &reason)) return Status::error(ErrorCode::DimensionMismatch, reason);
+    if (ni.content.size() > 16 * 1024 * 1024) return Status::error(ErrorCode::InvalidInput, "content too large");
+    if (impl_->opt.require_lattice && !ni.lattice) return Status::error(ErrorCode::InvalidInput, "lattice coordinate required");
+    if (ni.lattice) {
+      if (impl_->lattice_nodes.find(*ni.lattice) != impl_->lattice_nodes.end()) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
+      if (!batch_lattice_keys.insert(lattice_key(*ni.lattice)).second) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate in extraction");
+    }
+
+    Node n;
+    n.id = next_node++;
+    n.content = ni.content;
+    n.vector = ni.vector;
+    n.signature = ni.signature;
+    n.incident = ni.incident;
+    n.root = ni.root; n.symptom = ni.symptom; n.impact = ni.impact;
+    n.metadata = ni.metadata;
+    n.lattice = ni.lattice;
+    n.defect_type = ni.defect_type;
+    n.created_version = next_version++;
+    external_to_node_id[en.external_id] = n.id;
+    new_nodes.push_back(n);
+  }
+
+  for (const auto& rel : input.relations) {
+    if (rel.from_external_id.empty() || rel.to_external_id.empty()) return Status::error(ErrorCode::InvalidInput, "relation endpoints require external IDs");
+    if (external_to_node_id.find(rel.from_external_id) == external_to_node_id.end()) {
+      auto existing = find_existing_external(scoped_external(rel.from_external_id));
+      if (existing) {
+        external_to_node_id.emplace(rel.from_external_id, *existing);
+      }
+    }
+    if (external_to_node_id.find(rel.to_external_id) == external_to_node_id.end()) {
+      auto existing = find_existing_external(scoped_external(rel.to_external_id));
+      if (existing) {
+        external_to_node_id.emplace(rel.to_external_id, *existing);
+      }
+    }
+    auto from_it = external_to_node_id.find(rel.from_external_id);
+    auto to_it = external_to_node_id.find(rel.to_external_id);
+    if (from_it == external_to_node_id.end() || to_it == external_to_node_id.end()) return Status::error(ErrorCode::EdgeInvalid, "relation endpoint external_id not found");
+
+    std::string relation_key = input.source_id + "\x1e" + rel.from_external_id + "\x1e" + rel.to_external_id + "\x1e" + std::to_string(static_cast<int>(rel.role));
+    if (input.idempotent) {
+      if (!batch_relation_keys.insert(relation_key).second) continue;
+      bool exists = false;
+      for (const auto& e : impl_->edges) {
+        if (!visible_edge(e, impl_->nodes, snap)) continue;
+        auto it = e.metadata.find("graphene_relation_key");
+        if (it != e.metadata.end() && it->second == relation_key) {
+          exists = true;
+          break;
+        }
+      }
+      if (exists) continue;
+    }
+
+    auto node_for_batch = [&](uint32_t id) -> const Node* {
+      if (id < impl_->nodes.size() && visible_node(impl_->nodes[id], snap)) return &impl_->nodes[id];
+      for (const auto& n : new_nodes) if (n.id == id) return &n;
+      return nullptr;
+    };
+
+    EdgeInput ei;
+    ei.from = from_it->second;
+    ei.to = to_it->second;
+    ei.origin = rel.origin;
+    ei.role = rel.role;
+    ei.confidence = rel.confidence;
+    ei.metadata = rel.metadata;
+    ei.metadata["graphene_source_id"] = input.source_id;
+    ei.metadata["graphene_relation_key"] = relation_key;
+    ei.metadata["graphene_ingest"] = "extraction-v1";
+    ei.metadata["graphene_extraction_schema"] = std::to_string(input.schema_version);
+    if (!input.source_uri.empty()) ei.metadata["graphene_source_uri"] = input.source_uri;
+    if (!input.extraction_run_id.empty()) ei.metadata["graphene_extraction_run_id"] = input.extraction_run_id;
+    if (!rel.evidence_id.empty()) ei.metadata["graphene_evidence_id"] = rel.evidence_id;
+    if (!rel.evidence_uri.empty()) ei.metadata["graphene_evidence_uri"] = rel.evidence_uri;
+    if (!rel.evidence_text.empty()) ei.metadata["graphene_evidence_text"] = rel.evidence_text;
+    ei.bond_type = rel.bond_type;
+    ei.defect_type = rel.defect_type;
+    ei.layer_coupling = rel.layer_coupling;
+    ei.bond_strength = rel.bond_strength;
+
+    if (!std::isfinite(ei.confidence) || ei.confidence < 0.0 || ei.confidence > 1.0) return Status::error(ErrorCode::InvalidInput, "confidence must be between 0 and 1");
+    if (!std::isfinite(ei.bond_strength) || ei.bond_strength < 0.0 || ei.bond_strength > 1.0) return Status::error(ErrorCode::InvalidInput, "bond_strength must be between 0 and 1");
+    if (is_lattice_bond(ei.bond_type)) {
+      const Node* from = node_for_batch(ei.from);
+      const Node* to = node_for_batch(ei.to);
+      if (!from || !to || !from->lattice || !to->lattice) return Status::error(ErrorCode::EdgeInvalid, "lattice bond requires lattice coordinates on both endpoints");
+      if (ei.bond_type == BondType::VanDerWaals) {
+        if (!are_cross_layer_neighbors(*from->lattice, *to->lattice, ei.layer_coupling)) return Status::error(ErrorCode::EdgeInvalid, "VanDerWaals bond requires valid cross-layer neighbor and coupling");
+      } else if (ei.bond_type != BondType::Defect && ei.bond_type != BondType::Synthetic) {
+        if (!are_same_layer_hex_neighbors(*from->lattice, *to->lattice)) return Status::error(ErrorCode::EdgeInvalid, "Sigma/Pi bond requires same-layer hex-neighbor coordinates");
+      }
+    }
+
+    Edge e;
+    e.id = impl_->next_edge_id + static_cast<uint32_t>(new_edges.size());
+    e.from = ei.from; e.to = ei.to; e.origin = ei.origin; e.role = ei.role; e.confidence = ei.confidence;
+    e.metadata = ei.metadata;
+    e.bond_type = ei.bond_type; e.defect_type = ei.defect_type; e.layer_coupling = ei.layer_coupling; e.bond_strength = ei.bond_strength;
+    e.created_version = next_version++;
+    new_edges.push_back(e);
+  }
+
+  if (new_nodes.empty() && new_edges.empty()) {
+    if (out) {
+      out->external_to_node_id = std::move(external_to_node_id);
+      out->existing_node_ids = std::move(existing_node_ids);
+    }
+    return Status::ok();
+  }
+
+  uint64_t tx = impl_->txid++;
+  std::vector<std::string> frames;
+  frames.reserve(2 + new_nodes.size() + new_edges.size());
+  frames.push_back("BEGIN\t" + std::to_string(tx));
+  for (const auto& n : new_nodes) frames.push_back("PUT_NODE\t" + std::to_string(tx) + "\t" + impl_->node_payload(n, "PUT_NODE").substr(std::string("PUT_NODE\t").size()));
+  for (const auto& e : new_edges) frames.push_back("PUT_EDGE\t" + std::to_string(tx) + "\t" + impl_->edge_payload(e, "PUT_EDGE").substr(std::string("PUT_EDGE\t").size()));
+  frames.push_back("COMMIT\t" + std::to_string(tx));
+  auto st = impl_->append_wal_unlocked(frames);
+  if (!st) return st;
+
+  impl_->next_node_id = next_node;
+  impl_->next_edge_id += static_cast<uint32_t>(new_edges.size());
+  impl_->version = next_version;
+  for (const auto& n : new_nodes) impl_->apply_committed_node(n);
+  for (const auto& e : new_edges) impl_->apply_committed_edge(e);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) return rst;
+  if (out) {
+    out->external_to_node_id = std::move(external_to_node_id);
+    out->existing_node_ids = std::move(existing_node_ids);
+    out->inserted_node_ids.clear();
+    out->inserted_edge_ids.clear();
+    for (const auto& n : new_nodes) out->inserted_node_ids.push_back(n.id);
+    for (const auto& e : new_edges) out->inserted_edge_ids.push_back(e.id);
+  }
   return Status::ok();
 }
 
@@ -722,6 +1405,7 @@ Status GrapheneDB::delete_node(uint32_t id) {
     if (eid < impl_->edges.size() && visible_edge(impl_->edges[eid], impl_->nodes, before_snap)) ++hidden_edges;
   }
   impl_->nodes[id].deleted_version = delver;
+  if (impl_->nodes[id].lattice) impl_->lattice_nodes.erase(*impl_->nodes[id].lattice);
   if (impl_->live_node_count > 0) --impl_->live_node_count;
   impl_->live_edge_count = hidden_edges > impl_->live_edge_count ? 0 : impl_->live_edge_count - hidden_edges;
   if (impl_->vector_index) (void)impl_->vector_index->remove(id);
@@ -754,6 +1438,32 @@ std::vector<uint32_t> GrapheneDB::metadata_search(const std::string& key, const 
   for (uint32_t id : it->second) {
     if (seen.insert(id).second && id < impl_->nodes.size() && visible_node(impl_->nodes[id], snap)) out.push_back(id);
   }
+  return out;
+}
+
+std::vector<uint32_t> GrapheneDB::lattice_neighbors(uint32_t node_id, uint32_t max_hops, uint64_t snap) const {
+  std::shared_lock lock(impl_->mu);
+  if (snap == kInfVersion) snap = impl_->version - 1;
+  std::vector<uint32_t> out;
+  if (max_hops == 0 || node_id >= impl_->nodes.size() || !visible_node(impl_->nodes[node_id], snap)) return out;
+  std::vector<std::pair<uint32_t, uint32_t>> queue{{node_id, 0}};
+  std::unordered_set<uint32_t> seen{node_id};
+  for (size_t qi = 0; qi < queue.size(); ++qi) {
+    auto [cur, depth] = queue[qi];
+    if (depth >= max_hops) continue;
+    auto it = impl_->lattice_edges.find(cur);
+    if (it == impl_->lattice_edges.end()) continue;
+    for (uint32_t eid : it->second) {
+      if (eid >= impl_->edges.size() || !visible_edge(impl_->edges[eid], impl_->nodes, snap)) continue;
+      const auto& e = impl_->edges[eid];
+      uint32_t next = e.from == cur ? e.to : e.from;
+      if (seen.insert(next).second) {
+        out.push_back(next);
+        queue.push_back({next, depth + 1});
+      }
+    }
+  }
+  std::sort(out.begin(), out.end());
   return out;
 }
 
@@ -830,6 +1540,7 @@ MemoryBundle GrapheneDB::causal_search(const std::vector<float>& query, uint64_t
   if (anchors.front().score < impl_->opt.tuning.high_confidence_anchor_score && static_cast<double>(max_inc) / inspect < impl_->opt.tuning.min_incident_concentration && mode != QueryMode::Theoretical) {
     out.abstain = true; out.reason = "AMBIGUOUS"; return out;
   }
+  auto lattice_activation = impl_->propagate_lattice_activation(anchors, inspect, mode, snap);
   std::map<uint32_t, MemoryBundle> by_root;
   for (size_t i = 0; i < inspect; ++i) {
     Path p = impl_->reverse_root(anchors[i].node_id, mode, snap);
@@ -840,6 +1551,10 @@ MemoryBundle GrapheneDB::causal_search(const std::vector<float>& query, uint64_t
     b.target_node = root;
     b.paths.push_back(p);
     b.semantic_candidates.push_back(anchors[i].node_id);
+    for (uint32_t nid : p.nodes) {
+      auto lit = lattice_activation.find(nid);
+      if (lit != lattice_activation.end()) b.lattice_score = std::max(b.lattice_score, lit->second);
+    }
   }
   if (by_root.empty()) { out.abstain = true; out.reason = "NO_PATH"; return out; }
   double best_score = -1.0;
@@ -857,6 +1572,17 @@ MemoryBundle GrapheneDB::causal_search(const std::vector<float>& query, uint64_t
     b.diversity = b.paths.empty() ? 0.0 : static_cast<double>(unique_edges.size()) / std::max<size_t>(1, b.paths.size());
     b.contradiction = b.paths.empty() ? 0.0 : static_cast<double>(contradictions) / b.paths.size();
     b.confidence = 0.35 * std::min(1.0, b.degeneracy / 3.0) + 0.25 * std::min(1.0, b.diversity / 4.0) - 0.25 * b.contradiction + sum / std::max<size_t>(1, b.paths.size());
+    if (impl_->opt.tuning.enable_lattice_retrieval && b.lattice_score > 0.0) {
+      b.confidence += impl_->opt.tuning.lattice_weight * std::min(1.0, b.lattice_score);
+      std::set<uint32_t> seen_neighbors;
+      for (const auto& p : b.paths) {
+        for (uint32_t nid : p.nodes) {
+          auto it = lattice_activation.find(nid);
+          if (it != lattice_activation.end() && seen_neighbors.insert(nid).second) b.lattice_neighbors.push_back(nid);
+        }
+      }
+      b.lattice_explanation.push_back("activation propagated through graphene-inspired lattice bonds");
+    }
     if (b.confidence > best_score) { best_score = b.confidence; out = b; }
   }
   out.snapshot_version = snap;
@@ -865,6 +1591,7 @@ MemoryBundle GrapheneDB::causal_search(const std::vector<float>& query, uint64_t
     out.why_retrieved.push_back("semantic similarity to candidate memories");
     out.why_retrieved.push_back("signature-plane candidate reduction");
     out.why_retrieved.push_back("causal path from root memory to anchor memory");
+    if (out.lattice_score > 0.0) out.why_retrieved.push_back("lattice propagation through graphene-inspired neighbor bonds");
     if (out.contradiction > 0.0) out.why_retrieved.push_back("contains contradiction path; confidence reduced");
   }
   return out;
@@ -883,6 +1610,9 @@ Status GrapheneDB::backup(const fs::path& destination_dir) const {
   fs::create_directories(destination_dir, ec);
   if (ec) return Status::error(ErrorCode::IoError, "cannot create backup dir: " + ec.message());
   for (const auto& src : {impl_->data_path, impl_->wal_path, impl_->manifest_path}) {
+    if (env_enabled("GRAPHENEDB_TEST_FAIL_BACKUP_COPY")) {
+      return Status::error(ErrorCode::IoError, "injected backup copy failure");
+    }
     if (fs::exists(src)) fs::copy_file(src, destination_dir / src.filename(), fs::copy_options::overwrite_existing, ec);
     if (ec) return Status::error(ErrorCode::IoError, "backup failed: " + ec.message());
   }
@@ -896,12 +1626,33 @@ Status GrapheneDB::inspect(std::string* out) const {
   uint64_t snap = impl_->version - 1;
   os << "GrapheneDB v1\n";
   os << "path=" << impl_->dir.string() << "\n";
+  os << "manifest_format=" << kManifestFormatVersion << "\n";
+  os << "storage_format=" << kStorageFormatVersion << "\n";
+  os << "wal_frame_format=" << kWalFrameFormatVersion << "\n";
+  os << "lattice_format=" << kLatticeFormatVersion << "\n";
+  os << "extraction_format=" << kExtractionFormatVersion << "\n";
   os << "dimension=" << impl_->opt.dimension << "\n";
   os << "version=" << snap << "\n";
   os << "nodes_visible=" << impl_->live_node_count << "\n";
   os << "edges_visible=" << impl_->live_edge_count << "\n";
+  std::error_code ec;
+  uint64_t wal_bytes = fs::exists(impl_->wal_path, ec) ? fs::file_size(impl_->wal_path, ec) : 0;
+  if (ec) wal_bytes = 0;
+  ec.clear();
+  uint64_t data_bytes = fs::exists(impl_->data_path, ec) ? fs::file_size(impl_->data_path, ec) : 0;
+  if (ec) data_bytes = 0;
+  os << "wal_rotate_bytes=" << impl_->opt.wal_rotate_bytes << "\n";
+  os << "wal_bytes=" << wal_bytes << "\n";
+  os << "data_bytes=" << data_bytes << "\n";
+  os << "vector_index_requested=" << vector_index_kind_name(impl_->opt.vector_index_kind) << "\n";
   os << "vector_index=" << (impl_->vector_index ? impl_->vector_index->name() : "none") << "\n";
   os << "planes=" << impl_->planes.size() << "\n";
+  os << "lattice_required=" << (impl_->opt.require_lattice ? "true" : "false") << "\n";
+  os << "lattice_retrieval=" << (impl_->opt.tuning.enable_lattice_retrieval ? "true" : "false") << "\n";
+  os << "lattice_nodes=" << impl_->lattice_nodes.size() << "\n";
+  size_t lattice_edge_count = 0;
+  for (const auto& kv : impl_->lattice_edges) lattice_edge_count += kv.second.size();
+  os << "lattice_edge_refs=" << lattice_edge_count << "\n";
   *out = os.str();
   return Status::ok();
 }
@@ -915,10 +1666,28 @@ Status GrapheneDB::validate(std::string* report) const {
     if (n.created_version == kInfVersion) continue;
     if (n.vector.size() != impl_->opt.dimension) { ok = false; os << "FAIL node " << n.id << " dimension mismatch\n"; }
     for (float f : n.vector) if (!std::isfinite(f)) { ok = false; os << "FAIL node " << n.id << " non-finite vector\n"; }
+    if (impl_->opt.require_lattice && visible_node(n, impl_->version - 1) && !n.lattice) { ok = false; os << "FAIL node " << n.id << " missing lattice coordinate\n"; }
+  }
+  std::unordered_map<LatticeCoord, uint32_t, Impl::LatticeCoordHash> coords;
+  for (const auto& n : impl_->nodes) {
+    if (n.created_version == kInfVersion || !visible_node(n, impl_->version - 1) || !n.lattice) continue;
+    auto inserted = coords.emplace(*n.lattice, n.id);
+    if (!inserted.second) { ok = false; os << "FAIL duplicate lattice coordinate on nodes " << inserted.first->second << " and " << n.id << "\n"; }
   }
   for (const auto& e : impl_->edges) {
     if (e.created_version == kInfVersion) continue;
     if (e.from >= impl_->nodes.size() || e.to >= impl_->nodes.size()) { ok = false; os << "FAIL edge " << e.id << " missing endpoint\n"; }
+    if (!visible_edge(e, impl_->nodes, impl_->version - 1) || !is_lattice_bond(e.bond_type)) continue;
+    if (!std::isfinite(e.bond_strength) || e.bond_strength < 0.0 || e.bond_strength > 1.0) { ok = false; os << "FAIL edge " << e.id << " invalid bond strength\n"; }
+    if (e.from >= impl_->nodes.size() || e.to >= impl_->nodes.size() || !impl_->nodes[e.from].lattice || !impl_->nodes[e.to].lattice) {
+      ok = false; os << "FAIL edge " << e.id << " lattice bond missing endpoint coordinate\n"; continue;
+    }
+    if ((e.bond_type == BondType::Sigma || e.bond_type == BondType::Pi) && !are_same_layer_hex_neighbors(*impl_->nodes[e.from].lattice, *impl_->nodes[e.to].lattice)) {
+      ok = false; os << "FAIL edge " << e.id << " invalid same-layer lattice bond\n";
+    }
+    if (e.bond_type == BondType::VanDerWaals && !are_cross_layer_neighbors(*impl_->nodes[e.from].lattice, *impl_->nodes[e.to].lattice, e.layer_coupling)) {
+      ok = false; os << "FAIL edge " << e.id << " invalid cross-layer lattice bond\n";
+    }
   }
   if (ok) os << "OK\n";
   if (report) *report = os.str();

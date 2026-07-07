@@ -1,0 +1,27 @@
+﻿{
+    "generated_at_utc":  "2026-07-07T13:20:48.6750898Z",
+    "profile_label":  "release-candidate-smoke",
+    "status_report":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_STATUS_REPORT.md",
+    "ga_summary":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-readiness\\20260707-141953\\GA_READINESS_SUMMARY.md",
+    "evidence_bundle":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142046",
+    "evidence_archive":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142046.zip",
+    "package_path":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip",
+    "package_sha256":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip.sha256",
+    "package_manifest":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip.manifest.json",
+    "requested":  {
+                      "vector_index_recall_kind":  "auto",
+                      "extraction_vector_index":  "auto",
+                      "storage_vector_index":  "auto",
+                      "use_faiss":  false
+                  },
+    "resolved":  {
+                     "vector_index_recall":  "kdtree",
+                     "vector_index_recall_requested":  "auto",
+                     "vector_index_recall_mean_recall_at_k":  "1",
+                     "extraction_vector_index":  "auto",
+                     "extraction_vector_index_requested":  "auto",
+                     "storage_vector_index":  "auto",
+                     "storage_vector_index_requested":  "auto",
+                     "graphenedb_use_faiss":  "False"
+                 }
+}

@@ -1,0 +1,7 @@
+vector_baseline_comparison=true
+incidents=5000 nodes=15000 edges=5000 dim=64 queries=200
+ingest_ms=4377.33
+vector_root_hit_rate=0
+causal_root_hit_rate=1
+vector_p95_ms=2.5681
+causal_p95_ms=0.61

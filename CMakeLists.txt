@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(graphenedb_v1 LANGUAGES CXX)
+project(GrapheneDB VERSION 0.5.0 LANGUAGES C CXX)
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,11 +20,17 @@ if(WIN32)
 endif()
 
 add_library(graphenedb
+  src/c_api.cpp
   src/db.cpp
   src/kosh_adapter.cpp
+  src/lattice_placement.cpp
   ${GRAPHENEDB_PLATFORM_SOURCE}
 )
-target_include_directories(graphenedb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(GrapheneDB::graphenedb ALIAS graphenedb)
+target_include_directories(graphenedb
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 find_package(Threads REQUIRED)
 target_link_libraries(graphenedb PUBLIC Threads::Threads)
 
@@ -33,7 +42,7 @@ if(GRAPHENEDB_USE_FAISS)
   endif()
   target_include_directories(graphenedb PRIVATE ${FAISS_INCLUDE_DIR})
   target_link_libraries(graphenedb PRIVATE ${FAISS_LIBRARY})
-  target_compile_definitions(graphenedb PRIVATE GRAPHENEDB_HAS_FAISS=1)
+  target_compile_definitions(graphenedb PUBLIC GRAPHENEDB_HAS_FAISS=1)
 endif()
 
 if(NOT GRAPHENEDB_BUILD_FUZZERS)
@@ -43,9 +52,14 @@ endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
   enable_testing()
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
   add_executable(graphenedb_tests tests/test_graphenedb.cpp)
   target_link_libraries(graphenedb_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_tests COMMAND graphenedb_tests)
+
+  add_executable(graphenedb_c_api_tests tests/test_c_api.c)
+  target_link_libraries(graphenedb_c_api_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_c_api_tests COMMAND graphenedb_c_api_tests)
 
   add_executable(graphenedb_rc_crash_tests tests/test_rc_gate_crash.cpp)
   target_link_libraries(graphenedb_rc_crash_tests PRIVATE graphenedb)
@@ -67,10 +81,54 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_rc_lock_rotation_metadata_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_rc_lock_rotation_metadata_tests COMMAND graphenedb_rc_lock_rotation_metadata_tests)
 
+  add_executable(graphenedb_lattice_tests tests/test_graphene_lattice.cpp)
+  target_link_libraries(graphenedb_lattice_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_lattice_tests COMMAND graphenedb_lattice_tests)
+
+  add_executable(graphenedb_acid_lattice_tests tests/test_acid_lattice.cpp)
+  target_link_libraries(graphenedb_acid_lattice_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_acid_lattice_tests COMMAND graphenedb_acid_lattice_tests)
+
+  add_executable(graphenedb_lattice_placement_tests tests/test_lattice_placement.cpp)
+  target_link_libraries(graphenedb_lattice_placement_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_lattice_placement_tests COMMAND graphenedb_lattice_placement_tests)
+
+  add_executable(graphenedb_extraction_ingest_tests tests/test_extraction_ingest.cpp)
+  target_link_libraries(graphenedb_extraction_ingest_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_extraction_ingest_tests COMMAND graphenedb_extraction_ingest_tests)
+
+  if(TARGET graphenedb_cli)
+    add_executable(graphenedb_cli_import_tests tests/test_cli_import.cpp)
+    add_test(NAME graphenedb_cli_import_tests COMMAND graphenedb_cli_import_tests $<TARGET_FILE:graphenedb_cli>)
+
+    if(WIN32)
+      add_test(NAME graphenedb_cli_extract_tests COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_cli_extract.py $<TARGET_FILE:graphenedb_cli>)
+    else()
+      add_executable(graphenedb_cli_extract_tests tests/test_cli_extract.cpp)
+      add_test(NAME graphenedb_cli_extract_tests COMMAND graphenedb_cli_extract_tests $<TARGET_FILE:graphenedb_cli>)
+    endif()
+  endif()
+
+  add_executable(graphenedb_rc5_crash_matrix_tests tests/test_rc5_crash_matrix.cpp)
+  target_link_libraries(graphenedb_rc5_crash_matrix_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_rc5_crash_matrix_tests COMMAND graphenedb_rc5_crash_matrix_tests)
+
+  add_executable(graphenedb_rc5_fault_injection_tests tests/test_rc5_fault_injection.cpp)
+  target_link_libraries(graphenedb_rc5_fault_injection_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_rc5_fault_injection_tests COMMAND graphenedb_rc5_fault_injection_tests)
+
   if(NOT WIN32)
     add_executable(graphenedb_rc_process_kill_tests tests/test_rc_gate_process_kill.cpp)
     target_link_libraries(graphenedb_rc_process_kill_tests PRIVATE graphenedb)
     add_test(NAME graphenedb_rc_process_kill_tests COMMAND graphenedb_rc_process_kill_tests)
+
+    add_executable(graphenedb_real_filesystem_failure_tests tests/test_real_filesystem_failures.cpp)
+    target_link_libraries(graphenedb_real_filesystem_failure_tests PRIVATE graphenedb)
+    add_test(NAME graphenedb_real_filesystem_failure_tests COMMAND graphenedb_real_filesystem_failure_tests)
+
+    add_executable(graphenedb_disk_pressure_tests tests/test_disk_pressure.cpp)
+    target_link_libraries(graphenedb_disk_pressure_tests PRIVATE graphenedb)
+    add_test(NAME graphenedb_disk_pressure_tests COMMAND graphenedb_disk_pressure_tests)
   endif()
 
   add_executable(graphenedb_rc_real_kosh_adapter_tests tests/test_rc_gate_real_kosh_adapter.cpp)
@@ -85,11 +143,30 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_rc_1m_storage_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_rc_1m_storage_smoke COMMAND graphenedb_rc_1m_storage_tests --nodes 10000 --queries 3 --dim 2 --reopen 1)
 
+  add_test(
+    NAME graphenedb_release_candidate_bundle_meta_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_release_candidate_bundle_meta.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_release_candidate_bundle_meta.py
+  )
+
 endif()
 
 if(GRAPHENEDB_BUILD_BENCH)
   add_executable(graphenedb_bench bench/bench_graphenedb.cpp)
   target_link_libraries(graphenedb_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_rc5_storage_retrieval_bench bench/bench_rc5_storage_retrieval.cpp)
+  target_link_libraries(graphenedb_rc5_storage_retrieval_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_extraction_ingest_bench bench/bench_extraction_ingest.cpp)
+  target_link_libraries(graphenedb_extraction_ingest_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_vector_baseline_bench bench/bench_vector_baseline_comparison.cpp)
+  target_link_libraries(graphenedb_vector_baseline_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_vector_index_recall_bench bench/bench_vector_index_recall.cpp)
+  target_link_libraries(graphenedb_vector_index_recall_bench PRIVATE graphenedb)
 endif()
 
 if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
@@ -104,6 +181,12 @@ if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
 
   add_executable(graphenedb_api_team_brain examples/api_team_brain.cpp)
   target_link_libraries(graphenedb_api_team_brain PRIVATE graphenedb)
+
+  add_executable(graphenedb_api_contradiction_supersession examples/api_contradiction_supersession.cpp)
+  target_link_libraries(graphenedb_api_contradiction_supersession PRIVATE graphenedb)
+
+  add_executable(graphenedb_lattice_memory examples/graphene_lattice_memory.cpp)
+  target_link_libraries(graphenedb_lattice_memory PRIVATE graphenedb)
 endif()
 
 if(GRAPHENEDB_BUILD_FUZZERS)
@@ -118,9 +201,33 @@ if(GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 install(TARGETS graphenedb
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  EXPORT GrapheneDBTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 if(TARGET graphenedb_cli)
-  install(TARGETS graphenedb_cli RUNTIME DESTINATION bin)
+  install(TARGETS graphenedb_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/examples FILES_MATCHING PATTERN "*.cpp")
+install(FILES README.md CHANGELOG.md LICENSE SECURITY.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
+install(EXPORT GrapheneDBTargets
+  NAMESPACE GrapheneDB::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GrapheneDB)
+
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/GrapheneDBConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/GrapheneDBConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GrapheneDB)
+
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/GrapheneDBConfigVersion.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/GrapheneDBConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/GrapheneDBConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GrapheneDB)

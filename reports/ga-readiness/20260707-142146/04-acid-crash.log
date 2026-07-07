@@ -1,0 +1,13 @@
+Test project C:/Users/vrast/Documents/Projects/test/New folder/graphenedb_v1/build-rc-bundle-ga
+    Start  8: graphenedb_lattice_tests
+1/4 Test  #8: graphenedb_lattice_tests ...............   Passed    0.05 sec
+    Start  9: graphenedb_acid_lattice_tests
+2/4 Test  #9: graphenedb_acid_lattice_tests ..........   Passed    0.06 sec
+    Start 14: graphenedb_rc5_crash_matrix_tests
+3/4 Test #14: graphenedb_rc5_crash_matrix_tests ......   Passed    0.08 sec
+    Start 15: graphenedb_rc5_fault_injection_tests
+4/4 Test #15: graphenedb_rc5_fault_injection_tests ...   Passed    0.10 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =   0.29 sec

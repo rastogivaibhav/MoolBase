@@ -1,0 +1,9 @@
+vector_index_recall_benchmark=true
+nodes=1000 queries=20 dim=16 k=5
+candidate_requested=auto
+vector_index_requested=auto
+vector_index=kdtree
+mean_recall_at_k=1
+worst_recall_at_k=1
+exact_p95_ms=0.0386
+candidate_p95_ms=0.027

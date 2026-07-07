@@ -1,0 +1,14 @@
+recovery_rehearsal=true
+source_db=C:\Users\vrast\AppData\Local\Temp\graphenedb_recovery_rehearsal\source-db
+restored_db=C:\Users\vrast\AppData\Local\Temp\graphenedb_recovery_rehearsal\restored-db
+import=pass
+source_validate=pass
+source_compact=pass
+backup_verified=pass
+restored_nodes=3
+restored_edges=2
+restored_validate=pass
+restored_search=pass
+restored_neighbors=pass
+recovery_rehearsal_passed=true
+recovery_rehearsal_output=C:\Users\vrast\Documents\Projects\test\New folder\graphenedb_v1\reports\ga-readiness\20260707-142146\RECOVERY_REHEARSAL_OUTPUT.txt

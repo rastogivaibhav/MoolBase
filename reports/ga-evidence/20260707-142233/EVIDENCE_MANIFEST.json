@@ -1,0 +1,423 @@
+﻿{
+    "name":  "GrapheneDB GA evidence bundle",
+    "generated_at_utc":  "2026-07-07T13:22:34.1235388Z",
+    "config":  "release-candidate",
+    "root":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1",
+    "bundle_dir":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233",
+    "ga_readiness_dir":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-readiness\\20260707-142146",
+    "package_path":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip",
+    "missing_required":  [
+
+                         ],
+    "missing_optional":  [
+
+                         ],
+    "artifacts":  [
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\README.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\README.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "68bf894cceb0e8f3f4e441ccd1bdc13d2d7dc4efede9760e31ea4a27cd1ffbea",
+                          "bytes":  12952
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\SECURITY.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\SECURITY.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "324134384e39b9ced73bcdd7322d8eea50ee28a70edd447ef55d38f7df15d227",
+                          "bytes":  1479
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\LICENSE",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\LICENSE",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "7a5793dc27efa9e799674be22c02ce4656d2dcd2e921658aa475892225037d33",
+                          "bytes":  77
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\CHANGELOG.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\CHANGELOG.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "c5bb547e1dcbbf90296569c9217c4a48d963458a3efd83d1037675c7690da7ad",
+                          "bytes":  1757
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\GA_READINESS_SCORECARD.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\GA_READINESS_SCORECARD.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "1cd82fedca948df13f563278d472a70d4b76f3d3a181a2dfbd81d1fcf0e5a1b1",
+                          "bytes":  5787
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\NEXT_GA_EXECUTION_PLAN.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\NEXT_GA_EXECUTION_PLAN.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "5b0b98bd0d5c534060ca9905d03104b77b0dc96fa6d54f09f72ca0c52ecfb6ae",
+                          "bytes":  11818
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\GA_READINESS_VERIFICATION.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\GA_READINESS_VERIFICATION.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "fe2a9c3390ed199c44620b5b744eb642c4dfb32a6e625f150e806450a83cd824",
+                          "bytes":  8972
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\GRAPHENE_LATTICE_MODEL.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\GRAPHENE_LATTICE_MODEL.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "6031b3b1b2ec9474e5c7ae26005581b156562420f5accb9f5c998b1398f3edbe",
+                          "bytes":  4456
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\LATTICE_RETRIEVAL.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\LATTICE_RETRIEVAL.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "1142f3df1a41e6eddbd8570a850f0db0166defb557a243390575f2973523b5be",
+                          "bytes":  1575
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\EXTRACTION_INGESTION.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\EXTRACTION_INGESTION.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "7306f37bd598cd1274369bb786c06cde277e2ad2a1231a76563e27ca1489e5bf",
+                          "bytes":  3724
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\PACKAGING_DISTRIBUTION.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\PACKAGING_DISTRIBUTION.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "82d9cf5d72b64a3a66cec0ae840c470d6411e2fb8f8fdceca00c0bbff05ead9d",
+                          "bytes":  1697
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\OPERATIONAL_RECOVERY.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\OPERATIONAL_RECOVERY.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "c71da71f932fb13c40a2b245f6f2bcb77744695d7df6370b1219949bbe137b5d",
+                          "bytes":  2923
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\STORAGE_FORMAT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\STORAGE_FORMAT.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "9cb589f4451308ceb7c50ff8402ae95cb4895df0004c0ea191ae7a557840ce24",
+                          "bytes":  2362
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\SAFETY_AND_LIMITATIONS.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\SAFETY_AND_LIMITATIONS.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "4fa278b37c4d4319ec722552b934db2e7462bc9e0cabf4f35ff7d814ae172706",
+                          "bytes":  2785
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\PLATFORM_SUPPORT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\PLATFORM_SUPPORT.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "7616c7a803dc75245c26615017e37d6b36a76d391d5b7b7d514526110b20a6b5",
+                          "bytes":  1336
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\C_API.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\C_API.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "1e0f2f41e717755a7b4551f8efd90b21cc1073aea92ebe8a67fd790ac3853e1e",
+                          "bytes":  1488
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\CI_RELEASE_AUTOMATION.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\CI_RELEASE_AUTOMATION.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "d2601b018d02b0c3ac37bf569606caf6a2f460ee5438900b478c4752d587fa44",
+                          "bytes":  3221
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\V1_RC_ACCEPTANCE_REPORT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\V1_RC_ACCEPTANCE_REPORT.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "8d793122454ad978b9985830ac00d26c4ff421814c300560b62bf1455fe277ea",
+                          "bytes":  3636
+                      },
+                      {
+                          "kind":  "doc",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\docs\\RELEASE_CHECKLIST.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\docs\\RELEASE_CHECKLIST.md",
+                          "required":  true,
+                          "present":  true,
+                          "sha256":  "5dd6c45c8417e14f046e90c5be97ebf35abc6f536bf81c445739725e1af4a6ad",
+                          "bytes":  3592
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RC5_ACID_REPORT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RC5_ACID_REPORT.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "2d759e3eef67c3c7bbea69c553101bf22cefe19b63805f9fc3e5dc36dcb88af2",
+                          "bytes":  1956
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RC5_CRASH_MATRIX.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RC5_CRASH_MATRIX.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "b232fb3b4b568fddd45b50abdf2021573f4cd0e393d845271d0e5cc3c72797cb",
+                          "bytes":  2892
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RC5_STORAGE_RETRIEVAL_PERF.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RC5_STORAGE_RETRIEVAL_PERF.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "b0ac15dd18181ad90984af852ba7f3301c9623bc38d1f9bdb323597c302845d4",
+                          "bytes":  1424
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\EXTRACTION_INGEST_PERF.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\EXTRACTION_INGEST_PERF.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "e4f8fe73d8ab8fbd144c95c1764efdb4bbb6998603b660ec2cba04ff02e4dbb9",
+                          "bytes":  1554
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\VECTOR_BASELINE_COMPARISON.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\VECTOR_BASELINE_COMPARISON.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "32134cb3e246a632448bd8508dcd6f95815ff7a34af45969da4cb46972392902",
+                          "bytes":  1941
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\VECTOR_BASELINE_COMPARISON_OUTPUT.txt",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\VECTOR_BASELINE_COMPARISON_OUTPUT.txt",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "7802a057219f307a3a21c74a6a669fc4c6326ff91f212f06f93a784d1d3521e3",
+                          "bytes":  396
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\VECTOR_INDEX_RECALL.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\VECTOR_INDEX_RECALL.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "dd3e4a6d1dfa0a4ca54ffef4c5956178c36d17f38e4fe5104302b00c694a2553",
+                          "bytes":  1517
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\VECTOR_INDEX_RECALL_OUTPUT.txt",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\VECTOR_INDEX_RECALL_OUTPUT.txt",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "fa62ed4fd627558f6cb66b8dfc6e7d37e0a33b61509cd747c494981ffe3b5784",
+                          "bytes":  234
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RECOVERY_REHEARSAL.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RECOVERY_REHEARSAL.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "3c5fb3b16653893c18a158dd5838d564e158bcf96c01c3e54c93718fd1f0dbfc",
+                          "bytes":  991
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RECOVERY_REHEARSAL_OUTPUT.txt",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RECOVERY_REHEARSAL_OUTPUT.txt",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "e08f6d3c5f4f14a88f2e1b20309b24665cefc317bbf3841bf9994fee093abb9c",
+                          "bytes":  419
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RC_REAL_KOSH_ADAPTER_OUTPUT.txt",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RC_REAL_KOSH_ADAPTER_OUTPUT.txt",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "5f249782b73a65e76743413e2438b6284294d236474037f20e27fb7b5cae9c85",
+                          "bytes":  39
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\KOSH_ADAPTER_GATE.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\KOSH_ADAPTER_GATE.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "a710a78c7945d9e2ca15654c3fa5b74acf9a9fad52643e69516e4e8240216667",
+                          "bytes":  740
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RELEASE_CANDIDATE_BUNDLE.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RELEASE_CANDIDATE_BUNDLE.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "007ca419d3f2661ad06533f9e96c7eb5fd59f393c9aa215b21404148e045a582",
+                          "bytes":  1760
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_STATUS_REPORT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\GA_STATUS_REPORT.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "108ee5e73e127cad9d069c7ebb2990534a0a0c7b4f08b6bfc77863bca581f7d3",
+                          "bytes":  7109
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_PROGRESS_RC_BUNDLE.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\GA_PROGRESS_RC_BUNDLE.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "0af2ea47f5ffb11efafbe6b85abdd795d71c293c5c604ffcd08bc09a177e098a",
+                          "bytes":  1560
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_PROGRESS_GA_HARNESS.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\GA_PROGRESS_GA_HARNESS.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "9fddb453181d2815b62fa123fc37c10e5c563e0aa726f511abafdbf13376c1b4",
+                          "bytes":  1546
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_PROGRESS_FILESYSTEM_FAILURES.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\GA_PROGRESS_FILESYSTEM_FAILURES.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "62be79ecb9d0c3c5166b0b73e8308735e385c524edf15d95be36343d6465f597",
+                          "bytes":  1961
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\GA_PROGRESS_EXTRACTION_CONTRACT.md",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\GA_PROGRESS_EXTRACTION_CONTRACT.md",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "a76b5b88e5363a3b07ea891c1858a9af5069a0b770eac78e46101c4137aba531",
+                          "bytes":  1805
+                      },
+                      {
+                          "kind":  "report",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\RELEASE_CANDIDATE_BUNDLE_META.json",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\reports\\RELEASE_CANDIDATE_BUNDLE_META.json",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "15620417785120e84dc86d74622578f894e7980458346068925a1913a4626e16",
+                          "bytes":  1885
+                      },
+                      {
+                          "kind":  "ga_readiness_run",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-readiness\\20260707-142146",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\ga-readiness\\latest",
+                          "required":  false,
+                          "present":  true
+                      },
+                      {
+                          "kind":  "ga_readiness_attempt_run",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-readiness\\20260707-142146",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\ga-readiness\\latest-attempt",
+                          "required":  false,
+                          "present":  true
+                      },
+                      {
+                          "kind":  "enterprise_ga_run",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\enterprise-ga\\20260705-170517",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\enterprise-ga\\latest",
+                          "required":  false,
+                          "present":  true
+                      },
+                      {
+                          "kind":  "preview_hardware_run",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\preview-hardware\\20260707-141656",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\preview-hardware\\latest",
+                          "required":  false,
+                          "present":  true
+                      },
+                      {
+                          "kind":  "package",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\package\\graphenedb-install-package.zip",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "7601842ee0d3bb8f1b80c081ab959fa00cca4948a02591bcad37e232489eeb5a",
+                          "bytes":  469366
+                      },
+                      {
+                          "kind":  "package_sha256",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip.sha256",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\package\\graphenedb-install-package.zip.sha256",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "dd9ccc81902f314fce14c378fa72daa5d217097e6d8c18e04c405a7c2b505ace",
+                          "bytes":  98
+                      },
+                      {
+                          "kind":  "package_manifest",
+                          "source":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\graphenedb-install-package.zip.manifest.json",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\package\\graphenedb-install-package.zip.manifest.json",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "fc56183fa9f1caddddba218d313a6e787531c03aa9243930f4e13b42513e5f9b",
+                          "bytes":  13289
+                      },
+                      {
+                          "kind":  "git_status",
+                          "source":  "git status --short",
+                          "destination":  "C:\\Users\\vrast\\Documents\\Projects\\test\\New folder\\graphenedb_v1\\reports\\ga-evidence\\20260707-142233\\git-status.txt",
+                          "required":  false,
+                          "present":  true,
+                          "sha256":  "3593afd42299dd54aaee52e470ff7e786f622828fc81ed392eabda976bfe88c3",
+                          "bytes":  11424
+                      }
+                  ]
+}

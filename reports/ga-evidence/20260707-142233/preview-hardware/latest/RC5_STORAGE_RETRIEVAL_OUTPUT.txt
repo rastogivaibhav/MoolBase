@@ -1,0 +1,11 @@
+rc5_storage_retrieval_bench=true
+incidents=3334 nodes=20000 edges=26664 dim=64 queries=100
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=76774.8 ingest_nodes_per_sec=260.502
+vector_p50_ms=3.445 vector_p95_ms=3.9174
+causal_lattice_p50_ms=0.7012 causal_lattice_p95_ms=0.8917
+metadata_service_p50_ms=0.1789 metadata_service_p95_ms=0.2727
+causal_root_hit_rate=0.98 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=3333 defect_nodes=848 defect_edges=3333 synthetic_edges=3332
+reopen_ms=817.892

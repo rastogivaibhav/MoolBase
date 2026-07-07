@@ -1,0 +1,12 @@
+extraction_ingest_bench=true
+docs=100 nodes_per_doc=50 nodes=5000 edges=5600 dim=64 queries=100
+vector_index_requested=auto
+vector_index=flat
+extract_ingest_total_ms=1991.51 extract_nodes_per_sec=2510.66
+extract_doc_p50_ms=19.874 extract_doc_p95_ms=34.0182
+idempotent_doc_p50_ms=0.9057 idempotent_doc_p95_ms=1.5811
+vector_p50_ms=0.4862 vector_p95_ms=0.7317
+causal_lattice_p50_ms=0.1333 causal_lattice_p95_ms=0.1945
+metadata_doc_p50_ms=0.0046 metadata_doc_p95_ms=0.0081
+causal_root_hit_rate=0.98 avg_lattice_neighbors=4 avg_lattice_score=1.15
+reopen_ms=225.275

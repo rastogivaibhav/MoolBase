@@ -189,6 +189,53 @@ int main() {
     require(copy.close(), "close backup copy");
   }
 
+  // Vector index policy is explicit and inspectable.
+  {
+    auto run_index_case = [&](VectorIndexKind kind, const char* expected_name, const fs::path& dir) {
+      fs::remove_all(dir);
+      GrapheneDB indexed;
+      DBOptions opt; opt.dimension = D; opt.vector_index_kind = kind; opt.fsync_on_commit = false;
+      require(indexed.open(dir, opt), "open vector index case");
+      uint32_t expected = 0;
+      for (int i = 0; i < 6; ++i) {
+        auto n = node("indexed node " + std::to_string(i), D, 0.05f * static_cast<float>(i + 1), signature_for(3, i), static_cast<uint32_t>(i));
+        require(indexed.put_node(n, i == 3 ? &expected : nullptr), "put indexed node");
+      }
+      auto results = indexed.vector_search(v(D, 0.2f), 3);
+      assert(!results.empty());
+      assert(results.front().node_id == expected);
+      std::string out;
+      require(indexed.inspect(&out), "inspect vector index case");
+      assert(out.find(std::string("vector_index=") + expected_name) != std::string::npos);
+      require(indexed.close(), "close vector index case");
+    };
+    run_index_case(VectorIndexKind::Flat, "flat", fs::temp_directory_path() / "graphenedb_v1_flat_index");
+    run_index_case(VectorIndexKind::KDTree, "kdtree", fs::temp_directory_path() / "graphenedb_v1_kdtree_index");
+#ifdef GRAPHENEDB_HAS_FAISS
+    run_index_case(VectorIndexKind::Faiss, "faiss", fs::temp_directory_path() / "graphenedb_v1_faiss_index");
+#else
+    {
+      fs::path faiss = fs::temp_directory_path() / "graphenedb_v1_faiss_unavailable";
+      fs::remove_all(faiss);
+      GrapheneDB indexed;
+      DBOptions opt; opt.dimension = D; opt.vector_index_kind = VectorIndexKind::Faiss;
+      auto st = indexed.open(faiss, opt);
+      assert(!st && st.code == ErrorCode::UnsupportedMode);
+    }
+#endif
+
+    fs::path high = fs::temp_directory_path() / "graphenedb_v1_auto_high_index";
+    fs::remove_all(high);
+    GrapheneDB indexed;
+    DBOptions opt; opt.dimension = 64; opt.vector_index_kind = VectorIndexKind::Auto;
+    require(indexed.open(high, opt), "open auto high index");
+    std::string out;
+    require(indexed.inspect(&out), "inspect auto high index");
+    assert(out.find("vector_index_requested=auto") != std::string::npos);
+    assert(out.find("vector_index=flat") != std::string::npos);
+    require(indexed.close(), "close auto high index");
+  }
+
   // Concurrent readers/writers through coarse DB lock.
   fs::path conc = fs::temp_directory_path() / "graphenedb_v1_concurrency";
   fs::remove_all(conc);

@@ -1,0 +1,12 @@
+[1/12] Linking CXX executable graphenedb_tests.exe
+[2/12] Linking CXX executable graphenedb_c_api_tests.exe
+[3/12] Linking CXX executable graphenedb_rc_crash_tests.exe
+[4/12] Linking CXX executable graphenedb_rc_fuzz_tests.exe
+[5/12] Linking CXX executable graphenedb_rc_kosh_adapter_tests.exe
+[6/12] Linking CXX executable graphenedb_rc_stress_tests.exe
+[7/12] Linking CXX executable graphenedb_rc_lock_rotation_metadata_tests.exe
+[8/12] Linking CXX executable graphenedb_rc5_crash_matrix_tests.exe
+[9/12] Linking CXX executable graphenedb_rc5_fault_injection_tests.exe
+[10/12] Linking CXX executable graphenedb_rc_real_kosh_adapter_tests.exe
+[11/12] Linking CXX executable graphenedb_rc_soak_tests.exe
+[12/12] Linking CXX executable graphenedb_rc_1m_storage_tests.exe

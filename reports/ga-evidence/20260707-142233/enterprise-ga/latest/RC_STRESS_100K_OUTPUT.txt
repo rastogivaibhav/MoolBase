@@ -1,0 +1,13 @@
+rc_stress_gate=true
+incidents=4 nodes=24 edges=31 dim=8
+vector_index_requested=auto
+vector_index=kdtree
+ingest_ms=2.4276 ingest_nodes_per_sec=9886.31
+vector_p50_ms=0.0106 vector_p95_ms=0.0106 vector_p99_ms=0.0106
+causal_p50_ms=0.2682 causal_p95_ms=0.2682 causal_p99_ms=0.2682
+metadata_service_p50_ms=0.0023 metadata_service_p95_ms=0.0023
+causal_hit_rate=1 avg_candidate_pct=25 avg_lattice_neighbors=6 avg_lattice_score=1.15
+cross_layer_edges=4 defect_nodes=2 defect_edges=4 synthetic_edges=3
+vector_index_requested=auto
+vector_index=kdtree
+reopen_ms=4.6077

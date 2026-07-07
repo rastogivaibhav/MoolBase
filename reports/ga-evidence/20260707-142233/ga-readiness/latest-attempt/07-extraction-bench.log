@@ -1,0 +1,12 @@
+extraction_ingest_bench=true
+docs=3 nodes_per_doc=5 nodes=15 edges=12 dim=16 queries=2
+vector_index_requested=auto
+vector_index=kdtree
+extract_ingest_total_ms=1.7898 extract_nodes_per_sec=8380.82
+extract_doc_p50_ms=0.558 extract_doc_p95_ms=0.558
+idempotent_doc_p50_ms=0.0059 idempotent_doc_p95_ms=0.0059
+vector_p50_ms=0.0028 vector_p95_ms=0.0028
+causal_lattice_p50_ms=0.0243 causal_lattice_p95_ms=0.0243
+metadata_doc_p50_ms=0.0012 metadata_doc_p95_ms=0.0012
+causal_root_hit_rate=1 avg_lattice_neighbors=5 avg_lattice_score=1.15
+reopen_ms=7.2167

@@ -18,3 +18,5 @@ Run all examples:
 - `api_coding_memory.cpp` — stores an architecture decision and bug memory.
 - `api_incident_memory.cpp` — stores an incident/root-cause memory and metadata search.
 - `api_team_brain.cpp` — stores customer context, team decision, and supersession memory.
+- `api_contradiction_supersession.cpp` — stores contradictory hypotheses and superseded/current decisions.
+- `graphene_lattice_memory.cpp` — stores lattice coordinates, validates neighbor bonds, and retrieves with lattice propagation.

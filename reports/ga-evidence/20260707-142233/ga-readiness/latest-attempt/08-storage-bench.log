@@ -1,0 +1,11 @@
+rc5_storage_retrieval_bench=true
+incidents=84 nodes=500 edges=664 dim=16 queries=5
+vector_index_requested=auto
+vector_index=kdtree
+ingest_ms=74.3641 ingest_nodes_per_sec=6723.67
+vector_p50_ms=0.0034 vector_p95_ms=0.0045
+causal_lattice_p50_ms=0.097 causal_lattice_p95_ms=0.1196
+metadata_service_p50_ms=0.0091 metadata_service_p95_ms=0.0102
+causal_root_hit_rate=1 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=83 defect_nodes=22 defect_edges=83 synthetic_edges=82
+reopen_ms=22.4977

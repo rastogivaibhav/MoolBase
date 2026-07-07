@@ -1,0 +1,31 @@
+Test project C:/Users/vrast/Documents/Projects/test/New folder/graphenedb_v1/build-rc-bundle-ga
+      Start  1: graphenedb_tests
+ 1/13 Test  #1: graphenedb_tests .................................   Passed    0.19 sec
+      Start  2: graphenedb_rc_lock_rotation_metadata_tests
+ 2/13 Test  #2: graphenedb_rc_lock_rotation_metadata_tests .......   Passed    0.15 sec
+      Start  3: graphenedb_lattice_tests
+ 3/13 Test  #3: graphenedb_lattice_tests .........................   Passed    0.05 sec
+      Start  4: graphenedb_acid_lattice_tests
+ 4/13 Test  #4: graphenedb_acid_lattice_tests ....................   Passed    0.06 sec
+      Start  5: graphenedb_lattice_placement_tests
+ 5/13 Test  #5: graphenedb_lattice_placement_tests ...............   Passed    0.03 sec
+      Start  6: graphenedb_extraction_ingest_tests
+ 6/13 Test  #6: graphenedb_extraction_ingest_tests ...............   Passed    0.04 sec
+      Start  7: graphenedb_cli_import_tests
+ 7/13 Test  #7: graphenedb_cli_import_tests ......................   Passed    1.50 sec
+      Start  8: graphenedb_cli_extract_tests
+ 8/13 Test  #8: graphenedb_cli_extract_tests .....................   Passed    0.16 sec
+      Start  9: graphenedb_rc5_crash_matrix_tests
+ 9/13 Test  #9: graphenedb_rc5_crash_matrix_tests ................   Passed    0.07 sec
+      Start 10: graphenedb_rc5_fault_injection_tests
+10/13 Test #10: graphenedb_rc5_fault_injection_tests .............   Passed    0.10 sec
+      Start 11: graphenedb_rc_real_kosh_adapter_tests
+11/13 Test #11: graphenedb_rc_real_kosh_adapter_tests ............   Passed    0.04 sec
+      Start 12: graphenedb_rc_1m_storage_smoke
+12/13 Test #12: graphenedb_rc_1m_storage_smoke ...................   Passed   14.51 sec
+      Start 13: graphenedb_release_candidate_bundle_meta_tests
+13/13 Test #13: graphenedb_release_candidate_bundle_meta_tests ...   Passed    0.22 sec
+
+100% tests passed, 0 tests failed out of 13
+
+Total Test time (real) =  17.14 sec
