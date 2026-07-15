@@ -1,0 +1,8 @@
+dense_hex_lattice_stress_passed=true
+dense_hex_stress_radius=90
+dense_hex_stress_nodes=24571
+dense_hex_stress_batch_insert_ms=168.63
+dense_hex_stress_neighbor_probes=5000
+dense_hex_stress_neighbor_query_ms=10.8921
+dense_hex_stress_neighbor_avg_us=2.17841
+dense_hex_stress_total_neighbors=88857

@@ -4,7 +4,7 @@
 |---|---|---|
 | Linux | CI target | Release build/test, package consumer smoke, sanitizer smoke, fuzz smoke, GA readiness smoke, and release-candidate bundle smoke are configured in GitHub Actions. Preserve CI artifacts before release. |
 | macOS | CI target | POSIX platform layer should apply; CI matrix includes macOS build/test. Preserve CI artifacts before release. |
-| Windows | Local smoke validated with policy caveat | Release builds, focused CTest gates, CLI/operator flows, package verification, and release-manifest smoke have run locally. `graphenedb_cli_extract_tests` now uses a Python harness on Windows so the release-tree CTest suite can complete locally. Local Windows Application Control can still block other newly linked executables, so full default gates must run on an approved release host. |
+| Windows | Embedded/CLI smoke validated with policy caveat | Release builds, focused embedded/CLI CTest gates, operator flows, package verification, and release-manifest smoke have run locally. `graphenedb_cli_extract_tests` now uses a Python harness on Windows so the release-tree CTest suite can complete locally. The optional pilot server currently builds and validates on POSIX-oriented toolchains; in this snapshot a fresh Windows Clang/MinGW build of `graphenedb_server` fails on unguarded POSIX socket headers, so Windows server support should remain unclaimed until a portability pass lands. Local Windows Application Control can still block other newly linked executables, so full default gates must run on an approved release host. |
 
 ## POSIX-only tests
 

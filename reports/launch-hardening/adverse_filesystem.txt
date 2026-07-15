@@ -1,0 +1,13 @@
+[ 75%] Built target graphenedb
+[100%] Built target graphenedb_real_filesystem_failure_tests
+[ 75%] Built target graphenedb
+[100%] Built target graphenedb_disk_pressure_tests
+[ 75%] Built target graphenedb
+[100%] Built target graphenedb_rc5_fault_injection_tests
+[ 75%] Built target graphenedb
+[100%] Built target graphenedb_rc_process_kill_tests
+graphenedb_real_filesystem_failures_passed=true
+graphenedb_disk_pressure_passed=true
+graphenedb_rc5_fault_injection_passed=true
+rc_process_kill_matrix_gate_passed=true
+graphenedb_adverse_filesystem_suite_passed=true

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(GrapheneDB VERSION 0.5.0 LANGUAGES C CXX)
+project(GrapheneDB VERSION 0.6.0 LANGUAGES C CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -48,6 +48,11 @@ endif()
 if(NOT GRAPHENEDB_BUILD_FUZZERS)
   add_executable(graphenedb_cli tools/graphenedb_cli.cpp)
   target_link_libraries(graphenedb_cli PRIVATE graphenedb)
+  add_executable(graphenedb_server tools/graphenedb_server.cpp)
+  target_link_libraries(graphenedb_server PRIVATE graphenedb)
+  if(NOT WIN32)
+    add_executable(graphenedb_healthcheck tools/graphenedb_healthcheck.cpp)
+  endif()
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
@@ -75,7 +80,11 @@ if(GRAPHENEDB_BUILD_TESTS)
 
   add_executable(graphenedb_rc_stress_tests tests/test_rc_gate_stress.cpp)
   target_link_libraries(graphenedb_rc_stress_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_stress_tests COMMAND graphenedb_rc_stress_tests --incidents 5000 --queries 100 --dim 64 --reopen 1)
+  # Keep default CTest bounded and deterministic. The explicit 100k/1m scripts
+  # remain the scale gates; running them inside the ordinary unit-test suite
+  # caused CI wall-clock blow-ups and obscured real failures.
+  add_test(NAME graphenedb_rc_stress_tests COMMAND graphenedb_rc_stress_tests --incidents 1000 --queries 50 --dim 64 --reopen 1)
+  set_tests_properties(graphenedb_rc_stress_tests PROPERTIES TIMEOUT 120 LABELS "stress-smoke")
 
   add_executable(graphenedb_rc_lock_rotation_metadata_tests tests/test_rc_gate_lock_rotation_metadata.cpp)
   target_link_libraries(graphenedb_rc_lock_rotation_metadata_tests PRIVATE graphenedb)
@@ -84,6 +93,22 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_lattice_tests tests/test_graphene_lattice.cpp)
   target_link_libraries(graphenedb_lattice_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_lattice_tests COMMAND graphenedb_lattice_tests)
+
+  add_executable(graphenedb_physical_lattice_storage_tests tests/test_physical_lattice_storage.cpp)
+  target_link_libraries(graphenedb_physical_lattice_storage_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_physical_lattice_storage_tests COMMAND graphenedb_physical_lattice_storage_tests)
+
+  add_executable(graphenedb_physical_lattice_primary_tests tests/test_physical_lattice_primary.cpp)
+  target_link_libraries(graphenedb_physical_lattice_primary_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_physical_lattice_primary_tests COMMAND graphenedb_physical_lattice_primary_tests)
+
+  add_executable(graphenedb_dense_hex_lattice_index_tests tests/test_dense_hex_lattice_index.cpp)
+  target_link_libraries(graphenedb_dense_hex_lattice_index_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_dense_hex_lattice_index_tests COMMAND graphenedb_dense_hex_lattice_index_tests 12)
+
+  add_executable(graphenedb_dense_hex_lattice_stress_tests tests/test_dense_hex_lattice_stress.cpp)
+  target_link_libraries(graphenedb_dense_hex_lattice_stress_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_dense_hex_lattice_stress_tests COMMAND graphenedb_dense_hex_lattice_stress_tests 30 1000)
 
   add_executable(graphenedb_acid_lattice_tests tests/test_acid_lattice.cpp)
   target_link_libraries(graphenedb_acid_lattice_tests PRIVATE graphenedb)
@@ -150,6 +175,25 @@ if(GRAPHENEDB_BUILD_TESTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_release_candidate_bundle_meta.py
   )
 
+  if(TARGET graphenedb_server AND NOT WIN32)
+    add_test(
+      NAME graphenedb_server_launch_hardening_tests
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/server_launch_hardening_test.py $<TARGET_FILE:graphenedb_server>
+    )
+    set_tests_properties(graphenedb_server_launch_hardening_tests PROPERTIES TIMEOUT 60)
+
+    add_test(
+      NAME graphenedb_server_pilot_contract_tests
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/server_pilot_contract_test.py $<TARGET_FILE:graphenedb_server>
+    )
+    set_tests_properties(graphenedb_server_pilot_contract_tests PROPERTIES TIMEOUT 120)
+  endif()
+
+  add_test(
+    NAME graphenedb_docker_security_static_tests
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_docker_security.py ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
 endif()
 
 if(GRAPHENEDB_BUILD_BENCH)
@@ -208,8 +252,20 @@ install(TARGETS graphenedb
 if(TARGET graphenedb_cli)
   install(TARGETS graphenedb_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
+if(TARGET graphenedb_server)
+  install(TARGETS graphenedb_server RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+if(TARGET graphenedb_healthcheck)
+  install(TARGETS graphenedb_healthcheck RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY docs/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY clients/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/clients
+  FILES_MATCHING
+  PATTERN "*.py"
+  PATTERN "*.md"
+  PATTERN "__pycache__" EXCLUDE
+  PATTERN "*.pyc" EXCLUDE)
 install(DIRECTORY examples/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/examples FILES_MATCHING PATTERN "*.cpp")
 install(FILES README.md CHANGELOG.md LICENSE SECURITY.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
 

@@ -5,6 +5,7 @@
 #include "graphene/vector_index.hpp"
 #include "graphene/kdtree_index.hpp"
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cerrno>
 #include <chrono>
@@ -272,7 +273,7 @@ struct GrapheneDB::Impl {
 
   mutable std::shared_mutex mu;
   bool open{false};
-  fs::path dir, wal_path, data_path, manifest_path, lock_path;
+  fs::path dir, wal_path, data_path, manifest_path, physical_lattice_path, physical_lattice_bin_path, nodeidx_path, lock_path;
   DBOptions opt;
   platform::FileHandle wal_fd{platform::kInvalidFile};
   uint64_t version{1};
@@ -290,6 +291,67 @@ struct GrapheneDB::Impl {
   std::unordered_map<std::string, std::vector<uint32_t>> metadata_index;
   std::unordered_map<LatticeCoord, uint32_t, LatticeCoordHash> lattice_nodes;
   std::unordered_map<uint32_t, std::vector<uint32_t>> lattice_edges;
+
+  // Dense physical hex-lattice index. Cells are sorted by layer/ring/coord;
+  // each cell owns fixed six-neighbour slots so lattice traversal can avoid
+  // generic edge-vector lookup when physical_lattice_storage is enabled.
+  struct DenseLatticeCell {
+    LatticeCoord coord;
+    uint32_t node_id{UINT32_MAX};
+    std::array<uint32_t, 6> neighbor_nodes{UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+    std::vector<uint32_t> lattice_edge_ids;
+  };
+  std::vector<DenseLatticeCell> dense_lattice_cells;
+  std::unordered_map<uint32_t, uint32_t> dense_lattice_ordinal_by_node;
+
+  struct PhysicalCellRecord {
+    int32_t q{0};
+    int32_t r{0};
+    int32_t layer{0};
+    uint32_t node_id{UINT32_MAX};
+    uint32_t neighbor_nodes[6]{UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+    uint64_t vector_dim{0};
+    uint64_t content_bytes{0};
+    uint32_t flags{0};
+    uint32_t checksum{0};
+  };
+
+  struct PhysicalLatticeHeader {
+    char magic[8];
+    uint32_t version;
+    uint32_t radius;
+    uint64_t cells_per_layer;
+    uint64_t visible_cells;
+    uint64_t snapshot;
+  };
+
+  static uint32_t fnv32_cell(const PhysicalCellRecord& rec) {
+    const unsigned char* p = reinterpret_cast<const unsigned char*>(&rec);
+    size_t n = sizeof(PhysicalCellRecord) - sizeof(uint32_t);
+    uint32_t h = 2166136261u;
+    for (size_t i = 0; i < n; ++i) { h ^= p[i]; h *= 16777619u; }
+    return h;
+  }
+
+  static bool axial_disk_ordinal(int32_t q, int32_t r, uint32_t radius, uint64_t* out) {
+    const int32_t R = static_cast<int32_t>(radius);
+    const int32_t s = -q - r;
+    if (std::max({std::abs(q), std::abs(r), std::abs(s)}) > R) return false;
+    uint64_t idx = 0;
+    for (int32_t qq = -R; qq < q; ++qq) {
+      const int32_t rmin = std::max(-R, -qq - R);
+      const int32_t rmax = std::min(R, -qq + R);
+      idx += static_cast<uint64_t>(rmax - rmin + 1);
+    }
+    const int32_t rmin = std::max(-R, -q - R);
+    idx += static_cast<uint64_t>(r - rmin);
+    *out = idx;
+    return true;
+  }
+
+  static uint64_t cells_per_layer(uint32_t radius) {
+    return 1ull + 3ull * radius * (static_cast<uint64_t>(radius) + 1ull);
+  }
 
   VectorIndexKind resolve_vector_index_kind() const {
     VectorIndexKind kind = opt.vector_index_kind;
@@ -362,6 +424,7 @@ struct GrapheneDB::Impl {
     if (n.lattice) lattice_nodes[*n.lattice] = n.id;
     ++live_node_count;
     if (vector_index) (void)vector_index->add(n.id, n.vector);
+    add_dense_lattice_node_unlocked(n, version ? version - 1 : 0);
   }
 
   void apply_committed_edge(const Edge& e) {
@@ -374,6 +437,271 @@ struct GrapheneDB::Impl {
       lattice_edges[e.to].push_back(e.id);
     }
     ++live_edge_count;
+  }
+
+  static int32_t hex_ring_distance(const LatticeCoord& c) {
+    const int32_t s = -c.q - c.r;
+    return std::max({std::abs(c.q), std::abs(c.r), std::abs(s)});
+  }
+
+  static std::array<LatticeCoord, 6> hex_neighbor_coords(const LatticeCoord& c) {
+    return {{{c.q + 1, c.r, c.layer}, {c.q + 1, c.r - 1, c.layer}, {c.q, c.r - 1, c.layer},
+             {c.q - 1, c.r, c.layer}, {c.q - 1, c.r + 1, c.layer}, {c.q, c.r + 1, c.layer}}};
+  }
+
+  static int opposite_hex_dir(int i) { return (i + 3) % 6; }
+
+  void add_dense_lattice_node_unlocked(const Node& n, uint64_t snap) {
+    if (!opt.physical_lattice_storage || !n.lattice || !visible_node(n, snap)) return;
+    if (dense_lattice_ordinal_by_node.find(n.id) != dense_lattice_ordinal_by_node.end()) return;
+    DenseLatticeCell cell;
+    cell.coord = *n.lattice;
+    cell.node_id = n.id;
+    auto dirs = hex_neighbor_coords(*n.lattice);
+    for (size_t i = 0; i < dirs.size(); ++i) {
+      auto it = lattice_nodes.find(dirs[i]);
+      if (it != lattice_nodes.end() && it->second < nodes.size() && visible_node(nodes[it->second], snap)) {
+        cell.neighbor_nodes[i] = it->second;
+      }
+    }
+    uint32_t ordinal = static_cast<uint32_t>(dense_lattice_cells.size());
+    dense_lattice_cells.push_back(cell);
+    dense_lattice_ordinal_by_node[n.id] = ordinal;
+    for (size_t i = 0; i < cell.neighbor_nodes.size(); ++i) {
+      uint32_t nb = cell.neighbor_nodes[i];
+      if (nb == UINT32_MAX) continue;
+      auto oit = dense_lattice_ordinal_by_node.find(nb);
+      if (oit == dense_lattice_ordinal_by_node.end()) continue;
+      dense_lattice_cells[oit->second].neighbor_nodes[opposite_hex_dir(static_cast<int>(i))] = n.id;
+    }
+  }
+
+  PhysicalLatticeHeader make_physical_header_unlocked(uint64_t visible) const {
+    const uint32_t radius = opt.physical_lattice_radius == 0 ? 256 : opt.physical_lattice_radius;
+    return PhysicalLatticeHeader{{'G','D','B','H','E','X','1','\0'}, 1u, radius, cells_per_layer(radius), visible, version ? version - 1 : 0};
+  }
+
+  Status physical_absolute_ordinal_unlocked(const LatticeCoord& coord, uint64_t* out) const {
+    const uint32_t radius = opt.physical_lattice_radius == 0 ? 256 : opt.physical_lattice_radius;
+    uint64_t ordinal = 0;
+    if (!axial_disk_ordinal(coord.q, coord.r, radius, &ordinal)) {
+      return Status::error(ErrorCode::InvalidInput, "lattice coord outside physical lattice radius");
+    }
+    *out = static_cast<uint64_t>(std::max(0, coord.layer)) * cells_per_layer(radius) + ordinal;
+    return Status::ok();
+  }
+
+  Status ensure_physical_lattice_binary_file_unlocked() {
+    if (!opt.physical_lattice_primary) return Status::ok();
+    std::error_code ec;
+    if (fs::exists(physical_lattice_bin_path, ec)) return Status::ok();
+    std::ofstream out(physical_lattice_bin_path, std::ios::binary | std::ios::trunc);
+    if (!out) return Status::error(ErrorCode::IoError, "cannot create physical lattice binary");
+    auto header = make_physical_header_unlocked(live_node_count);
+    out.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    out.flush();
+    return out ? Status::ok() : Status::error(ErrorCode::IoError, "failed writing physical lattice binary header");
+  }
+
+  Status update_physical_header_unlocked() {
+    if (!opt.physical_lattice_primary) return Status::ok();
+    auto st = ensure_physical_lattice_binary_file_unlocked();
+    if (!st) return st;
+    std::fstream io(physical_lattice_bin_path, std::ios::binary | std::ios::in | std::ios::out);
+    if (!io) return Status::error(ErrorCode::IoError, "cannot open physical lattice binary header for update");
+    auto header = make_physical_header_unlocked(live_node_count);
+    io.seekp(0);
+    io.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    io.flush();
+    return io ? Status::ok() : Status::error(ErrorCode::IoError, "failed updating physical lattice binary header");
+  }
+
+  Status write_physical_cell_record_unlocked(const DenseLatticeCell& c) {
+    if (!opt.physical_lattice_primary) return Status::ok();
+    auto st = ensure_physical_lattice_binary_file_unlocked();
+    if (!st) return st;
+    uint64_t absolute = 0;
+    st = physical_absolute_ordinal_unlocked(c.coord, &absolute);
+    if (!st) return st;
+    PhysicalCellRecord rec;
+    rec.q = c.coord.q; rec.r = c.coord.r; rec.layer = c.coord.layer; rec.node_id = c.node_id;
+    for (size_t i = 0; i < 6; ++i) rec.neighbor_nodes[i] = c.neighbor_nodes[i];
+    if (c.node_id < nodes.size() && visible_node(nodes[c.node_id], version ? version - 1 : 0)) {
+      rec.vector_dim = nodes[c.node_id].vector.size();
+      rec.content_bytes = nodes[c.node_id].content.size();
+    }
+    rec.flags = 1u; rec.checksum = 0; rec.checksum = fnv32_cell(rec);
+    std::fstream io(physical_lattice_bin_path, std::ios::binary | std::ios::in | std::ios::out);
+    if (!io) return Status::error(ErrorCode::IoError, "cannot open physical lattice binary for cell update");
+    io.seekp(static_cast<std::streamoff>(sizeof(PhysicalLatticeHeader) + absolute * sizeof(PhysicalCellRecord)));
+    io.write(reinterpret_cast<const char*>(&rec), sizeof(rec));
+    io.flush();
+    if (!io) return Status::error(ErrorCode::IoError, "failed writing physical cell record");
+    return Status::ok();
+  }
+
+  Status append_nodeidx_unlocked(const DenseLatticeCell& c) {
+    if (!opt.physical_lattice_primary) return Status::ok();
+    const bool exists = fs::exists(nodeidx_path);
+    std::ofstream idx(nodeidx_path, std::ios::app);
+    if (!idx) return Status::error(ErrorCode::IoError, "cannot append nodeidx");
+    if (!exists) idx << "# node_id\tlayer\tq\tr\tordinal\n";
+    uint64_t absolute = 0;
+    auto st = physical_absolute_ordinal_unlocked(c.coord, &absolute);
+    if (!st) return st;
+    idx << c.node_id << '\t' << c.coord.layer << '\t' << c.coord.q << '\t' << c.coord.r << '\t' << absolute << '\n';
+    idx.flush();
+    return idx ? Status::ok() : Status::error(ErrorCode::IoError, "failed appending nodeidx");
+  }
+
+  Status write_incremental_physical_lattice_node_unlocked(const Node& n) {
+    if (!opt.physical_lattice_primary || !n.lattice) return Status::ok();
+    auto oit = dense_lattice_ordinal_by_node.find(n.id);
+    if (oit == dense_lattice_ordinal_by_node.end()) return Status::error(ErrorCode::InvalidInput, "node missing from dense lattice index");
+    const auto& cell = dense_lattice_cells[oit->second];
+    auto st = write_physical_cell_record_unlocked(cell);
+    if (!st) return st;
+    for (uint32_t nb : cell.neighbor_nodes) {
+      if (nb == UINT32_MAX) continue;
+      auto nit = dense_lattice_ordinal_by_node.find(nb);
+      if (nit != dense_lattice_ordinal_by_node.end()) {
+        st = write_physical_cell_record_unlocked(dense_lattice_cells[nit->second]);
+        if (!st) return st;
+      }
+    }
+    st = append_nodeidx_unlocked(cell);
+    if (!st) return st;
+    return update_physical_header_unlocked();
+  }
+
+  void rebuild_dense_lattice_index_unlocked(uint64_t snap) {
+    dense_lattice_cells.clear();
+    dense_lattice_ordinal_by_node.clear();
+    if (!opt.physical_lattice_storage) return;
+    dense_lattice_cells.reserve(lattice_nodes.size());
+    for (const auto& n : nodes) {
+      if (!visible_node(n, snap) || !n.lattice) continue;
+      DenseLatticeCell c;
+      c.coord = *n.lattice;
+      c.node_id = n.id;
+      auto dirs = hex_neighbor_coords(*n.lattice);
+      for (size_t i = 0; i < dirs.size(); ++i) {
+        auto it = lattice_nodes.find(dirs[i]);
+        if (it != lattice_nodes.end() && it->second < nodes.size() && visible_node(nodes[it->second], snap)) {
+          c.neighbor_nodes[i] = it->second;
+        }
+      }
+      auto eit = lattice_edges.find(n.id);
+      if (eit != lattice_edges.end()) {
+        for (uint32_t eid : eit->second) {
+          if (eid < edges.size() && visible_edge(edges[eid], nodes, snap)) c.lattice_edge_ids.push_back(eid);
+        }
+        std::sort(c.lattice_edge_ids.begin(), c.lattice_edge_ids.end());
+        c.lattice_edge_ids.erase(std::unique(c.lattice_edge_ids.begin(), c.lattice_edge_ids.end()), c.lattice_edge_ids.end());
+      }
+      dense_lattice_cells.push_back(std::move(c));
+    }
+    std::sort(dense_lattice_cells.begin(), dense_lattice_cells.end(), [](const DenseLatticeCell& a, const DenseLatticeCell& b) {
+      if (a.coord.layer != b.coord.layer) return a.coord.layer < b.coord.layer;
+      const auto ar = hex_ring_distance(a.coord), br = hex_ring_distance(b.coord);
+      if (ar != br) return ar < br;
+      if (a.coord.q != b.coord.q) return a.coord.q < b.coord.q;
+      if (a.coord.r != b.coord.r) return a.coord.r < b.coord.r;
+      return a.node_id < b.node_id;
+    });
+    for (uint32_t i = 0; i < dense_lattice_cells.size(); ++i) dense_lattice_ordinal_by_node[dense_lattice_cells[i].node_id] = i;
+  }
+
+  bool dense_lattice_enabled() const {
+    return opt.physical_lattice_storage && !dense_lattice_cells.empty();
+  }
+
+  Status write_physical_lattice_unlocked() {
+    if (!opt.physical_lattice_storage) return Status::ok();
+    const uint64_t snap = version ? version - 1 : 0;
+    rebuild_dense_lattice_index_unlocked(snap);
+    const auto& cells = dense_lattice_cells;
+    fs::path tmp = physical_lattice_path.string() + ".tmp";
+    std::ofstream out(tmp, std::ios::trunc);
+    if (!out) return Status::error(ErrorCode::IoError, "cannot write physical lattice tmp");
+    out << make_frame("LATTICE_BEGIN\t1\t" + std::to_string(snap) + "\t" + std::to_string(cells.size()));
+    for (const auto& c : cells) {
+      std::ostringstream payload;
+      payload << "CELL\t" << c.coord.layer << '\t' << c.coord.q << '\t' << c.coord.r << '\t' << c.node_id;
+      for (uint32_t n : c.neighbor_nodes) payload << '\t' << (n == UINT32_MAX ? -1 : static_cast<int64_t>(n));
+      payload << '\t';
+      for (size_t i = 0; i < c.lattice_edge_ids.size(); ++i) {
+        if (i) payload << ',';
+        payload << c.lattice_edge_ids[i];
+      }
+      out << make_frame(payload.str());
+    }
+    out << make_frame("LATTICE_END\t" + std::to_string(fnv1a(std::to_string(snap) + ":" + std::to_string(cells.size()))));
+    out.flush();
+    if (!out) return Status::error(ErrorCode::IoError, "failed flushing physical lattice tmp");
+    out.close();
+    std::error_code ec;
+    fs::rename(tmp, physical_lattice_path, ec);
+    if (ec) return Status::error(ErrorCode::IoError, "physical lattice rename failed: " + ec.message());
+    if (opt.physical_lattice_primary) {
+      auto bst = write_physical_lattice_binary_unlocked(cells);
+      if (!bst) return bst;
+    }
+    return Status::ok();
+  }
+
+  Status write_physical_lattice_binary_unlocked(const std::vector<DenseLatticeCell>& cells) {
+    const uint32_t radius = opt.physical_lattice_radius == 0 ? 256 : opt.physical_lattice_radius;
+    PhysicalLatticeHeader header{{'G','D','B','H','E','X','1','\0'}, 1u, radius, cells_per_layer(radius), static_cast<uint64_t>(cells.size()), version ? version - 1 : 0};
+
+    fs::path tmp = physical_lattice_bin_path.string() + ".tmp";
+    std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+    if (!out) return Status::error(ErrorCode::IoError, "cannot write physical lattice binary tmp");
+    out.write(reinterpret_cast<const char*>(&header), sizeof(header));
+
+    std::map<uint64_t, PhysicalCellRecord> records;
+    for (const auto& c : cells) {
+      uint64_t ordinal = 0;
+      if (!axial_disk_ordinal(c.coord.q, c.coord.r, radius, &ordinal)) {
+        return Status::error(ErrorCode::InvalidInput, "lattice coord outside physical lattice radius");
+      }
+      uint64_t absolute = static_cast<uint64_t>(std::max(0, c.coord.layer)) * header.cells_per_layer + ordinal;
+      PhysicalCellRecord rec;
+      rec.q = c.coord.q; rec.r = c.coord.r; rec.layer = c.coord.layer; rec.node_id = c.node_id;
+      for (size_t i = 0; i < 6; ++i) rec.neighbor_nodes[i] = c.neighbor_nodes[i];
+      if (c.node_id < nodes.size() && visible_node(nodes[c.node_id], version ? version - 1 : 0)) {
+        rec.vector_dim = nodes[c.node_id].vector.size();
+        rec.content_bytes = nodes[c.node_id].content.size();
+      }
+      rec.flags = 1u;
+      rec.checksum = 0; rec.checksum = fnv32_cell(rec);
+      records[absolute] = rec;
+    }
+    for (const auto& kv : records) {
+      const uint64_t offset = sizeof(header) + kv.first * sizeof(PhysicalCellRecord);
+      out.seekp(static_cast<std::streamoff>(offset));
+      out.write(reinterpret_cast<const char*>(&kv.second), sizeof(PhysicalCellRecord));
+    }
+    out.flush(); out.close();
+    if (!out) return Status::error(ErrorCode::IoError, "failed flushing physical lattice binary tmp");
+    std::error_code ec;
+    fs::rename(tmp, physical_lattice_bin_path, ec);
+    if (ec) return Status::error(ErrorCode::IoError, "physical lattice binary rename failed: " + ec.message());
+
+    fs::path itmp = nodeidx_path.string() + ".tmp";
+    std::ofstream idx(itmp, std::ios::trunc);
+    if (!idx) return Status::error(ErrorCode::IoError, "cannot write nodeidx tmp");
+    idx << "# node_id\tlayer\tq\tr\tordinal\n";
+    for (const auto& c : cells) {
+      uint64_t ordinal = 0;
+      (void)axial_disk_ordinal(c.coord.q, c.coord.r, radius, &ordinal);
+      uint64_t absolute = static_cast<uint64_t>(std::max(0, c.coord.layer)) * header.cells_per_layer + ordinal;
+      idx << c.node_id << '\t' << c.coord.layer << '\t' << c.coord.q << '\t' << c.coord.r << '\t' << absolute << '\n';
+    }
+    idx.flush(); idx.close();
+    fs::rename(itmp, nodeidx_path, ec);
+    if (ec) return Status::error(ErrorCode::IoError, "nodeidx rename failed: " + ec.message());
+    return Status::ok();
   }
 
   Status checkpoint_unlocked() {
@@ -400,6 +728,8 @@ struct GrapheneDB::Impl {
     { std::ofstream wal(wal_path, std::ios::trunc); if (!wal) return Status::error(ErrorCode::IoError, "cannot truncate WAL"); }
     auto ost = open_wal_fd_unlocked();
     if (!ost) return ost;
+    auto lst = write_physical_lattice_unlocked();
+    if (!lst) return lst;
     return write_manifest();
   }
 
@@ -553,6 +883,7 @@ struct GrapheneDB::Impl {
         }
       }
     }
+    rebuild_dense_lattice_index_unlocked(current_snap);
     txid = std::max(txid, version + 1);
   }
 
@@ -596,6 +927,7 @@ struct GrapheneDB::Impl {
   }
 
   Status apply_payload(const std::string& payload, bool from_replay, std::unordered_map<uint64_t, std::vector<std::string>>* pending = nullptr, std::unordered_set<uint64_t>* committed = nullptr) {
+    (void)from_replay;
     auto p = split_tab(payload);
     if (p.empty()) return Status::error(ErrorCode::DataCorrupt, "empty payload");
     const auto& op = p[0];
@@ -725,6 +1057,9 @@ struct GrapheneDB::Impl {
     os << "storage_format=" << kStorageFormatVersion << "\n";
     os << "wal_frame_format=" << kWalFrameFormatVersion << "\n";
     os << "lattice_format=" << kLatticeFormatVersion << "\n";
+    os << "physical_lattice_storage=" << (opt.physical_lattice_storage ? 1 : 0) << "\n";
+    os << "physical_lattice_primary=" << (opt.physical_lattice_primary ? 1 : 0) << "\n";
+    os << "physical_lattice_radius=" << opt.physical_lattice_radius << "\n";
     os << "extraction_format=" << kExtractionFormatVersion << "\n";
     os << "dimension=" << opt.dimension << "\n";
     os << "version=" << version << "\n";
@@ -786,6 +1121,8 @@ struct GrapheneDB::Impl {
         } else if (line.rfind("lattice_format=", 0) == 0) {
           uint64_t v = 0; parse_u64(line.substr(15), &v);
           if (v > kLatticeFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported lattice format");
+        } else if (line.rfind("physical_lattice_storage=", 0) == 0) {
+          uint64_t ignored = 0; parse_u64(line.substr(25), &ignored);
         } else if (line.rfind("extraction_format=", 0) == 0) {
           uint64_t v = 0; parse_u64(line.substr(18), &v);
           if (v > kExtractionFormatVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported extraction format");
@@ -909,6 +1246,33 @@ struct GrapheneDB::Impl {
     for (size_t qi = 0; qi < queue.size(); ++qi) {
       const auto cur = queue[qi];
       if (cur.depth >= opt.tuning.lattice_max_hops) continue;
+      if (dense_lattice_enabled()) {
+        auto ord_it = dense_lattice_ordinal_by_node.find(cur.node);
+        if (ord_it == dense_lattice_ordinal_by_node.end()) continue;
+        const auto& cell = dense_lattice_cells[ord_it->second];
+        for (uint32_t next : cell.neighbor_nodes) {
+          if (next == UINT32_MAX || next >= nodes.size() || !visible_node(nodes[next], snap)) continue;
+          double best_strength = 0.85; // Physical adjacency path when no explicit bond exists.
+          bool blocked_by_mode = false;
+          for (uint32_t eid : cell.lattice_edge_ids) {
+            if (eid >= edges.size() || !visible_edge(edges[eid], nodes, snap)) continue;
+            const auto& e = edges[eid];
+            if (!((e.from == cur.node && e.to == next) || (e.to == cur.node && e.from == next))) continue;
+            if (mode == QueryMode::Empirical && (e.origin == EdgeOrigin::Hypothetical || e.role == EdgeRole::Analogical)) { blocked_by_mode = true; continue; }
+            best_strength = std::max(best_strength, e.bond_strength);
+          }
+          if (blocked_by_mode && best_strength <= 0.85) continue;
+          double score = cur.score * opt.tuning.lattice_decay * best_strength;
+          if (nodes[cur.node].lattice && nodes[next].lattice && nodes[cur.node].lattice->layer != nodes[next].lattice->layer) score *= opt.tuning.lattice_cross_layer_penalty;
+          if (score <= 0.0) continue;
+          auto prev = activation.find(next);
+          if (prev == activation.end() || score > prev->second) {
+            activation[next] = score;
+            queue.push_back({next, cur.depth + 1, score});
+          }
+        }
+        continue;
+      }
       auto it = lattice_edges.find(cur.node);
       if (it == lattice_edges.end()) continue;
       for (uint32_t eid : it->second) {
@@ -943,6 +1307,9 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
   impl_->wal_path = path / "graphene.wal";
   impl_->data_path = path / "graphene.data";
   impl_->manifest_path = path / "MANIFEST";
+  impl_->physical_lattice_path = path / "graphene.lattice";
+  impl_->physical_lattice_bin_path = path / "graphene.lattice.bin";
+  impl_->nodeidx_path = path / "graphene.nodeidx";
   impl_->lock_path = path / "LOCK";
   impl_->opt = options;
   auto vst = impl_->validate_vector_index_support();
@@ -959,12 +1326,42 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
   }
   auto lst = impl_->acquire_lock();
   if (!lst) return lst;
+  // Interrupted checkpoints may leave complete or partial temporary files.
+  // They are never authoritative. Quarantine them after taking the exclusive
+  // database lock so operators can inspect them without risking reuse.
+  {
+    const std::vector<fs::path> stale_temps = {
+      fs::path(impl_->data_path.string() + ".tmp"),
+      fs::path(impl_->physical_lattice_path.string() + ".tmp"),
+      fs::path(impl_->physical_lattice_bin_path.string() + ".tmp"),
+      fs::path(impl_->nodeidx_path.string() + ".tmp"),
+      fs::path(impl_->manifest_path.string() + ".tmp")
+    };
+    fs::path quarantine = path / "recovery";
+    for (const auto& tmp : stale_temps) {
+      std::error_code tec;
+      if (!fs::exists(tmp, tec) || tec) continue;
+      fs::create_directories(quarantine, tec);
+      if (tec) { impl_->release_lock(); return Status::error(ErrorCode::IoError, "cannot create recovery quarantine: " + tec.message()); }
+      const auto stamp = std::to_string(platform::current_pid()) + "-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+      fs::path dest = quarantine / (tmp.filename().string() + ".orphan-" + stamp);
+      fs::rename(tmp, dest, tec);
+      if (tec) { impl_->release_lock(); return Status::error(ErrorCode::IoError, "cannot quarantine stale temp file " + tmp.string() + ": " + tec.message()); }
+    }
+  }
   impl_->nodes.clear(); impl_->edges.clear(); impl_->version = 1; impl_->txid = std::max<uint64_t>(1, manifest_txid); impl_->live_node_count = 0; impl_->live_edge_count = 0; impl_->vector_index.reset();
   auto dst = impl_->load_framed_file(impl_->data_path, false, false);
   if (!dst) { impl_->release_lock(); return dst; }
   auto wst = impl_->load_framed_file(impl_->wal_path, true, true);
   if (!wst) { impl_->release_lock(); return wst; }
   impl_->rebuild_indexes();
+  if (impl_->opt.physical_lattice_primary) {
+    auto pst = impl_->write_physical_lattice_binary_unlocked(impl_->dense_lattice_cells);
+    if (!pst) { impl_->release_lock(); return pst; }
+  } else if (impl_->opt.physical_lattice_storage) {
+    auto pst = impl_->write_physical_lattice_unlocked();
+    if (!pst) { impl_->release_lock(); return pst; }
+  }
   auto ow = impl_->open_wal_fd_unlocked();
   if (!ow) { impl_->release_lock(); return ow; }
   auto wm = impl_->write_manifest();
@@ -1015,6 +1412,8 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
   impl_->apply_committed_node(n);
+  Status plst = impl_->opt.physical_lattice_primary ? impl_->write_incremental_physical_lattice_node_unlocked(n) : impl_->write_physical_lattice_unlocked();
+  if (!plst) return plst;
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out_id) *out_id = n.id;
@@ -1042,6 +1441,8 @@ Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
   impl_->apply_committed_edge(e);
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) return plst;
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out_id) *out_id = e.id;
@@ -1148,6 +1549,8 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
   impl_->version = next_version;
   for (const auto& n : new_nodes) impl_->apply_committed_node(n);
   for (const auto& e : new_edges) impl_->apply_committed_edge(e);
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) return plst;
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out) {
@@ -1371,6 +1774,8 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
   impl_->version = next_version;
   for (const auto& n : new_nodes) impl_->apply_committed_node(n);
   for (const auto& e : new_edges) impl_->apply_committed_edge(e);
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) return plst;
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   if (out) {
@@ -1409,6 +1814,8 @@ Status GrapheneDB::delete_node(uint32_t id) {
   if (impl_->live_node_count > 0) --impl_->live_node_count;
   impl_->live_edge_count = hidden_edges > impl_->live_edge_count ? 0 : impl_->live_edge_count - hidden_edges;
   if (impl_->vector_index) (void)impl_->vector_index->remove(id);
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) return plst;
   auto rst = impl_->maybe_rotate_wal_unlocked();
   if (!rst) return rst;
   return Status::ok();
@@ -1451,6 +1858,19 @@ std::vector<uint32_t> GrapheneDB::lattice_neighbors(uint32_t node_id, uint32_t m
   for (size_t qi = 0; qi < queue.size(); ++qi) {
     auto [cur, depth] = queue[qi];
     if (depth >= max_hops) continue;
+    if (impl_->dense_lattice_enabled()) {
+      auto oit = impl_->dense_lattice_ordinal_by_node.find(cur);
+      if (oit == impl_->dense_lattice_ordinal_by_node.end()) continue;
+      const auto& cell = impl_->dense_lattice_cells[oit->second];
+      for (uint32_t next : cell.neighbor_nodes) {
+        if (next == UINT32_MAX || next >= impl_->nodes.size() || !visible_node(impl_->nodes[next], snap)) continue;
+        if (seen.insert(next).second) {
+          out.push_back(next);
+          queue.push_back({next, depth + 1});
+        }
+      }
+      continue;
+    }
     auto it = impl_->lattice_edges.find(cur);
     if (it == impl_->lattice_edges.end()) continue;
     for (uint32_t eid : it->second) {
@@ -1609,7 +2029,7 @@ Status GrapheneDB::backup(const fs::path& destination_dir) const {
   std::error_code ec;
   fs::create_directories(destination_dir, ec);
   if (ec) return Status::error(ErrorCode::IoError, "cannot create backup dir: " + ec.message());
-  for (const auto& src : {impl_->data_path, impl_->wal_path, impl_->manifest_path}) {
+  for (const auto& src : {impl_->data_path, impl_->wal_path, impl_->manifest_path, impl_->physical_lattice_path, impl_->physical_lattice_bin_path, impl_->nodeidx_path}) {
     if (env_enabled("GRAPHENEDB_TEST_FAIL_BACKUP_COPY")) {
       return Status::error(ErrorCode::IoError, "injected backup copy failure");
     }
@@ -1649,7 +2069,20 @@ Status GrapheneDB::inspect(std::string* out) const {
   os << "planes=" << impl_->planes.size() << "\n";
   os << "lattice_required=" << (impl_->opt.require_lattice ? "true" : "false") << "\n";
   os << "lattice_retrieval=" << (impl_->opt.tuning.enable_lattice_retrieval ? "true" : "false") << "\n";
+  os << "physical_lattice_storage=" << (impl_->opt.physical_lattice_storage ? "true" : "false") << "\n";
+  os << "physical_lattice_primary=" << (impl_->opt.physical_lattice_primary ? "true" : "false") << "\n";
+  os << "physical_lattice_radius=" << impl_->opt.physical_lattice_radius << "\n";
+  std::error_code lec;
+  uint64_t lattice_bytes = fs::exists(impl_->physical_lattice_path, lec) ? fs::file_size(impl_->physical_lattice_path, lec) : 0;
+  uint64_t lattice_bin_bytes = fs::exists(impl_->physical_lattice_bin_path, lec) ? fs::file_size(impl_->physical_lattice_bin_path, lec) : 0;
+  if (lec) lattice_bytes = 0;
+  os << "physical_lattice_file=" << impl_->physical_lattice_path.string() << "\n";
+  os << "physical_lattice_bytes=" << lattice_bytes << "\n";
+  os << "physical_lattice_bin_file=" << impl_->physical_lattice_bin_path.string() << "\n";
+  os << "physical_lattice_bin_bytes=" << lattice_bin_bytes << "\n";
   os << "lattice_nodes=" << impl_->lattice_nodes.size() << "\n";
+  os << "dense_lattice_cells=" << impl_->dense_lattice_cells.size() << "\n";
+  os << "dense_lattice_index=" << (impl_->dense_lattice_enabled() ? "true" : "false") << "\n";
   size_t lattice_edge_count = 0;
   for (const auto& kv : impl_->lattice_edges) lattice_edge_count += kv.second.size();
   os << "lattice_edge_refs=" << lattice_edge_count << "\n";
@@ -1673,6 +2106,55 @@ Status GrapheneDB::validate(std::string* report) const {
     if (n.created_version == kInfVersion || !visible_node(n, impl_->version - 1) || !n.lattice) continue;
     auto inserted = coords.emplace(*n.lattice, n.id);
     if (!inserted.second) { ok = false; os << "FAIL duplicate lattice coordinate on nodes " << inserted.first->second << " and " << n.id << "\n"; }
+  }
+  if (impl_->opt.physical_lattice_storage) {
+    if (impl_->opt.physical_lattice_primary) {
+      if (!fs::exists(impl_->physical_lattice_bin_path)) {
+        ok = false; os << "FAIL physical lattice binary file missing\n";
+      } else {
+        std::ifstream bin(impl_->physical_lattice_bin_path, std::ios::binary);
+        Impl::PhysicalLatticeHeader header{};
+        bin.read(reinterpret_cast<char*>(&header), sizeof(header));
+        if (!bin || std::string(header.magic, header.magic + 6) != "GDBHEX") {
+          ok = false; os << "FAIL physical lattice binary header corrupt\n";
+        } else {
+          if (header.visible_cells != coords.size()) {
+            ok = false; os << "FAIL physical lattice binary visible cells " << header.visible_cells << " != lattice node count " << coords.size() << "\n";
+          }
+          for (const auto& kv : coords) {
+            uint64_t absolute = 0;
+            auto ost = impl_->physical_absolute_ordinal_unlocked(kv.first, &absolute);
+            if (!ost) { ok = false; os << "FAIL physical lattice coord outside radius for node " << kv.second << "\n"; continue; }
+            Impl::PhysicalCellRecord rec{};
+            bin.clear();
+            bin.seekg(static_cast<std::streamoff>(sizeof(Impl::PhysicalLatticeHeader) + absolute * sizeof(Impl::PhysicalCellRecord)));
+            bin.read(reinterpret_cast<char*>(&rec), sizeof(rec));
+            if (!bin || rec.node_id != kv.second) {
+              ok = false; os << "FAIL physical lattice binary cell mismatch for node " << kv.second << "\n";
+              break;
+            }
+            uint32_t crc = rec.checksum; rec.checksum = 0;
+            if (crc != Impl::fnv32_cell(rec)) { ok = false; os << "FAIL physical lattice binary checksum for node " << kv.second << "\n"; break; }
+          }
+        }
+      }
+      if (!fs::exists(impl_->nodeidx_path)) { ok = false; os << "FAIL nodeidx file missing\n"; }
+    } else if (!fs::exists(impl_->physical_lattice_path)) {
+      ok = false; os << "FAIL physical lattice file missing\n";
+    } else {
+      std::ifstream lin(impl_->physical_lattice_path);
+      std::string line;
+      size_t cell_count = 0;
+      while (std::getline(lin, line)) {
+        if (line.empty()) continue;
+        std::string payload;
+        if (!parse_frame_line(line, &payload)) { ok = false; os << "FAIL physical lattice corrupt frame\n"; break; }
+        if (payload.rfind("CELL\t", 0) == 0) ++cell_count;
+      }
+      if (cell_count != coords.size()) {
+        ok = false; os << "FAIL physical lattice cell count " << cell_count << " != lattice node count " << coords.size() << "\n";
+      }
+    }
   }
   for (const auto& e : impl_->edges) {
     if (e.created_version == kInfVersion) continue;

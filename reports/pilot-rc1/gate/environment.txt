@@ -1,0 +1,3 @@
+graphenedb_pilot_gate_started_at=2026-07-15T11:22:24Z
+graphenedb_pilot_gate_build_dir=/mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-rc1
+graphenedb_pilot_gate_soak_seconds=30

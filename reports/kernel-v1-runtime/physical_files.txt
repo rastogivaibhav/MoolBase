@@ -1,0 +1,7 @@
+total 6.1M
+-rw-r--r-- 1 root root    5 Jul  9 06:11 LOCK
+-rw-r--r-- 1 root root  275 Jul  9 06:11 MANIFEST
+-rw-r--r-- 1 root root  420 Jul  9 06:11 graphene.lattice
+-rw-r--r-- 1 root root 6.1M Jul  9 06:11 graphene.lattice.bin
+-rw-r--r-- 1 root root  118 Jul  9 06:11 graphene.nodeidx
+-rw-r--r-- 1 root root 7.2K Jul  9 06:11 graphene.wal

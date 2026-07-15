@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "binary_hardening": true,
+    "caddy_hostname_env": true,
+    "compose_drop_caps": true,
+    "compose_no_new_privileges": true,
+    "compose_pid_limit": true,
+    "compose_read_only": true,
+    "db_port_not_published": true,
+    "dockerignore_builds": true,
+    "healthcheck": true,
+    "minimal_apt": true,
+    "multi_stage": true,
+    "no_baked_api_key": true,
+    "non_root_user": true
+  },
+  "note": "Static structural validation only; release CI must also perform an up-to-date CVE scan and pin approved base-image digests.",
+  "ok": true
+}

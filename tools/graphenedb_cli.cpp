@@ -101,7 +101,7 @@ static bool is_common_value_option(const std::string& flag) {
 }
 
 static bool is_common_switch(const std::string& flag) {
-  return flag == "--json" || flag == "--no-recover-stale-lock";
+  return flag == "--json" || flag == "--no-recover-stale-lock" || flag == "--physical-lattice" || flag == "--physical-lattice-primary";
 }
 
 static void apply_common_options(DBOptions& opt, const std::string& cmd, int argc, char** argv) {
@@ -117,6 +117,13 @@ static void apply_common_options(DBOptions& opt, const std::string& cmd, int arg
       ++i;
     } else if (flag == "--no-recover-stale-lock") {
       opt.recover_stale_lock = false;
+    } else if (flag == "--physical-lattice") {
+      opt.physical_lattice_storage = true;
+      opt.require_lattice = true;
+    } else if (flag == "--physical-lattice-primary") {
+      opt.physical_lattice_storage = true;
+      opt.physical_lattice_primary = true;
+      opt.require_lattice = true;
     }
   }
 }
@@ -216,6 +223,7 @@ static void usage() {
             << "  --wal-rotate-bytes N   checkpoint and truncate WAL after N bytes\n"
             << "  --vector-index KIND    choose auto, flat, kdtree, or faiss\n"
             << "  --no-recover-stale-lock fail instead of removing a dead-owner LOCK file\n"
+            << "  --physical-lattice    materialize graphene.lattice as hex-cell ordered storage\n"
             << "  --json                 emit machine-readable JSON for supported commands\n";
 }
 

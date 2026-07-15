@@ -1,4 +1,4 @@
-# GrapheneDB v0.5.0 RC5
+# GrapheneDB v0.6.0-rc1
 
 **GrapheneDB** is an experimental embedded **causal/lattice-memory database** for AI agents, coding assistants, incident-memory systems, research-pack ingestion, and team-brain workflows.
 
@@ -8,9 +8,9 @@ It is not trying to replace SQLite, Qdrant, or Neo4j. Its niche is narrower:
 
 ## Status
 
-**Current maturity:** v0.5.0 RC5 / controlled pilot + public-developer-preview candidate.
+**Current maturity:** v0.6.0-rc1 / controlled private-pilot release candidate.
 
-RC5 builds on the earlier productization and portability work with durable graphene-inspired lattice fields, extraction ingestion, batch writes, GA readiness scripts, installable CMake packaging, release manifests, configurable vector-index policy, and richer operator/retrieval examples.
+v0.6.0-rc1 keeps the embedded C++ engine and adds an optional hardened HTTP server for controlled pilots: bounded workers, rate limiting, structured telemetry, strict request framing, version discovery, retry-safe node writes, graceful checkpointing shutdown, and an atomic bounded bulk path.
 
 It is not yet external enterprise GA. Remaining GA work is documented in [`docs/GA_READINESS_SCORECARD.md`](docs/GA_READINESS_SCORECARD.md), with the execution plan in [`docs/NEXT_GA_EXECUTION_PLAN.md`](docs/NEXT_GA_EXECUTION_PLAN.md).
 
@@ -25,7 +25,7 @@ It also adds a first-class extraction ingestion API for source-scoped external I
 |---|---|---|
 | Linux | CI target | Release build/test, package smoke, fuzz/sanitizer smoke, and GA readiness smoke are configured in CI; preserve CI artifacts for release evidence. |
 | macOS | CI target | POSIX platform layer should apply; CI matrix includes macOS build/test. |
-| Windows | Local smoke validated with policy caveat | Release build, focused CTest gates, CLI/operator flows, package verification, and release-manifest smoke have run locally. `graphenedb_cli_extract_tests` now runs through a Python harness on Windows so the release-tree CTest suite can complete locally. Some other newly linked test executables can still be blocked by local Windows Application Control and must be rerun on an approved release host. |
+| Windows | Embedded/CLI smoke validated with policy caveat | Release builds, focused embedded/CLI CTest gates, operator flows, package verification, and release-manifest smoke have run locally. `graphenedb_cli_extract_tests` now runs through a Python harness on Windows so the release-tree CTest suite can complete locally. The optional pilot server currently builds and validates on POSIX-oriented toolchains; a fresh Windows Clang/MinGW build of `graphenedb_server` in this snapshot fails on unguarded POSIX socket headers and needs an explicit portability pass before Windows server support should be claimed. |
 
 See [`docs/PLATFORM_SUPPORT.md`](docs/PLATFORM_SUPPORT.md).
 
@@ -75,7 +75,20 @@ semantic candidates
 - Coverage-guided fuzz smoke target
 - KoshDB/LLM-Kosh adapter skeleton and TSV interchange gate
 
-## Quick start
+## Pilot server quick start
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_BENCH=OFF
+cmake --build build -j2 --target graphenedb_server
+export GRAPHENEDB_API_KEY=development-key
+./build/graphenedb_server /tmp/graphenedb 64 8080 \
+  --physical-lattice-primary --physical-lattice-radius 256 \
+  --expected-max-nodes 197377 --wal-rotate-bytes 268435456
+```
+
+Discover the contract with `GET /v1/version`. The OpenAPI document is in [`docs/api/openapi-v1.yaml`](docs/api/openapi-v1.yaml), and the dependency-free Python client is in [`clients/python`](clients/python). Put the server behind the documented TLS reverse proxy before any non-loopback deployment.
+
+## Embedded quick start
 
 ```bash
 ./scripts/build_release.sh
@@ -121,18 +134,18 @@ Extraction TSV import:
 
 ## Developer orientation
 
-GrapheneDB is a compact embedded C++ database, not a service. The core code lives in `include/graphene/` and `src/`, with a CLI in `tools/graphenedb_cli.cpp`, C ABI glue in `include/graphene/c_api.h` and `src/c_api.cpp`, benchmarks in `bench/`, and release/operator automation in `scripts/`.
+GrapheneDB is a compact embedded C++ database with an optional controlled-pilot HTTP server; the embedded library remains the canonical storage engine. The core code lives in `include/graphene/` and `src/`, with a CLI in `tools/graphenedb_cli.cpp`, C ABI glue in `include/graphene/c_api.h` and `src/c_api.cpp`, benchmarks in `bench/`, and release/operator automation in `scripts/`.
 
 The fastest way to understand the repository is:
 
 1. Read this README for product scope and maturity.
 2. Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for storage, WAL, snapshots, retrieval, and CLI structure.
-3. Read [`docs/GRAPHENE_LATTICE_MODEL.md`](docs/GRAPHENE_LATTICE_MODEL.md), [`docs/LATTICE_RETRIEVAL.md`](docs/LATTICE_RETRIEVAL.md), and [`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md) for the RC5 additions.
+3. Read [`docs/GRAPHENE_LATTICE_MODEL.md`](docs/GRAPHENE_LATTICE_MODEL.md), [`docs/LATTICE_RETRIEVAL.md`](docs/LATTICE_RETRIEVAL.md), and [`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md) for the RC additions.
 4. Read [`docs/NEXT_GA_EXECUTION_PLAN.md`](docs/NEXT_GA_EXECUTION_PLAN.md) and [`reports/GA_STATUS_REPORT.md`](reports/GA_STATUS_REPORT.md) before changing release claims.
 
 Developer rules of thumb:
 
-- Preserve the embedded-library boundary: do not add a network server, auth layer, SQL layer, or distributed cluster behavior unless the release plan explicitly changes.
+- Preserve the embedded library as the canonical engine. Keep the optional HTTP server narrow, versioned, reverse-proxy-oriented, and free of distributed-cluster or SQL scope.
 - Keep durable format changes intentional and documented in [`docs/STORAGE_FORMAT.md`](docs/STORAGE_FORMAT.md), with fixtures or migration tests where applicable.
 - Treat `put_batch()` and `put_extraction()` as public API surface; add tests before changing semantics.
 - Prefer deterministic tests and preserved report output for release gates.
@@ -143,7 +156,7 @@ Agent/developer orientation files are provided at the repository root:
 - [`CLAUDE.md`](CLAUDE.md) for Claude-style coding agents.
 - [`AGENTS.md`](AGENTS.md) for Codex-style coding agents.
 
-Handoff next step: open a PR from `codex/rc5-developer-preview` into `master`, present it as the RC5 public developer-preview candidate, link the preserved evidence in `reports/GA_STATUS_REPORT.md`, and fix only CI or reviewer issues needed to merge. Enterprise-GA work remains a separate follow-up track.
+Handoff next step: keep the embedded library authoritative, treat `v0.6.0-rc1` as a controlled-pilot release candidate rather than public GA, and focus the next iteration on evidence gates instead of new features. The immediate remaining gates are the 24-hour and 72-hour soak runs on intended hardware/filesystem, real OCI/SBOM/vulnerability-scan evidence, resolution of the slow 5,000-incident stress profile and higher-load soak shutdown issue, and replacement of the placeholder licence before any broader distribution.
 
 ## One-command validation scripts
 
@@ -268,3 +281,51 @@ Earlier RC2/RC3/RC4 reports are also retained for 1M storage, process-kill, fuzz
 ## License
 
 Current license is a placeholder. Replace `LICENSE` before public distribution.
+
+## Hardened server pilot
+
+The optional HTTP server now uses a bounded worker pool, bounded queue, token-bucket rate limiting, request-size limits, structured JSON logs, Prometheus metrics, and physical-lattice capacity checks.
+
+```bash
+export GRAPHENEDB_API_KEY='replace-with-a-random-secret'
+./build/graphenedb_server /var/lib/graphenedb 64 8080 \
+  --physical-lattice-primary \
+  --physical-lattice-radius 600 \
+  --expected-max-nodes 1000000 \
+  --wal-rotate-bytes 268435456 \
+  --workers 8 --queue-capacity 1024 \
+  --rate-limit-rps 200 --rate-limit-burst 400
+```
+
+Useful operational endpoints:
+
+- `GET /v1/health` — liveness, unauthenticated.
+- `GET /v1/ready` — readiness, unauthenticated and count-free.
+- `GET /v1/metrics` — authenticated JSON metrics.
+- `GET /v1/metrics/prometheus` — authenticated Prometheus exposition.
+- `GET /v1/admin/capacity` — physical radius/capacity/utilisation.
+
+Do not expose the plain HTTP server directly to the internet. See `docs/SERVER_DEPLOYMENT_SECURITY.md`, `docs/PHYSICAL_LATTICE_CAPACITY_PLANNING.md`, and `docker-compose.secure.yml`.
+
+Launch validation commands:
+
+```bash
+python3 scripts/server_launch_hardening_test.py ./build/graphenedb_server
+scripts/run_adverse_filesystem_tests.sh build
+python3 scripts/server_soak_test.py --binary ./build/graphenedb_server --seconds 86400 --clients 8 --target-rps 80
+python3 scripts/validate_docker_security.py .
+```
+
+One-command controlled launch gate (defaults to a 5-minute soak):
+
+```bash
+SOAK_SECONDS=300 scripts/run_launch_readiness_gate.sh
+```
+
+The release environment must also run the real container build and CVE gate:
+
+```bash
+scripts/run_container_security_gate.sh
+```
+
+Set `SOAK_SECONDS=86400` on approved hardware for the 24-hour certification run.

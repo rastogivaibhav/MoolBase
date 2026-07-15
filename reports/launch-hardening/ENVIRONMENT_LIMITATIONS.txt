@@ -1,0 +1,7 @@
+Validation environment limitations
+
+- Docker and Podman were unavailable, so the final OCI image could not be built or run here.
+- Trivy, Grype, Hadolint, and Syft were unavailable, so no current image CVE scan or SBOM was generated here.
+- Static Docker/Compose security validation passed and the server binary was independently compiled with PIE, RELRO, BIND_NOW, stack-protector, and FORTIFY flags.
+- A 180-second mixed-operation soak passed. The repository includes the same harness for the required 24-hour approved-host run; a 24-hour certification run was not performed in this interactive environment.
+- TLS is intentionally terminated by a trusted reverse proxy; GrapheneDB does not implement native TLS in this iteration.

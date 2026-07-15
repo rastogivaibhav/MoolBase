@@ -1,0 +1,374 @@
+{
+  "health": {
+    "status": "ok",
+    "engine": "physical-hex-lattice"
+  },
+  "facts": [
+    {
+      "id": 0,
+      "q": 0,
+      "r": 0,
+      "text": "Checkout deployment v42 changed cache allocator before out",
+      "service": "checkout",
+      "incident": "INC-42"
+    },
+    {
+      "id": 1,
+      "q": -1,
+      "r": 0,
+      "text": "Memory leak appeared in checkout workers after deployment ",
+      "service": "checkout",
+      "incident": "INC-42"
+    },
+    {
+      "id": 2,
+      "q": -1,
+      "r": 1,
+      "text": "Checkout saturation caused customer payment failures",
+      "service": "checkout",
+      "incident": "INC-42"
+    },
+    {
+      "id": 3,
+      "q": -2,
+      "r": 1,
+      "text": "Status report claimed no memory pressure during the same i",
+      "service": "checkout",
+      "incident": "INC-42"
+    },
+    {
+      "id": 4,
+      "q": -2,
+      "r": 0,
+      "text": "Search service ranking experiment improved query latency",
+      "service": "search",
+      "incident": "INC-77"
+    },
+    {
+      "id": 5,
+      "q": -1,
+      "r": -1,
+      "text": "Search service cache warmup reduced cold start failures",
+      "service": "search",
+      "incident": "INC-77"
+    }
+  ],
+  "edges": [
+    {
+      "id": 0,
+      "from": 0,
+      "to": 1,
+      "role": "mechanistic",
+      "origin": "observed"
+    },
+    {
+      "id": 1,
+      "from": 1,
+      "to": 2,
+      "role": "causal",
+      "origin": "discovered"
+    },
+    {
+      "id": 2,
+      "from": 0,
+      "to": 2,
+      "role": "compressed",
+      "origin": "inferred"
+    },
+    {
+      "id": 3,
+      "from": 3,
+      "to": 1,
+      "role": "contradicts",
+      "origin": "observed"
+    },
+    {
+      "id": 4,
+      "from": 4,
+      "to": 5,
+      "role": "supports",
+      "origin": "observed"
+    }
+  ],
+  "empirical_bundle": {
+    "anchor": 0,
+    "mode": "empirical",
+    "as_of": "2026-02-02",
+    "max_hops": 2,
+    "targets": [
+      {
+        "target": 2,
+        "degeneracy": 1,
+        "best_confidence": 0.8004,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              1,
+              2
+            ],
+            "edges": [
+              0,
+              1
+            ],
+            "roles": [
+              "mechanistic",
+              "causal"
+            ],
+            "origins": [
+              "observed",
+              "discovered"
+            ],
+            "confidence": 0.8004,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      },
+      {
+        "target": 1,
+        "degeneracy": 1,
+        "best_confidence": 0.92,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              1
+            ],
+            "edges": [
+              0
+            ],
+            "roles": [
+              "mechanistic"
+            ],
+            "origins": [
+              "observed"
+            ],
+            "confidence": 0.92,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      }
+    ]
+  },
+  "balanced_bundle": {
+    "anchor": 0,
+    "mode": "balanced",
+    "as_of": "2026-02-02",
+    "max_hops": 2,
+    "targets": [
+      {
+        "target": 2,
+        "degeneracy": 2,
+        "best_confidence": 0.8004,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              2
+            ],
+            "edges": [
+              2
+            ],
+            "roles": [
+              "compressed"
+            ],
+            "origins": [
+              "inferred"
+            ],
+            "confidence": 0.66,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          },
+          {
+            "nodes": [
+              0,
+              1,
+              2
+            ],
+            "edges": [
+              0,
+              1
+            ],
+            "roles": [
+              "mechanistic",
+              "causal"
+            ],
+            "origins": [
+              "observed",
+              "discovered"
+            ],
+            "confidence": 0.8004,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      },
+      {
+        "target": 1,
+        "degeneracy": 1,
+        "best_confidence": 0.92,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              1
+            ],
+            "edges": [
+              0
+            ],
+            "roles": [
+              "mechanistic"
+            ],
+            "origins": [
+              "observed"
+            ],
+            "confidence": 0.92,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      }
+    ]
+  },
+  "temporal_feb": {
+    "as_of": "2026-02-02",
+    "results": [
+      {
+        "id": 0,
+        "content": "Checkout deployment v42 changed cache allocator before outage",
+        "metadata": {
+          "fact_type": "deployment",
+          "graphene_type": "temporal_fact",
+          "incident": "INC-42",
+          "placement_policy": "semantic_causal_temporal",
+          "service": "checkout",
+          "source": "deploy-note",
+          "valid_from": "2026-02-01",
+          "valid_until": "2026-03-01"
+        }
+      },
+      {
+        "id": 1,
+        "content": "Memory leak appeared in checkout workers after deployment v42",
+        "metadata": {
+          "fact_type": "metric",
+          "graphene_type": "temporal_fact",
+          "incident": "INC-42",
+          "placement_policy": "semantic_causal_temporal",
+          "service": "checkout",
+          "source": "metric",
+          "valid_from": "2026-02-02",
+          "valid_until": "2026-03-01"
+        }
+      },
+      {
+        "id": 2,
+        "content": "Checkout saturation caused customer payment failures",
+        "metadata": {
+          "fact_type": "outage",
+          "graphene_type": "temporal_fact",
+          "incident": "INC-42",
+          "placement_policy": "semantic_causal_temporal",
+          "service": "checkout",
+          "source": "incident",
+          "valid_from": "2026-02-02",
+          "valid_until": "2026-02-03"
+        }
+      },
+      {
+        "id": 3,
+        "content": "Status report claimed no memory pressure during the same incident",
+        "metadata": {
+          "fact_type": "contradiction",
+          "graphene_type": "temporal_fact",
+          "incident": "INC-42",
+          "placement_policy": "semantic_causal_temporal",
+          "service": "checkout",
+          "source": "status-report",
+          "valid_from": "2026-02-02",
+          "valid_until": "2026-02-03"
+        }
+      }
+    ]
+  },
+  "lattice_neighbors_A": {
+    "neighbors": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "quality": {
+    "node_count": 6,
+    "neighbor_pairs": 9,
+    "local_coherence": 0.000842423,
+    "causal_locality": 1,
+    "temporal_consistency": 1,
+    "mathematical_claim": "hex distance is optimized as a proxy for semantic-causal-temporal locality"
+  },
+  "metrics": {
+    "uptime_seconds": 14,
+    "requests": 18,
+    "node_inserts": 6,
+    "edge_inserts": 5,
+    "vector_searches": 0,
+    "lattice_searches": 1,
+    "validation_calls": 0,
+    "errors": 0,
+    "node_count": 6,
+    "edge_count": 5
+  }
+}

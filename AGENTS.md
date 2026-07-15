@@ -1,80 +1,90 @@
-# Codex Repo Context
+# GrapheneDB Agent Context
 
-This file orients Codex-style coding agents working in GrapheneDB.
+GrapheneDB v0.6.0-rc1 is a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
 
-GrapheneDB v0.5.0 RC5 is an embedded C++20 causal/lattice-memory database. It stores memory nodes, vectors, metadata, snapshots, WAL/checkpoint state, causal and contradiction/supersession edges, and optional graphene-inspired lattice coordinates for explainable retrieval.
-
-It is not a distributed service, SQL engine, auth system, vector-DB replacement, graph-DB replacement, or material-science simulator. Keep changes within the embedded library plus CLI product boundary unless explicitly asked to change that boundary.
+The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
 
 ## Start Here
 
-Read these before making broad changes:
+Read before broad changes:
 
 - `README.md`
 - `docs/ARCHITECTURE.md`
-- `docs/NEXT_GA_EXECUTION_PLAN.md`
-- `reports/GA_STATUS_REPORT.md`
+- `docs/STORAGE_FORMAT.md`
+- `docs/PILOT_RELEASE_CONTRACT.md`
+- `docs/api/openapi-v1.yaml`
+- `reports/pilot-rc1/PILOT_RC1_CODE_REVIEW_AND_VALIDATION.md` when present
 
-For specific domains:
+Domain references:
 
-- Lattice model: `docs/GRAPHENE_LATTICE_MODEL.md`, `docs/LATTICE_RETRIEVAL.md`
-- Extraction ingestion: `docs/EXTRACTION_INGESTION.md`
-- Durable format: `docs/STORAGE_FORMAT.md`
+- Lattice: `docs/GRAPHENE_LATTICE_MODEL.md`, `docs/LATTICE_RETRIEVAL.md`
 - Packaging: `docs/PACKAGING_DISTRIBUTION.md`
-- Release evidence: `docs/GA_READINESS_VERIFICATION.md`, `reports/RELEASE_CANDIDATE_BUNDLE.md`
+- Security: `SECURITY.md`, `deploy/`, `Dockerfile`, `docker-compose.secure.yml`
+- Release workflows: `scripts/run_pilot_rc1_gate.sh`, `scripts/verify_package_install.sh`
 
 ## Project Layout
 
-- `include/graphene/` - public API headers.
-- `src/` - implementation.
-- `tools/graphenedb_cli.cpp` - CLI entry point.
-- `tests/` - regression and release-gate tests.
-- `bench/` - benchmark executables.
-- `scripts/` - repeatable release, benchmark, package, and evidence workflows.
-- `reports/` - preserved release evidence.
+- `include/graphene/` — public C/C++ API.
+- `src/` — storage and retrieval implementation.
+- `tools/graphenedb_cli.cpp` — embedded CLI.
+- `tools/graphenedb_server.cpp` — optional controlled-pilot HTTP server.
+- `clients/python/` — dependency-free Python pilot client.
+- `tests/` — core, durability, crash, and lattice tests.
+- `bench/` — explicit benchmark executables.
+- `scripts/` — release, stress, package, server, and evidence workflows.
+- `reports/` — generated validation evidence; avoid committing scratch output.
 
-## Development Guidance
+## Non-Negotiable Engineering Rules
 
-- Use existing APIs and local patterns before adding new abstractions.
-- Keep storage compatibility in mind. Update `docs/STORAGE_FORMAT.md` and tests when durable records change.
-- Keep `put_batch()` and `put_extraction()` idempotence/source-scoping behavior stable unless a task explicitly asks to change the contract.
-- Preserve CLI JSON output stability for automation commands.
-- Do not add broad product claims. Public-preview and enterprise-GA status must match `reports/GA_STATUS_REPORT.md`.
-- Do not commit build directories, `graphify-out/`, Python bytecode, or historical scratch evidence. Commit only intentional release evidence.
-
-## Immediate Next Step For Handoff
-
-The RC5 developer-preview branch has been prepared and pushed as `codex/rc5-developer-preview`.
-
-The next agent should do exactly this:
-
-1. Open a GitHub pull request from `codex/rc5-developer-preview` into `master`.
-2. In the PR description, state that this is a public developer-preview candidate, not enterprise GA.
-3. Link the current evidence: `reports/GA_STATUS_REPORT.md`, `reports/preview-hardware/20260707-141656/PREVIEW_HARDWARE_SUMMARY.md`, `reports/ga-readiness/20260707-142146/GA_READINESS_SUMMARY.md`, and `reports/ga-evidence/20260707-142233.zip`.
-4. Wait for CI. If CI fails, fix only the failing gate or portability issue. Do not add new features during PR stabilization.
-5. If CI passes and review is acceptable, merge to `master`.
-6. After merge, create the developer-preview tag or release using the label in `docs/GA_READINESS_SCORECARD.md`: `GrapheneDB v0.5.0-rc5 - embedded causal/lattice-memory DB for controlled pilots`.
-
-Do not start enterprise-GA work in this PR. Enterprise GA remains a separate follow-up track: approved-host full readiness, 24-hour soak, multi-hour fuzzing, target-scale profiles, real filesystem failure evidence, signing/license review, and final vector-backend decisions.
+- Preserve durable-format compatibility. Any durable record change requires a format-version decision, migration/recovery tests, and `docs/STORAGE_FORMAT.md` updates.
+- Keep the embedded library authoritative; server endpoints must call tested core APIs rather than duplicate storage logic.
+- Writes exposed over HTTP must be retry-safe or explicitly document why not. Preserve `Idempotency-Key` behavior for `/v1/nodes` and `/v1/facts`.
+- Keep bulk ingestion atomic and bounded. Never reintroduce partial per-item bulk writes.
+- Keep the worker pool and request queue bounded. Do not use detached per-connection threads.
+- Do not weaken request-size, hop, result-count, rate-limit, bind-address, or reverse-proxy controls without evidence.
+- Do not silently promote inferred/reinforced data into observed/discovered truth.
+- Keep JSON logs and API responses valid for arbitrary user-controlled text.
+- Treat graceful shutdown, checkpointing, restart, backup/restore, and second-open rejection as database correctness contracts.
+- Public claims must match evidence. `v0.6.0-rc1` is a controlled-pilot release candidate, not unrestricted public GA.
+- Do not add Kosh/dialectic/model-world features to the DB correctness branch unless the user explicitly reopens that scope.
 
 ## Verification
 
-For a normal Windows release smoke:
+Fast pilot contract:
 
-```powershell
-.\scripts\run_release_candidate_bundle.ps1
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_SERVER=ON
+cmake --build build -j2
+ctest --test-dir build --output-on-failure -j2
+python3 scripts/server_pilot_contract_test.py ./build/graphenedb_server
 ```
 
-For intended preview performance evidence:
+Repeatable pilot RC gate:
 
-```powershell
-.\scripts\run_preview_hardware_profile.ps1 -ProfileLabel developer-preview -IntendedHardware
+```bash
+bash scripts/run_pilot_rc1_gate.sh
 ```
 
-For package consumption:
+Explicit larger profiles remain separate from default CTest:
 
-```powershell
-.\scripts\verify_package_install.ps1
+```bash
+bash scripts/run_100k_stress.sh
+bash scripts/run_1m_stress.sh
+bash scripts/run_rc_gate_pack.sh
 ```
 
-On this Windows host, local Application Control may block some freshly linked test executables. The RC bundle documents the local-policy CTest exclusion it uses; approved release hosts should rerun the full default gates without local exclusions.
+Package-consumer verification:
+
+```bash
+bash scripts/verify_package_install.sh
+```
+
+## Immediate Next Step
+
+Do not add new features by default. The next evidence gates are:
+
+1. 24-hour and then 72-hour soak on intended production hardware/filesystem.
+2. Actual OCI build, SBOM, and Trivy/Grype scan with pinned base-image digests.
+3. Resolve the slow 5,000-incident in-process stress profile and the higher-load long-soak harness shutdown issue.
+4. Replace the placeholder licence before public distribution.
+5. Only after those gates, decide whether to call this a public preview or continue as a design-partner pilot.

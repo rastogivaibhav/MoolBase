@@ -1,0 +1,119 @@
+-- The C compiler identification is GNU 14.2.0
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-package
+[  8%] Building CXX object CMakeFiles/graphenedb_healthcheck.dir/tools/graphenedb_healthcheck.cpp.o
+[ 16%] Building CXX object CMakeFiles/graphenedb.dir/src/c_api.cpp.o
+[ 25%] Linking CXX executable graphenedb_healthcheck
+[ 25%] Built target graphenedb_healthcheck
+[ 33%] Building CXX object CMakeFiles/graphenedb.dir/src/db.cpp.o
+[ 41%] Building CXX object CMakeFiles/graphenedb.dir/src/kosh_adapter.cpp.o
+[ 50%] Building CXX object CMakeFiles/graphenedb.dir/src/lattice_placement.cpp.o
+[ 58%] Building CXX object CMakeFiles/graphenedb.dir/src/platform_posix.cpp.o
+[ 66%] Linking CXX static library libgraphenedb.a
+[ 66%] Built target graphenedb
+[ 75%] Building CXX object CMakeFiles/graphenedb_cli.dir/tools/graphenedb_cli.cpp.o
+[ 83%] Building CXX object CMakeFiles/graphenedb_server.dir/tools/graphenedb_server.cpp.o
+[ 91%] Linking CXX executable graphenedb_cli
+[ 91%] Built target graphenedb_cli
+[100%] Linking CXX executable graphenedb_server
+[100%] Built target graphenedb_server
+-- Install configuration: "Release"
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/lib/libgraphenedb.a
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/bin/graphenedb_cli
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/bin/graphenedb_server
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/bin/graphenedb_healthcheck
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/c_api.h
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/db.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/faiss_index.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/kdtree_index.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/kosh_adapter.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/lattice_placement.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/platform.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/types.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/include/graphene/vector_index.hpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/API_EXAMPLES.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/ARCHITECTURE.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/CI_RELEASE_AUTOMATION.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/CLAUDE_HANDOFF_RECEIPT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/C_API.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/EXTRACTION_INGESTION.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/GA_READINESS_SCORECARD.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/GA_READINESS_VERIFICATION.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/GRAPHENE_LATTICE_MODEL.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/GRAPHENE_UNIQUENESS.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/KOSHDB_ADAPTER_CONTRACT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/LATTICE_RETRIEVAL.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/NEXT_GA_EXECUTION_PLAN.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/OPERATIONAL_RECOVERY.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/PACKAGING_DISTRIBUTION.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/PHYSICAL_LATTICE_CAPACITY_PLANNING.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/PHYSICAL_LATTICE_STORAGE.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/PLATFORM_SUPPORT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/RC4_REVIEWER_RESPONSE_REPORT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/RC5_LATTICE_REVIEW.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/RC_GATE_PACK.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/RELEASE_CHECKLIST.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/SAFETY_AND_LIMITATIONS.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/SERVER_DEPLOYMENT_SECURITY.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/STORAGE_FORMAT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/V1_ACCEPTANCE.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/V1_RC_ACCEPTANCE_REPORT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/VECTOR_INDEX.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/api
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/api/openapi-v1.yaml
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/PILOT_RELEASE_CONTRACT.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/clients
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/clients/python
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/clients/python/graphenedb_client.py
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/clients/python/__init__.py
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/clients/python/README.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/api_coding_memory.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/api_contradiction_supersession.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/api_incident_memory.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/api_team_brain.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/graphene_lattice_memory.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/examples/graphene_uniqueness_demo.cpp
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/README.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/CHANGELOG.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/LICENSE
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/share/doc/GrapheneDB/SECURITY.md
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/lib/cmake/GrapheneDB/GrapheneDBTargets.cmake
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/lib/cmake/GrapheneDB/GrapheneDBTargets-release.cmake
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/lib/cmake/GrapheneDB/GrapheneDBConfig.cmake
+-- Installing: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-install/lib/cmake/GrapheneDB/GrapheneDBConfigVersion.cmake
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-consumer
+[ 50%] Building CXX object CMakeFiles/graphenedb_package_consumer.dir/main.cpp.o
+[100%] Linking CXX executable graphenedb_package_consumer
+[100%] Built target graphenedb_package_consumer
+graphenedb_package_consumer_passed=true
+graphenedb_package_install_verified=true

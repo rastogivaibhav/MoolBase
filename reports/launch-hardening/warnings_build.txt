@@ -1,0 +1,5 @@
+[ 75%] Built target graphenedb
+[ 87%] Building CXX object CMakeFiles/graphenedb_server.dir/tools/graphenedb_server.cpp.o
+[100%] Linking CXX executable graphenedb_server
+[100%] Built target graphenedb_server
+[100%] Built target graphenedb_healthcheck

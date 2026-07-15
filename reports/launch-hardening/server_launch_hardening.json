@@ -1,0 +1,18 @@
+{
+  "auth_required": true,
+  "bounded_queue_rejection": true,
+  "capacity_endpoint": true,
+  "capacity_preflight_rejected": true,
+  "checkpoint": true,
+  "client_disconnect_survival": true,
+  "ok": true,
+  "prometheus_metrics": true,
+  "public_bind_rejected": true,
+  "rate_limiting": true,
+  "ready": true,
+  "request_size_limit": true,
+  "restart_persistence": true,
+  "structured_json_logs": true,
+  "validate": true,
+  "writes": true
+}

@@ -1,0 +1,85 @@
+{
+  "sequential_inserts": {
+    "count": 500,
+    "seconds": 2.7321594009990804,
+    "writes_per_second": 183.005427800868,
+    "p50_ms": 5.125849500473123,
+    "p95_ms": 10.109163349625305,
+    "max_ms": 24.605024000265985
+  },
+  "edge_inserts": {
+    "count": 199,
+    "p50_ms": 8.665131999805453,
+    "p95_ms": 15.853796001465525
+  },
+  "concurrent_inserts": {
+    "count": 100,
+    "workers": 32,
+    "seconds": 0.8978810770004202,
+    "writes_per_second": 111.37332388613554,
+    "p50_ms": 139.8209515000417,
+    "p95_ms": 157.44630045028316,
+    "max_ms": 158.95747899958224
+  },
+  "point_reads": {
+    "count": 7,
+    "p50_ms": 0.6684620002488373,
+    "p95_ms": 0.9207140010403236
+  },
+  "lattice_search_hops2": {
+    "queries": 50,
+    "avg_neighbors": 17.68,
+    "p50_ms": 0.59165750099055,
+    "p95_ms": 0.7104194997737068,
+    "max_ms": 0.7495230001950404
+  },
+  "hybrid_search": {
+    "queries": 20,
+    "p50_ms": 0.78574900089734,
+    "p95_ms": 4.5446021001225745,
+    "max_ms": 4.7098380000534235,
+    "sample_top_ids": [
+      102,
+      551,
+      119,
+      591,
+      102,
+      551,
+      119,
+      591
+    ]
+  },
+  "validate": {
+    "status": 200,
+    "ms": 1.1074760004703421,
+    "ok": true,
+    "report_excerpt": "OK\n"
+  },
+  "metrics": {
+    "uptime_seconds": 5,
+    "requests": 879,
+    "node_inserts": 600,
+    "edge_inserts": 199,
+    "vector_searches": 20,
+    "lattice_searches": 50,
+    "validation_calls": 1,
+    "errors": 0,
+    "node_count": 600,
+    "edge_count": 199
+  },
+  "physical_files": {
+    "LOCK": 6,
+    "graphene.wal": 543621,
+    "MANIFEST": 271,
+    "graphene.lattice": 38075,
+    "graphene.lattice.bin": 6769960,
+    "graphene.nodeidx": 10644
+  },
+  "restart_persistence": {
+    "node42_status": 200,
+    "node42_has_content": true,
+    "lattice_status": 200,
+    "lattice_neighbors_after_restart": 18,
+    "node_count_after_restart": 600
+  }
+}

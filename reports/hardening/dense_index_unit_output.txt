@@ -1,0 +1,8 @@
+dense_hex_lattice_index_tests_passed=true
+dense_hex_radius=20
+dense_hex_nodes=1261
+dense_hex_insert_ms=1478.31
+dense_hex_neighbor_probes=1000
+dense_hex_neighbor_query_ms=1.04537
+dense_hex_neighbor_avg_us=1.04537
+dense_hex_total_neighbors=17050

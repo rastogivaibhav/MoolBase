@@ -1,0 +1,5 @@
+date_utc=2026-07-15T11:29:32Z
+Linux 8e2df222c535 4.4.0 #1 SMP Sun Jan 10 15:06:54 PST 2016 x86_64 GNU/Linux
+cmake version 3.31.6
+c++ (Debian 14.2.0-19) 14.2.0
+Python 3.13.5

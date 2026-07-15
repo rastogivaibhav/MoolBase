@@ -1,0 +1,85 @@
+Internal ctest changing into directory: /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-rc1
+Test project /mnt/data/gdb_next_iter/graphenedb_launch_hardened/build-pilot-rc1
+      Start  1: graphenedb_tests
+      Start  2: graphenedb_c_api_tests
+ 1/29 Test  #2: graphenedb_c_api_tests ...........................   Passed    0.04 sec
+      Start  3: graphenedb_rc_crash_tests
+ 2/29 Test  #1: graphenedb_tests .................................   Passed    0.06 sec
+      Start  4: graphenedb_rc_fuzz_tests
+ 3/29 Test  #3: graphenedb_rc_crash_tests ........................   Passed    0.02 sec
+      Start  5: graphenedb_rc_kosh_adapter_tests
+ 4/29 Test  #5: graphenedb_rc_kosh_adapter_tests .................   Passed    0.02 sec
+      Start  6: graphenedb_rc_stress_tests
+ 5/29 Test  #4: graphenedb_rc_fuzz_tests .........................   Passed    0.12 sec
+      Start  7: graphenedb_rc_lock_rotation_metadata_tests
+ 6/29 Test  #7: graphenedb_rc_lock_rotation_metadata_tests .......   Passed    0.05 sec
+      Start  8: graphenedb_lattice_tests
+ 7/29 Test  #8: graphenedb_lattice_tests .........................   Passed    0.02 sec
+      Start  9: graphenedb_physical_lattice_storage_tests
+ 8/29 Test  #9: graphenedb_physical_lattice_storage_tests ........   Passed    0.02 sec
+      Start 10: graphenedb_physical_lattice_primary_tests
+ 9/29 Test #10: graphenedb_physical_lattice_primary_tests ........   Passed    0.03 sec
+      Start 11: graphenedb_dense_hex_lattice_index_tests
+10/29 Test #11: graphenedb_dense_hex_lattice_index_tests .........   Passed    0.23 sec
+      Start 12: graphenedb_dense_hex_lattice_stress_tests
+11/29 Test #12: graphenedb_dense_hex_lattice_stress_tests ........   Passed    0.04 sec
+      Start 13: graphenedb_acid_lattice_tests
+12/29 Test #13: graphenedb_acid_lattice_tests ....................   Passed    0.02 sec
+      Start 14: graphenedb_lattice_placement_tests
+13/29 Test #14: graphenedb_lattice_placement_tests ...............   Passed    0.01 sec
+      Start 15: graphenedb_extraction_ingest_tests
+14/29 Test #15: graphenedb_extraction_ingest_tests ...............   Passed    0.01 sec
+      Start 16: graphenedb_cli_import_tests
+15/29 Test #16: graphenedb_cli_import_tests ......................   Passed    0.29 sec
+      Start 17: graphenedb_cli_extract_tests
+16/29 Test #17: graphenedb_cli_extract_tests .....................   Passed    0.06 sec
+      Start 18: graphenedb_rc5_crash_matrix_tests
+17/29 Test #18: graphenedb_rc5_crash_matrix_tests ................   Passed    0.02 sec
+      Start 19: graphenedb_rc5_fault_injection_tests
+18/29 Test #19: graphenedb_rc5_fault_injection_tests .............   Passed    0.03 sec
+      Start 20: graphenedb_rc_process_kill_tests
+19/29 Test #20: graphenedb_rc_process_kill_tests .................   Passed    0.22 sec
+      Start 21: graphenedb_real_filesystem_failure_tests
+20/29 Test #21: graphenedb_real_filesystem_failure_tests .........   Passed    0.02 sec
+      Start 22: graphenedb_disk_pressure_tests
+21/29 Test #22: graphenedb_disk_pressure_tests ...................   Passed    0.01 sec
+      Start 23: graphenedb_rc_real_kosh_adapter_tests
+22/29 Test #23: graphenedb_rc_real_kosh_adapter_tests ............   Passed    0.01 sec
+      Start 24: graphenedb_rc_soak_tests
+23/29 Test #24: graphenedb_rc_soak_tests .........................   Passed    2.07 sec
+      Start 25: graphenedb_rc_1m_storage_smoke
+24/29 Test  #6: graphenedb_rc_stress_tests .......................   Passed    3.36 sec
+      Start 26: graphenedb_release_candidate_bundle_meta_tests
+25/29 Test #26: graphenedb_release_candidate_bundle_meta_tests ...   Passed    3.70 sec
+      Start 27: graphenedb_server_launch_hardening_tests
+26/29 Test #27: graphenedb_server_launch_hardening_tests .........   Passed    1.89 sec
+      Start 28: graphenedb_server_pilot_contract_tests
+27/29 Test #28: graphenedb_server_pilot_contract_tests ...........***Failed    1.98 sec
+Traceback (most recent call last):
+  File "/mnt/data/gdb_next_iter/graphenedb_launch_hardened/scripts/server_pilot_contract_test.py", line 213, in <module>
+    parsed_logs = [json.loads(line) for line in logs.splitlines() if line.strip()]
+                   ~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.13/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.13/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/json/decoder.py", line 361, in raw_decode
+    obj, end = self.scan_once(s, idx)
+               ~~~~~~~~~~~~~~^^^^^^^^
+json.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 361 (char 360)
+
+      Start 29: graphenedb_docker_security_static_tests
+28/29 Test #29: graphenedb_docker_security_static_tests ..........   Passed    1.27 sec
+29/29 Test #25: graphenedb_rc_1m_storage_smoke ...................   Passed    9.30 sec
+
+97% tests passed, 1 tests failed out of 29
+
+Label Time Summary:
+stress-smoke    =   3.36 sec*proc (1 test)
+
+Total Test time (real) =  12.66 sec
+
+The following tests FAILED:
+	 28 - graphenedb_server_pilot_contract_tests (Failed)

@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /mnt/data/gdb_launch_fix/build_launchfix
+Test project /mnt/data/gdb_launch_fix/build_launchfix
+    Start  1: graphenedb_tests
+1/5 Test  #1: graphenedb_tests ............................   Passed    0.04 sec
+    Start 10: graphenedb_physical_lattice_primary_tests
+2/5 Test #10: graphenedb_physical_lattice_primary_tests ...   Passed    0.03 sec
+    Start 19: graphenedb_rc5_fault_injection_tests
+3/5 Test #19: graphenedb_rc5_fault_injection_tests ........   Passed    0.04 sec
+    Start 27: graphenedb_server_launch_hardening_tests
+4/5 Test #27: graphenedb_server_launch_hardening_tests ....   Passed    1.74 sec
+    Start 28: graphenedb_docker_security_static_tests
+5/5 Test #28: graphenedb_docker_security_static_tests .....   Passed    1.13 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   2.99 sec

@@ -1,0 +1,3 @@
+graphenedb_pilot_rc1_gate_passed=true
+controlled_private_pilot=GO
+unrestricted_public_ga=NO_GO

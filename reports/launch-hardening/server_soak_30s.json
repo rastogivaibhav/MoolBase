@@ -1,0 +1,94 @@
+{
+  "capacity": {
+    "capacity": 49537,
+    "nodes": 1285,
+    "physical_lattice_primary": true,
+    "radius": 128,
+    "recommended_radius_for_expected_max_nodes": 115,
+    "remaining": 48252,
+    "utilization": 0.0259402
+  },
+  "clients": 8,
+  "counters": {
+    "checkpoints": 3,
+    "lattice": 266,
+    "reads": 468,
+    "searches": 377,
+    "writes": 1285
+  },
+  "db_files": {
+    "MANIFEST": 281,
+    "graphene.data": 538732,
+    "graphene.lattice": 84746,
+    "graphene.lattice.bin": 1917224,
+    "graphene.nodeidx": 23188,
+    "graphene.wal": 0
+  },
+  "failure_count": 0,
+  "first_failures": [],
+  "latency_ms": {
+    "max": 18.24335699996027,
+    "p50": 3.6714959999244456,
+    "p95": 6.269548999966901,
+    "p99": 8.392338000021482,
+    "samples": 2396
+  },
+  "metrics": {
+    "active": 1,
+    "auth_failures": 0,
+    "backup_calls": 0,
+    "checkpoint_calls": 4,
+    "completed": 2402,
+    "edge_count": 0,
+    "edge_inserts": 0,
+    "errors": 0,
+    "lattice_searches": 266,
+    "node_count": 1285,
+    "node_inserts": 1285,
+    "physical_lattice_capacity": 49537,
+    "queue_depth": 0,
+    "queue_rejected": 0,
+    "rate_limited": 0,
+    "request_bytes": 615727,
+    "request_duration_avg_ms": 2.53314,
+    "request_duration_max_ms": 29.534,
+    "requests": 2403,
+    "response_bytes": 663351,
+    "status_2xx": 2402,
+    "status_4xx": 0,
+    "status_5xx": 0,
+    "uptime_seconds": 30,
+    "validation_calls": 1,
+    "vector_searches": 377
+  },
+  "note": "Use --seconds 86400 on approved hardware for the full 24-hour launch gate.",
+  "ok": true,
+  "restart_samples": [
+    {
+      "id": 0,
+      "latency_ms": 1.0695439999608425,
+      "status": 200
+    },
+    {
+      "id": 1,
+      "latency_ms": 0.8064920000379061,
+      "status": 200
+    },
+    {
+      "id": 1283,
+      "latency_ms": 0.7509569999228916,
+      "status": 200
+    },
+    {
+      "id": 1284,
+      "latency_ms": 0.6642530000817715,
+      "status": 200
+    }
+  ],
+  "restart_validate": {
+    "ok": true,
+    "report": "OK\n"
+  },
+  "seconds": 30,
+  "target_rps": 80.0
+}

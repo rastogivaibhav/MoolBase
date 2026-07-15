@@ -1,0 +1,57 @@
+[  1%] Building CXX object CMakeFiles/graphenedb_healthcheck.dir/tools/graphenedb_healthcheck.cpp.o
+[  3%] Building CXX object CMakeFiles/graphenedb.dir/src/c_api.cpp.o
+[  4%] Linking CXX executable graphenedb_healthcheck
+[  4%] Built target graphenedb_healthcheck
+[  6%] Building CXX object CMakeFiles/graphenedb.dir/src/db.cpp.o
+[  8%] Building CXX object CMakeFiles/graphenedb_cli_import_tests.dir/tests/test_cli_import.cpp.o
+[  9%] Linking CXX executable graphenedb_cli_import_tests
+[  9%] Built target graphenedb_cli_import_tests
+[ 11%] Building CXX object CMakeFiles/graphenedb.dir/src/kosh_adapter.cpp.o
+[ 12%] Building CXX object CMakeFiles/graphenedb_cli_extract_tests.dir/tests/test_cli_extract.cpp.o
+[ 14%] Linking CXX executable graphenedb_cli_extract_tests
+[ 14%] Built target graphenedb_cli_extract_tests
+[ 16%] Building CXX object CMakeFiles/graphenedb.dir/src/lattice_placement.cpp.o
+[ 17%] Building CXX object CMakeFiles/graphenedb.dir/src/platform_posix.cpp.o
+[ 19%] Linking CXX static library libgraphenedb.a
+[ 19%] Built target graphenedb
+[ 20%] Building CXX object CMakeFiles/graphenedb_cli.dir/tools/graphenedb_cli.cpp.o
+[ 22%] Building CXX object CMakeFiles/graphenedb_server.dir/tools/graphenedb_server.cpp.o
+[ 24%] Linking CXX executable graphenedb_cli
+[ 24%] Built target graphenedb_cli
+[ 25%] Building CXX object CMakeFiles/graphenedb_tests.dir/tests/test_graphenedb.cpp.o
+[ 27%] Linking CXX executable graphenedb_tests
+[ 27%] Built target graphenedb_tests
+[ 29%] Building C object CMakeFiles/graphenedb_c_api_tests.dir/tests/test_c_api.c.o
+[ 30%] Linking CXX executable graphenedb_c_api_tests
+[ 32%] Linking CXX executable graphenedb_server
+[ 32%] Built target graphenedb_c_api_tests
+[ 33%] Building CXX object CMakeFiles/graphenedb_rc_crash_tests.dir/tests/test_rc_gate_crash.cpp.o
+[ 33%] Built target graphenedb_server
+[ 35%] Building CXX object CMakeFiles/graphenedb_rc_fuzz_tests.dir/tests/test_rc_gate_fuzz.cpp.o
+[ 37%] Linking CXX executable graphenedb_rc_crash_tests
+[ 37%] Built target graphenedb_rc_crash_tests
+[ 38%] Building CXX object CMakeFiles/graphenedb_rc_kosh_adapter_tests.dir/tests/test_rc_gate_kosh_adapter.cpp.o
+[ 40%] Linking CXX executable graphenedb_rc_fuzz_tests
+[ 40%] Built target graphenedb_rc_fuzz_tests
+[ 41%] Building CXX object CMakeFiles/graphenedb_rc_stress_tests.dir/tests/test_rc_gate_stress.cpp.o
+[ 43%] Linking CXX executable graphenedb_rc_kosh_adapter_tests
+[ 43%] Built target graphenedb_rc_kosh_adapter_tests
+[ 45%] Building CXX object CMakeFiles/graphenedb_rc_lock_rotation_metadata_tests.dir/tests/test_rc_gate_lock_rotation_metadata.cpp.o
+[ 46%] Linking CXX executable graphenedb_rc_lock_rotation_metadata_tests
+[ 46%] Built target graphenedb_rc_lock_rotation_metadata_tests
+[ 48%] Building CXX object CMakeFiles/graphenedb_lattice_tests.dir/tests/test_graphene_lattice.cpp.o
+[ 50%] Linking CXX executable graphenedb_rc_stress_tests
+[ 50%] Built target graphenedb_rc_stress_tests
+[ 51%] Building CXX object CMakeFiles/graphenedb_physical_lattice_storage_tests.dir/tests/test_physical_lattice_storage.cpp.o
+[ 53%] Linking CXX executable graphenedb_lattice_tests
+[ 53%] Built target graphenedb_lattice_tests
+[ 54%] Building CXX object CMakeFiles/graphenedb_physical_lattice_primary_tests.dir/tests/test_physical_lattice_primary.cpp.o
+[ 56%] Linking CXX executable graphenedb_physical_lattice_storage_tests
+[ 56%] Built target graphenedb_physical_lattice_storage_tests
+[ 58%] Building CXX object CMakeFiles/graphenedb_dense_hex_lattice_index_tests.dir/tests/test_dense_hex_lattice_index.cpp.o
+[ 59%] Linking CXX executable graphenedb_physical_lattice_primary_tests
+[ 59%] Built target graphenedb_physical_lattice_primary_tests
+[ 61%] Building CXX object CMakeFiles/graphenedb_dense_hex_lattice_stress_tests.dir/tests/test_dense_hex_lattice_stress.cpp.o
+[ 62%] Linking CXX executable graphenedb_dense_hex_lattice_index_tests
+[ 62%] Built target graphenedb_dense_hex_lattice_index_tests
+[ 64%] Building CXX object CMakeFiles/graphenedb_acid_lattice_tests.dir/tests/test_acid_lattice.cpp.o

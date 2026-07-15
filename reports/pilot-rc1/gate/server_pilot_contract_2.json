@@ -1,0 +1,22 @@
+{
+  "atomic_bulk": true,
+  "bulk_amplification_guard": true,
+  "bulk_bound": true,
+  "chunked_rejected": true,
+  "conflicting_content_length_rejected": true,
+  "content_type_required": true,
+  "graceful_shutdown_events": true,
+  "idempotency_conflict": true,
+  "idempotent_replay": true,
+  "invalid_edge_is_400": true,
+  "invalid_node_id_is_400": true,
+  "lattice_hops_bounded": true,
+  "length_required": true,
+  "ok": true,
+  "post_restart_validation": true,
+  "python_client": true,
+  "restart_after_graceful_shutdown": true,
+  "shutdown_checkpoint_zero_wal": true,
+  "temporal_results_bounded": true,
+  "version_discovery": true
+}

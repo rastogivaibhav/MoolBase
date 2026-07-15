@@ -1,0 +1,23 @@
+Added
+- .dockerignore
+- deploy/Caddyfile
+- docker-compose.secure.yml
+- docs/PHYSICAL_LATTICE_CAPACITY_PLANNING.md
+- docs/SERVER_DEPLOYMENT_SECURITY.md
+- scripts/run_adverse_filesystem_tests.sh
+- scripts/run_container_security_gate.sh
+- scripts/run_launch_readiness_gate.sh
+- scripts/server_launch_hardening_test.py
+- scripts/server_soak_test.py
+- scripts/validate_docker_security.py
+- tools/graphenedb_healthcheck.cpp
+- tools/server_runtime.hpp
+
+Modified
+- CHANGELOG.md
+- CMakeLists.txt
+- Dockerfile
+- README.md
+- src/db.cpp
+- src/kosh_adapter.cpp
+- tools/graphenedb_server.cpp

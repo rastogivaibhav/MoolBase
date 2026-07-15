@@ -32,7 +32,12 @@ Status KoshAdapter::ingest_memory(const KoshMemoryRecord& memory, uint32_t* out_
 }
 
 Status KoshAdapter::link(uint32_t from, uint32_t to, EdgeRole role, EdgeOrigin origin, double confidence) {
-  EdgeInput e{from, to, origin, role, confidence};
+  EdgeInput e;
+  e.from = from;
+  e.to = to;
+  e.origin = origin;
+  e.role = role;
+  e.confidence = confidence;
   e.metadata["adapter"] = "graphene-kosh-adapter-v1";
   return db_.put_edge(e);
 }

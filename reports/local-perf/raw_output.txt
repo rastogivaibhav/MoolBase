@@ -1,0 +1,130 @@
+--- core_tests ---
+graphenedb_tests_passed=true
+elapsed=0:00.03 maxrss_kb=18416
+
+--- lattice_tests ---
+graphenedb_lattice_tests_passed=true
+elapsed=0:00.01 maxrss_kb=7672
+
+--- physical_lattice_tests ---
+physical_lattice_storage_tests_passed=true
+elapsed=0:00.01 maxrss_kb=6420
+
+--- extraction_ingest_tests ---
+graphenedb_extraction_ingest_tests_passed=true
+elapsed=0:00.01 maxrss_kb=7080
+
+--- rc_stress_12k_nodes ---
+rc_stress_gate=true
+incidents=2000 nodes=12000 edges=15999 dim=64
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=17630.5 ingest_nodes_per_sec=680.637
+vector_p50_ms=0.99927 vector_p95_ms=1.09108 vector_p99_ms=1.87734
+causal_p50_ms=0.191616 causal_p95_ms=0.229042 causal_p99_ms=0.270423
+metadata_service_p50_ms=0.079358 metadata_service_p95_ms=0.104496
+causal_hit_rate=0.9875 avg_candidate_pct=6.25 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=2000 defect_nodes=509 defect_edges=2000 synthetic_edges=1999
+vector_index_requested=auto
+vector_index=flat
+reopen_ms=488.468
+elapsed=0:18.43 maxrss_kb=140608
+
+--- rc_1m_scaled_24k_nodes ---
+--- rc_1m_scaled_6k_nodes ---
+vector_index_requested=auto
+vector_index=flat
+rc_1m_storage_gate=true
+nodes=6000 docs=250 inserted_edges=7750 dim=64 queries=20
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=2333.32 total_close_ms=2354.14
+vector_p50_ms=0.506015 vector_p95_ms=1.59311
+causal_lattice_p50_ms=0.119939 causal_lattice_p95_ms=0.185437
+metadata_service_p50_ms=0.043134 metadata_service_p95_ms=0.070435
+causal_root_hit_rate=0.95 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=1000 defect_nodes=231 defect_edges=1000 synthetic_edges=750
+reopen_ms=218.544
+elapsed=0:02.67 maxrss_kb=75256
+
+--- bench_storage_2000 ---
+rc5_storage_retrieval_bench=true
+incidents=334 nodes=2000 edges=2664 dim=64 queries=20
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=542.404 ingest_nodes_per_sec=3687.29
+vector_p50_ms=0.192808 vector_p95_ms=0.465275
+causal_lattice_p50_ms=0.102173 causal_lattice_p95_ms=0.124226
+metadata_service_p50_ms=0.014352 metadata_service_p95_ms=0.018527
+causal_root_hit_rate=1 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=333 defect_nodes=85 defect_edges=333 synthetic_edges=332
+reopen_ms=93.4733
+elapsed=0:00.67 maxrss_kb=28584
+
+--- bench_storage_5000 ---
+rc5_storage_retrieval_bench=true
+incidents=834 nodes=5000 edges=6664 dim=64 queries=30
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=2168.82 ingest_nodes_per_sec=2305.4
+vector_p50_ms=0.420968 vector_p95_ms=0.515229
+causal_lattice_p50_ms=0.169513 causal_lattice_p95_ms=0.223203
+metadata_service_p50_ms=0.0332 metadata_service_p95_ms=0.048052
+causal_root_hit_rate=1 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=833 defect_nodes=212 defect_edges=833 synthetic_edges=832
+reopen_ms=204.731
+elapsed=0:02.48 maxrss_kb=63396
+
+--- bench_vector_baseline ---
+vector_baseline_comparison=true
+incidents=5000 nodes=15000 edges=5000 dim=64 queries=30
+ingest_ms=699.06
+vector_root_hit_rate=0
+causal_root_hit_rate=1
+vector_p95_ms=1.2096
+causal_p95_ms=0.418324
+elapsed=0:00.75 maxrss_kb=24376
+
+--- rc_stress_60k_nodes ---
+--- rc_stress_12k_kdtree ---
+rc_stress_gate=true
+incidents=2000 nodes=12000 edges=15999 dim=64
+vector_index_requested=kdtree
+vector_index=kdtree
+ingest_ms=12415.8 ingest_nodes_per_sec=966.511
+vector_p50_ms=0.007241 vector_p95_ms=0.027161 vector_p99_ms=0.036835
+causal_p50_ms=0.165477 causal_p95_ms=0.321319 causal_p99_ms=0.347708
+metadata_service_p50_ms=0.051527 metadata_service_p95_ms=0.081462
+causal_hit_rate=0.9875 avg_candidate_pct=6.25 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=2000 defect_nodes=509 defect_edges=2000 synthetic_edges=1999
+vector_index_requested=kdtree
+vector_index=kdtree
+reopen_ms=558.132
+elapsed=0:13.28 maxrss_kb=144688
+
+--- bench_storage_10000 ---
+rc5_storage_retrieval_bench=true
+incidents=1667 nodes=10000 edges=13331 dim=64 queries=40
+vector_index_requested=auto
+vector_index=flat
+ingest_ms=5859.77 ingest_nodes_per_sec=1706.55
+vector_p50_ms=0.789207 vector_p95_ms=0.874516
+causal_lattice_p50_ms=0.231775 causal_lattice_p95_ms=0.292025
+metadata_service_p50_ms=0.054772 metadata_service_p95_ms=0.059369
+causal_root_hit_rate=0.975 avg_lattice_neighbors=3 avg_lattice_score=1.15
+cross_layer_edges=1667 defect_nodes=424 defect_edges=1666 synthetic_edges=1665
+reopen_ms=315.996
+elapsed=0:06.36 maxrss_kb=116268
+
+--- vector_recall_5000 ---
+vector_index_recall_benchmark=true
+nodes=5000 queries=50 dim=64 k=10
+candidate_requested=auto
+vector_index_requested=auto
+vector_index=flat
+mean_recall_at_k=1
+worst_recall_at_k=1
+exact_p95_ms=0.397874
+candidate_p95_ms=0.491603
+elapsed=0:00.45 maxrss_kb=17264
+

@@ -1,0 +1,94 @@
+{
+  "capacity": {
+    "capacity": 49537,
+    "nodes": 11796,
+    "physical_lattice_primary": true,
+    "radius": 128,
+    "recommended_radius_for_expected_max_nodes": 115,
+    "remaining": 37741,
+    "utilization": 0.238125
+  },
+  "clients": 12,
+  "counters": {
+    "checkpoints": 3,
+    "lattice": 2196,
+    "reads": 4311,
+    "searches": 3138,
+    "writes": 11796
+  },
+  "db_files": {
+    "MANIFEST": 285,
+    "graphene.data": 4973037,
+    "graphene.lattice": 863705,
+    "graphene.lattice.bin": 2496488,
+    "graphene.nodeidx": 231928,
+    "graphene.wal": 0
+  },
+  "failure_count": 0,
+  "first_failures": [],
+  "latency_ms": {
+    "max": 243.9094549999936,
+    "p50": 5.737261999911425,
+    "p95": 12.422165999851131,
+    "p99": 28.247997999869767,
+    "samples": 21441
+  },
+  "metrics": {
+    "active": 1,
+    "auth_failures": 0,
+    "backup_calls": 0,
+    "checkpoint_calls": 4,
+    "completed": 21447,
+    "edge_count": 0,
+    "edge_inserts": 0,
+    "errors": 0,
+    "lattice_searches": 2196,
+    "node_count": 11796,
+    "node_inserts": 11796,
+    "physical_lattice_capacity": 49537,
+    "queue_depth": 0,
+    "queue_rejected": 0,
+    "rate_limited": 0,
+    "request_bytes": 5515107,
+    "request_duration_avg_ms": 5.37384,
+    "request_duration_max_ms": 277.02,
+    "requests": 21448,
+    "response_bytes": 5993337,
+    "status_2xx": 21447,
+    "status_4xx": 0,
+    "status_5xx": 0,
+    "uptime_seconds": 180,
+    "validation_calls": 1,
+    "vector_searches": 3138
+  },
+  "note": "Use --seconds 86400 on approved hardware for the full 24-hour launch gate.",
+  "ok": true,
+  "restart_samples": [
+    {
+      "id": 0,
+      "latency_ms": 0.9062130000074831,
+      "status": 200
+    },
+    {
+      "id": 1,
+      "latency_ms": 0.7736280001608975,
+      "status": 200
+    },
+    {
+      "id": 11794,
+      "latency_ms": 0.8016900001166505,
+      "status": 200
+    },
+    {
+      "id": 11795,
+      "latency_ms": 0.7376430000931578,
+      "status": 200
+    }
+  ],
+  "restart_validate": {
+    "ok": true,
+    "report": "OK\n"
+  },
+  "seconds": 180,
+  "target_rps": 120.0
+}

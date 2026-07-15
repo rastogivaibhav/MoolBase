@@ -139,6 +139,19 @@ struct DBOptions {
   // If true, every inserted node must include a lattice coordinate and lattice
   // bonds are topology-validated.
   bool require_lattice{false};
+  // If true, GrapheneDB materializes a physical lattice sidecar file
+  // (graphene.lattice) where visible lattice nodes are stored in deterministic
+  // hex-cell order with coordinate-neighbor slots. The canonical WAL/data files
+  // remain the recovery source of truth in this RC, but traversal can be backed
+  // by a disk-shaped lattice layout rather than coordinates as metadata only.
+  bool physical_lattice_storage{false};
+  // If true, graphene.lattice.bin becomes a fixed-offset physical hex lattice index.
+  // The framed WAL remains the commit log, while node placement is mirrored into
+  // ordinal-addressed CellRecords for direct seek/mmap-style retrieval.
+  bool physical_lattice_primary{false};
+  // Radius of the fixed axial disk per layer used by the physical index.
+  // Capacity per layer = 1 + 3R(R + 1).
+  uint32_t physical_lattice_radius{256};
   // Auto currently selects KDTree for low-dimensional vectors and Flat for
   // higher-dimensional embeddings where KDTree pruning degrades. Faiss is an
   // explicit opt-in backend when GrapheneDB is compiled with FAISS support.

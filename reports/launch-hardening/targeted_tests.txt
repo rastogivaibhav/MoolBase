@@ -1,0 +1,43 @@
+== core ==
+graphenedb_tests_passed=true
+== physical primary ==
+physical_lattice_primary_tests_passed=true
+== fault injection ==
+graphenedb_rc5_fault_injection_passed=true
+== server hardening ==
+{
+  "auth_required": true,
+  "bounded_queue_rejection": true,
+  "capacity_endpoint": true,
+  "capacity_preflight_rejected": true,
+  "checkpoint": true,
+  "ok": true,
+  "prometheus_metrics": true,
+  "public_bind_rejected": true,
+  "rate_limiting": true,
+  "ready": true,
+  "request_size_limit": true,
+  "restart_persistence": true,
+  "structured_json_logs": true,
+  "validate": true,
+  "writes": true
+}
+== docker static ==
+{
+  "checks": {
+    "binary_hardening": false,
+    "compose_drop_caps": true,
+    "compose_no_new_privileges": true,
+    "compose_pid_limit": true,
+    "compose_read_only": true,
+    "db_port_not_published": false,
+    "dockerignore_builds": true,
+    "healthcheck": true,
+    "minimal_apt": true,
+    "multi_stage": true,
+    "no_baked_api_key": true,
+    "non_root_user": true
+  },
+  "note": "Static structural validation only; release CI must also perform an up-to-date CVE scan and pin approved base-image digests.",
+  "ok": false
+}

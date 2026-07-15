@@ -1,0 +1,141 @@
+{
+  "node0": {
+    "id": 0,
+    "content": "Checkout deployment v42 changed cache allocator before outage",
+    "metadata": {
+      "fact_type": "deployment",
+      "graphene_type": "temporal_fact",
+      "incident": "INC-42",
+      "placement_policy": "semantic_causal_temporal",
+      "service": "checkout",
+      "source": "deploy-note",
+      "valid_from": "2026-02-01",
+      "valid_until": "2026-03-01"
+    }
+  },
+  "bundle_after_restart": {
+    "anchor": 0,
+    "mode": "balanced",
+    "as_of": "2026-02-02",
+    "max_hops": 2,
+    "targets": [
+      {
+        "target": 2,
+        "degeneracy": 2,
+        "best_confidence": 0.8004,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              2
+            ],
+            "edges": [
+              2
+            ],
+            "roles": [
+              "compressed"
+            ],
+            "origins": [
+              "inferred"
+            ],
+            "confidence": 0.66,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          },
+          {
+            "nodes": [
+              0,
+              1,
+              2
+            ],
+            "edges": [
+              0,
+              1
+            ],
+            "roles": [
+              "mechanistic",
+              "causal"
+            ],
+            "origins": [
+              "observed",
+              "discovered"
+            ],
+            "confidence": 0.8004,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      },
+      {
+        "target": 1,
+        "degeneracy": 1,
+        "best_confidence": 0.92,
+        "has_contradiction": true,
+        "attached_contradictions": [
+          {
+            "edge": 3,
+            "from": 3,
+            "to": 1,
+            "origin": "observed",
+            "role": "contradicts",
+            "confidence": 0.8
+          }
+        ],
+        "paths": [
+          {
+            "nodes": [
+              0,
+              1
+            ],
+            "edges": [
+              0
+            ],
+            "roles": [
+              "mechanistic"
+            ],
+            "origins": [
+              "observed"
+            ],
+            "confidence": 0.92,
+            "temporal_consistent": true,
+            "contains_contradiction": false,
+            "contains_hypothetical": false
+          }
+        ]
+      }
+    ]
+  },
+  "quality_after_restart": {
+    "node_count": 6,
+    "neighbor_pairs": 9,
+    "local_coherence": 0.000842423,
+    "causal_locality": 1,
+    "temporal_consistency": 1,
+    "mathematical_claim": "hex distance is optimized as a proxy for semantic-causal-temporal locality"
+  },
+  "metrics_after_restart": {
+    "uptime_seconds": 2,
+    "requests": 4,
+    "node_inserts": 0,
+    "edge_inserts": 0,
+    "vector_searches": 0,
+    "lattice_searches": 0,
+    "validation_calls": 0,
+    "errors": 0,
+    "node_count": 6,
+    "edge_count": 5
+  }
+}
