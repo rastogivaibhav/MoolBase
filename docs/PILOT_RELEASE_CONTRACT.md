@@ -58,3 +58,11 @@ capacity = 1 + 3R(R + 1)
 ```
 
 Use `--expected-max-nodes` at startup. The server refuses a configuration whose radius cannot hold the declared target.
+
+## Vector index selection
+
+The server defaults to `--vector-index auto`. Auto uses KD-tree only for
+low-dimensional vectors and the exact flat index for higher dimensions.
+Operators may explicitly select `flat`, `kdtree`, or a compiled-in `faiss`
+backend, but must preserve recall/latency evidence for the selected production
+profile.

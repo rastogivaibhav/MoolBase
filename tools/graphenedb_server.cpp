@@ -114,6 +114,16 @@ static std::string json_value(const std::string& body, const std::string& key) {
   return out;
 }
 
+static bool parse_vector_index_kind(const std::string& value, VectorIndexKind* out) {
+  if (!out) return false;
+  if (value == "auto") *out = VectorIndexKind::Auto;
+  else if (value == "flat") *out = VectorIndexKind::Flat;
+  else if (value == "kdtree") *out = VectorIndexKind::KDTree;
+  else if (value == "faiss") *out = VectorIndexKind::Faiss;
+  else return false;
+  return true;
+}
+
 
 static uint32_t json_u32(const std::string& body, const std::string& key, uint32_t def = 0) {
   try {
@@ -759,6 +769,7 @@ int main(int argc, char** argv) {
               << "  --max-bulk-nodes N\n"
               << "  --rate-limit-rps N --rate-limit-burst N\n"
               << "  --max-request-bytes N --socket-timeout-seconds N\n"
+              << "  --vector-index auto|flat|kdtree|faiss\n"
               << "  --api-key KEY --trust-proxy --behind-tls-proxy\n"
               << "  --require-forwarded-https --allow-insecure-public-bind\n"
               << "  --no-shutdown-checkpoint\n";
@@ -773,7 +784,7 @@ int main(int argc, char** argv) {
   const fs::path dir = argv[1];
   const uint32_t dim = static_cast<uint32_t>(std::stoul(argv[2]));
   const int port = std::stoi(argv[3]);
-  DBOptions opt; opt.dimension = dim; opt.create_if_missing = true; opt.vector_index_kind = VectorIndexKind::KDTree;
+  DBOptions opt; opt.dimension = dim; opt.create_if_missing = true; opt.vector_index_kind = VectorIndexKind::Auto;
   std::string api_key;
   if (const char* env_key = std::getenv("GRAPHENEDB_API_KEY")) api_key = env_key;
   std::string bind_address = "127.0.0.1";
@@ -797,6 +808,12 @@ int main(int argc, char** argv) {
     else if (f == "--physical-lattice-radius" && i + 1 < argc) opt.physical_lattice_radius = static_cast<uint32_t>(std::stoul(argv[++i]));
     else if (f == "--expected-max-nodes" && i + 1 < argc) expected_max_nodes = std::stoull(argv[++i]);
     else if (f == "--wal-rotate-bytes" && i + 1 < argc) opt.wal_rotate_bytes = std::stoull(argv[++i]);
+    else if (f == "--vector-index" && i + 1 < argc) {
+      if (!parse_vector_index_kind(argv[++i], &opt.vector_index_kind)) {
+        std::cerr << "invalid --vector-index; expected auto|flat|kdtree|faiss\n";
+        return 2;
+      }
+    }
     else if (f == "--api-key" && i + 1 < argc) api_key = argv[++i];
     else if (f == "--workers" && i + 1 < argc) worker_count = std::max<size_t>(1, std::stoull(argv[++i]));
     else if (f == "--queue-capacity" && i + 1 < argc) queue_capacity = std::max<size_t>(1, std::stoull(argv[++i]));
@@ -1280,6 +1297,10 @@ int main(int argc, char** argv) {
       } else if (method == "POST" && path == "/v1/search/hybrid") {
         metrics.vector_searches.fetch_add(1, std::memory_order_relaxed);
         std::string q = json_value(body, "query");
+        if (q.empty()) {
+          code = 400;
+          out = "{\"error\":\"query is required\"}";
+        } else {
         size_t topk = 5;
         try { auto k = json_value(body, "top_k"); if (!k.empty()) topk = static_cast<size_t>(std::stoull(k)); } catch (...) {}
         topk = std::clamp<size_t>(topk, 1, kMaxSearchTopK);
@@ -1293,6 +1314,7 @@ int main(int argc, char** argv) {
           js << '}';
         }
         js << "]}"; out = js.str();
+        }
       } else if (method == "GET" && path.rfind("/v1/nodes/", 0) == 0) {
         const std::string raw_id = path.substr(10);
         if (raw_id.empty() || !std::all_of(raw_id.begin(), raw_id.end(), [](unsigned char c){ return std::isdigit(c); })) {

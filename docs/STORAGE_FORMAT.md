@@ -35,7 +35,11 @@ wal_bytes=<current graphene.wal size>
 data_bytes=<current graphene.data size>
 ```
 
-`compact()` and byte-threshold rotation rewrite live records to `graphene.data` and truncate `graphene.wal`.
+`compact()` and byte-threshold rotation rewrite live records to `graphene.data`
+and truncate `graphene.wal`. Checkpoint replacement flushes the temporary data
+file, atomically replaces the canonical data file, flushes the containing
+directory where supported, and then durably truncates the WAL. Derived lattice
+sidecars are rebuilt from the canonical data/WAL state.
 
 ## Compatibility
 
@@ -45,7 +49,11 @@ The compatibility contract is:
 
 - v1 data records can be opened by the current reader.
 - v2 lattice records can be opened by the current reader.
-- WAL frames with torn tails are replayed through the last valid frame.
+- An invalid, unterminated final WAL fragment is treated as a torn tail and is
+  replayed through the last valid frame. The fragment is truncated before the
+  WAL is reopened for append.
+- A malformed or checksum-invalid complete WAL frame is corruption and fails
+  open.
 - Uncommitted WAL transactions are ignored.
 - Future incompatible format changes must bump `kStorageFormatVersion` and add fixture coverage before release.
 

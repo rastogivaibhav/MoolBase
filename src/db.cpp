@@ -16,6 +16,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <mutex>
 #include <numeric>
@@ -273,6 +274,7 @@ struct GrapheneDB::Impl {
 
   mutable std::shared_mutex mu;
   bool open{false};
+  std::string maintenance_warning;
   fs::path dir, wal_path, data_path, manifest_path, physical_lattice_path, physical_lattice_bin_path, nodeidx_path, lock_path;
   DBOptions opt;
   platform::FileHandle wal_fd{platform::kInvalidFile};
@@ -482,13 +484,22 @@ struct GrapheneDB::Impl {
   }
 
   Status physical_absolute_ordinal_unlocked(const LatticeCoord& coord, uint64_t* out) const {
+    if (coord.layer < 0) {
+      return Status::error(ErrorCode::InvalidInput, "physical lattice primary requires a non-negative layer");
+    }
     const uint32_t radius = opt.physical_lattice_radius == 0 ? 256 : opt.physical_lattice_radius;
     uint64_t ordinal = 0;
     if (!axial_disk_ordinal(coord.q, coord.r, radius, &ordinal)) {
       return Status::error(ErrorCode::InvalidInput, "lattice coord outside physical lattice radius");
     }
-    *out = static_cast<uint64_t>(std::max(0, coord.layer)) * cells_per_layer(radius) + ordinal;
+    *out = static_cast<uint64_t>(coord.layer) * cells_per_layer(radius) + ordinal;
     return Status::ok();
+  }
+
+  void note_maintenance_failure(const char* phase, const Status& status) {
+    if (status) return;
+    if (!maintenance_warning.empty()) maintenance_warning += "; ";
+    maintenance_warning += std::string(phase) + ": " + status.message;
   }
 
   Status ensure_physical_lattice_binary_file_unlocked() {
@@ -640,9 +651,8 @@ struct GrapheneDB::Impl {
     out.flush();
     if (!out) return Status::error(ErrorCode::IoError, "failed flushing physical lattice tmp");
     out.close();
-    std::error_code ec;
-    fs::rename(tmp, physical_lattice_path, ec);
-    if (ec) return Status::error(ErrorCode::IoError, "physical lattice rename failed: " + ec.message());
+    auto replace_status = platform::durable_replace(tmp, physical_lattice_path);
+    if (!replace_status) return Status::error(replace_status.code, "physical lattice replace failed: " + replace_status.message);
     if (opt.physical_lattice_primary) {
       auto bst = write_physical_lattice_binary_unlocked(cells);
       if (!bst) return bst;
@@ -665,7 +675,10 @@ struct GrapheneDB::Impl {
       if (!axial_disk_ordinal(c.coord.q, c.coord.r, radius, &ordinal)) {
         return Status::error(ErrorCode::InvalidInput, "lattice coord outside physical lattice radius");
       }
-      uint64_t absolute = static_cast<uint64_t>(std::max(0, c.coord.layer)) * header.cells_per_layer + ordinal;
+      if (c.coord.layer < 0) {
+        return Status::error(ErrorCode::InvalidInput, "physical lattice primary requires a non-negative layer");
+      }
+      uint64_t absolute = static_cast<uint64_t>(c.coord.layer) * header.cells_per_layer + ordinal;
       PhysicalCellRecord rec;
       rec.q = c.coord.q; rec.r = c.coord.r; rec.layer = c.coord.layer; rec.node_id = c.node_id;
       for (size_t i = 0; i < 6; ++i) rec.neighbor_nodes[i] = c.neighbor_nodes[i];
@@ -684,9 +697,8 @@ struct GrapheneDB::Impl {
     }
     out.flush(); out.close();
     if (!out) return Status::error(ErrorCode::IoError, "failed flushing physical lattice binary tmp");
-    std::error_code ec;
-    fs::rename(tmp, physical_lattice_bin_path, ec);
-    if (ec) return Status::error(ErrorCode::IoError, "physical lattice binary rename failed: " + ec.message());
+    auto replace_status = platform::durable_replace(tmp, physical_lattice_bin_path);
+    if (!replace_status) return Status::error(replace_status.code, "physical lattice binary replace failed: " + replace_status.message);
 
     fs::path itmp = nodeidx_path.string() + ".tmp";
     std::ofstream idx(itmp, std::ios::trunc);
@@ -695,12 +707,15 @@ struct GrapheneDB::Impl {
     for (const auto& c : cells) {
       uint64_t ordinal = 0;
       (void)axial_disk_ordinal(c.coord.q, c.coord.r, radius, &ordinal);
-      uint64_t absolute = static_cast<uint64_t>(std::max(0, c.coord.layer)) * header.cells_per_layer + ordinal;
+      if (c.coord.layer < 0) {
+        return Status::error(ErrorCode::InvalidInput, "physical lattice primary requires a non-negative layer");
+      }
+      uint64_t absolute = static_cast<uint64_t>(c.coord.layer) * header.cells_per_layer + ordinal;
       idx << c.node_id << '\t' << c.coord.layer << '\t' << c.coord.q << '\t' << c.coord.r << '\t' << absolute << '\n';
     }
     idx.flush(); idx.close();
-    fs::rename(itmp, nodeidx_path, ec);
-    if (ec) return Status::error(ErrorCode::IoError, "nodeidx rename failed: " + ec.message());
+    replace_status = platform::durable_replace(itmp, nodeidx_path);
+    if (!replace_status) return Status::error(replace_status.code, "nodeidx replace failed: " + replace_status.message);
     return Status::ok();
   }
 
@@ -721,16 +736,21 @@ struct GrapheneDB::Impl {
     if (env_enabled("GRAPHENEDB_TEST_FAIL_CHECKPOINT_RENAME")) {
       return Status::error(ErrorCode::IoError, "injected checkpoint rename failure");
     }
-    std::error_code ec;
-    fs::rename(tmp, data_path, ec);
-    if (ec) return Status::error(ErrorCode::IoError, "checkpoint rename failed: " + ec.message());
+    auto replace_status = platform::durable_replace(tmp, data_path);
+    if (!replace_status) return Status::error(replace_status.code, "checkpoint replace failed: " + replace_status.message);
     close_wal_fd_unlocked();
-    { std::ofstream wal(wal_path, std::ios::trunc); if (!wal) return Status::error(ErrorCode::IoError, "cannot truncate WAL"); }
+    auto truncate_status = platform::truncate_and_flush(wal_path);
+    if (!truncate_status) {
+      (void)open_wal_fd_unlocked();
+      return Status::error(truncate_status.code, "cannot durably truncate WAL: " + truncate_status.message);
+    }
     auto ost = open_wal_fd_unlocked();
     if (!ost) return ost;
     auto lst = write_physical_lattice_unlocked();
     if (!lst) return lst;
-    return write_manifest();
+    auto manifest_status = write_manifest();
+    if (manifest_status) maintenance_warning.clear();
+    return manifest_status;
   }
 
   Status maybe_rotate_wal_unlocked() {
@@ -805,6 +825,11 @@ struct GrapheneDB::Impl {
       auto it = lattice_nodes.find(*input.lattice);
       if (it != lattice_nodes.end()) {
         return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
+      }
+      if (opt.physical_lattice_primary) {
+        uint64_t ignored = 0;
+        auto st = physical_absolute_ordinal_unlocked(*input.lattice, &ignored);
+        if (!st) return st;
       }
     }
     return Status::ok();
@@ -1031,21 +1056,42 @@ struct GrapheneDB::Impl {
 
   Status load_framed_file(const fs::path& path, bool transactional, bool stop_on_bad_frame) {
     if (!fs::exists(path)) return Status::ok();
-    std::ifstream in(path);
+    std::ifstream in(path, std::ios::binary);
     if (!in) return Status::error(ErrorCode::IoError, "cannot read " + path.string());
-    std::string line;
+    const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     std::unordered_map<uint64_t, std::vector<std::string>> pending;
     std::unordered_set<uint64_t> committed;
-    while (std::getline(in, line)) {
+    size_t offset = 0;
+    size_t last_valid_offset = 0;
+    while (offset < bytes.size()) {
+      const size_t newline = bytes.find('\n', offset);
+      const bool terminated = newline != std::string::npos;
+      const size_t end = terminated ? newline : bytes.size();
+      const bool final_fragment = !terminated;
+      std::string line = bytes.substr(offset, end - offset);
+      offset = terminated ? newline + 1 : bytes.size();
+      // Checkpoint/data files written through a Windows text stream use CRLF;
+      // the frame format itself defines the terminator, not a payload byte.
+      if (terminated && !line.empty() && line.back() == '\r') line.pop_back();
       if (line.empty()) continue;
+      if (stop_on_bad_frame && final_fragment) {
+        std::error_code ec;
+        fs::resize_file(path, last_valid_offset, ec);
+        if (ec) return Status::error(ErrorCode::IoError, "cannot truncate torn WAL tail: " + ec.message());
+        auto flush_status = platform::flush_path(path);
+        if (!flush_status) return Status::error(flush_status.code, "cannot flush repaired WAL: " + flush_status.message);
+        break;
+      }
       std::string payload;
       if (!parse_frame_line(line, &payload)) {
-        if (stop_on_bad_frame) break; // torn tail: recover to last valid frame
-        return Status::error(ErrorCode::DataCorrupt, "corrupt frame in " + path.string());
+        return Status::error(
+          transactional ? ErrorCode::WalCorrupt : ErrorCode::DataCorrupt,
+          "corrupt complete frame in " + path.string());
       }
       Status st = transactional ? apply_payload(payload, true, &pending, &committed)
                                 : apply_payload(payload, true, nullptr, nullptr);
       if (!st) return st;
+      last_valid_offset = offset;
     }
     // Pending transactions are intentionally ignored: no COMMIT means no durability.
     return Status::ok();
@@ -1073,12 +1119,14 @@ struct GrapheneDB::Impl {
     if (!out) return Status::error(ErrorCode::IoError, "cannot write manifest tmp");
     out << body;
     out.flush();
+    if (!out) return Status::error(ErrorCode::IoError, "cannot flush manifest tmp");
     out.close();
     if (env_enabled("GRAPHENEDB_TEST_FAIL_MANIFEST_RENAME")) {
       return Status::error(ErrorCode::IoError, "injected manifest rename failure");
     }
-    fs::rename(tmp, manifest_path);
-    return Status::ok();
+    auto replace_status = platform::durable_replace(tmp, manifest_path);
+    if (!replace_status) return Status::error(replace_status.code, "manifest replace failed: " + replace_status.message);
+    return replace_status;
   }
 
   Status read_manifest(uint32_t* dim, uint64_t* next_txid) const {
@@ -1167,7 +1215,17 @@ struct GrapheneDB::Impl {
           std::ifstream in(lock_path);
           in >> pid;
         }
-        if (pid > 1 && !platform::process_is_alive(pid)) {
+        bool stale_same_pid_restart = false;
+        if (pid == platform::current_pid()) {
+          const auto started_at = platform::current_process_start_time();
+          const auto lock_mtime = fs::last_write_time(lock_path, ec);
+          if (!ec && started_at.has_value()) {
+            const auto lock_sys = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                lock_mtime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+            stale_same_pid_restart = lock_sys < *started_at;
+          }
+        }
+        if (stale_same_pid_restart || (pid > 1 && !platform::process_is_alive(pid))) {
           fs::remove(lock_path, ec);
           removed_stale = !fs::exists(lock_path, ec);
         }
@@ -1176,13 +1234,12 @@ struct GrapheneDB::Impl {
         return Status::error(ErrorCode::LockBusy, "database lock exists: " + lock_path.string());
       }
     }
-    std::ofstream out(lock_path, std::ios::out | std::ios::trunc);
-    if (!out) {
-      if (fs::exists(lock_path)) return Status::error(ErrorCode::LockBusy, "database lock exists: " + lock_path.string());
-      return Status::error(ErrorCode::IoError, "cannot create lock: " + lock_path.string());
+    auto create_status = platform::create_file_exclusive(
+      lock_path, std::to_string(platform::current_pid()) + "\n");
+    if (!create_status && create_status.code == ErrorCode::LockBusy) {
+      return Status::error(ErrorCode::LockBusy, "database lock exists: " + lock_path.string());
     }
-    out << platform::current_pid() << "\n";
-    return Status::ok();
+    return create_status;
   }
 
   void release_lock() {
@@ -1315,8 +1372,18 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
   auto vst = impl_->validate_vector_index_support();
   if (!vst) return vst;
   std::error_code ec;
-  fs::create_directories(path, ec);
-  if (ec) return Status::error(ErrorCode::IoError, "cannot create DB dir: " + ec.message());
+  const bool directory_exists = fs::exists(path, ec);
+  if (ec) return Status::error(ErrorCode::IoError, "cannot inspect DB dir: " + ec.message());
+  if (!directory_exists && !options.create_if_missing) {
+    return Status::error(ErrorCode::InvalidOption, "database directory does not exist and create_if_missing is false");
+  }
+  if (directory_exists && !fs::is_directory(path, ec)) {
+    return Status::error(ErrorCode::InvalidOption, "database path is not a directory");
+  }
+  if (!directory_exists) {
+    fs::create_directories(path, ec);
+    if (ec) return Status::error(ErrorCode::IoError, "cannot create DB dir: " + ec.message());
+  }
   uint32_t manifest_dim = 0;
   uint64_t manifest_txid = 1;
   auto mst = impl_->read_manifest(&manifest_dim, &manifest_txid);
@@ -1349,7 +1416,7 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
       if (tec) { impl_->release_lock(); return Status::error(ErrorCode::IoError, "cannot quarantine stale temp file " + tmp.string() + ": " + tec.message()); }
     }
   }
-  impl_->nodes.clear(); impl_->edges.clear(); impl_->version = 1; impl_->txid = std::max<uint64_t>(1, manifest_txid); impl_->live_node_count = 0; impl_->live_edge_count = 0; impl_->vector_index.reset();
+  impl_->nodes.clear(); impl_->edges.clear(); impl_->version = 1; impl_->txid = std::max<uint64_t>(1, manifest_txid); impl_->live_node_count = 0; impl_->live_edge_count = 0; impl_->vector_index.reset(); impl_->maintenance_warning.clear();
   auto dst = impl_->load_framed_file(impl_->data_path, false, false);
   if (!dst) { impl_->release_lock(); return dst; }
   auto wst = impl_->load_framed_file(impl_->wal_path, true, true);
@@ -1393,7 +1460,7 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   if (!lst) return lst;
   if (input.content.size() > 16 * 1024 * 1024) return Status::error(ErrorCode::InvalidInput, "content too large");
   Node n;
-  n.id = impl_->next_node_id++;
+  n.id = impl_->next_node_id;
   n.content = input.content;
   n.vector = input.vector;
   n.signature = input.signature;
@@ -1401,9 +1468,9 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   n.root = input.root; n.symptom = input.symptom; n.impact = input.impact;
   n.lattice = input.lattice;
   n.defect_type = input.defect_type;
-  n.created_version = impl_->version++;
+  n.created_version = impl_->version;
   n.metadata = input.metadata;
-  uint64_t tx = impl_->txid++;
+  uint64_t tx = impl_->txid;
   std::vector<std::string> frames = {
     "BEGIN\t" + std::to_string(tx),
     "PUT_NODE\t" + std::to_string(tx) + "\t" + impl_->node_payload(n, "PUT_NODE").substr(std::string("PUT_NODE\t").size()),
@@ -1411,12 +1478,15 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   };
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
+  ++impl_->next_node_id;
+  ++impl_->version;
+  ++impl_->txid;
   impl_->apply_committed_node(n);
-  Status plst = impl_->opt.physical_lattice_primary ? impl_->write_incremental_physical_lattice_node_unlocked(n) : impl_->write_physical_lattice_unlocked();
-  if (!plst) return plst;
-  auto rst = impl_->maybe_rotate_wal_unlocked();
-  if (!rst) return rst;
   if (out_id) *out_id = n.id;
+  Status plst = impl_->opt.physical_lattice_primary ? impl_->write_incremental_physical_lattice_node_unlocked(n) : impl_->write_physical_lattice_unlocked();
+  if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) impl_->note_maintenance_failure("automatic WAL rotation", rst);
   return Status::ok();
 }
 
@@ -1431,21 +1501,24 @@ Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
   auto lst = impl_->validate_lattice_edge_input(input, snap);
   if (!lst) return lst;
   Edge e;
-  e.id = impl_->next_edge_id++;
+  e.id = impl_->next_edge_id;
   e.from = input.from; e.to = input.to; e.origin = input.origin; e.role = input.role; e.confidence = input.confidence;
   e.bond_type = input.bond_type; e.defect_type = input.defect_type; e.layer_coupling = input.layer_coupling; e.bond_strength = input.bond_strength;
-  e.created_version = impl_->version++;
+  e.created_version = impl_->version;
   e.metadata = input.metadata;
-  uint64_t tx = impl_->txid++;
+  uint64_t tx = impl_->txid;
   std::vector<std::string> frames = {"BEGIN\t" + std::to_string(tx), "PUT_EDGE\t" + std::to_string(tx) + "\t" + impl_->edge_payload(e, "PUT_EDGE").substr(std::string("PUT_EDGE\t").size()), "COMMIT\t" + std::to_string(tx)};
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
+  ++impl_->next_edge_id;
+  ++impl_->version;
+  ++impl_->txid;
   impl_->apply_committed_edge(e);
-  auto plst = impl_->write_physical_lattice_unlocked();
-  if (!plst) return plst;
-  auto rst = impl_->maybe_rotate_wal_unlocked();
-  if (!rst) return rst;
   if (out_id) *out_id = e.id;
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) impl_->note_maintenance_failure("automatic WAL rotation", rst);
   return Status::ok();
 }
 
@@ -1478,6 +1551,11 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
     if (ni.lattice) {
       if (impl_->lattice_nodes.find(*ni.lattice) != impl_->lattice_nodes.end()) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
       if (!batch_lattice_keys.insert(lattice_key(*ni.lattice)).second) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate in batch");
+      if (impl_->opt.physical_lattice_primary) {
+        uint64_t ignored = 0;
+        auto pst = impl_->physical_absolute_ordinal_unlocked(*ni.lattice, &ignored);
+        if (!pst) return pst;
+      }
     }
     Node n;
     n.id = next_node++;
@@ -1534,7 +1612,7 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
     new_edges.push_back(e);
   }
 
-  uint64_t tx = impl_->txid++;
+  uint64_t tx = impl_->txid;
   std::vector<std::string> frames;
   frames.reserve(2 + new_nodes.size() + new_edges.size());
   frames.push_back("BEGIN\t" + std::to_string(tx));
@@ -1544,21 +1622,22 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
 
+  ++impl_->txid;
   impl_->next_node_id = next_node;
   impl_->next_edge_id = next_edge;
   impl_->version = next_version;
   for (const auto& n : new_nodes) impl_->apply_committed_node(n);
   for (const auto& e : new_edges) impl_->apply_committed_edge(e);
-  auto plst = impl_->write_physical_lattice_unlocked();
-  if (!plst) return plst;
-  auto rst = impl_->maybe_rotate_wal_unlocked();
-  if (!rst) return rst;
   if (out) {
     out->node_ids.clear();
     out->edge_ids.clear();
     for (const auto& n : new_nodes) out->node_ids.push_back(n.id);
     for (const auto& e : new_edges) out->edge_ids.push_back(e.id);
   }
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) impl_->note_maintenance_failure("automatic WAL rotation", rst);
   return Status::ok();
 }
 
@@ -1652,6 +1731,11 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
     if (ni.lattice) {
       if (impl_->lattice_nodes.find(*ni.lattice) != impl_->lattice_nodes.end()) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
       if (!batch_lattice_keys.insert(lattice_key(*ni.lattice)).second) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate in extraction");
+      if (impl_->opt.physical_lattice_primary) {
+        uint64_t ignored = 0;
+        auto pst = impl_->physical_absolute_ordinal_unlocked(*ni.lattice, &ignored);
+        if (!pst) return pst;
+      }
     }
 
     Node n;
@@ -1759,7 +1843,7 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
     return Status::ok();
   }
 
-  uint64_t tx = impl_->txid++;
+  uint64_t tx = impl_->txid;
   std::vector<std::string> frames;
   frames.reserve(2 + new_nodes.size() + new_edges.size());
   frames.push_back("BEGIN\t" + std::to_string(tx));
@@ -1769,15 +1853,12 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
 
+  ++impl_->txid;
   impl_->next_node_id = next_node;
   impl_->next_edge_id += static_cast<uint32_t>(new_edges.size());
   impl_->version = next_version;
   for (const auto& n : new_nodes) impl_->apply_committed_node(n);
   for (const auto& e : new_edges) impl_->apply_committed_edge(e);
-  auto plst = impl_->write_physical_lattice_unlocked();
-  if (!plst) return plst;
-  auto rst = impl_->maybe_rotate_wal_unlocked();
-  if (!rst) return rst;
   if (out) {
     out->external_to_node_id = std::move(external_to_node_id);
     out->existing_node_ids = std::move(existing_node_ids);
@@ -1786,6 +1867,10 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
     for (const auto& n : new_nodes) out->inserted_node_ids.push_back(n.id);
     for (const auto& e : new_edges) out->inserted_edge_ids.push_back(e.id);
   }
+  auto plst = impl_->write_physical_lattice_unlocked();
+  if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
+  auto rst = impl_->maybe_rotate_wal_unlocked();
+  if (!rst) impl_->note_maintenance_failure("automatic WAL rotation", rst);
   return Status::ok();
 }
 
@@ -1794,11 +1879,13 @@ Status GrapheneDB::delete_node(uint32_t id) {
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
   uint64_t snap = impl_->version - 1;
   if (id >= impl_->nodes.size() || !visible_node(impl_->nodes[id], snap)) return Status::error(ErrorCode::NodeNotFound, "node not found or already deleted");
-  uint64_t delver = impl_->version++;
-  uint64_t tx = impl_->txid++;
+  uint64_t delver = impl_->version;
+  uint64_t tx = impl_->txid;
   std::vector<std::string> frames = {"BEGIN\t" + std::to_string(tx), "DELETE_NODE\t" + std::to_string(tx) + "\t" + std::to_string(id) + "\t" + std::to_string(delver), "COMMIT\t" + std::to_string(tx)};
   auto st = impl_->append_wal_unlocked(frames);
   if (!st) return st;
+  ++impl_->version;
+  ++impl_->txid;
   std::unordered_set<uint32_t> affected_edges;
   auto in_it = impl_->in_edges.find(id);
   if (in_it != impl_->in_edges.end()) affected_edges.insert(in_it->second.begin(), in_it->second.end());
@@ -1815,9 +1902,9 @@ Status GrapheneDB::delete_node(uint32_t id) {
   impl_->live_edge_count = hidden_edges > impl_->live_edge_count ? 0 : impl_->live_edge_count - hidden_edges;
   if (impl_->vector_index) (void)impl_->vector_index->remove(id);
   auto plst = impl_->write_physical_lattice_unlocked();
-  if (!plst) return plst;
+  if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
   auto rst = impl_->maybe_rotate_wal_unlocked();
-  if (!rst) return rst;
+  if (!rst) impl_->note_maintenance_failure("automatic WAL rotation", rst);
   return Status::ok();
 }
 
@@ -2005,6 +2092,7 @@ MemoryBundle GrapheneDB::causal_search(const std::vector<float>& query, uint64_t
     }
     if (b.confidence > best_score) { best_score = b.confidence; out = b; }
   }
+  out.confidence = std::clamp(out.confidence, 0.0, 1.0);
   out.snapshot_version = snap;
   if (out.confidence < impl_->opt.tuning.min_bundle_confidence && mode != QueryMode::Theoretical) { out.abstain = true; out.reason = "LOW_STABILITY"; }
   if (!out.abstain) {
@@ -2066,6 +2154,8 @@ Status GrapheneDB::inspect(std::string* out) const {
   os << "data_bytes=" << data_bytes << "\n";
   os << "vector_index_requested=" << vector_index_kind_name(impl_->opt.vector_index_kind) << "\n";
   os << "vector_index=" << (impl_->vector_index ? impl_->vector_index->name() : "none") << "\n";
+  os << "maintenance_required=" << (impl_->maintenance_warning.empty() ? "false" : "true") << "\n";
+  os << "maintenance_warning=" << impl_->maintenance_warning << "\n";
   os << "planes=" << impl_->planes.size() << "\n";
   os << "lattice_required=" << (impl_->opt.require_lattice ? "true" : "false") << "\n";
   os << "lattice_retrieval=" << (impl_->opt.tuning.enable_lattice_retrieval ? "true" : "false") << "\n";

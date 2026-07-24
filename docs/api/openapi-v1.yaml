@@ -52,6 +52,18 @@ paths:
         '200': { description: Idempotent replay }
         '409': { $ref: '#/components/responses/ErrorResponse' }
         '507': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/nodes/bulk:
+    post:
+      summary: Atomically create a bounded batch of generated nodes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BulkNodeCreate' }
+      responses:
+        '201': { description: Atomic batch committed }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '507': { $ref: '#/components/responses/ErrorResponse' }
   /v1/nodes/{nodeId}:
     get:
       summary: Read a node by ID
@@ -87,6 +99,16 @@ paths:
             schema: { $ref: '#/components/schemas/EdgeCreate' }
       responses:
         '201': { description: Created }
+  /v1/edges/provenance:
+    post:
+      summary: Create a typed edge with provenance metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EdgeCreate' }
+      responses:
+        '201': { description: Created }
   /v1/search/hybrid:
     post:
       summary: Search by the server embedding/vector path
@@ -112,9 +134,53 @@ paths:
           schema: { type: integer, minimum: 0 }
         - name: hops
           in: query
-          schema: { type: integer, minimum: 1, maximum: 64, default: 2 }
+          schema: { type: integer, minimum: 1, maximum: 16, default: 2 }
       responses:
         '200': { description: Neighbour IDs }
+  /v1/retrieve/bundle:
+    post:
+      summary: Retrieve an explainable bounded evidence bundle from an anchor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BundleRequest' }
+      responses:
+        '200': { description: Evidence bundle }
+  /v1/retrieve/explain:
+    post:
+      summary: Alias for explainable bounded evidence-bundle retrieval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BundleRequest' }
+      responses:
+        '200': { description: Evidence bundle }
+  /v1/retrieve/temporal:
+    post:
+      summary: Retrieve nodes valid at a bounded temporal view
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TemporalRetrieveRequest' }
+      responses:
+        '200': { description: Temporal results }
+  /v1/metrics:
+    get:
+      summary: Read authenticated JSON runtime metrics
+      responses:
+        '200': { description: Runtime metrics }
+  /v1/metrics/prometheus:
+    get:
+      summary: Read authenticated Prometheus metrics
+      responses:
+        '200':
+          description: Prometheus exposition
+          content:
+            text/plain:
+              schema: { type: string }
   /v1/admin/capacity:
     get:
       summary: Inspect physical lattice capacity
@@ -131,6 +197,16 @@ paths:
       summary: Checkpoint live state and rotate the WAL
       responses:
         '200': { description: Checkpoint completed }
+  /v1/admin/compact:
+    post:
+      summary: Alias for checkpointing live state and rotating the WAL
+      responses:
+        '200': { description: Compaction completed }
+  /v1/admin/inspect:
+    get:
+      summary: Inspect formats, indexes, storage counters, and maintenance state
+      responses:
+        '200': { description: Inspection output }
   /v1/admin/backup:
     post:
       summary: Create a filesystem backup
@@ -145,6 +221,16 @@ paths:
                 destination: { type: string, minLength: 1 }
       responses:
         '200': { description: Backup completed }
+  /v1/admin/validate/provenance:
+    post:
+      summary: Validate evidence and promotion metadata on visible edges
+      responses:
+        '200': { description: Provenance validation result }
+  /v1/admin/lattice/quality:
+    post:
+      summary: Inspect physical lattice quality counters
+      responses:
+        '200': { description: Lattice quality result }
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -194,6 +280,13 @@ components:
         service: { type: string }
         incident: { type: string }
         repo: { type: string }
+    BulkNodeCreate:
+      type: object
+      required: [count]
+      properties:
+        count: { type: integer, minimum: 1, maximum: 50000 }
+        prefix: { type: string, maxLength: 4096 }
+        source: { type: string }
     TemporalFactCreate:
       allOf:
         - $ref: '#/components/schemas/NodeCreate'
@@ -218,6 +311,22 @@ components:
           enum: [mechanistic, compressed, analogical, predictive, causal, contradicts, supports, supersedes]
         source_id: { type: string }
         derived_from: { type: string }
+    BundleRequest:
+      type: object
+      required: [anchor]
+      properties:
+        anchor: { type: integer, minimum: 0 }
+        max_hops: { type: integer, minimum: 1, maximum: 8, default: 3 }
+        mode: { type: string, enum: [empirical, balanced, theoretical], default: balanced }
+        as_of: { type: string }
+    TemporalRetrieveRequest:
+      type: object
+      properties:
+        as_of: { type: string }
+        metadata_key: { type: string }
+        metadata_value: { type: string }
+        limit: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+        offset: { type: integer, minimum: 0, default: 0 }
     Error:
       type: object
       required: [error]

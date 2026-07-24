@@ -25,7 +25,7 @@ It also adds a first-class extraction ingestion API for source-scoped external I
 |---|---|---|
 | Linux | CI target | Release build/test, package smoke, fuzz/sanitizer smoke, and GA readiness smoke are configured in CI; preserve CI artifacts for release evidence. |
 | macOS | CI target | POSIX platform layer should apply; CI matrix includes macOS build/test. |
-| Windows | Embedded/CLI smoke validated with policy caveat | Release builds, focused embedded/CLI CTest gates, operator flows, package verification, and release-manifest smoke have run locally. `graphenedb_cli_extract_tests` now runs through a Python harness on Windows so the release-tree CTest suite can complete locally. The optional pilot server currently builds and validates on POSIX-oriented toolchains; a fresh Windows Clang/MinGW build of `graphenedb_server` in this snapshot fails on unguarded POSIX socket headers and needs an explicit portability pass before Windows server support should be claimed. |
+| Windows | Embedded/CLI smoke validated with policy caveat | `GRAPHENEDB_BUILD_SERVER` defaults to `OFF`, allowing normal embedded/CLI builds and tests without compiling the POSIX server. The server remains unsupported on Windows and an explicit `ON` configuration fails during CMake configuration. `graphenedb_cli_extract_tests` runs through a Python harness on Windows. |
 
 See [`docs/PLATFORM_SUPPORT.md`](docs/PLATFORM_SUPPORT.md).
 

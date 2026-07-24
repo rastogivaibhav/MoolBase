@@ -82,7 +82,11 @@ Applications can inspect durable lattice topology directly:
 std::vector<uint32_t> neighbors = db.lattice_neighbors(node_id, max_hops);
 ```
 
-The API respects snapshot visibility. Deleted nodes and their incident bonds disappear from current results, while older snapshots can still see them.
+The API respects snapshot visibility within the current uncompacted process
+epoch. Deleted nodes and their incident bonds disappear from current results,
+while an older snapshot can still see them until compaction. Compaction writes
+only the current visible state, so historical snapshots are not durable across
+compaction/reopen in this RC.
 
 The CLI exposes the same view:
 

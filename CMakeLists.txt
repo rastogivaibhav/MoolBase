@@ -13,6 +13,11 @@ option(GRAPHENEDB_BUILD_BENCH "Build GrapheneDB benchmarks" ON)
 option(GRAPHENEDB_USE_FAISS "Compile with real FAISS. Fails if FAISS is missing." OFF)
 option(GRAPHENEDB_BUILD_FUZZERS "Build LLVM libFuzzer targets" OFF)
 option(GRAPHENEDB_BUILD_EXAMPLES "Build GrapheneDB API examples and demos" ON)
+if(WIN32)
+  option(GRAPHENEDB_BUILD_SERVER "Build the POSIX-oriented controlled-pilot HTTP server" OFF)
+else()
+  option(GRAPHENEDB_BUILD_SERVER "Build the controlled-pilot HTTP server" ON)
+endif()
 
 set(GRAPHENEDB_PLATFORM_SOURCE src/platform_posix.cpp)
 if(WIN32)
@@ -48,9 +53,12 @@ endif()
 if(NOT GRAPHENEDB_BUILD_FUZZERS)
   add_executable(graphenedb_cli tools/graphenedb_cli.cpp)
   target_link_libraries(graphenedb_cli PRIVATE graphenedb)
-  add_executable(graphenedb_server tools/graphenedb_server.cpp)
-  target_link_libraries(graphenedb_server PRIVATE graphenedb)
-  if(NOT WIN32)
+  if(GRAPHENEDB_BUILD_SERVER)
+    if(WIN32)
+      message(FATAL_ERROR "GRAPHENEDB_BUILD_SERVER=ON is not supported on Windows in v0.6.0-rc1")
+    endif()
+    add_executable(graphenedb_server tools/graphenedb_server.cpp)
+    target_link_libraries(graphenedb_server PRIVATE graphenedb)
     add_executable(graphenedb_healthcheck tools/graphenedb_healthcheck.cpp)
   endif()
 endif()
@@ -58,6 +66,14 @@ endif()
 if(GRAPHENEDB_BUILD_TESTS)
   enable_testing()
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  # The project historically used assert() heavily in tests. Release builds
+  # define NDEBUG, which would otherwise compile those checks out and produce
+  # misleading release evidence.
+  if(MSVC)
+    add_compile_options(/UNDEBUG)
+  else()
+    add_compile_options(-UNDEBUG)
+  endif()
   add_executable(graphenedb_tests tests/test_graphenedb.cpp)
   target_link_libraries(graphenedb_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_tests COMMAND graphenedb_tests)
@@ -168,11 +184,29 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_rc_1m_storage_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_rc_1m_storage_smoke COMMAND graphenedb_rc_1m_storage_tests --nodes 10000 --queries 3 --dim 2 --reopen 1)
 
+  add_executable(graphenedb_p0_contract_tests tests/test_p0_contracts.cpp)
+  target_link_libraries(graphenedb_p0_contract_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_p0_contract_tests COMMAND graphenedb_p0_contract_tests)
+
   add_test(
     NAME graphenedb_release_candidate_bundle_meta_tests
     COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_release_candidate_bundle_meta.py
             ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_release_candidate_bundle_meta.py
+  )
+
+  add_test(
+    NAME graphenedb_openapi_surface_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_openapi_surface.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/tools/graphenedb_server.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/docs/api/openapi-v1.yaml
+  )
+
+  add_test(
+    NAME graphenedb_storage_reduction_benchmark_unit_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_storage_reduction_benchmark.py
   )
 
   if(TARGET graphenedb_server AND NOT WIN32)

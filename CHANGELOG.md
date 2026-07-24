@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased - P0 correctness remediation
+
+- Kept C++ assertions active in Release test targets so contract tests cannot
+  silently become no-ops.
+- Made the optional POSIX HTTP server opt-in on Windows while preserving normal
+  embedded-library and CLI builds.
+- Replaced the single-writer lock race with exclusive file creation.
+- Hardened WAL recovery: complete corrupt frames now fail open, while only an
+  unterminated final fragment is repaired and durably truncated.
+- Made checkpoint and derived-file replacement durable and atomic, including
+  bounded Windows sharing-violation retries.
+- Prevented failed pre-commit writes from consuming transaction IDs, node IDs,
+  or snapshot versions.
+- Separated committed write success from post-commit maintenance failures and
+  exposed maintenance state through inspection.
+- Enforced physical-lattice radius and layer bounds before committing a node.
+- Enforced `create_if_missing=false` without creating the requested database
+  directory.
+- Corrected vector-index defaults and causal-confidence ranking semantics.
+- Brought the OpenAPI contract into alignment with the implemented
+  controlled-pilot routes and limits.
+- Added focused P0, OpenAPI-surface, WAL, locking, and Windows lifecycle
+  regressions.
+
 ## 0.6.0-rc1 - Pilot release candidate
 
 - Added graceful SIGTERM/SIGINT shutdown that stops admission, drains the bounded worker pool, checkpoints live state, and emits structured lifecycle events.

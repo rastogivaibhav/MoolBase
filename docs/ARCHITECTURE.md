@@ -56,6 +56,8 @@ GrapheneDB combines:
 ## 4. Operations layer
 
 - `compact()` writes live visible records to `graphene.data` and truncates WAL.
+- Historical snapshot versions are in-process isolation views, not durable
+  retention points. Compaction preserves only the current visible state.
 - `DBOptions::wal_rotate_bytes` checkpoints and truncates WAL once the byte threshold is reached.
 - `backup()` copies data, WAL, and manifest; restore is verified by opening the copied directory and running `validate()`.
 - `validate()` checks vector dimensions and edge endpoint integrity.

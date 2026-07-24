@@ -21,9 +21,31 @@ int main() {
   DBOptions opt; opt.dimension = D; opt.fsync_on_commit = false; opt.recover_stale_lock = true;
   GrapheneDB recovered; require(recovered.open(stale, opt), "recover stale lock"); require(recovered.close(), "close recovered stale lock");
 
+  // Container-style restart recovery: a stale LOCK from an earlier process
+  // incarnation can legitimately contain the same PID (for example PID 1 in a
+  // restarted container). If the lock file predates the current process start,
+  // open should recover it.
+  fs::path same_pid_stale = fs::temp_directory_path() / "graphenedb_rc_same_pid_stale_lock";
+  fs::remove_all(same_pid_stale); fs::create_directories(same_pid_stale);
+  {
+    std::ofstream lock(same_pid_stale / "LOCK");
+    lock << graphene::platform::current_pid() << "\n";
+  }
+  {
+    std::error_code tec;
+    fs::last_write_time(same_pid_stale / "LOCK", fs::file_time_type::clock::now() - std::chrono::hours(1), tec);
+    if (tec) { std::cerr << "FAIL age same-pid stale lock: " << tec.message() << "\n"; std::abort(); }
+  }
+  GrapheneDB same_pid_recovered; require(same_pid_recovered.open(same_pid_stale, opt), "recover same pid stale lock"); require(same_pid_recovered.close(), "close same pid stale lock");
+
   fs::path busy = fs::temp_directory_path() / "graphenedb_rc_live_lock";
   fs::remove_all(busy); fs::create_directories(busy);
   { std::ofstream lock(busy / "LOCK"); lock << graphene::platform::current_pid() << "\n"; }
+  {
+    std::error_code tec;
+    fs::last_write_time(busy / "LOCK", fs::file_time_type::clock::now(), tec);
+    if (tec) { std::cerr << "FAIL freshen live lock timestamp: " << tec.message() << "\n"; std::abort(); }
+  }
   GrapheneDB blocked; auto st = blocked.open(busy, opt); assert(!st && st.code == ErrorCode::LockBusy);
   fs::remove_all(busy);
 

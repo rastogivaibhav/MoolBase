@@ -41,8 +41,21 @@ path = Path(sys.argv[1])
 doc = yaml.safe_load(path.read_text(encoding="utf-8"))
 assert doc.get("openapi") == "3.0.3"
 assert doc.get("info", {}).get("title") == "GrapheneDB Pilot API"
-assert "/v1/version" in doc.get("paths", {})
-assert "/v1/nodes" in doc.get("paths", {})
+expected_paths = {
+    "/v1/health", "/v1/ready", "/v1/version", "/v1/nodes",
+    "/v1/nodes/bulk", "/v1/nodes/{nodeId}", "/v1/facts", "/v1/edges",
+    "/v1/edges/provenance", "/v1/search/hybrid", "/v1/search/lattice",
+    "/v1/retrieve/bundle", "/v1/retrieve/explain", "/v1/retrieve/temporal",
+    "/v1/metrics", "/v1/metrics/prometheus", "/v1/admin/capacity",
+    "/v1/admin/validate", "/v1/admin/checkpoint", "/v1/admin/compact",
+    "/v1/admin/inspect", "/v1/admin/backup",
+    "/v1/admin/validate/provenance", "/v1/admin/lattice/quality",
+}
+assert set(doc.get("paths", {})) == expected_paths
+assert (
+    doc["paths"]["/v1/search/lattice"]["get"]["parameters"][1]["schema"]["maximum"]
+    == 16
+)
 print(f"openapi_valid=true paths={len(doc.get('paths', {}))}")
 PY
 

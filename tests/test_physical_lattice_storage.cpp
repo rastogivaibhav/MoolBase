@@ -81,6 +81,7 @@ int main() {
   assert(st);
   assert(inspect.find("physical_lattice_storage=true") != std::string::npos);
   assert(inspect.find("physical_lattice_bytes=0") == std::string::npos);
+  in.close();
   db.close();
   fs::remove_all(dir);
   std::cout << "physical_lattice_storage_tests_passed=true\n";
