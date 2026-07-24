@@ -1,0 +1,54 @@
+{
+  "G0": {
+    "status": "INCOMPLETE",
+    "release_ctest_passed": 37,
+    "release_ctest_failed": 0,
+    "openapi_route_parity": true,
+    "openapi_paths": 32,
+    "package_consumer_verified": true,
+    "production_non_root_runtime_verified": true,
+    "git_diff_check": "PASS",
+    "clean_checkout_rerun": false,
+    "complete_pre_run_manifest": false
+  },
+  "G1": {
+    "status": "PASS",
+    "valid_extraction_atomic": true,
+    "invalid_extraction_partial_writes": 0,
+    "identical_replay_writes": 0,
+    "post_restart_replay_writes": 0,
+    "changed_replay_conflict": true,
+    "process_kill_recovery": true,
+    "second_writable_open_rejected": true,
+    "backup_restore_validation": true,
+    "observed_duplicate_committed_writes": 0,
+    "observed_lost_committed_writes": 0
+  },
+  "G2": {
+    "status": "INCOMPLETE",
+    "required_graphs": 5000,
+    "required_queries": 20000,
+    "executed_diagnostic_cases": 12,
+    "diagnostic_root_hit_rate": 1.0,
+    "diagnostic_contradiction_challenge_rate": 1.0,
+    "diagnostic_provenance_challenge_rate": 1.0,
+    "diagnostic_false_promotion_rate": 0.0,
+    "diagnostic_dialectic_p95_ms": 0.060286,
+    "formal_D0_metrics": null
+  },
+  "G3": {
+    "status": "PASS",
+    "records": 176,
+    "inserted_nodes": 183,
+    "inserted_edges": 432,
+    "same_process_replay_no_writes": true,
+    "restart_replay_no_writes": true,
+    "dialectic_category_micro_recall": 1.0,
+    "dialectic_complete_multi_root_rate": 1.0,
+    "dialectic_provenance_safe_record_rate": 1.0,
+    "dialectic_false_promotion_rate": 0.0,
+    "storage_validation_ok": true,
+    "provenance_validation_ok": true,
+    "api_dialectic_p95_ms": 1.6881849987839814
+  }
+}

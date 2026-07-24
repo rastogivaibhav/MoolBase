@@ -1,0 +1,15 @@
+{
+  "scope": "diagnostic_only_not_D0_acceptance",
+  "cases": 12,
+  "dimension": 32,
+  "vector_root_hit_rate": 0.0,
+  "causal_root_hit_rate": 1.0,
+  "convergence_only_root_hit_rate": 1.0,
+  "dialectic_root_hit_rate": 1.0,
+  "dialectic_contradiction_challenge_rate": 1.0,
+  "dialectic_provenance_challenge_rate": 1.0,
+  "dialectic_false_promotion_rate": 0.0,
+  "vector_p95_ms": 0.00326,
+  "causal_p95_ms": 0.028598,
+  "dialectic_p95_ms": 0.060286
+}

@@ -23,6 +23,27 @@
   controlled-pilot routes and limits.
 - Added focused P0, OpenAPI-surface, WAL, locking, and Windows lifecycle
   regressions.
+- Added an experimental read-only dialectic reasoning layer with bounded
+  multi-root path expansion, immutable convergence, deterministic opposition,
+  bounded re-expansion, provenance findings, structured synthesis, Kosh
+  adapter access, and a dedicated contract test.
+- Added strict RFC3339 temporal views, reusable provenance assessment, atomic
+  metadata-compatible all-source hyperedges, authenticated bounded dialectic
+  HTTP/OpenAPI support, and a clearly labelled synthetic ablation benchmark.
+- Added a repeatable Linux Docker validation image and a source-traceable
+  real-postmortem comparison benchmark covering vector-only, existing causal,
+  and dialectic multi-root retrieval.
+- Exposed the authoritative extraction transaction as bounded authenticated
+  `POST /v1/extractions`, added conflict-safe durable replay semantics,
+  OpenAPI/Python-client support, rollback and restart contracts, and an
+  API-level real-postmortem evaluation.
+- Added experimental `GDB-GL-0` governed outcome learning: read-only HypoKosh
+  proposals, immutable verified episodes, deterministic data-use classes,
+  train/development policy comparison with evaluation-split exclusion,
+  safety vetoes, explicit approved promotion/rollback history, legal-hold
+  aware quarantine, authenticated HTTP/OpenAPI/Python support, and Docker
+  restart validation. This does not train LLM weights or autonomously promote
+  truth.
 
 ## 0.6.0-rc1 - Pilot release candidate
 

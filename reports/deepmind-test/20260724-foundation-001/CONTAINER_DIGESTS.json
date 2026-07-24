@@ -1,0 +1,16 @@
+{
+  "production": {
+    "tag": "graphenedb-server:governed-learning",
+    "image_id": "sha256:0352f669abeb6342acf309970ba6c8547d81be828b47d317400a91d919c77ecd",
+    "repo_digest": "graphenedb-server@sha256:0352f669abeb6342acf309970ba6c8547d81be828b47d317400a91d919c77ecd",
+    "configured_user": "10001:10001",
+    "observed_id": "uid=10001(graphenedb) gid=10001(graphenedb) groups=10001(graphenedb)"
+  },
+  "validation": {
+    "tag": "graphenedb-validation:extraction-fix",
+    "image_id": "sha256:46f0efa8e82df748fc501c888e8d79750c36b5bd2e20b94f9755c3a61c27e854",
+    "repo_digest": "graphenedb-validation@sha256:46f0efa8e82df748fc501c888e8d79750c36b5bd2e20b94f9755c3a61c27e854",
+    "source_mounted_at_runtime": true,
+    "build_directory_mounted_at_runtime": true
+  }
+}

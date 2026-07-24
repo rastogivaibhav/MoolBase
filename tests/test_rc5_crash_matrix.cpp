@@ -72,9 +72,18 @@ static std::string node_payload(uint64_t tx, uint32_t id, uint64_t created, cons
   return os.str();
 }
 
-static std::string edge_payload(uint64_t tx, uint32_t id, uint32_t from, uint32_t to, BondType bond=BondType::Sigma, LayerCoupling coupling=LayerCoupling::SameLayer, std::vector<std::pair<std::string, std::string>> metadata = {}) {
+static std::string edge_payload(uint64_t tx, uint32_t id, uint32_t from,
+                                uint32_t to,
+                                BondType bond = BondType::Sigma,
+                                LayerCoupling coupling =
+                                    LayerCoupling::SameLayer,
+                                EdgeRole role = EdgeRole::Causal,
+                                std::vector<std::pair<std::string, std::string>>
+                                    metadata = {}) {
   std::ostringstream os;
-  os << "PUT_EDGE\t" << tx << "\t" << id << "\t" << from << "\t" << to << "\t0\t4\t0.900000\t3\t18446744073709551615\t"
+  os << "PUT_EDGE\t" << tx << "\t" << id << "\t" << from << "\t" << to
+     << "\t0\t" << static_cast<int>(role)
+     << "\t0.900000\t3\t18446744073709551615\t"
      << static_cast<int>(bond) << "\t0\t" << static_cast<int>(coupling) << "\t0.850000\t" << metadata_payload(metadata);
   return os.str();
 }
@@ -139,7 +148,8 @@ int main() {
       {"graphene_scoped_external_id", std::string("replayed-pack") + "\x1e" + "neighbor"},
       {"graphene_ingest", "extraction-v1"}
     }));
-    wal << frame(edge_payload(9010, 0, 0, 1, BondType::Sigma, LayerCoupling::SameLayer, {
+    wal << frame(edge_payload(9010, 0, 0, 1, BondType::Sigma,
+                              LayerCoupling::SameLayer, EdgeRole::Supports, {
       {"graphene_source_id", "replayed-pack"},
       {"graphene_relation_key", std::string("replayed-pack") + "\x1e" + "root" + "\x1e" + "neighbor" + "\x1e" + std::to_string(static_cast<int>(EdgeRole::Supports))},
       {"graphene_ingest", "extraction-v1"}

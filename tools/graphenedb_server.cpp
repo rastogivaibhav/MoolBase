@@ -1,7 +1,12 @@
 #include "graphene/db.hpp"
+#include "graphene/dialectic.hpp"
+#include "graphene/hypokosh.hpp"
 #include "graphene/lattice_placement.hpp"
+#include "graphene/learning.hpp"
 #include "server_runtime.hpp"
 #include <arpa/inet.h>
+#include <charconv>
+#include <cctype>
 #include <cmath>
 #include <csignal>
 #include <cstring>
@@ -22,6 +27,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fstream>
+#include <limits>
 #include <set>
 #include <queue>
 #include <unordered_set>
@@ -37,6 +43,14 @@ static constexpr uint32_t kMaxLatticeHops = 16;
 static constexpr uint32_t kMaxBundleHops = 8;
 static constexpr size_t kMaxSearchTopK = 1000;
 static constexpr size_t kMaxTemporalResults = 1000;
+static constexpr uint32_t kMaxDialecticHops = 16;
+static constexpr uint32_t kMaxDialecticPaths = 256;
+static constexpr uint32_t kMaxDialecticVisitedStates = 200000;
+static constexpr size_t kMaxExtractionRelations = 50000;
+static constexpr size_t kMaxExtractionMetadataEntries = 128;
+static constexpr size_t kMaxExtractionIdentifierBytes = 4096;
+static constexpr size_t kMaxExtractionMetadataKeyBytes = 1024;
+static constexpr size_t kMaxExtractionMetadataValueBytes = 64 * 1024;
 
 static volatile std::sig_atomic_t g_stop = 0;
 static volatile std::sig_atomic_t g_listen_fd = -1;
@@ -83,6 +97,251 @@ static std::string json_escape(const std::string& s) {
   }
   return os.str();
 }
+
+struct JsonDocumentValue {
+  enum class Kind { Null, Boolean, Number, String, Object, Array };
+  Kind kind{Kind::Null};
+  bool boolean{false};
+  std::string scalar;
+  std::map<std::string, JsonDocumentValue> object;
+  std::vector<JsonDocumentValue> array;
+};
+
+class JsonDocumentParser {
+ public:
+  explicit JsonDocumentParser(const std::string& input) : input_(input) {}
+
+  bool parse(JsonDocumentValue* output, std::string* error) {
+    error_ = error;
+    skip_space();
+    if (!parse_value(output, 0)) return false;
+    skip_space();
+    if (position_ != input_.size()) return fail("unexpected trailing JSON data");
+    return true;
+  }
+
+ private:
+  static constexpr size_t kMaxDepth = 16;
+  const std::string& input_;
+  size_t position_{0};
+  std::string* error_{nullptr};
+
+  bool fail(const std::string& message) {
+    if (error_) *error_ = message + " at byte " + std::to_string(position_);
+    return false;
+  }
+
+  void skip_space() {
+    while (position_ < input_.size() &&
+           std::isspace(static_cast<unsigned char>(input_[position_]))) {
+      ++position_;
+    }
+  }
+
+  bool consume(char expected) {
+    if (position_ >= input_.size() || input_[position_] != expected) return false;
+    ++position_;
+    return true;
+  }
+
+  static void append_utf8(uint32_t point, std::string* output) {
+    if (point <= 0x7f) {
+      output->push_back(static_cast<char>(point));
+    } else if (point <= 0x7ff) {
+      output->push_back(static_cast<char>(0xc0 | (point >> 6)));
+      output->push_back(static_cast<char>(0x80 | (point & 0x3f)));
+    } else if (point <= 0xffff) {
+      output->push_back(static_cast<char>(0xe0 | (point >> 12)));
+      output->push_back(static_cast<char>(0x80 | ((point >> 6) & 0x3f)));
+      output->push_back(static_cast<char>(0x80 | (point & 0x3f)));
+    } else {
+      output->push_back(static_cast<char>(0xf0 | (point >> 18)));
+      output->push_back(static_cast<char>(0x80 | ((point >> 12) & 0x3f)));
+      output->push_back(static_cast<char>(0x80 | ((point >> 6) & 0x3f)));
+      output->push_back(static_cast<char>(0x80 | (point & 0x3f)));
+    }
+  }
+
+  bool parse_hex_quad(uint32_t* output) {
+    if (position_ + 4 > input_.size()) return fail("truncated unicode escape");
+    uint32_t value = 0;
+    for (size_t i = 0; i < 4; ++i) {
+      const unsigned char c = static_cast<unsigned char>(input_[position_++]);
+      value <<= 4;
+      if (c >= '0' && c <= '9') value |= c - '0';
+      else if (c >= 'a' && c <= 'f') value |= c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F') value |= c - 'A' + 10;
+      else return fail("invalid unicode escape");
+    }
+    *output = value;
+    return true;
+  }
+
+  bool parse_string(std::string* output) {
+    if (!consume('"')) return fail("expected JSON string");
+    output->clear();
+    while (position_ < input_.size()) {
+      const unsigned char c = static_cast<unsigned char>(input_[position_++]);
+      if (c == '"') return true;
+      if (c < 0x20) return fail("unescaped control character in string");
+      if (c != '\\') {
+        output->push_back(static_cast<char>(c));
+        continue;
+      }
+      if (position_ >= input_.size()) return fail("truncated string escape");
+      const char escape = input_[position_++];
+      switch (escape) {
+        case '"': output->push_back('"'); break;
+        case '\\': output->push_back('\\'); break;
+        case '/': output->push_back('/'); break;
+        case 'b': output->push_back('\b'); break;
+        case 'f': output->push_back('\f'); break;
+        case 'n': output->push_back('\n'); break;
+        case 'r': output->push_back('\r'); break;
+        case 't': output->push_back('\t'); break;
+        case 'u': {
+          uint32_t point = 0;
+          if (!parse_hex_quad(&point)) return false;
+          if (point >= 0xd800 && point <= 0xdbff) {
+            if (position_ + 2 > input_.size() || input_[position_] != '\\' ||
+                input_[position_ + 1] != 'u') {
+              return fail("high surrogate without low surrogate");
+            }
+            position_ += 2;
+            uint32_t low = 0;
+            if (!parse_hex_quad(&low)) return false;
+            if (low < 0xdc00 || low > 0xdfff) {
+              return fail("invalid low surrogate");
+            }
+            point = 0x10000 + ((point - 0xd800) << 10) + (low - 0xdc00);
+          } else if (point >= 0xdc00 && point <= 0xdfff) {
+            return fail("low surrogate without high surrogate");
+          }
+          append_utf8(point, output);
+          break;
+        }
+        default: return fail("invalid string escape");
+      }
+    }
+    return fail("unterminated JSON string");
+  }
+
+  bool parse_number(JsonDocumentValue* output) {
+    const size_t start = position_;
+    if (position_ < input_.size() && input_[position_] == '-') ++position_;
+    if (position_ >= input_.size()) return fail("invalid JSON number");
+    if (input_[position_] == '0') {
+      ++position_;
+    } else if (input_[position_] >= '1' && input_[position_] <= '9') {
+      while (position_ < input_.size() &&
+             std::isdigit(static_cast<unsigned char>(input_[position_]))) {
+        ++position_;
+      }
+    } else {
+      return fail("invalid JSON number");
+    }
+    if (position_ < input_.size() && input_[position_] == '.') {
+      ++position_;
+      const size_t fraction = position_;
+      while (position_ < input_.size() &&
+             std::isdigit(static_cast<unsigned char>(input_[position_]))) {
+        ++position_;
+      }
+      if (fraction == position_) return fail("invalid JSON fraction");
+    }
+    if (position_ < input_.size() &&
+        (input_[position_] == 'e' || input_[position_] == 'E')) {
+      ++position_;
+      if (position_ < input_.size() &&
+          (input_[position_] == '+' || input_[position_] == '-')) {
+        ++position_;
+      }
+      const size_t exponent = position_;
+      while (position_ < input_.size() &&
+             std::isdigit(static_cast<unsigned char>(input_[position_]))) {
+        ++position_;
+      }
+      if (exponent == position_) return fail("invalid JSON exponent");
+    }
+    output->kind = JsonDocumentValue::Kind::Number;
+    output->scalar = input_.substr(start, position_ - start);
+    return true;
+  }
+
+  bool parse_array(JsonDocumentValue* output, size_t depth) {
+    consume('[');
+    output->kind = JsonDocumentValue::Kind::Array;
+    skip_space();
+    if (consume(']')) return true;
+    while (true) {
+      JsonDocumentValue item;
+      if (!parse_value(&item, depth + 1)) return false;
+      output->array.push_back(std::move(item));
+      skip_space();
+      if (consume(']')) return true;
+      if (!consume(',')) return fail("expected ',' or ']' in array");
+      skip_space();
+    }
+  }
+
+  bool parse_object(JsonDocumentValue* output, size_t depth) {
+    consume('{');
+    output->kind = JsonDocumentValue::Kind::Object;
+    skip_space();
+    if (consume('}')) return true;
+    while (true) {
+      std::string key;
+      if (!parse_string(&key)) return false;
+      skip_space();
+      if (!consume(':')) return fail("expected ':' after object key");
+      skip_space();
+      JsonDocumentValue value;
+      if (!parse_value(&value, depth + 1)) return false;
+      if (!output->object.emplace(std::move(key), std::move(value)).second) {
+        return fail("duplicate object key");
+      }
+      skip_space();
+      if (consume('}')) return true;
+      if (!consume(',')) return fail("expected ',' or '}' in object");
+      skip_space();
+    }
+  }
+
+  bool parse_value(JsonDocumentValue* output, size_t depth) {
+    if (!output) return fail("missing JSON output");
+    if (depth > kMaxDepth) return fail("JSON nesting is too deep");
+    skip_space();
+    if (position_ >= input_.size()) return fail("unexpected end of JSON");
+    const char c = input_[position_];
+    if (c == '{') return parse_object(output, depth);
+    if (c == '[') return parse_array(output, depth);
+    if (c == '"') {
+      output->kind = JsonDocumentValue::Kind::String;
+      return parse_string(&output->scalar);
+    }
+    if (c == '-' || std::isdigit(static_cast<unsigned char>(c))) {
+      return parse_number(output);
+    }
+    if (input_.compare(position_, 4, "true") == 0) {
+      position_ += 4;
+      output->kind = JsonDocumentValue::Kind::Boolean;
+      output->boolean = true;
+      return true;
+    }
+    if (input_.compare(position_, 5, "false") == 0) {
+      position_ += 5;
+      output->kind = JsonDocumentValue::Kind::Boolean;
+      output->boolean = false;
+      return true;
+    }
+    if (input_.compare(position_, 4, "null") == 0) {
+      position_ += 4;
+      output->kind = JsonDocumentValue::Kind::Null;
+      return true;
+    }
+    return fail("invalid JSON value");
+  }
+};
 
 static std::string json_value(const std::string& body, const std::string& key) {
   std::string needle = "\"" + key + "\"";
@@ -133,6 +392,20 @@ static uint32_t json_u32(const std::string& body, const std::string& key, uint32
     if (parsed > UINT32_MAX) return def;
     return static_cast<uint32_t>(parsed);
   } catch (...) { return def; }
+}
+
+static uint64_t json_u64(const std::string& body,
+                         const std::string& key,
+                         uint64_t def = 0) {
+  try {
+    const std::string value = json_value(body, key);
+    if (value.empty()) return def;
+    size_t consumed = 0;
+    const uint64_t parsed = std::stoull(value, &consumed);
+    return consumed == value.size() ? parsed : def;
+  } catch (...) {
+    return def;
+  }
 }
 
 static double json_double(const std::string& body, const std::string& key, double def = 0.0) {
@@ -224,9 +497,15 @@ static ContentLengthResult parse_content_length(const std::string& headers) {
 static bool endpoint_requires_json_body(const std::string& method, const std::string& path) {
   if (method != "POST") return false;
   return path == "/v1/nodes" || path == "/v1/nodes/bulk" || path == "/v1/facts" ||
+         path == "/v1/extractions" ||
          path == "/v1/edges" || path == "/v1/edges/provenance" ||
          path == "/v1/retrieve/bundle" || path == "/v1/retrieve/explain" ||
          path == "/v1/retrieve/temporal" || path == "/v1/search/hybrid" ||
+         path == "/v1/reason/dialectic" || path == "/v1/reason/hypokosh" ||
+         path == "/v1/learning/episodes" ||
+         path == "/v1/learning/policies/evaluate" ||
+         path == "/v1/learning/policies/decisions" ||
+         path == "/v1/learning/episodes/quarantine" ||
          path == "/v1/admin/backup";
 }
 
@@ -280,6 +559,48 @@ static uint32_t query_u32(const std::string& path, const std::string& key, uint3
   } catch (...) { return def; }
 }
 
+static std::string query_string(const std::string& path,
+                                const std::string& key) {
+  const auto question = path.find('?');
+  if (question == std::string::npos) return {};
+  size_t position = question + 1;
+  while (position < path.size()) {
+    const size_t ampersand = path.find('&', position);
+    const size_t end =
+        ampersand == std::string::npos ? path.size() : ampersand;
+    const size_t equals = path.find('=', position);
+    if (equals != std::string::npos && equals < end &&
+        path.substr(position, equals - position) == key) {
+      std::string output;
+      const std::string encoded = path.substr(equals + 1, end - equals - 1);
+      output.reserve(encoded.size());
+      for (size_t index = 0; index < encoded.size(); ++index) {
+        if (encoded[index] == '+') {
+          output.push_back(' ');
+        } else if (encoded[index] == '%' && index + 2 < encoded.size() &&
+                   std::isxdigit(static_cast<unsigned char>(encoded[index + 1])) &&
+                   std::isxdigit(static_cast<unsigned char>(encoded[index + 2]))) {
+          const auto hex_value = [](char value) -> unsigned char {
+            if (value >= '0' && value <= '9') return value - '0';
+            value = static_cast<char>(std::tolower(
+                static_cast<unsigned char>(value)));
+            return static_cast<unsigned char>(10 + value - 'a');
+          };
+          output.push_back(static_cast<char>(
+              (hex_value(encoded[index + 1]) << 4) |
+              hex_value(encoded[index + 2])));
+          index += 2;
+        } else {
+          output.push_back(encoded[index]);
+        }
+      }
+      return output;
+    }
+    position = end + 1;
+  }
+  return {};
+}
+
 static int http_status_for(const Status& status) {
   switch (status.code) {
     case ErrorCode::Ok: return 200;
@@ -311,6 +632,167 @@ static std::vector<float> embed_text(const std::string& text, uint32_t dim) {
   norm = std::sqrt(norm);
   if (norm > 0) for (float& x : v) x /= norm;
   return v;
+}
+
+static bool parse_query_mode(const std::string& value, QueryMode* out) {
+  if (!out) return false;
+  if (value.empty() || value == "balanced") {
+    *out = QueryMode::Balanced;
+  } else if (value == "empirical") {
+    *out = QueryMode::Empirical;
+  } else if (value == "theoretical") {
+    *out = QueryMode::Theoretical;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+static void append_u32_array(std::ostringstream& output,
+                             const std::vector<uint32_t>& values) {
+  output << '[';
+  for (size_t index = 0; index < values.size(); ++index) {
+    if (index != 0) output << ',';
+    output << values[index];
+  }
+  output << ']';
+}
+
+static void append_string_array(std::ostringstream& output,
+                                const std::vector<std::string>& values) {
+  output << '[';
+  for (size_t index = 0; index < values.size(); ++index) {
+    if (index != 0) output << ',';
+    output << '"' << json_escape(values[index]) << '"';
+  }
+  output << ']';
+}
+
+static void append_dialectic_bundle(std::ostringstream& output,
+                                    const BundleSet& bundle) {
+  output << "{\"snapshot_version\":" << bundle.snapshot_version
+         << ",\"semantic_candidates\":";
+  append_u32_array(output, bundle.semantic_candidates);
+  output << ",\"visited_states\":" << bundle.visited_states
+         << ",\"truncated\":" << (bundle.truncated ? "true" : "false")
+         << ",\"warnings\":";
+  append_string_array(output, bundle.warnings);
+  output << ",\"roots\":[";
+  for (size_t root_index = 0; root_index < bundle.roots.size(); ++root_index) {
+    if (root_index != 0) output << ',';
+    const RootBundle& root = bundle.roots[root_index];
+    output << "{\"root_node\":" << root.root_node
+           << ",\"confidence\":" << root.confidence
+           << ",\"degeneracy\":" << root.degeneracy
+           << ",\"diversity\":" << root.diversity
+           << ",\"contradiction_ratio\":" << root.contradiction_ratio
+           << ",\"evidence_coverage\":" << root.evidence_coverage
+           << ",\"provenance_risk\":" << root.provenance_risk
+           << ",\"paths\":[";
+    for (size_t path_index = 0; path_index < root.paths.size(); ++path_index) {
+      if (path_index != 0) output << ',';
+      const DialecticPath& path = root.paths[path_index];
+      output << "{\"anchor_node\":" << path.anchor_node << ",\"nodes\":";
+      append_u32_array(output, path.nodes);
+      output << ",\"edges\":";
+      append_u32_array(output, path.edges);
+      output << ",\"score\":" << path.score
+             << ",\"contains_contradiction\":"
+             << (path.contains_contradiction ? "true" : "false")
+             << ",\"contains_hypothetical\":"
+             << (path.contains_hypothetical ? "true" : "false")
+             << ",\"joint_requirements\":[";
+      for (size_t joint_index = 0;
+           joint_index < path.joint_requirements.size(); ++joint_index) {
+        if (joint_index != 0) output << ',';
+        const JointRequirement& joint = path.joint_requirements[joint_index];
+        output << "{\"hyperedge_id\":\"" << json_escape(joint.hyperedge_id)
+               << "\",\"target_node\":" << joint.target_node
+               << ",\"source_nodes\":";
+        append_u32_array(output, joint.source_nodes);
+        output << ",\"member_edges\":";
+        append_u32_array(output, joint.member_edges);
+        output << ",\"all_sources_present\":"
+               << (joint.all_sources_present ? "true" : "false") << '}';
+      }
+      output << "],\"provenance_findings\":[";
+      for (size_t finding_index = 0;
+           finding_index < path.provenance_findings.size(); ++finding_index) {
+        if (finding_index != 0) output << ',';
+        const ProvenanceFinding& finding =
+            path.provenance_findings[finding_index];
+        output << "{\"edge_id\":" << finding.edge_id << ",\"code\":\""
+               << json_escape(finding.code) << "\",\"detail\":\""
+               << json_escape(finding.detail) << "\"}";
+      }
+      output << "]}";
+    }
+    output << "]}";
+  }
+  output << "]}";
+}
+
+static void append_dialectic_convergence(std::ostringstream& output,
+                                         const ConvergedAnswer& convergence) {
+  output << "{\"has_answer\":"
+         << (convergence.has_answer ? "true" : "false")
+         << ",\"primary_node\":" << convergence.primary_node
+         << ",\"confidence\":" << convergence.confidence
+         << ",\"false_promotion_risk\":"
+         << convergence.false_promotion_risk << ",\"evidence_edges\":";
+  append_u32_array(output, convergence.evidence_edges);
+  output << ",\"residual_uncertainty\":";
+  append_string_array(output, convergence.residual_uncertainty);
+  output << ",\"selected_path_count\":" << convergence.selected_paths.size()
+         << ",\"discarded_path_count\":" << convergence.discarded_paths.size()
+         << '}';
+}
+
+static void append_dialectic_opposition(std::ostringstream& output,
+                                        const OppositionReport& opposition) {
+  output << "{\"opposition_score\":" << opposition.opposition_score
+         << ",\"requests_reexpansion\":"
+         << (opposition.requests_reexpansion ? "true" : "false")
+         << ",\"challenged_claims\":";
+  append_string_array(output, opposition.challenged_claims);
+  output << ",\"falsification_questions\":";
+  append_string_array(output, opposition.falsification_questions);
+  output << ",\"reopen_nodes\":";
+  append_u32_array(output, opposition.reopen_nodes);
+  output << '}';
+}
+
+static std::string dialectic_json(const DialecticResult& result) {
+  std::ostringstream output;
+  output << "{\"initial_bundle\":";
+  append_dialectic_bundle(output, result.initial_bundle);
+  output << ",\"initial_convergence\":";
+  append_dialectic_convergence(output, result.initial_convergence);
+  output << ",\"initial_opposition\":";
+  append_dialectic_opposition(output, result.initial_opposition);
+  output << ",\"has_reopened_bundle\":"
+         << (result.has_reopened_bundle ? "true" : "false");
+  if (result.has_reopened_bundle) {
+    output << ",\"reopened_bundle\":";
+    append_dialectic_bundle(output, result.reopened_bundle);
+  }
+  output << ",\"final_convergence\":";
+  append_dialectic_convergence(output, result.final_convergence);
+  output << ",\"final_opposition\":";
+  append_dialectic_opposition(output, result.final_opposition);
+  output << ",\"synthesis\":{\"has_answer\":"
+         << (result.synthesis.has_answer ? "true" : "false")
+         << ",\"primary_node\":" << result.synthesis.primary_node
+         << ",\"confidence\":" << result.synthesis.confidence
+         << ",\"epistemic_status\":\""
+         << json_escape(result.synthesis.epistemic_status)
+         << "\",\"evidence_edges\":";
+  append_u32_array(output, result.synthesis.evidence_edges);
+  output << ",\"residual_uncertainty\":";
+  append_string_array(output, result.synthesis.residual_uncertainty);
+  output << "},\"rounds\":" << result.rounds << ",\"durable_writes\":"
+         << (result.durable_writes ? "true" : "false") << '}';
+  return output.str();
 }
 
 static LatticeCoord spiral_coord(uint32_t id) {
@@ -535,6 +1017,1088 @@ static std::string role_name(EdgeRole r) {
   return "causal";
 }
 
+static const JsonDocumentValue* json_member(const JsonDocumentValue& object,
+                                            const std::string& key) {
+  if (object.kind != JsonDocumentValue::Kind::Object) return nullptr;
+  const auto it = object.object.find(key);
+  return it == object.object.end() ? nullptr : &it->second;
+}
+
+static bool reject_unknown_json_fields(
+    const JsonDocumentValue& object,
+    std::initializer_list<const char*> allowed,
+    const std::string& context,
+    std::string* error) {
+  std::unordered_set<std::string> names;
+  names.reserve(allowed.size());
+  for (const char* name : allowed) names.emplace(name);
+  for (const auto& [name, unused] : object.object) {
+    (void)unused;
+    if (names.count(name) == 0) {
+      *error = context + " contains unsupported field '" + name + "'";
+      return false;
+    }
+  }
+  return true;
+}
+
+static bool extraction_string_field(const JsonDocumentValue& object,
+                                    const std::string& key,
+                                    size_t maximum_bytes,
+                                    bool required,
+                                    std::string* output,
+                                    std::string* error) {
+  const JsonDocumentValue* value = json_member(object, key);
+  if (!value) {
+    if (required) {
+      *error = key + " is required";
+      return false;
+    }
+    output->clear();
+    return true;
+  }
+  if (value->kind != JsonDocumentValue::Kind::String) {
+    *error = key + " must be a string";
+    return false;
+  }
+  if (required && value->scalar.empty()) {
+    *error = key + " must not be empty";
+    return false;
+  }
+  if (value->scalar.size() > maximum_bytes) {
+    *error = key + " exceeds " + std::to_string(maximum_bytes) + " bytes";
+    return false;
+  }
+  *output = value->scalar;
+  return true;
+}
+
+template <typename Integer>
+static bool extraction_integer_field(const JsonDocumentValue& object,
+                                     const std::string& key,
+                                     Integer default_value,
+                                     Integer* output,
+                                     std::string* error) {
+  const JsonDocumentValue* value = json_member(object, key);
+  if (!value) {
+    *output = default_value;
+    return true;
+  }
+  if (value->kind != JsonDocumentValue::Kind::Number ||
+      value->scalar.find_first_of(".eE") != std::string::npos) {
+    *error = key + " must be an integer";
+    return false;
+  }
+  Integer parsed{};
+  const char* begin = value->scalar.data();
+  const char* end = begin + value->scalar.size();
+  const auto result = std::from_chars(begin, end, parsed);
+  if (result.ec != std::errc{} || result.ptr != end) {
+    *error = key + " is outside its supported integer range";
+    return false;
+  }
+  *output = parsed;
+  return true;
+}
+
+static bool extraction_double_field(const JsonDocumentValue& object,
+                                    const std::string& key,
+                                    double default_value,
+                                    double* output,
+                                    std::string* error) {
+  const JsonDocumentValue* value = json_member(object, key);
+  if (!value) {
+    *output = default_value;
+    return true;
+  }
+  if (value->kind != JsonDocumentValue::Kind::Number) {
+    *error = key + " must be a number";
+    return false;
+  }
+  try {
+    size_t consumed = 0;
+    const double parsed = std::stod(value->scalar, &consumed);
+    if (consumed != value->scalar.size() || !std::isfinite(parsed)) {
+      *error = key + " must be a finite number";
+      return false;
+    }
+    *output = parsed;
+    return true;
+  } catch (...) {
+    *error = key + " is outside its supported numeric range";
+    return false;
+  }
+}
+
+static bool extraction_bool_field(const JsonDocumentValue& object,
+                                  const std::string& key,
+                                  bool default_value,
+                                  bool* output,
+                                  std::string* error) {
+  const JsonDocumentValue* value = json_member(object, key);
+  if (!value) {
+    *output = default_value;
+    return true;
+  }
+  if (value->kind != JsonDocumentValue::Kind::Boolean) {
+    *error = key + " must be a boolean";
+    return false;
+  }
+  *output = value->boolean;
+  return true;
+}
+
+static bool parse_json_object(const std::string& body,
+                              JsonDocumentValue* root,
+                              std::string* error) {
+  JsonDocumentParser parser(body);
+  if (!parser.parse(root, error)) return false;
+  if (root->kind != JsonDocumentValue::Kind::Object) {
+    *error = "request body must be a JSON object";
+    return false;
+  }
+  return true;
+}
+
+static bool parse_retrieval_policy(const JsonDocumentValue& parent,
+                                   const std::string& field,
+                                   bool required,
+                                   RetrievalPolicy* output,
+                                   std::string* error) {
+  const JsonDocumentValue* value = json_member(parent, field);
+  if (!value) {
+    if (required) {
+      *error = field + " is required";
+      return false;
+    }
+    return true;
+  }
+  if (value->kind != JsonDocumentValue::Kind::Object) {
+    *error = field + " must be an object";
+    return false;
+  }
+  if (!reject_unknown_json_fields(
+          *value,
+          {"version", "semantic_candidates", "max_hops", "max_paths",
+           "max_paths_per_root", "max_visited_states",
+           "max_opposition_rounds", "minimum_confidence",
+           "reexpansion_threshold"},
+          field, error)) {
+    return false;
+  }
+  RetrievalPolicy policy;
+  if (!extraction_string_field(*value, "version", 256, true,
+                               &policy.version, error) ||
+      !extraction_integer_field(*value, "semantic_candidates",
+                                uint32_t{12},
+                                &policy.semantic_candidates, error) ||
+      !extraction_integer_field(*value, "max_hops", uint32_t{6},
+                                &policy.max_hops, error) ||
+      !extraction_integer_field(*value, "max_paths", uint32_t{32},
+                                &policy.max_paths, error) ||
+      !extraction_integer_field(*value, "max_paths_per_root", uint32_t{8},
+                                &policy.max_paths_per_root, error) ||
+      !extraction_integer_field(*value, "max_visited_states",
+                                uint32_t{20000},
+                                &policy.max_visited_states, error) ||
+      !extraction_integer_field(*value, "max_opposition_rounds",
+                                uint32_t{1},
+                                &policy.max_opposition_rounds, error) ||
+      !extraction_double_field(*value, "minimum_confidence", 0.45,
+                               &policy.minimum_confidence, error) ||
+      !extraction_double_field(*value, "reexpansion_threshold", 0.25,
+                               &policy.reexpansion_threshold, error)) {
+    *error = field + ": " + *error;
+    return false;
+  }
+  *output = std::move(policy);
+  return true;
+}
+
+static void append_retrieval_policy(std::ostringstream& output,
+                                    const RetrievalPolicy& policy) {
+  output << "{\"version\":\"" << json_escape(policy.version)
+         << "\",\"semantic_candidates\":" << policy.semantic_candidates
+         << ",\"max_hops\":" << policy.max_hops
+         << ",\"max_paths\":" << policy.max_paths
+         << ",\"max_paths_per_root\":" << policy.max_paths_per_root
+         << ",\"max_visited_states\":" << policy.max_visited_states
+         << ",\"max_opposition_rounds\":" << policy.max_opposition_rounds
+         << ",\"minimum_confidence\":" << policy.minimum_confidence
+         << ",\"reexpansion_threshold\":" << policy.reexpansion_threshold
+         << '}';
+}
+
+static DialecticOptions dialectic_options_for_policy(
+    const RetrievalPolicy& policy) {
+  DialecticOptions options;
+  options.semantic_candidates = policy.semantic_candidates;
+  options.max_hops = policy.max_hops;
+  options.max_paths = policy.max_paths;
+  options.max_paths_per_root = policy.max_paths_per_root;
+  options.max_visited_states = policy.max_visited_states;
+  options.max_opposition_rounds = policy.max_opposition_rounds;
+  options.minimum_confidence = policy.minimum_confidence;
+  options.reexpansion_threshold = policy.reexpansion_threshold;
+  return options;
+}
+
+struct HypoKoshRequest {
+  std::string query;
+  std::string tenant_id;
+  uint64_t signature{0};
+  size_t max_hypotheses{8};
+  bool use_active_policy{false};
+  DialecticOptions options;
+};
+
+static bool parse_hypokosh_request(const std::string& body,
+                                   HypoKoshRequest* output,
+                                   std::string* error) {
+  JsonDocumentValue root;
+  if (!parse_json_object(body, &root, error) ||
+      !reject_unknown_json_fields(
+          root,
+          {"query", "tenant_id", "signature", "max_hypotheses",
+           "use_active_policy", "mode", "as_of", "semantic_candidates",
+           "max_hops", "max_paths", "max_paths_per_root",
+           "max_visited_states", "max_opposition_rounds",
+           "minimum_confidence", "reexpansion_threshold"},
+          "request", error)) {
+    return false;
+  }
+  HypoKoshRequest request;
+  std::string mode;
+  uint32_t max_hypotheses = 8;
+  if (!extraction_string_field(root, "query", kMaxNodeTextBytes, true,
+                               &request.query, error) ||
+      !extraction_string_field(root, "tenant_id", 256, false,
+                               &request.tenant_id, error) ||
+      !extraction_integer_field(root, "signature", uint64_t{0},
+                                &request.signature, error) ||
+      !extraction_integer_field(root, "max_hypotheses", uint32_t{8},
+                                &max_hypotheses, error) ||
+      !extraction_bool_field(root, "use_active_policy", false,
+                             &request.use_active_policy, error) ||
+      !extraction_string_field(root, "mode", 32, false, &mode, error) ||
+      !extraction_string_field(root, "as_of", 128, false,
+                               &request.options.as_of, error) ||
+      !extraction_integer_field(root, "semantic_candidates", size_t{12},
+                                &request.options.semantic_candidates, error) ||
+      !extraction_integer_field(root, "max_hops", uint32_t{6},
+                                &request.options.max_hops, error) ||
+      !extraction_integer_field(root, "max_paths", size_t{32},
+                                &request.options.max_paths, error) ||
+      !extraction_integer_field(root, "max_paths_per_root", size_t{8},
+                                &request.options.max_paths_per_root, error) ||
+      !extraction_integer_field(root, "max_visited_states",
+                                size_t{20000},
+                                &request.options.max_visited_states, error) ||
+      !extraction_integer_field(root, "max_opposition_rounds", uint32_t{1},
+                                &request.options.max_opposition_rounds,
+                                error) ||
+      !extraction_double_field(root, "minimum_confidence", 0.45,
+                               &request.options.minimum_confidence, error) ||
+      !extraction_double_field(root, "reexpansion_threshold", 0.25,
+                               &request.options.reexpansion_threshold,
+                               error)) {
+    return false;
+  }
+  if (!parse_query_mode(mode, &request.options.mode)) {
+    *error = "mode must be empirical, balanced, or theoretical";
+    return false;
+  }
+  if (max_hypotheses < 1 || max_hypotheses > 16) {
+    *error = "max_hypotheses must be between 1 and 16";
+    return false;
+  }
+  if (request.options.semantic_candidates < 1 ||
+      request.options.semantic_candidates > 64 ||
+      request.options.max_hops < 1 ||
+      request.options.max_hops > kMaxDialecticHops ||
+      request.options.max_paths < 1 ||
+      request.options.max_paths > kMaxDialecticPaths ||
+      request.options.max_paths_per_root < 1 ||
+      request.options.max_paths_per_root > 64 ||
+      request.options.max_visited_states < 1 ||
+      request.options.max_visited_states > kMaxDialecticVisitedStates ||
+      request.options.max_opposition_rounds > 2 ||
+      request.options.minimum_confidence < 0.0 ||
+      request.options.minimum_confidence > 1.0 ||
+      request.options.reexpansion_threshold < 0.0 ||
+      request.options.reexpansion_threshold > 1.0) {
+    *error = "dialectic options exceed governed safety bounds";
+    return false;
+  }
+  if (request.use_active_policy && request.tenant_id.empty()) {
+    *error = "tenant_id is required when use_active_policy is true";
+    return false;
+  }
+  request.max_hypotheses = max_hypotheses;
+  *output = std::move(request);
+  return true;
+}
+
+static std::string hypokosh_json(const HypothesisSet& hypotheses,
+                                 const std::optional<PolicyState>& active) {
+  std::ostringstream output;
+  output << "{\"snapshot_version\":" << hypotheses.snapshot_version
+         << ",\"epistemic_status\":\""
+         << json_escape(hypotheses.epistemic_status)
+         << "\",\"durable_writes\":"
+         << (hypotheses.durable_writes ? "true" : "false")
+         << ",\"active_policy\":";
+  if (active) append_retrieval_policy(output, active->policy);
+  else output << "null";
+  output << ",\"discriminating_tests\":";
+  append_string_array(output, hypotheses.discriminating_tests);
+  output << ",\"warnings\":";
+  append_string_array(output, hypotheses.warnings);
+  output << ",\"proposals\":[";
+  for (size_t index = 0; index < hypotheses.proposals.size(); ++index) {
+    if (index != 0) output << ',';
+    const HypothesisProposal& proposal = hypotheses.proposals[index];
+    output << "{\"root_node\":" << proposal.root_node
+           << ",\"statement\":\"" << json_escape(proposal.statement)
+           << "\",\"origin\":\"hypothetical\",\"plausibility\":"
+           << proposal.plausibility << ",\"evidence_edges\":";
+    append_u32_array(output, proposal.evidence_edges);
+    output << ",\"discriminating_tests\":";
+    append_string_array(output, proposal.discriminating_tests);
+    output << ",\"eligible_for_truth_promotion\":"
+           << (proposal.eligible_for_truth_promotion ? "true" : "false")
+           << '}';
+  }
+  output << "]}";
+  return output.str();
+}
+
+static bool parse_episode_split(const std::string& value,
+                                EpisodeSplit* output) {
+  if (value == "training") *output = EpisodeSplit::Training;
+  else if (value == "development") *output = EpisodeSplit::Development;
+  else if (value == "evaluation") *output = EpisodeSplit::Evaluation;
+  else return false;
+  return true;
+}
+
+static bool parse_learning_episode_request(
+    const std::string& body,
+    LearningEpisodeInput* output,
+    std::string* error) {
+  JsonDocumentValue root;
+  if (!parse_json_object(body, &root, error) ||
+      !reject_unknown_json_fields(
+          root,
+          {"schema_version", "tenant_id", "episode_id", "family", "domain",
+           "split", "query", "signature", "model_version", "policy",
+           "outcome_verified", "verifier_id", "outcome_evidence_id",
+           "task_success", "causal_f1", "evidence_coverage",
+           "calibration_error", "latency_ms", "token_cost", "action_cost",
+           "false_promotion", "harmful_action", "unauthorized_action",
+           "harmful_memory_activation", "expired_truth_activation",
+           "intermediate_trace_bytes", "retained_trace_bytes",
+           "decisive_evidence_total", "decisive_evidence_retained",
+           "useful_evidence_total", "useful_evidence_retrieved_at_20",
+           "evidence_node_ids", "legal_hold"},
+          "request", error)) {
+    return false;
+  }
+  LearningEpisodeInput input;
+  std::string split;
+  if (!extraction_integer_field(root, "schema_version",
+                                kLearningSchemaVersion,
+                                &input.schema_version, error) ||
+      !extraction_string_field(root, "tenant_id", 256, true,
+                               &input.tenant_id, error) ||
+      !extraction_string_field(root, "episode_id", 256, true,
+                               &input.episode_id, error) ||
+      !extraction_string_field(root, "family", 256, true,
+                               &input.family, error) ||
+      !extraction_string_field(root, "domain", 256, true,
+                               &input.domain, error) ||
+      !extraction_string_field(root, "split", 32, true, &split, error) ||
+      !extraction_string_field(root, "query", kMaxNodeTextBytes, true,
+                               &input.query, error) ||
+      !extraction_integer_field(root, "signature", uint64_t{0},
+                                &input.signature, error) ||
+      !extraction_string_field(root, "model_version", 256, true,
+                               &input.model_version, error) ||
+      !parse_retrieval_policy(root, "policy", true, &input.policy, error) ||
+      !extraction_bool_field(root, "outcome_verified", false,
+                             &input.outcome_verified, error) ||
+      !extraction_string_field(root, "verifier_id", 256, false,
+                               &input.verifier_id, error) ||
+      !extraction_string_field(root, "outcome_evidence_id", 256, false,
+                               &input.outcome_evidence_id, error) ||
+      !extraction_bool_field(root, "task_success", false,
+                             &input.task_success, error) ||
+      !extraction_double_field(root, "causal_f1", 0.0,
+                               &input.causal_f1, error) ||
+      !extraction_double_field(root, "evidence_coverage", 0.0,
+                               &input.evidence_coverage, error) ||
+      !extraction_double_field(root, "calibration_error", 0.0,
+                               &input.calibration_error, error) ||
+      !extraction_double_field(root, "latency_ms", 0.0,
+                               &input.latency_ms, error) ||
+      !extraction_double_field(root, "token_cost", 0.0,
+                               &input.token_cost, error) ||
+      !extraction_double_field(root, "action_cost", 0.0,
+                               &input.action_cost, error) ||
+      !extraction_bool_field(root, "false_promotion", false,
+                             &input.false_promotion, error) ||
+      !extraction_bool_field(root, "harmful_action", false,
+                             &input.harmful_action, error) ||
+      !extraction_bool_field(root, "unauthorized_action", false,
+                             &input.unauthorized_action, error) ||
+      !extraction_bool_field(root, "harmful_memory_activation", false,
+                             &input.harmful_memory_activation, error) ||
+      !extraction_bool_field(root, "expired_truth_activation", false,
+                             &input.expired_truth_activation, error) ||
+      !extraction_integer_field(root, "intermediate_trace_bytes", uint64_t{0},
+                                &input.intermediate_trace_bytes, error) ||
+      !extraction_integer_field(root, "retained_trace_bytes", uint64_t{0},
+                                &input.retained_trace_bytes, error) ||
+      !extraction_integer_field(root, "decisive_evidence_total", uint32_t{0},
+                                &input.decisive_evidence_total, error) ||
+      !extraction_integer_field(root, "decisive_evidence_retained",
+                                uint32_t{0},
+                                &input.decisive_evidence_retained, error) ||
+      !extraction_integer_field(root, "useful_evidence_total", uint32_t{0},
+                                &input.useful_evidence_total, error) ||
+      !extraction_integer_field(root, "useful_evidence_retrieved_at_20",
+                                uint32_t{0},
+                                &input.useful_evidence_retrieved_at_20,
+                                error) ||
+      !extraction_bool_field(root, "legal_hold", false,
+                             &input.legal_hold, error)) {
+    return false;
+  }
+  if (!parse_episode_split(split, &input.split)) {
+    *error = "split must be training, development, or evaluation";
+    return false;
+  }
+  const JsonDocumentValue* evidence = json_member(root, "evidence_node_ids");
+  if (evidence) {
+    if (evidence->kind != JsonDocumentValue::Kind::Array ||
+        evidence->array.size() > 256) {
+      *error = "evidence_node_ids must be an array of at most 256 integers";
+      return false;
+    }
+    for (const JsonDocumentValue& value : evidence->array) {
+      if (value.kind != JsonDocumentValue::Kind::Number ||
+          value.scalar.find_first_of(".eE") != std::string::npos) {
+        *error = "evidence_node_ids values must be integers";
+        return false;
+      }
+      uint32_t node_id = 0;
+      const auto parsed = std::from_chars(
+          value.scalar.data(), value.scalar.data() + value.scalar.size(),
+          node_id);
+      if (parsed.ec != std::errc{} ||
+          parsed.ptr != value.scalar.data() + value.scalar.size()) {
+        *error = "evidence_node_ids value is outside uint32 range";
+        return false;
+      }
+      input.evidence_node_ids.push_back(node_id);
+    }
+  }
+  *output = std::move(input);
+  return true;
+}
+
+static bool parse_policy_evaluation_request(
+    const std::string& body,
+    std::string* tenant_id,
+    RetrievalPolicy* baseline,
+    PolicyLearningOptions* options,
+    std::string* error) {
+  JsonDocumentValue root;
+  if (!parse_json_object(body, &root, error) ||
+      !reject_unknown_json_fields(root, {"tenant_id", "baseline", "options"},
+                                  "request", error) ||
+      !extraction_string_field(root, "tenant_id", 256, true, tenant_id,
+                               error) ||
+      !parse_retrieval_policy(root, "baseline", true, baseline, error)) {
+    return false;
+  }
+  const JsonDocumentValue* value = json_member(root, "options");
+  if (!value) return true;
+  if (value->kind != JsonDocumentValue::Kind::Object ||
+      !reject_unknown_json_fields(
+          *value,
+          {"minimum_training_samples", "minimum_development_samples",
+           "minimum_development_utility_improvement",
+           "maximum_domain_regression", "maximum_retention_decisions"},
+          "options", error)) {
+    if (value->kind != JsonDocumentValue::Kind::Object) {
+      *error = "options must be an object";
+    }
+    return false;
+  }
+  uint64_t retention_limit = options->maximum_retention_decisions;
+  if (!extraction_integer_field(*value, "minimum_training_samples",
+                                options->minimum_training_samples,
+                                &options->minimum_training_samples, error) ||
+      !extraction_integer_field(*value, "minimum_development_samples",
+                                options->minimum_development_samples,
+                                &options->minimum_development_samples, error) ||
+      !extraction_double_field(
+          *value, "minimum_development_utility_improvement",
+          options->minimum_development_utility_improvement,
+          &options->minimum_development_utility_improvement, error) ||
+      !extraction_double_field(*value, "maximum_domain_regression",
+                               options->maximum_domain_regression,
+                               &options->maximum_domain_regression, error) ||
+      !extraction_integer_field(*value, "maximum_retention_decisions",
+                                retention_limit, &retention_limit, error)) {
+    return false;
+  }
+  if (retention_limit > 10000) {
+    *error = "maximum_retention_decisions exceeds 10000";
+    return false;
+  }
+  options->maximum_retention_decisions =
+      static_cast<size_t>(retention_limit);
+  return true;
+}
+
+static bool parse_policy_decision_request(
+    const std::string& body,
+    PolicyDecisionInput* output,
+    std::string* error) {
+  JsonDocumentValue root;
+  if (!parse_json_object(body, &root, error) ||
+      !reject_unknown_json_fields(
+          root,
+          {"schema_version", "tenant_id", "event_id", "action", "policy",
+           "approved", "approver_id", "evaluation_reference", "reason"},
+          "request", error)) {
+    return false;
+  }
+  PolicyDecisionInput input;
+  std::string action;
+  if (!extraction_integer_field(root, "schema_version",
+                                kLearningSchemaVersion,
+                                &input.schema_version, error) ||
+      !extraction_string_field(root, "tenant_id", 256, true,
+                               &input.tenant_id, error) ||
+      !extraction_string_field(root, "event_id", 256, true,
+                               &input.event_id, error) ||
+      !extraction_string_field(root, "action", 32, true, &action, error) ||
+      !parse_retrieval_policy(root, "policy", true, &input.policy, error) ||
+      !extraction_bool_field(root, "approved", false, &input.approved,
+                             error) ||
+      !extraction_string_field(root, "approver_id", 256, true,
+                               &input.approver_id, error) ||
+      !extraction_string_field(root, "evaluation_reference", 256, true,
+                               &input.evaluation_reference, error) ||
+      !extraction_string_field(root, "reason", 4096, true,
+                               &input.reason, error)) {
+    return false;
+  }
+  if (action == "promote") input.action = PolicyDecisionAction::Promote;
+  else if (action == "rollback") input.action = PolicyDecisionAction::Rollback;
+  else {
+    *error = "action must be promote or rollback";
+    return false;
+  }
+  *output = std::move(input);
+  return true;
+}
+
+static std::string policy_state_json(const PolicyState& state,
+                                     bool replay) {
+  std::ostringstream output;
+  output << "{\"node_id\":" << state.node_id
+         << ",\"event_id\":\"" << json_escape(state.event_id)
+         << "\",\"action\":\"" << policy_decision_action_name(state.action)
+         << "\",\"policy\":";
+  append_retrieval_policy(output, state.policy);
+  output << ",\"previous_policy_version\":\""
+         << json_escape(state.previous_policy_version)
+         << "\",\"approver_id\":\"" << json_escape(state.approver_id)
+         << "\",\"evaluation_reference\":\""
+         << json_escape(state.evaluation_reference)
+         << "\",\"reason\":\"" << json_escape(state.reason)
+         << "\",\"idempotent_replay\":" << (replay ? "true" : "false")
+         << '}';
+  return output.str();
+}
+
+static std::string policy_evaluation_json(
+    const PolicyEvaluationReport& report) {
+  std::ostringstream output;
+  output << "{\"baseline\":";
+  append_retrieval_policy(output, report.baseline);
+  output << ",\"has_recommendation\":"
+         << (report.has_recommendation ? "true" : "false")
+         << ",\"recommended\":";
+  if (report.has_recommendation) append_retrieval_policy(output, report.recommended);
+  else output << "null";
+  output << ",\"development_utility_improvement\":"
+         << report.development_utility_improvement
+         << ",\"evaluation_episodes_excluded\":"
+         << report.evaluation_episodes_excluded
+         << ",\"training_episode_node_ids\":";
+  append_u32_array(output, report.training_episode_node_ids);
+  output << ",\"data_policy\":{\"episodes\":"
+         << report.data_policy.episodes
+         << ",\"trace_retention_ratio\":"
+         << report.data_policy.trace_retention_ratio
+         << ",\"decisive_evidence_retention\":"
+         << report.data_policy.decisive_evidence_retention
+         << ",\"useful_evidence_recall_at_20\":"
+         << report.data_policy.useful_evidence_recall_at_20
+         << ",\"harmful_memory_activation_rate\":"
+         << report.data_policy.harmful_memory_activation_rate
+         << ",\"expired_truth_activation_rate\":"
+         << report.data_policy.expired_truth_activation_rate << '}';
+  output << ",\"candidates\":[";
+  for (size_t index = 0; index < report.candidates.size(); ++index) {
+    if (index != 0) output << ',';
+    const PolicyMetrics& metrics = report.candidates[index];
+    output << "{\"policy\":";
+    append_retrieval_policy(output, metrics.policy);
+    output << ",\"training_samples\":" << metrics.training_samples
+           << ",\"development_samples\":" << metrics.development_samples
+           << ",\"safety_violations\":" << metrics.safety_violations
+           << ",\"mean_training_utility\":"
+           << metrics.mean_training_utility
+           << ",\"mean_development_utility\":"
+           << metrics.mean_development_utility
+           << ",\"development_task_success\":"
+           << metrics.development_task_success
+           << ",\"worst_domain_regression\":"
+           << metrics.worst_domain_regression
+           << ",\"eligible\":" << (metrics.eligible ? "true" : "false")
+           << ",\"ineligibility_reason\":\""
+           << json_escape(metrics.ineligibility_reason) << "\"}";
+  }
+  output << "],\"retention_decisions\":[";
+  for (size_t index = 0; index < report.retention_decisions.size(); ++index) {
+    if (index != 0) output << ',';
+    const DataRetentionDecision& decision =
+        report.retention_decisions[index];
+    output << "{\"episode_id\":\"" << json_escape(decision.episode_id)
+           << "\",\"utility_class\":\""
+           << data_utility_class_name(decision.utility_class)
+           << "\",\"retain_for_training\":"
+           << (decision.retain_for_training ? "true" : "false")
+           << ",\"archive_intermediate_trace\":"
+           << (decision.archive_intermediate_trace ? "true" : "false")
+           << ",\"reason\":\"" << json_escape(decision.reason) << "\"}";
+  }
+  output << "],\"warnings\":";
+  append_string_array(output, report.warnings);
+  output << ",\"durable_writes\":"
+         << (report.durable_writes ? "true" : "false") << '}';
+  return output.str();
+}
+
+static bool extraction_metadata(const JsonDocumentValue& object,
+                                std::map<std::string, std::string>* output,
+                                std::string* error) {
+  const JsonDocumentValue* metadata = json_member(object, "metadata");
+  if (!metadata) return true;
+  if (metadata->kind != JsonDocumentValue::Kind::Object) {
+    *error = "metadata must be an object of string values";
+    return false;
+  }
+  if (metadata->object.size() > kMaxExtractionMetadataEntries) {
+    *error = "metadata exceeds " +
+             std::to_string(kMaxExtractionMetadataEntries) + " entries";
+    return false;
+  }
+  for (const auto& [key, value] : metadata->object) {
+    if (key.empty() || key.size() > kMaxExtractionMetadataKeyBytes) {
+      *error = "metadata key must be between 1 and " +
+               std::to_string(kMaxExtractionMetadataKeyBytes) + " bytes";
+      return false;
+    }
+    if (key.rfind("graphene_", 0) == 0) {
+      *error = "metadata key '" + key +
+               "' uses the reserved graphene_ namespace";
+      return false;
+    }
+    if (value.kind != JsonDocumentValue::Kind::String) {
+      *error = "metadata value for '" + key + "' must be a string";
+      return false;
+    }
+    if (value.scalar.size() > kMaxExtractionMetadataValueBytes) {
+      *error = "metadata value for '" + key + "' exceeds " +
+               std::to_string(kMaxExtractionMetadataValueBytes) + " bytes";
+      return false;
+    }
+    output->emplace(key, value.scalar);
+  }
+  return true;
+}
+
+static bool parse_extraction_role(const std::string& raw,
+                                  ExtractionRole* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "node") *output = ExtractionRole::Node;
+  else if (value == "root") *output = ExtractionRole::Root;
+  else if (value == "symptom") *output = ExtractionRole::Symptom;
+  else if (value == "impact") *output = ExtractionRole::Impact;
+  else return false;
+  return true;
+}
+
+static bool parse_strict_origin(const std::string& raw, EdgeOrigin* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "observed") *output = EdgeOrigin::Observed;
+  else if (value == "discovered") *output = EdgeOrigin::Discovered;
+  else if (value == "inferred") *output = EdgeOrigin::Inferred;
+  else if (value == "reinforced") *output = EdgeOrigin::Reinforced;
+  else if (value == "hypothetical") *output = EdgeOrigin::Hypothetical;
+  else return false;
+  return true;
+}
+
+static bool parse_strict_edge_role(const std::string& raw, EdgeRole* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "supports" || value == "support") {
+    *output = EdgeRole::Supports;
+  } else if (value == "mechanistic") *output = EdgeRole::Mechanistic;
+  else if (value == "compressed") *output = EdgeRole::Compressed;
+  else if (value == "analogical") *output = EdgeRole::Analogical;
+  else if (value == "predictive") *output = EdgeRole::Predictive;
+  else if (value == "causal") *output = EdgeRole::Causal;
+  else if (value == "contradicts" || value == "contradiction") {
+    *output = EdgeRole::Contradicts;
+  } else if (value == "supersedes" || value == "supersession") {
+    *output = EdgeRole::Supersedes;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+static bool parse_bond_type(const std::string& raw, BondType* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "none") *output = BondType::None;
+  else if (value == "sigma") *output = BondType::Sigma;
+  else if (value == "pi") *output = BondType::Pi;
+  else if (value == "van_der_waals" || value == "vanderwaals") {
+    *output = BondType::VanDerWaals;
+  } else if (value == "defect") *output = BondType::Defect;
+  else if (value == "synthetic") *output = BondType::Synthetic;
+  else return false;
+  return true;
+}
+
+static bool parse_defect_type(const std::string& raw, DefectType* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "none") *output = DefectType::None;
+  else if (value == "vacancy") *output = DefectType::Vacancy;
+  else if (value == "substitution") *output = DefectType::Substitution;
+  else if (value == "stone_wales" || value == "stonewales") {
+    *output = DefectType::StoneWales;
+  } else if (value == "strain") *output = DefectType::Strain;
+  else if (value == "doped") *output = DefectType::Doped;
+  else if (value == "boundary") *output = DefectType::Boundary;
+  else return false;
+  return true;
+}
+
+static bool parse_layer_coupling(const std::string& raw,
+                                 LayerCoupling* output) {
+  const std::string value = lower_copy(raw);
+  if (value.empty() || value == "same_layer") {
+    *output = LayerCoupling::SameLayer;
+  } else if (value == "none") *output = LayerCoupling::None;
+  else if (value == "van_der_waals" || value == "vanderwaals") {
+    *output = LayerCoupling::VanDerWaals;
+  } else if (value == "bernal_stacked") *output = LayerCoupling::BernalStacked;
+  else if (value == "twisted") *output = LayerCoupling::Twisted;
+  else if (value == "synthetic") *output = LayerCoupling::Synthetic;
+  else return false;
+  return true;
+}
+
+static bool parse_extraction_request(const std::string& body,
+                                     uint32_t dimension,
+                                     size_t maximum_nodes,
+                                     ExtractionInput* output,
+                                     std::string* error) {
+  JsonDocumentValue root;
+  JsonDocumentParser parser(body);
+  if (!parser.parse(&root, error)) return false;
+  if (root.kind != JsonDocumentValue::Kind::Object) {
+    *error = "request body must be a JSON object";
+    return false;
+  }
+  if (!reject_unknown_json_fields(
+          root,
+          {"schema_version", "source_id", "source_uri", "extraction_run_id",
+           "layer", "incident", "signature", "place_missing_lattice",
+           "idempotent", "nodes", "relations"},
+          "request", error)) {
+    return false;
+  }
+
+  ExtractionInput input;
+  if (!extraction_integer_field(root, "schema_version",
+                                kExtractionSchemaVersion,
+                                &input.schema_version, error) ||
+      !extraction_string_field(root, "source_id",
+                               kMaxExtractionIdentifierBytes, true,
+                               &input.source_id, error) ||
+      !extraction_string_field(root, "source_uri",
+                               kMaxExtractionMetadataValueBytes, false,
+                               &input.source_uri, error) ||
+      !extraction_string_field(root, "extraction_run_id",
+                               kMaxExtractionIdentifierBytes, false,
+                               &input.extraction_run_id, error) ||
+      !extraction_integer_field(root, "layer", int32_t{0}, &input.layer,
+                                error) ||
+      !extraction_integer_field(root, "incident", uint32_t{0},
+                                &input.incident, error) ||
+      !extraction_integer_field(root, "signature", uint64_t{0},
+                                &input.signature, error) ||
+      !extraction_bool_field(root, "place_missing_lattice", true,
+                             &input.place_missing_lattice, error) ||
+      !extraction_bool_field(root, "idempotent", true, &input.idempotent,
+                             error)) {
+    return false;
+  }
+  if (input.schema_version != kExtractionSchemaVersion) {
+    *error = "unsupported extraction schema_version";
+    return false;
+  }
+
+  const JsonDocumentValue* nodes = json_member(root, "nodes");
+  const JsonDocumentValue* relations = json_member(root, "relations");
+  if (nodes && nodes->kind != JsonDocumentValue::Kind::Array) {
+    *error = "nodes must be an array";
+    return false;
+  }
+  if (relations && relations->kind != JsonDocumentValue::Kind::Array) {
+    *error = "relations must be an array";
+    return false;
+  }
+  const size_t node_count = nodes ? nodes->array.size() : 0;
+  const size_t relation_count = relations ? relations->array.size() : 0;
+  if (node_count == 0 && relation_count == 0) {
+    *error = "at least one node or relation is required";
+    return false;
+  }
+  if (node_count > maximum_nodes) {
+    *error = "nodes exceeds configured maximum of " +
+             std::to_string(maximum_nodes);
+    return false;
+  }
+  if (relation_count > kMaxExtractionRelations) {
+    *error = "relations exceeds maximum of " +
+             std::to_string(kMaxExtractionRelations);
+    return false;
+  }
+
+  input.nodes.reserve(node_count);
+  if (nodes) {
+    for (size_t index = 0; index < nodes->array.size(); ++index) {
+      const JsonDocumentValue& value = nodes->array[index];
+      const std::string context = "nodes[" + std::to_string(index) + "]";
+      if (value.kind != JsonDocumentValue::Kind::Object) {
+        *error = context + " must be an object";
+        return false;
+      }
+      if (!reject_unknown_json_fields(
+              value,
+              {"external_id", "content", "signature", "incident", "role",
+               "metadata", "lattice", "defect_type"},
+              context, error)) {
+        return false;
+      }
+      ExtractionNode node;
+      std::string role;
+      std::string defect;
+      if (!extraction_string_field(value, "external_id",
+                                   kMaxExtractionIdentifierBytes, true,
+                                   &node.external_id, error) ||
+          !extraction_string_field(value, "content", kMaxNodeTextBytes, true,
+                                   &node.content, error) ||
+          !extraction_integer_field(value, "signature", uint64_t{0},
+                                    &node.signature, error) ||
+          !extraction_integer_field(value, "incident", uint32_t{0},
+                                    &node.incident, error) ||
+          !extraction_string_field(value, "role", 32, false, &role, error) ||
+          !extraction_string_field(value, "defect_type", 32, false, &defect,
+                                   error) ||
+          !extraction_metadata(value, &node.metadata, error)) {
+        *error = context + ": " + *error;
+        return false;
+      }
+      if (!parse_extraction_role(role, &node.role)) {
+        *error = context + ": role must be node, root, symptom, or impact";
+        return false;
+      }
+      if (!parse_defect_type(defect, &node.defect_type)) {
+        *error = context + ": unsupported defect_type";
+        return false;
+      }
+      const JsonDocumentValue* lattice = json_member(value, "lattice");
+      if (lattice) {
+        if (lattice->kind != JsonDocumentValue::Kind::Object ||
+            !reject_unknown_json_fields(*lattice, {"q", "r", "layer"},
+                                        context + ".lattice", error)) {
+          if (error->empty()) *error = context + ": lattice must be an object";
+          return false;
+        }
+        if (!json_member(*lattice, "q") || !json_member(*lattice, "r")) {
+          *error = context + ".lattice: q and r are required";
+          return false;
+        }
+        LatticeCoord coordinate;
+        if (!extraction_integer_field(*lattice, "q", int32_t{0},
+                                      &coordinate.q, error) ||
+            !extraction_integer_field(*lattice, "r", int32_t{0},
+                                      &coordinate.r, error) ||
+            !extraction_integer_field(*lattice, "layer", input.layer,
+                                      &coordinate.layer, error)) {
+          *error = context + ".lattice: " + *error;
+          return false;
+        }
+        node.lattice = coordinate;
+      }
+      node.vector = embed_text(node.content, dimension);
+      input.nodes.push_back(std::move(node));
+    }
+  }
+
+  input.relations.reserve(relation_count);
+  if (relations) {
+    for (size_t index = 0; index < relations->array.size(); ++index) {
+      const JsonDocumentValue& value = relations->array[index];
+      const std::string context = "relations[" + std::to_string(index) + "]";
+      if (value.kind != JsonDocumentValue::Kind::Object) {
+        *error = context + " must be an object";
+        return false;
+      }
+      if (!reject_unknown_json_fields(
+              value,
+              {"from_external_id", "to_external_id", "origin", "role",
+               "confidence", "evidence_id", "evidence_uri", "evidence_text",
+               "metadata", "bond_type", "defect_type", "layer_coupling",
+               "bond_strength"},
+              context, error)) {
+        return false;
+      }
+      ExtractionRelation relation;
+      relation.bond_type = BondType::None;
+      std::string origin;
+      std::string role;
+      std::string bond;
+      std::string defect;
+      std::string coupling;
+      if (!extraction_string_field(value, "from_external_id",
+                                   kMaxExtractionIdentifierBytes, true,
+                                   &relation.from_external_id, error) ||
+          !extraction_string_field(value, "to_external_id",
+                                   kMaxExtractionIdentifierBytes, true,
+                                   &relation.to_external_id, error) ||
+          !extraction_string_field(value, "origin", 32, false, &origin,
+                                   error) ||
+          !extraction_string_field(value, "role", 32, false, &role, error) ||
+          !extraction_double_field(value, "confidence", 0.9,
+                                   &relation.confidence, error) ||
+          !extraction_string_field(value, "evidence_id",
+                                   kMaxExtractionIdentifierBytes, false,
+                                   &relation.evidence_id, error) ||
+          !extraction_string_field(value, "evidence_uri",
+                                   kMaxExtractionMetadataValueBytes, false,
+                                   &relation.evidence_uri, error) ||
+          !extraction_string_field(value, "evidence_text",
+                                   kMaxNodeTextBytes, false,
+                                   &relation.evidence_text, error) ||
+          !extraction_string_field(value, "bond_type", 32, false, &bond,
+                                   error) ||
+          !extraction_string_field(value, "defect_type", 32, false, &defect,
+                                   error) ||
+          !extraction_string_field(value, "layer_coupling", 32, false,
+                                   &coupling, error) ||
+          !extraction_double_field(value, "bond_strength", 0.85,
+                                   &relation.bond_strength, error) ||
+          !extraction_metadata(value, &relation.metadata, error)) {
+        *error = context + ": " + *error;
+        return false;
+      }
+      if (!parse_strict_origin(origin, &relation.origin)) {
+        *error = context + ": unsupported origin";
+        return false;
+      }
+      if (!parse_strict_edge_role(role, &relation.role)) {
+        *error = context + ": unsupported role";
+        return false;
+      }
+      if (!parse_bond_type(bond, &relation.bond_type)) {
+        *error = context + ": unsupported bond_type";
+        return false;
+      }
+      if (!parse_defect_type(defect, &relation.defect_type)) {
+        *error = context + ": unsupported defect_type";
+        return false;
+      }
+      if (!parse_layer_coupling(coupling, &relation.layer_coupling)) {
+        *error = context + ": unsupported layer_coupling";
+        return false;
+      }
+      if (relation.confidence < 0.0 || relation.confidence > 1.0) {
+        *error = context + ": confidence must be between 0 and 1";
+        return false;
+      }
+      if (relation.bond_strength < 0.0 || relation.bond_strength > 1.0) {
+        *error = context + ": bond_strength must be between 0 and 1";
+        return false;
+      }
+      input.relations.push_back(std::move(relation));
+    }
+  }
+  *output = std::move(input);
+  return true;
+}
+
+static std::string extraction_result_json(const ExtractionResult& result,
+                                          bool idempotent) {
+  std::vector<std::pair<std::string, uint32_t>> mapping(
+      result.external_to_node_id.begin(), result.external_to_node_id.end());
+  std::sort(mapping.begin(), mapping.end(),
+            [](const auto& left, const auto& right) {
+              return left.first < right.first;
+            });
+  auto ids_json = [](const auto& ids) {
+    std::ostringstream array;
+    array << '[';
+    for (size_t index = 0; index < ids.size(); ++index) {
+      if (index) array << ',';
+      array << ids[index];
+    }
+    array << ']';
+    return array.str();
+  };
+  std::ostringstream json;
+  json << "{\"atomic\":true,\"idempotent\":"
+       << (idempotent ? "true" : "false")
+       << ",\"idempotent_replay\":"
+       << (result.inserted_node_ids.empty() &&
+                   result.inserted_edge_ids.empty()
+               ? "true"
+               : "false")
+       << ",\"inserted_node_ids\":" << ids_json(result.inserted_node_ids)
+       << ",\"existing_node_ids\":" << ids_json(result.existing_node_ids)
+       << ",\"inserted_edge_ids\":" << ids_json(result.inserted_edge_ids)
+       << ",\"external_to_node_id\":{";
+  for (size_t index = 0; index < mapping.size(); ++index) {
+    if (index) json << ',';
+    json << '"' << json_escape(mapping[index].first) << "\":"
+         << mapping[index].second;
+  }
+  json << "}}";
+  return json.str();
+}
+
 static bool edge_allowed(EdgeOrigin o, const std::string& mode) {
   std::string m = lower_copy(mode);
   if (m == "empirical") return o == EdgeOrigin::Observed || o == EdgeOrigin::Discovered;
@@ -556,26 +2120,27 @@ static std::string metadata_json(const std::map<std::string, std::string>& md) {
 }
 
 
-static bool node_valid_at(const Node& n, const std::string& as_of) {
+static bool metadata_valid_at(
+    const std::map<std::string, std::string>& metadata,
+    const std::string& as_of) {
+  TemporalValidity validity;
+  if (!parse_temporal_validity(metadata, &validity)) return false;
   if (as_of.empty()) return true;
-  auto vf = n.metadata.find("valid_from");
-  auto vu = n.metadata.find("valid_until");
-  if (vf != n.metadata.end() && !vf->second.empty() && as_of < vf->second) return false;
-  if (vu != n.metadata.end() && !vu->second.empty() && as_of > vu->second) return false;
-  return true;
+  Rfc3339Instant instant;
+  if (!parse_rfc3339(as_of, &instant)) return false;
+  return valid_at(validity, instant);
+}
+
+static bool node_valid_at(const Node& n, const std::string& as_of) {
+  return metadata_valid_at(n.metadata, as_of);
 }
 
 static bool edge_valid_at(GrapheneDB& db, const Edge& e, const std::string& as_of) {
-  if (as_of.empty()) return true;
   auto from = db.get_node(e.from);
   auto to = db.get_node(e.to);
   if (from && !node_valid_at(*from, as_of)) return false;
   if (to && !node_valid_at(*to, as_of)) return false;
-  auto vf = e.metadata.find("valid_from");
-  auto vu = e.metadata.find("valid_until");
-  if (vf != e.metadata.end() && !vf->second.empty() && as_of < vf->second) return false;
-  if (vu != e.metadata.end() && !vu->second.empty() && as_of > vu->second) return false;
-  return true;
+  return metadata_valid_at(e.metadata, as_of);
 }
 
 static std::string build_bundle_json(GrapheneDB& db, uint32_t anchor, uint32_t max_hops, const std::string& mode, const std::string& as_of = "") {
@@ -1000,7 +2565,7 @@ int main(int argc, char** argv) {
            << ",\"wal_frame\":" << kWalFrameFormatVersion
            << ",\"lattice\":" << kLatticeFormatVersion
            << ",\"extraction\":" << kExtractionFormatVersion
-           << "},\"features\":[\"physical_lattice_primary\",\"vector_search\",\"lattice_search\",\"checkpoint\",\"backup\",\"validation\",\"idempotent_node_writes\"]}";
+           << "},\"features\":[\"physical_lattice_primary\",\"vector_search\",\"lattice_search\",\"checkpoint\",\"backup\",\"validation\",\"idempotent_node_writes\",\"atomic_extraction_ingest\",\"bounded_dialectic_reasoning\",\"read_only_hypokosh\",\"governed_outcome_learning\"]}";
         out = js.str();
       } else if (method == "GET" && path == "/v1/ready") {
         std::string report; auto ist = db.inspect(&report);
@@ -1147,6 +2712,60 @@ int main(int argc, char** argv) {
           }
           }
         }
+      } else if (method == "POST" && path == "/v1/extractions") {
+        ExtractionInput extraction;
+        std::string parse_error;
+        if (!parse_extraction_request(body, dim, max_bulk_nodes, &extraction,
+                                      &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_extraction\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else {
+          if (extraction.place_missing_lattice && !extraction.nodes.empty()) {
+            const uint32_t base_slot = next_lattice_slot.fetch_add(
+                static_cast<uint32_t>(extraction.nodes.size()),
+                std::memory_order_relaxed);
+            for (size_t index = 0; index < extraction.nodes.size(); ++index) {
+              if (!extraction.nodes[index].lattice) {
+                extraction.nodes[index].lattice =
+                    spiral_coord(base_slot + static_cast<uint32_t>(index));
+              }
+            }
+            extraction.place_missing_lattice = false;
+          }
+          ExtractionResult result;
+          const auto started = std::chrono::steady_clock::now();
+          st = db.put_extraction(extraction, &result);
+          if (!st) {
+            if (st.message.find("capacity") != std::string::npos ||
+                st.message.find("physical lattice") != std::string::npos) {
+              code = 507;
+            } else if (st.message.find("idempotency conflict") !=
+                       std::string::npos) {
+              code = 409;
+            } else {
+              code = http_status_for(st);
+            }
+            out = "{\"error\":\"extraction_failed\",\"detail\":\"" +
+                  json_escape(st.message) + "\",\"atomic\":true,"
+                  "\"inserted_nodes\":0,\"inserted_edges\":0}";
+          } else {
+            metrics.node_inserts.fetch_add(result.inserted_node_ids.size(),
+                                           std::memory_order_relaxed);
+            metrics.edge_inserts.fetch_add(result.inserted_edge_ids.size(),
+                                           std::memory_order_relaxed);
+            const bool replay = result.inserted_node_ids.empty() &&
+                                result.inserted_edge_ids.empty();
+            code = replay ? 200 : 201;
+            out = extraction_result_json(result, extraction.idempotent);
+            const auto elapsed = std::chrono::duration_cast<
+                std::chrono::milliseconds>(std::chrono::steady_clock::now() -
+                                            started)
+                                     .count();
+            out.pop_back();
+            out += ",\"elapsed_ms\":" + std::to_string(elapsed) + "}";
+          }
+        }
       } else if (method == "POST" && path == "/v1/facts") {
         if (idempotency_key.size() > 128) { code = 400; out = "{\"error\":\"idempotency_key_too_long\",\"max_length\":128}"; }
         else if (lattice_capacity && db.node_count() >= lattice_capacity && idempotency_key.empty()) { code = 507; out = "{\"error\":\"physical_lattice_capacity_exhausted\"}"; }
@@ -1254,17 +2873,280 @@ int main(int argc, char** argv) {
         std::string mode = json_value(body, "mode"); if (mode.empty()) mode = "balanced";
         std::string as_of = json_value(body, "as_of"); if (as_of.empty()) as_of = json_value(body, "at");
         out = build_bundle_json(db, anchor, hops, mode, as_of);
+      } else if (method == "POST" && path == "/v1/reason/dialectic") {
+        const std::string query = json_value(body, "query");
+        QueryMode mode = QueryMode::Balanced;
+        const std::string requested_mode = json_value(body, "mode");
+        if (query.empty()) {
+          code = 400;
+          out = "{\"error\":\"query is required\"}";
+        } else if (query.size() > kMaxNodeTextBytes) {
+          code = 400;
+          out = "{\"error\":\"query_too_large\",\"max_bytes\":" +
+                std::to_string(kMaxNodeTextBytes) + "}";
+        } else if (!parse_query_mode(requested_mode, &mode)) {
+          code = 400;
+          out = "{\"error\":\"mode must be empirical, balanced, or theoretical\"}";
+        } else {
+          DialecticOptions reasoning;
+          reasoning.mode = mode;
+          reasoning.semantic_candidates =
+              std::clamp<uint32_t>(json_u32(body, "semantic_candidates", 12),
+                                   1, 64);
+          reasoning.max_hops =
+              std::clamp<uint32_t>(json_u32(body, "max_hops", 6), 1,
+                                   kMaxDialecticHops);
+          reasoning.max_paths =
+              std::clamp<uint32_t>(json_u32(body, "max_paths", 32), 1,
+                                   kMaxDialecticPaths);
+          reasoning.max_paths_per_root = std::clamp<uint32_t>(
+              json_u32(body, "max_paths_per_root", 8), 1, 64);
+          reasoning.max_visited_states = std::clamp<uint32_t>(
+              json_u32(body, "max_visited_states", 20000), 1,
+              kMaxDialecticVisitedStates);
+          reasoning.max_opposition_rounds = std::clamp<uint32_t>(
+              json_u32(body, "max_opposition_rounds", 1), 0, 2);
+          reasoning.minimum_confidence = std::clamp(
+              json_double(body, "minimum_confidence", 0.45), 0.0, 1.0);
+          reasoning.reexpansion_threshold = std::clamp(
+              json_double(body, "reexpansion_threshold", 0.25), 0.0, 1.0);
+          reasoning.as_of = json_value(body, "as_of");
+          DialecticEngine engine(db);
+          const DialecticResult result =
+              engine.reason(embed_text(query, dim),
+                            json_u64(body, "signature", 0), reasoning);
+          out = dialectic_json(result);
+        }
+      } else if (method == "POST" && path == "/v1/reason/hypokosh") {
+        HypoKoshRequest request;
+        std::string parse_error;
+        if (!parse_hypokosh_request(body, &request, &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_hypokosh_request\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else {
+          OutcomeLearningEngine learner(db);
+          std::optional<PolicyState> active;
+          if (request.use_active_policy) {
+            active = learner.current_policy(request.tenant_id);
+            if (!active) {
+              code = 404;
+              out = "{\"error\":\"active_policy_not_found\"}";
+            } else {
+              const QueryMode mode = request.options.mode;
+              const std::string as_of = request.options.as_of;
+              request.options =
+                  dialectic_options_for_policy(active->policy);
+              request.options.mode = mode;
+              request.options.as_of = as_of;
+            }
+          }
+          if (code == 200) {
+            const HypothesisSet hypotheses = HypoKoshEngine(db).propose(
+                embed_text(request.query, dim), request.signature,
+                request.options, request.max_hypotheses);
+            out = hypokosh_json(hypotheses, active);
+          }
+        }
+      } else if (method == "POST" && path == "/v1/learning/episodes") {
+        LearningEpisodeInput episode;
+        std::string parse_error;
+        if (!parse_learning_episode_request(body, &episode, &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_learning_episode\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else if (lattice_capacity &&
+                   db.node_count() >= lattice_capacity) {
+          code = 507;
+          out = "{\"error\":\"physical_lattice_capacity_exhausted\"}";
+        } else {
+          episode.vector = embed_text(episode.query, dim);
+          episode.place_missing_lattice = false;
+          episode.lattice = spiral_coord(
+              next_lattice_slot.fetch_add(1, std::memory_order_relaxed));
+          LearningEpisodeResult result;
+          st = OutcomeLearningEngine(db).record_episode(episode, &result);
+          if (!st) {
+            code = st.message.find("idempotency conflict") != std::string::npos
+                       ? 409
+                       : http_status_for(st);
+            out = "{\"error\":\"learning_episode_failed\",\"detail\":\"" +
+                  json_escape(st.message) + "\"}";
+          } else {
+            metrics.node_inserts.fetch_add(
+                result.idempotent_replay ? 0 : 1,
+                std::memory_order_relaxed);
+            code = result.idempotent_replay ? 200 : 201;
+            std::ostringstream response_body;
+            response_body
+                << "{\"node_id\":" << result.node_id
+                << ",\"idempotent_replay\":"
+                << (result.idempotent_replay ? "true" : "false")
+                << ",\"training_eligible\":"
+                << (result.training_eligible ? "true" : "false")
+                << ",\"safety_negative\":"
+                << (result.safety_negative ? "true" : "false")
+                << ",\"utility\":" << result.utility
+                << ",\"utility_class\":\""
+                << data_utility_class_name(result.utility_class) << "\"}";
+            out = response_body.str();
+          }
+        }
+      } else if (method == "POST" &&
+                 path == "/v1/learning/policies/evaluate") {
+        std::string tenant_id;
+        RetrievalPolicy baseline;
+        PolicyLearningOptions learning_options;
+        std::string parse_error;
+        if (!parse_policy_evaluation_request(
+                body, &tenant_id, &baseline, &learning_options,
+                &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_policy_evaluation\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else {
+          const size_t nodes_before = db.node_count();
+          const PolicyEvaluationReport report =
+              OutcomeLearningEngine(db).evaluate_policies(
+                  tenant_id, baseline, learning_options);
+          if (std::find(report.warnings.begin(), report.warnings.end(),
+                        "INVALID_BASELINE_POLICY") != report.warnings.end() ||
+              std::find(report.warnings.begin(), report.warnings.end(),
+                        "INVALID_LEARNING_OPTIONS") !=
+                  report.warnings.end()) {
+            code = 400;
+          }
+          out = policy_evaluation_json(report);
+          if (db.node_count() != nodes_before) {
+            code = 500;
+            out = "{\"error\":\"read_only_evaluation_wrote_data\"}";
+          }
+        }
+      } else if (method == "POST" &&
+                 path == "/v1/learning/policies/decisions") {
+        PolicyDecisionInput decision_input;
+        std::string parse_error;
+        if (!parse_policy_decision_request(
+                body, &decision_input, &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_policy_decision\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else if (lattice_capacity &&
+                   db.node_count() >= lattice_capacity) {
+          code = 507;
+          out = "{\"error\":\"physical_lattice_capacity_exhausted\"}";
+        } else {
+          decision_input.vector =
+              embed_text(decision_input.reason, dim);
+          decision_input.place_missing_lattice = false;
+          decision_input.lattice = spiral_coord(
+              next_lattice_slot.fetch_add(1, std::memory_order_relaxed));
+          PolicyDecisionResult result;
+          st = OutcomeLearningEngine(db).record_policy_decision(
+              decision_input, &result);
+          if (!st) {
+            code = st.message.find("idempotency conflict") != std::string::npos
+                       ? 409
+                       : http_status_for(st);
+            out = "{\"error\":\"policy_decision_failed\",\"detail\":\"" +
+                  json_escape(st.message) + "\"}";
+          } else {
+            metrics.node_inserts.fetch_add(
+                result.idempotent_replay ? 0 : 1,
+                std::memory_order_relaxed);
+            code = result.idempotent_replay ? 200 : 201;
+            out = policy_state_json(result.state,
+                                    result.idempotent_replay);
+          }
+        }
+      } else if (method == "GET" &&
+                 (path == "/v1/learning/policies/current" ||
+                  (path.rfind("/v1/learning/policies/current", 0) == 0 &&
+                   path.size() >
+                       std::strlen("/v1/learning/policies/current") &&
+                   path[std::strlen("/v1/learning/policies/current")] ==
+                       '?'))) {
+        const std::string tenant_id = query_string(path, "tenant_id");
+        if (tenant_id.empty() || tenant_id.size() > 256) {
+          code = 400;
+          out = "{\"error\":\"tenant_id query parameter is required\"}";
+        } else {
+          const auto current =
+              OutcomeLearningEngine(db).current_policy(tenant_id);
+          if (!current) {
+            code = 404;
+            out = "{\"error\":\"active_policy_not_found\"}";
+          } else {
+            out = policy_state_json(*current, false);
+          }
+        }
+      } else if (method == "POST" &&
+                 path == "/v1/learning/episodes/quarantine") {
+        JsonDocumentValue quarantine;
+        std::string parse_error;
+        std::string tenant_id;
+        std::string episode_id;
+        if (!parse_json_object(body, &quarantine, &parse_error) ||
+            !reject_unknown_json_fields(
+                quarantine, {"tenant_id", "episode_id"}, "request",
+                &parse_error) ||
+            !extraction_string_field(quarantine, "tenant_id", 256, true,
+                                     &tenant_id, &parse_error) ||
+            !extraction_string_field(quarantine, "episode_id", 256, true,
+                                     &episode_id, &parse_error)) {
+          code = 400;
+          out = "{\"error\":\"invalid_quarantine_request\",\"detail\":\"" +
+                json_escape(parse_error) + "\"}";
+        } else {
+          st = OutcomeLearningEngine(db).quarantine_episode(tenant_id,
+                                                            episode_id);
+          if (!st) {
+            code = http_status_for(st);
+            out = "{\"error\":\"quarantine_failed\",\"detail\":\"" +
+                  json_escape(st.message) + "\"}";
+          } else {
+            out = "{\"quarantined\":true,\"episode_id\":\"" +
+                  json_escape(episode_id) + "\"}";
+          }
+        }
       } else if (method == "POST" && path == "/v1/admin/validate/provenance") {
-        uint32_t missing = 0, inferred_without_derived = 0, reinforced_truth_risk = 0;
+        uint32_t missing = 0;
+        uint32_t inferred_without_derived = 0;
+        uint32_t reinforced_truth_risk = 0;
+        uint32_t compressed_without_mechanism = 0;
+        uint32_t invalid_observed_at = 0;
+        uint32_t invalid_temporal_metadata = 0;
         const size_t total = db.edge_count();
         for (uint32_t eid = 0; eid < total + 1000; ++eid) {
           auto e = db.get_edge(eid); if (!e) { if (eid > total + 16) break; continue; }
-          bool has_evidence = e->metadata.count("source_id") || e->metadata.count("evidence_ref");
-          if (!has_evidence && e->origin != EdgeOrigin::Inferred && e->origin != EdgeOrigin::Hypothetical) ++missing;
-          if (e->origin == EdgeOrigin::Inferred && !e->metadata.count("derived_from")) ++inferred_without_derived;
-          if (e->origin == EdgeOrigin::Reinforced && e->metadata.find("promotion_status") != e->metadata.end() && e->metadata.at("promotion_status") == "discovered") ++reinforced_truth_risk;
+          const EdgeProvenance provenance = assess_edge_provenance(*e);
+          for (const auto& finding : provenance.findings) {
+            if (finding.code == "MISSING_EVIDENCE") ++missing;
+            else if (finding.code == "INFERRED_WITHOUT_DERIVATION") ++inferred_without_derived;
+            else if (finding.code == "REINFORCED_TRUTH_PROMOTION") ++reinforced_truth_risk;
+            else if (finding.code == "COMPRESSED_WITHOUT_MECHANISM") ++compressed_without_mechanism;
+            else if (finding.code == "INVALID_OBSERVED_AT") ++invalid_observed_at;
+            else if (finding.code == "INVALID_TEMPORAL_METADATA") ++invalid_temporal_metadata;
+          }
         }
-        out = "{\"ok\":" + std::string((missing==0 && inferred_without_derived==0 && reinforced_truth_risk==0)?"true":"false") + ",\"edges_checked\":" + std::to_string(total) + ",\"missing_evidence\":" + std::to_string(missing) + ",\"inferred_without_derived_from\":" + std::to_string(inferred_without_derived) + ",\"reinforced_truth_promotion_risk\":" + std::to_string(reinforced_truth_risk) + "}";
+        const bool valid = missing == 0 && inferred_without_derived == 0 &&
+                           reinforced_truth_risk == 0 &&
+                           compressed_without_mechanism == 0 &&
+                           invalid_observed_at == 0 &&
+                           invalid_temporal_metadata == 0;
+        out = "{\"ok\":" + std::string(valid ? "true" : "false") +
+              ",\"edges_checked\":" + std::to_string(total) +
+              ",\"missing_evidence\":" + std::to_string(missing) +
+              ",\"inferred_without_derived_from\":" +
+              std::to_string(inferred_without_derived) +
+              ",\"reinforced_truth_promotion_risk\":" +
+              std::to_string(reinforced_truth_risk) +
+              ",\"compressed_without_mechanism\":" +
+              std::to_string(compressed_without_mechanism) +
+              ",\"invalid_observed_at\":" +
+              std::to_string(invalid_observed_at) +
+              ",\"invalid_temporal_metadata\":" +
+              std::to_string(invalid_temporal_metadata) + "}";
       } else if (method == "POST" && path == "/v1/admin/lattice/quality") {
         out = lattice_quality_json(db);
       } else if (method == "POST" && path == "/v1/retrieve/temporal") {

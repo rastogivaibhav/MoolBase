@@ -26,6 +26,32 @@ It is not a distributed database, multi-tenant control plane, SQL service, or in
 
 `POST /v1/nodes/bulk` is one bounded `put_batch()` transaction. It returns `atomic=true`; a validation or admission failure inserts zero nodes.
 
+`POST /v1/extractions` maps the versioned `put_extraction()` core contract:
+
+- one request contains a bounded set of typed nodes and relations;
+- the server generates vectors and assigns missing lattice coordinates;
+- the core validates the complete request before one WAL transaction;
+- `source_id` plus each `external_id` is the durable idempotency identity;
+- an identical replay returns HTTP 200 with no new node or edge IDs;
+- a changed node, relation, confidence, provenance, or evidence payload returns
+  HTTP 409;
+- a validation, endpoint-resolution, capacity, or commit failure leaves the
+  request with zero partial writes.
+
+The experimental `GDB-GL-0` learning surface follows the same durable
+contract:
+
+- `POST /v1/learning/episodes` stores one immutable episode through one
+  `put_extraction()` transaction; tenant plus episode identity is replay-safe;
+- identical episode and policy-decision retries return HTTP 200 without a new
+  node, while changed retries return HTTP 409;
+- policy evaluation and `POST /v1/reason/hypokosh` perform no durable writes;
+- a current policy changes only through an approved append-only promotion or
+  rollback event;
+- evaluation-split and legal-hold episodes do not influence selection;
+- this controlled-pilot credential does not provide cryptographic tenant
+  isolation. An identity-aware gateway must bind principals to tenant IDs.
+
 ## HTTP framing
 
 The compact server supports HTTP/1.0 and HTTP/1.1 requests with `Content-Length`. It deliberately rejects:

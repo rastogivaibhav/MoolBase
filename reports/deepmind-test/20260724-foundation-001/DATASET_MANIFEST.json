@@ -1,0 +1,21 @@
+{
+  "D0": {
+    "status": "NOT_AVAILABLE",
+    "required_graphs": 5000,
+    "required_queries": 20000,
+    "diagnostic_ablation_cases": 12,
+    "diagnostic_fraction_of_required_graphs": 0.0024
+  },
+  "D1": {
+    "repository": "https://github.com/icco/postmortems",
+    "commit": "0ed8afb0f8cfd83a34bbda270943ebdbf9661062",
+    "data_files": 242,
+    "usable_records": 176,
+    "category_roots": 7,
+    "annotated_category_links": 432,
+    "manifest_hash_algorithm": "sha256 over ordered relative path, NUL, binary sha256 digest",
+    "manifest_sha256": "9cf08afe2f63fb38d600aadb3ab436865b86cf92a70729bdd938f032bca57ca4",
+    "labels_supplied_to_system": true,
+    "claim_scope": "annotated_graph_retrieval_not_autonomous_rca"
+  }
+}

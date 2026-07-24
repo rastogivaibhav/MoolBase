@@ -1,0 +1,47 @@
+{
+  "benchmark": "GDB-DH-AM-1",
+  "benchmark_source_sha256": "099c4ff444e8f9b17098f8fbbdf62edcdc3594c150678b46295da7c453b6d285",
+  "decision_level_attempted": "Foundation",
+  "run_id": "20260724-foundation-001",
+  "source_commit": "8f53acd33ab011c90404ef86939daba914d55e85",
+  "source_branch": "agent/dialectic-model-world-v0",
+  "dirty_worktree": true,
+  "dirty_entry_count": 49,
+  "source_snapshot_algorithm": "sha256 over ordered relative path, NUL, file sha256; excludes .git, reports, build*, and cache directories",
+  "source_snapshot_files": 233,
+  "source_snapshot_sha256": "b7bb912e209eb6aa33731b95fded5552412e5ff2367317949efcb34bd885ef64",
+  "storage_format": 2,
+  "extraction_format": 1,
+  "embedding": {
+    "implementation": "controlled-pilot deterministic embed_text",
+    "dimension": 32,
+    "implementation_source_sha256": "8ac5cfec5264563fce1f26be733cc83580546249ccfe1307b0eaf69b38d392f0",
+    "external_model": null
+  },
+  "generation_model": null,
+  "prompt_version": null,
+  "retrieval_policy": {
+    "mode": "balanced",
+    "dialectic_ablation_cases": 12,
+    "dialectic_ablation_dimension": 32
+  },
+  "random_seeds": {
+    "D0": null,
+    "D1": "deterministic corpus order"
+  },
+  "started_at_utc": null,
+  "ended_at_utc": "2026-07-24T18:44:40.1199913Z",
+  "operator": "Codex",
+  "exceptions": [
+    "The start timestamp was not captured before the first command.",
+    "The source worktree was dirty and therefore was not a clean-checkout rerun.",
+    "The preregistered D0 5,000-graph/20,000-query harness does not exist; the 12-case ablation is recorded only as diagnostic evidence."
+  ],
+  "critical_gate_status": {
+    "G0": "INCOMPLETE",
+    "G1": "PASS",
+    "G2": "INCOMPLETE",
+    "G3": "PASS"
+  },
+  "final_status": "INCOMPLETE"
+}

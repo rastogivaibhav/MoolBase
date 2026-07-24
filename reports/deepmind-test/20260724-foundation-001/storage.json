@@ -1,0 +1,9 @@
+{
+  "D1_storage_validation_ok": true,
+  "D1_provenance_validation_ok": true,
+  "durable_format_versions": {
+    "storage": 2,
+    "extraction": 1
+  },
+  "storage_scale_measurement": null
+}

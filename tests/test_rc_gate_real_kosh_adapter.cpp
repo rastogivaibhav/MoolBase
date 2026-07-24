@@ -36,6 +36,14 @@ int main(){
   auto by_project = db.metadata_search("project", "checkout"); assert(by_project.size()==3);
   auto bundle = adapter.retrieve_causal_bundle(vec(D,0.56f), sig, QueryMode::Empirical);
   assert(!bundle.abstain); assert(bundle.target_node == ids[0]); assert(!bundle.paths.empty());
+  DialecticOptions dialectic_options;
+  dialectic_options.mode = QueryMode::Empirical;
+  dialectic_options.semantic_candidates = 3;
+  dialectic_options.max_opposition_rounds = 1;
+  auto dialectic = adapter.retrieve_dialectic(vec(D,0.56f), sig, dialectic_options);
+  assert(dialectic.synthesis.has_answer);
+  assert(dialectic.synthesis.primary_node == ids[0]);
+  assert(!dialectic.durable_writes);
   auto root = db.get_node(bundle.target_node); assert(root.has_value());
   assert(root->metadata.at("kosh_external_id") == "ADR-101");
   assert(root->metadata.at("adapter") == "graphene-kosh-adapter-v1");

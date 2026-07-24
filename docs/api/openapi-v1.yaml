@@ -64,6 +64,33 @@ paths:
         '201': { description: Atomic batch committed }
         '400': { $ref: '#/components/responses/ErrorResponse' }
         '507': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/extractions:
+    post:
+      summary: Atomically ingest a bounded typed causal extraction
+      description: >-
+        Generates server-side vectors and commits all new nodes and relations
+        in one durable transaction. Stable source_id plus external_id values
+        make identical requests replay-safe across restarts. A changed replay
+        is rejected rather than silently overwriting or accepting stale data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExtractionRequest' }
+      responses:
+        '201':
+          description: Extraction committed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtractionResponse' }
+        '200':
+          description: Durable idempotent replay with no new writes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExtractionResponse' }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '409': { $ref: '#/components/responses/ErrorResponse' }
+        '507': { $ref: '#/components/responses/ErrorResponse' }
   /v1/nodes/{nodeId}:
     get:
       summary: Read a node by ID
@@ -167,6 +194,116 @@ paths:
             schema: { $ref: '#/components/schemas/TemporalRetrieveRequest' }
       responses:
         '200': { description: Temporal results }
+  /v1/reason/dialectic:
+    post:
+      summary: Run bounded read-only dialectic causal reasoning
+      description: >-
+        Expands competing causal paths, converges without deleting alternatives,
+        applies deterministic opposition, and returns an epistemically qualified
+        synthesis. This operation performs no durable writes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DialecticRequest' }
+      responses:
+        '200':
+          description: Bounded dialectic result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DialecticResponse' }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/reason/hypokosh:
+    post:
+      summary: Generate bounded read-only hypothetical proposals
+      description: >-
+        Uses dialectic evidence expansion to produce explicitly hypothetical
+        proposals and discriminating tests. It cannot promote truth or write
+        durable state. When requested, the latest explicitly approved policy
+        for the tenant supplies the bounded retrieval parameters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HypoKoshRequest' }
+      responses:
+        '200': { description: Hypothesis proposals with no durable writes }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/learning/episodes:
+    post:
+      summary: Record one immutable governed learning episode
+      description: >-
+        Commits one verified or unverified outcome episode atomically through
+        extraction ingest. Tenant plus episode identity is retry-safe; a
+        changed replay is rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LearningEpisode' }
+      responses:
+        '201': { description: Episode committed }
+        '200': { description: Identical durable replay }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '409': { $ref: '#/components/responses/ErrorResponse' }
+        '507': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/learning/policies/evaluate:
+    post:
+      summary: Compare policies without writing or activating one
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PolicyEvaluationRequest' }
+      responses:
+        '200': { description: Read-only policy evaluation and data-use metrics }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/learning/policies/decisions:
+    post:
+      summary: Append an approved policy promotion or rollback event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PolicyDecisionRequest' }
+      responses:
+        '201': { description: Decision event committed }
+        '200': { description: Identical durable replay }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '409': { $ref: '#/components/responses/ErrorResponse' }
+        '507': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/learning/policies/current:
+    get:
+      summary: Read the latest approved policy event for a tenant
+      parameters:
+        - name: tenant_id
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 256 }
+      responses:
+        '200': { description: Current policy and approval provenance }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
+  /v1/learning/episodes/quarantine:
+    post:
+      summary: Quarantine an episode from future learning
+      description: Legal-hold episodes cannot be quarantined.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [tenant_id, episode_id]
+              properties:
+                tenant_id: { type: string, minLength: 1, maxLength: 256 }
+                episode_id: { type: string, minLength: 1, maxLength: 256 }
+      responses:
+        '200': { description: Episode quarantined }
+        '400': { $ref: '#/components/responses/ErrorResponse' }
+        '404': { $ref: '#/components/responses/ErrorResponse' }
   /v1/metrics:
     get:
       summary: Read authenticated JSON runtime metrics
@@ -287,6 +424,132 @@ components:
         count: { type: integer, minimum: 1, maximum: 50000 }
         prefix: { type: string, maxLength: 4096 }
         source: { type: string }
+    StringMetadata:
+      type: object
+      maxProperties: 128
+      description: >-
+        String-valued metadata. Keys beginning with graphene_ are reserved.
+      additionalProperties:
+        type: string
+        maxLength: 65536
+    LatticeCoordinate:
+      type: object
+      additionalProperties: false
+      required: [q, r]
+      properties:
+        q: { type: integer, format: int32 }
+        r: { type: integer, format: int32 }
+        layer: { type: integer, format: int32 }
+    ExtractionNode:
+      type: object
+      additionalProperties: false
+      required: [external_id, content]
+      properties:
+        external_id: { type: string, minLength: 1, maxLength: 4096 }
+        content: { type: string, minLength: 1, maxLength: 1048576 }
+        signature:
+          type: integer
+          format: int64
+          minimum: 0
+        incident: { type: integer, minimum: 0, maximum: 4294967295 }
+        role:
+          type: string
+          enum: [node, root, symptom, impact]
+          default: node
+        metadata: { $ref: '#/components/schemas/StringMetadata' }
+        lattice: { $ref: '#/components/schemas/LatticeCoordinate' }
+        defect_type:
+          type: string
+          enum: [none, vacancy, substitution, stone_wales, strain, doped, boundary]
+          default: none
+    ExtractionRelation:
+      type: object
+      additionalProperties: false
+      required: [from_external_id, to_external_id]
+      properties:
+        from_external_id: { type: string, minLength: 1, maxLength: 4096 }
+        to_external_id: { type: string, minLength: 1, maxLength: 4096 }
+        origin:
+          type: string
+          enum: [observed, discovered, inferred, reinforced, hypothetical]
+          default: observed
+        role:
+          type: string
+          enum: [mechanistic, compressed, analogical, predictive, causal, contradicts, supports, supersedes]
+          default: supports
+        confidence: { type: number, minimum: 0, maximum: 1, default: 0.9 }
+        evidence_id: { type: string, maxLength: 4096 }
+        evidence_uri: { type: string, maxLength: 65536 }
+        evidence_text: { type: string, maxLength: 1048576 }
+        metadata: { $ref: '#/components/schemas/StringMetadata' }
+        bond_type:
+          type: string
+          enum: [none, sigma, pi, van_der_waals, defect, synthetic]
+          default: none
+        defect_type:
+          type: string
+          enum: [none, vacancy, substitution, stone_wales, strain, doped, boundary]
+          default: none
+        layer_coupling:
+          type: string
+          enum: [none, same_layer, van_der_waals, bernal_stacked, twisted, synthetic]
+          default: same_layer
+        bond_strength: { type: number, minimum: 0, maximum: 1, default: 0.85 }
+    ExtractionRequest:
+      type: object
+      additionalProperties: false
+      required: [source_id]
+      anyOf:
+        - required: [nodes]
+        - required: [relations]
+      properties:
+        schema_version: { type: integer, enum: [1], default: 1 }
+        source_id: { type: string, minLength: 1, maxLength: 4096 }
+        source_uri: { type: string, maxLength: 65536 }
+        extraction_run_id: { type: string, maxLength: 4096 }
+        layer: { type: integer, format: int32, default: 0 }
+        incident: { type: integer, minimum: 0, maximum: 4294967295 }
+        signature:
+          type: integer
+          format: int64
+          minimum: 0
+        place_missing_lattice: { type: boolean, default: true }
+        idempotent: { type: boolean, default: true }
+        nodes:
+          type: array
+          maxItems: 50000
+          items: { $ref: '#/components/schemas/ExtractionNode' }
+        relations:
+          type: array
+          maxItems: 50000
+          items: { $ref: '#/components/schemas/ExtractionRelation' }
+    ExtractionResponse:
+      type: object
+      required:
+        - atomic
+        - idempotent
+        - idempotent_replay
+        - inserted_node_ids
+        - existing_node_ids
+        - inserted_edge_ids
+        - external_to_node_id
+      properties:
+        atomic: { type: boolean, enum: [true] }
+        idempotent: { type: boolean }
+        idempotent_replay: { type: boolean }
+        inserted_node_ids:
+          type: array
+          items: { type: integer, minimum: 0 }
+        existing_node_ids:
+          type: array
+          items: { type: integer, minimum: 0 }
+        inserted_edge_ids:
+          type: array
+          items: { type: integer, minimum: 0 }
+        external_to_node_id:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
+        elapsed_ms: { type: integer, minimum: 0 }
     TemporalFactCreate:
       allOf:
         - $ref: '#/components/schemas/NodeCreate'
@@ -327,6 +590,173 @@ components:
         metadata_value: { type: string }
         limit: { type: integer, minimum: 1, maximum: 1000, default: 100 }
         offset: { type: integer, minimum: 0, default: 0 }
+    DialecticRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string, minLength: 1, maxLength: 1048576 }
+        signature:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Optional unsigned 64-bit semantic signature; zero disables signature filtering.
+        mode:
+          type: string
+          enum: [empirical, balanced, theoretical]
+          default: balanced
+        as_of:
+          type: string
+          format: date-time
+        semantic_candidates: { type: integer, minimum: 1, maximum: 64, default: 12 }
+        max_hops: { type: integer, minimum: 1, maximum: 16, default: 6 }
+        max_paths: { type: integer, minimum: 1, maximum: 256, default: 32 }
+        max_paths_per_root: { type: integer, minimum: 1, maximum: 64, default: 8 }
+        max_visited_states: { type: integer, minimum: 1, maximum: 200000, default: 20000 }
+        max_opposition_rounds: { type: integer, minimum: 0, maximum: 2, default: 1 }
+        minimum_confidence: { type: number, minimum: 0, maximum: 1, default: 0.45 }
+        reexpansion_threshold: { type: number, minimum: 0, maximum: 1, default: 0.25 }
+    DialecticResponse:
+      type: object
+      required:
+        - initial_bundle
+        - initial_convergence
+        - initial_opposition
+        - final_convergence
+        - final_opposition
+        - synthesis
+        - rounds
+        - durable_writes
+      properties:
+        initial_bundle: { type: object }
+        initial_convergence: { type: object }
+        initial_opposition: { type: object }
+        has_reopened_bundle: { type: boolean }
+        reopened_bundle: { type: object }
+        final_convergence: { type: object }
+        final_opposition: { type: object }
+        synthesis:
+          type: object
+          required: [has_answer, primary_node, confidence, epistemic_status]
+          properties:
+            has_answer: { type: boolean }
+            primary_node: { type: integer, minimum: 0 }
+            confidence: { type: number, minimum: 0, maximum: 1 }
+            epistemic_status:
+              type: string
+              enum: [abstain, contested, provisional, supported]
+        rounds: { type: integer, minimum: 0, maximum: 2 }
+        durable_writes: { type: boolean, enum: [false] }
+    RetrievalPolicy:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { type: string, minLength: 1, maxLength: 256 }
+        semantic_candidates: { type: integer, minimum: 1, maximum: 64, default: 12 }
+        max_hops: { type: integer, minimum: 1, maximum: 16, default: 6 }
+        max_paths: { type: integer, minimum: 1, maximum: 256, default: 32 }
+        max_paths_per_root: { type: integer, minimum: 1, maximum: 64, default: 8 }
+        max_visited_states: { type: integer, minimum: 1, maximum: 200000, default: 20000 }
+        max_opposition_rounds: { type: integer, minimum: 0, maximum: 2, default: 1 }
+        minimum_confidence: { type: number, minimum: 0, maximum: 1, default: 0.45 }
+        reexpansion_threshold: { type: number, minimum: 0, maximum: 1, default: 0.25 }
+    HypoKoshRequest:
+      allOf:
+        - $ref: '#/components/schemas/DialecticRequest'
+        - type: object
+          additionalProperties: false
+          properties:
+            tenant_id: { type: string, minLength: 1, maxLength: 256 }
+            use_active_policy: { type: boolean, default: false }
+            max_hypotheses: { type: integer, minimum: 1, maximum: 16, default: 8 }
+    LearningEpisode:
+      type: object
+      additionalProperties: false
+      required:
+        - tenant_id
+        - episode_id
+        - family
+        - domain
+        - split
+        - query
+        - model_version
+        - policy
+      properties:
+        schema_version: { type: integer, enum: [1], default: 1 }
+        tenant_id: { type: string, minLength: 1, maxLength: 256 }
+        episode_id: { type: string, minLength: 1, maxLength: 256 }
+        family: { type: string, minLength: 1, maxLength: 256 }
+        domain: { type: string, minLength: 1, maxLength: 256 }
+        split: { type: string, enum: [training, development, evaluation] }
+        query: { type: string, minLength: 1, maxLength: 1048576 }
+        signature: { type: integer, format: int64, minimum: 0 }
+        model_version: { type: string, minLength: 1, maxLength: 256 }
+        policy: { $ref: '#/components/schemas/RetrievalPolicy' }
+        outcome_verified: { type: boolean, default: false }
+        verifier_id: { type: string, maxLength: 256 }
+        outcome_evidence_id: { type: string, maxLength: 256 }
+        task_success: { type: boolean, default: false }
+        causal_f1: { type: number, minimum: 0, maximum: 1 }
+        evidence_coverage: { type: number, minimum: 0, maximum: 1 }
+        calibration_error: { type: number, minimum: 0, maximum: 1 }
+        latency_ms: { type: number, minimum: 0 }
+        token_cost: { type: number, minimum: 0 }
+        action_cost: { type: number, minimum: 0 }
+        false_promotion: { type: boolean, default: false }
+        harmful_action: { type: boolean, default: false }
+        unauthorized_action: { type: boolean, default: false }
+        harmful_memory_activation: { type: boolean, default: false }
+        expired_truth_activation: { type: boolean, default: false }
+        intermediate_trace_bytes: { type: integer, format: int64, minimum: 0 }
+        retained_trace_bytes: { type: integer, format: int64, minimum: 0 }
+        decisive_evidence_total: { type: integer, minimum: 0 }
+        decisive_evidence_retained: { type: integer, minimum: 0 }
+        useful_evidence_total: { type: integer, minimum: 0 }
+        useful_evidence_retrieved_at_20: { type: integer, minimum: 0 }
+        evidence_node_ids:
+          type: array
+          maxItems: 256
+          uniqueItems: true
+          items: { type: integer, minimum: 0 }
+        legal_hold: { type: boolean, default: false }
+    PolicyEvaluationRequest:
+      type: object
+      additionalProperties: false
+      required: [tenant_id, baseline]
+      properties:
+        tenant_id: { type: string, minLength: 1, maxLength: 256 }
+        baseline: { $ref: '#/components/schemas/RetrievalPolicy' }
+        options:
+          type: object
+          additionalProperties: false
+          properties:
+            minimum_training_samples: { type: integer, minimum: 1, default: 2 }
+            minimum_development_samples: { type: integer, minimum: 1, default: 1 }
+            minimum_development_utility_improvement: { type: number, minimum: 0, maximum: 1, default: 0.02 }
+            maximum_domain_regression: { type: number, minimum: 0, maximum: 1, default: 0.02 }
+            maximum_retention_decisions: { type: integer, minimum: 0, maximum: 10000, default: 1000 }
+    PolicyDecisionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - tenant_id
+        - event_id
+        - action
+        - policy
+        - approved
+        - approver_id
+        - evaluation_reference
+        - reason
+      properties:
+        schema_version: { type: integer, enum: [1], default: 1 }
+        tenant_id: { type: string, minLength: 1, maxLength: 256 }
+        event_id: { type: string, minLength: 1, maxLength: 256 }
+        action: { type: string, enum: [promote, rollback] }
+        policy: { $ref: '#/components/schemas/RetrievalPolicy' }
+        approved: { type: boolean }
+        approver_id: { type: string, minLength: 1, maxLength: 256 }
+        evaluation_reference: { type: string, minLength: 1, maxLength: 256 }
+        reason: { type: string, minLength: 1, maxLength: 4096 }
     Error:
       type: object
       required: [error]

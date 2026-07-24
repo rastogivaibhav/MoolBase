@@ -176,6 +176,15 @@ bool visible_edge(const Edge& e, const std::vector<Node>& nodes, uint64_t snap) 
 
 int popcount64(uint64_t x) { return static_cast<int>(std::popcount(x)); }
 
+bool edge_allowed_for_mode(const Edge& edge, QueryMode mode) {
+  if (mode == QueryMode::Empirical) {
+    return (edge.origin == EdgeOrigin::Observed || edge.origin == EdgeOrigin::Discovered) &&
+           edge.role != EdgeRole::Analogical;
+  }
+  if (mode == QueryMode::Balanced) return edge.origin != EdgeOrigin::Hypothetical;
+  return true;
+}
+
 double cosine(const std::vector<float>& a, const std::vector<float>& b) {
   if (a.size() != b.size() || a.empty()) return -1.0;
   double dot = 0.0, na = 0.0, nb = 0.0;
@@ -1265,7 +1274,7 @@ struct GrapheneDB::Impl {
       for (uint32_t eid : it->second) {
         if (eid >= edges.size() || !visible_edge(edges[eid], nodes, snap)) continue;
         const auto& e = edges[eid];
-        if (mode == QueryMode::Empirical && (e.origin == EdgeOrigin::Hypothetical || e.role == EdgeRole::Analogical)) continue;
+        if (!edge_allowed_for_mode(e, mode)) continue;
         if (!seen.count(e.from)) {
           seen.insert(e.from);
           parent_node[e.from] = cur;
@@ -1315,7 +1324,7 @@ struct GrapheneDB::Impl {
             if (eid >= edges.size() || !visible_edge(edges[eid], nodes, snap)) continue;
             const auto& e = edges[eid];
             if (!((e.from == cur.node && e.to == next) || (e.to == cur.node && e.from == next))) continue;
-            if (mode == QueryMode::Empirical && (e.origin == EdgeOrigin::Hypothetical || e.role == EdgeRole::Analogical)) { blocked_by_mode = true; continue; }
+            if (!edge_allowed_for_mode(e, mode)) { blocked_by_mode = true; continue; }
             best_strength = std::max(best_strength, e.bond_strength);
           }
           if (blocked_by_mode && best_strength <= 0.85) continue;
@@ -1335,7 +1344,7 @@ struct GrapheneDB::Impl {
       for (uint32_t eid : it->second) {
         if (eid >= edges.size() || !visible_edge(edges[eid], nodes, snap)) continue;
         const auto& e = edges[eid];
-        if (mode == QueryMode::Empirical && (e.origin == EdgeOrigin::Hypothetical || e.role == EdgeRole::Analogical)) continue;
+        if (!edge_allowed_for_mode(e, mode)) continue;
         uint32_t next = e.from == cur.node ? e.to : e.from;
         double penalty = 1.0;
         if (e.bond_type == BondType::Defect || e.defect_type != DefectType::None) penalty *= opt.tuning.lattice_defect_penalty;
@@ -1666,6 +1675,28 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
     }
     return std::nullopt;
   };
+  auto user_metadata_matches =
+      [](const std::map<std::string, std::string>& stored,
+         const std::map<std::string, std::string>& requested) {
+        size_t stored_user_entries = 0;
+        for (const auto& [key, value] : stored) {
+          if (key.rfind("graphene_", 0) == 0) continue;
+          ++stored_user_entries;
+          const auto requested_it = requested.find(key);
+          if (requested_it == requested.end() ||
+              requested_it->second != value) {
+            return false;
+          }
+        }
+        return stored_user_entries == requested.size();
+      };
+  auto metadata_optional_matches =
+      [](const std::map<std::string, std::string>& stored,
+         const std::string& key, const std::string& requested) {
+        const auto it = stored.find(key);
+        if (requested.empty()) return it == stored.end();
+        return it != stored.end() && it->second == requested;
+      };
 
   std::unordered_set<std::string> input_ids;
   std::unordered_map<std::string, uint32_t> external_to_node_id;
@@ -1673,7 +1704,7 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
   std::vector<Node> new_nodes;
   std::vector<Edge> new_edges;
   std::unordered_set<std::string> batch_lattice_keys;
-  std::unordered_set<std::string> batch_relation_keys;
+  std::unordered_map<std::string, const ExtractionRelation*> batch_relations;
 
   auto lattice_key = [](const LatticeCoord& c) {
     return std::to_string(c.q) + "," + std::to_string(c.r) + "," + std::to_string(c.layer);
@@ -1699,6 +1730,27 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
     auto existing = find_existing_external(scoped);
     if (existing) {
       if (!input.idempotent) return Status::error(ErrorCode::InvalidInput, "extraction external_id already exists");
+      const auto& stored = impl_->nodes[*existing];
+      const uint64_t expected_signature =
+          en.signature ? en.signature : input.signature;
+      const uint32_t expected_incident =
+          en.incident ? en.incident : input.incident;
+      const bool role_matches =
+          stored.root == (en.role == ExtractionRole::Root) &&
+          stored.symptom == (en.role == ExtractionRole::Symptom) &&
+          stored.impact == (en.role == ExtractionRole::Impact);
+      if (stored.content != en.content || stored.vector != en.vector ||
+          stored.signature != expected_signature ||
+          stored.incident != expected_incident || !role_matches ||
+          stored.defect_type != en.defect_type ||
+          !metadata_optional_matches(stored.metadata, "graphene_source_uri",
+                                     input.source_uri) ||
+          !user_metadata_matches(stored.metadata, en.metadata)) {
+        return Status::error(
+            ErrorCode::InvalidInput,
+            "extraction node idempotency conflict for external_id '" +
+                en.external_id + "'");
+      }
       external_to_node_id[en.external_id] = *existing;
       existing_node_ids.push_back(*existing);
       continue;
@@ -1773,17 +1825,70 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
 
     std::string relation_key = input.source_id + "\x1e" + rel.from_external_id + "\x1e" + rel.to_external_id + "\x1e" + std::to_string(static_cast<int>(rel.role));
     if (input.idempotent) {
-      if (!batch_relation_keys.insert(relation_key).second) continue;
-      bool exists = false;
+      const auto [batch_it, inserted] =
+          batch_relations.emplace(relation_key, &rel);
+      if (!inserted) {
+        const ExtractionRelation& prior = *batch_it->second;
+        if (prior.origin != rel.origin || prior.confidence != rel.confidence ||
+            prior.evidence_id != rel.evidence_id ||
+            prior.evidence_uri != rel.evidence_uri ||
+            prior.evidence_text != rel.evidence_text ||
+            prior.metadata != rel.metadata ||
+            prior.bond_type != rel.bond_type ||
+            prior.defect_type != rel.defect_type ||
+            prior.layer_coupling != rel.layer_coupling ||
+            prior.bond_strength != rel.bond_strength) {
+          return Status::error(
+              ErrorCode::InvalidInput,
+              "extraction relation idempotency conflict within request for '" +
+                  rel.from_external_id + "' -> '" + rel.to_external_id +
+                  "'");
+        }
+        continue;
+      }
+      const Edge* existing_relation = nullptr;
       for (const auto& e : impl_->edges) {
         if (!visible_edge(e, impl_->nodes, snap)) continue;
         auto it = e.metadata.find("graphene_relation_key");
         if (it != e.metadata.end() && it->second == relation_key) {
-          exists = true;
+          existing_relation = &e;
           break;
         }
       }
-      if (exists) continue;
+      if (existing_relation) {
+        const bool evidence_matches =
+            metadata_optional_matches(existing_relation->metadata,
+                                      "graphene_evidence_id",
+                                      rel.evidence_id) &&
+            metadata_optional_matches(existing_relation->metadata,
+                                      "graphene_evidence_uri",
+                                      rel.evidence_uri) &&
+            metadata_optional_matches(existing_relation->metadata,
+                                      "graphene_evidence_text",
+                                      rel.evidence_text);
+        if (existing_relation->from != from_it->second ||
+            existing_relation->to != to_it->second ||
+            existing_relation->origin != rel.origin ||
+            existing_relation->role != rel.role ||
+            existing_relation->confidence != rel.confidence ||
+            existing_relation->bond_type != rel.bond_type ||
+            existing_relation->defect_type != rel.defect_type ||
+            existing_relation->layer_coupling != rel.layer_coupling ||
+            existing_relation->bond_strength != rel.bond_strength ||
+            !metadata_optional_matches(existing_relation->metadata,
+                                       "graphene_source_uri",
+                                       input.source_uri) ||
+            !evidence_matches ||
+            !user_metadata_matches(existing_relation->metadata,
+                                   rel.metadata)) {
+          return Status::error(
+              ErrorCode::InvalidInput,
+              "extraction relation idempotency conflict for '" +
+                  rel.from_external_id + "' -> '" + rel.to_external_id +
+                  "'");
+        }
+        continue;
+      }
     }
 
     auto node_for_batch = [&](uint32_t id) -> const Node* {
@@ -1971,6 +2076,40 @@ std::vector<uint32_t> GrapheneDB::lattice_neighbors(uint32_t node_id, uint32_t m
     }
   }
   std::sort(out.begin(), out.end());
+  return out;
+}
+
+std::vector<Edge> GrapheneDB::incoming_edges(uint32_t node_id, uint64_t snap) const {
+  std::shared_lock lock(impl_->mu);
+  if (snap == kInfVersion) snap = impl_->version - 1;
+  std::vector<Edge> out;
+  if (node_id >= impl_->nodes.size() || !visible_node(impl_->nodes[node_id], snap)) return out;
+  auto it = impl_->in_edges.find(node_id);
+  if (it == impl_->in_edges.end()) return out;
+  out.reserve(it->second.size());
+  for (uint32_t edge_id : it->second) {
+    if (edge_id < impl_->edges.size() && visible_edge(impl_->edges[edge_id], impl_->nodes, snap)) {
+      out.push_back(impl_->edges[edge_id]);
+    }
+  }
+  std::sort(out.begin(), out.end(), [](const Edge& a, const Edge& b) { return a.id < b.id; });
+  return out;
+}
+
+std::vector<Edge> GrapheneDB::outgoing_edges(uint32_t node_id, uint64_t snap) const {
+  std::shared_lock lock(impl_->mu);
+  if (snap == kInfVersion) snap = impl_->version - 1;
+  std::vector<Edge> out;
+  if (node_id >= impl_->nodes.size() || !visible_node(impl_->nodes[node_id], snap)) return out;
+  auto it = impl_->out_edges.find(node_id);
+  if (it == impl_->out_edges.end()) return out;
+  out.reserve(it->second.size());
+  for (uint32_t edge_id : it->second) {
+    if (edge_id < impl_->edges.size() && visible_edge(impl_->edges[edge_id], impl_->nodes, snap)) {
+      out.push_back(impl_->edges[edge_id]);
+    }
+  }
+  std::sort(out.begin(), out.end(), [](const Edge& a, const Edge& b) { return a.id < b.id; });
   return out;
 }
 

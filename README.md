@@ -16,7 +16,24 @@ It is not yet external enterprise GA. Remaining GA work is documented in [`docs/
 
 This branch also adds the first durable graphene-inspired lattice model: hexagonal node coordinates, lattice bond/defect metadata, topology validation, and optional lattice-aware retrieval propagation. The model is a memory topology and retrieval primitive, not a carbon-physics or material-science simulator.
 
-It also adds a first-class extraction ingestion API for source-scoped external IDs, idempotent re-import, relation resolution, automatic lattice placement, and CLI ingestion. See [`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md).
+It also adds a first-class extraction ingestion API for source-scoped external
+IDs, conflict-safe idempotent re-import, relation resolution, automatic
+lattice placement, CLI ingestion, and bounded atomic HTTP ingestion at
+`POST /v1/extractions`. See
+[`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md).
+
+Docker/Linux contract evidence and the pinned public-postmortem comparison are
+documented in
+[`docs/REAL_DATA_DOCKER_VALIDATION.md`](docs/REAL_DATA_DOCKER_VALIDATION.md).
+
+This development branch also contains the experimental `GDB-GL-0` governed
+learning mechanism: read-only HypoKosh proposals, immutable verified outcome
+episodes, deterministic data-utility measurement, offline retrieval-policy
+comparison, and explicitly approved promotion/rollback. It does not train LLM
+weights or autonomously promote facts or policies. See
+[`docs/GOVERNED_LEARNING_V0_SPEC.md`](docs/GOVERNED_LEARNING_V0_SPEC.md).
+The completed controlled-pilot mechanism evidence is recorded in
+[`docs/GOVERNED_LEARNING_V0_VALIDATION.md`](docs/GOVERNED_LEARNING_V0_VALIDATION.md).
 
 
 ## Platform support
@@ -74,6 +91,12 @@ semantic candidates
 - Sanitizer gates
 - Coverage-guided fuzz smoke target
 - KoshDB/LLM-Kosh adapter skeleton and TSV interchange gate
+- Experimental bounded dialectic reasoning with typed RFC3339 validity,
+  provenance findings, atomic all-source hyperedges, deterministic opposition,
+  and a read-only authenticated pilot endpoint
+- Experimental read-only HypoKosh proposals and governed outcome learning for
+  retrieval-policy recommendations, with held-out evaluation, safety-negative
+  episodes, explicit approval, rollback, quarantine, and restart-safe history
 
 ## Pilot server quick start
 
@@ -169,6 +192,7 @@ Handoff next step: keep the embedded library authoritative, treat `v0.6.0-rc1` a
 | `scripts/run_1m_stress.sh` | Run 1M-node storage stress profile. |
 | `scripts/run_crash_matrix.sh` | Run process-kill and recovery tests. |
 | `scripts/run_extraction_ingest_bench.sh` | Benchmark extraction ingestion, idempotent re-import, and retrieval. |
+| `scripts/server_learning_contract_test.py` | Exercise the authenticated governed-learning loop, promotion, rollback, and restart contract. |
 | `scripts/run_vector_baseline_bench.ps1` | Compare vector-only top-1 retrieval against Graphene causal retrieval on Windows. |
 | `scripts/run_vector_baseline_bench.sh` | Compare vector-only top-1 retrieval against Graphene causal retrieval on POSIX. |
 | `scripts/run_vector_index_recall_bench.ps1` | Compare configured vector-index recall/latency against exact flat search on Windows. |
@@ -201,9 +225,16 @@ Handoff next step: keep the embedded library authoritative, treat `v0.6.0-rc1` a
 
 ## Key docs
 
+- [`deepmindtest.md`](deepmindtest.md) — preregistered dialectic, HypoKosh,
+  learning, safety, and scale benchmark with explicit acceptance gates.
+- [`docs/DEEPMIND_G0_G2_TESTS.md`](docs/DEEPMIND_G0_G2_TESTS.md) — executable
+  clean-run manifest and deterministic D0/G2 gate.
 - [`docs/GRAPHENE_UNIQUENESS.md`](docs/GRAPHENE_UNIQUENESS.md)
 - [`docs/GRAPHENE_LATTICE_MODEL.md`](docs/GRAPHENE_LATTICE_MODEL.md)
 - [`docs/LATTICE_RETRIEVAL.md`](docs/LATTICE_RETRIEVAL.md)
+- [`docs/DIALECTIC_REASONING_V0.md`](docs/DIALECTIC_REASONING_V0.md)
+- [`docs/GOVERNED_LEARNING_V0_SPEC.md`](docs/GOVERNED_LEARNING_V0_SPEC.md)
+- [`docs/GOVERNED_LEARNING_V0_VALIDATION.md`](docs/GOVERNED_LEARNING_V0_VALIDATION.md)
 - [`docs/EXTRACTION_INGESTION.md`](docs/EXTRACTION_INGESTION.md)
 - [`docs/PACKAGING_DISTRIBUTION.md`](docs/PACKAGING_DISTRIBUTION.md)
 - [`docs/C_API.md`](docs/C_API.md)

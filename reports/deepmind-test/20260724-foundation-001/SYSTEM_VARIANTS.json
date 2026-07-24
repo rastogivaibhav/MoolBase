@@ -1,0 +1,21 @@
+{
+  "foundation_variants_exercised": [
+    {
+      "id": "vector-only",
+      "implementation": "GrapheneDB exact vector top-1",
+      "resource_matching": "same deterministic vectors and D1 records"
+    },
+    {
+      "id": "causal",
+      "implementation": "existing causal bundle retrieval",
+      "resource_matching": "same deterministic vectors, graph, and D1 records"
+    },
+    {
+      "id": "dialectic",
+      "implementation": "bounded expansion, convergence, opposition, and synthesis",
+      "resource_matching": "same deterministic vectors, graph, and D1 records"
+    }
+  ],
+  "strongest_baseline_for_foundation_decision": null,
+  "reason": "G0-G3 are correctness and public-regression gates, not the blinded superiority comparison."
+}

@@ -32,6 +32,8 @@ public:
   MemoryBundle causal_search(const std::vector<float>& query, uint64_t query_signature, QueryMode mode = QueryMode::Empirical, uint64_t snapshot_version = kInfVersion) const;
   std::vector<uint32_t> metadata_search(const std::string& key, const std::string& value, uint64_t snapshot_version = kInfVersion) const;
   std::vector<uint32_t> lattice_neighbors(uint32_t node_id, uint32_t max_hops = 1, uint64_t snapshot_version = kInfVersion) const;
+  std::vector<Edge> incoming_edges(uint32_t node_id, uint64_t snapshot_version = kInfVersion) const;
+  std::vector<Edge> outgoing_edges(uint32_t node_id, uint64_t snapshot_version = kInfVersion) const;
 
   std::optional<Node> get_node(uint32_t id, uint64_t snapshot_version = kInfVersion) const;
   std::optional<Edge> get_edge(uint32_t id, uint64_t snapshot_version = kInfVersion) const;

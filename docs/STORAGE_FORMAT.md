@@ -35,6 +35,11 @@ wal_bytes=<current graphene.wal size>
 data_bytes=<current graphene.data size>
 ```
 
+`GDB-GL-0` learning episodes and policy decisions do not add a record type or
+format version. They are ordinary v2 nodes written through extraction v1, with
+reserved `learning_*` metadata and source-scoped external identities. HypoKosh
+proposals and policy evaluations are read-only and have no storage encoding.
+
 `compact()` and byte-threshold rotation rewrite live records to `graphene.data`
 and truncate `graphene.wal`. Checkpoint replacement flushes the temporary data
 file, atomically replaces the canonical data file, flushes the containing

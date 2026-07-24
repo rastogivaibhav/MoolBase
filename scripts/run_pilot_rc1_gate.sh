@@ -43,9 +43,15 @@ assert doc.get("openapi") == "3.0.3"
 assert doc.get("info", {}).get("title") == "GrapheneDB Pilot API"
 expected_paths = {
     "/v1/health", "/v1/ready", "/v1/version", "/v1/nodes",
-    "/v1/nodes/bulk", "/v1/nodes/{nodeId}", "/v1/facts", "/v1/edges",
+    "/v1/nodes/bulk", "/v1/extractions", "/v1/nodes/{nodeId}",
+    "/v1/facts", "/v1/edges",
     "/v1/edges/provenance", "/v1/search/hybrid", "/v1/search/lattice",
     "/v1/retrieve/bundle", "/v1/retrieve/explain", "/v1/retrieve/temporal",
+    "/v1/reason/dialectic", "/v1/reason/hypokosh",
+    "/v1/learning/episodes", "/v1/learning/episodes/quarantine",
+    "/v1/learning/policies/evaluate",
+    "/v1/learning/policies/decisions",
+    "/v1/learning/policies/current",
     "/v1/metrics", "/v1/metrics/prometheus", "/v1/admin/capacity",
     "/v1/admin/validate", "/v1/admin/checkpoint", "/v1/admin/compact",
     "/v1/admin/inspect", "/v1/admin/backup",
@@ -61,6 +67,9 @@ PY
 
 python3 "$ROOT/scripts/server_pilot_contract_test.py" "$BUILD_DIR/graphenedb_server" \
   2>&1 | tee "$REPORT_DIR/server_pilot_contract.json"
+
+python3 "$ROOT/scripts/server_learning_contract_test.py" "$BUILD_DIR/graphenedb_server" \
+  2>&1 | tee "$REPORT_DIR/server_learning_contract.txt"
 
 python3 -u "$ROOT/scripts/server_soak_test.py" \
   --binary "$BUILD_DIR/graphenedb_server" \

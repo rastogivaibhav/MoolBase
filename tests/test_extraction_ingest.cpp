@@ -99,6 +99,38 @@ int main() {
   assert(db.node_count() == 2);
   assert(db.edge_count() == 1);
 
+  ExtractionInput changed_node = input;
+  changed_node.nodes[0].content = "conflicting replay content";
+  auto changed_node_status = db.put_extraction(changed_node);
+  assert(!changed_node_status);
+  assert(changed_node_status.code == ErrorCode::InvalidInput);
+  assert(changed_node_status.message.find("idempotency conflict") !=
+         std::string::npos);
+  assert(db.node_count() == 2);
+  assert(db.edge_count() == 1);
+
+  ExtractionInput changed_relation = input;
+  changed_relation.relations.resize(1);
+  changed_relation.relations[0].confidence = 0.5;
+  auto changed_relation_status = db.put_extraction(changed_relation);
+  assert(!changed_relation_status);
+  assert(changed_relation_status.code == ErrorCode::InvalidInput);
+  assert(changed_relation_status.message.find("idempotency conflict") !=
+         std::string::npos);
+  assert(db.node_count() == 2);
+  assert(db.edge_count() == 1);
+
+  ExtractionInput invalid_atomic = input;
+  invalid_atomic.source_id = "invalid-atomic-source";
+  invalid_atomic.nodes.resize(1);
+  invalid_atomic.relations.resize(1);
+  invalid_atomic.relations[0].to_external_id = "missing-endpoint";
+  auto invalid_atomic_status = db.put_extraction(invalid_atomic);
+  assert(!invalid_atomic_status);
+  assert(invalid_atomic_status.code == ErrorCode::EdgeInvalid);
+  assert(db.node_count() == 2);
+  assert(db.edge_count() == 1);
+
   std::string report;
   require(db.validate(&report), "validate");
   require(db.close(), "close");

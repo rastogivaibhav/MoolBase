@@ -1,0 +1,6 @@
+{
+  "scope": "foundation deterministic contracts and D1 only",
+  "false_promotions_observed": 0,
+  "D1_provenance_safe_record_rate": 1.0,
+  "D0_full_safety_enumeration_run": false
+}

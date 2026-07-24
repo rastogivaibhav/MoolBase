@@ -2,6 +2,7 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 namespace graphene {
 namespace {
@@ -31,19 +32,32 @@ Status KoshAdapter::ingest_memory(const KoshMemoryRecord& memory, uint32_t* out_
   return db_.put_node(n, out_id);
 }
 
-Status KoshAdapter::link(uint32_t from, uint32_t to, EdgeRole role, EdgeOrigin origin, double confidence) {
+Status KoshAdapter::link(uint32_t from,
+                         uint32_t to,
+                         EdgeRole role,
+                         EdgeOrigin origin,
+                         double confidence,
+                         std::map<std::string, std::string> provenance) {
   EdgeInput e;
   e.from = from;
   e.to = to;
   e.origin = origin;
   e.role = role;
   e.confidence = confidence;
+  e.metadata = std::move(provenance);
   e.metadata["adapter"] = "graphene-kosh-adapter-v1";
   return db_.put_edge(e);
 }
 
 MemoryBundle KoshAdapter::retrieve_causal_bundle(const std::vector<float>& query, uint64_t signature, QueryMode mode) const {
   return db_.causal_search(query, signature, mode);
+}
+
+DialecticResult KoshAdapter::retrieve_dialectic(
+    const std::vector<float>& query,
+    uint64_t signature,
+    const DialecticOptions& options) const {
+  return DialecticEngine(db_).reason(query, signature, options);
 }
 
 Status KoshAdapter::ingest_tsv(const std::filesystem::path& file, std::vector<uint32_t>* out_ids) {

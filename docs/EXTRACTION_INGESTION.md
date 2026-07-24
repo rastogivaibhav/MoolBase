@@ -31,7 +31,13 @@ GrapheneDB stores these metadata keys on each committed node:
 - `graphene_source_uri`, when supplied
 - `graphene_extraction_run_id`, when supplied
 
-`put_extraction()` is idempotent by default. Re-importing the same `source_id` and `external_id` reuses existing nodes instead of creating duplicates. Relations also receive a deterministic `graphene_relation_key`, so duplicate relation rows inside one batch and repeated imports do not duplicate existing extraction edges.
+`put_extraction()` is idempotent by default. Re-importing the same `source_id`
+and `external_id` reuses existing nodes instead of creating duplicates.
+Relations also receive a deterministic `graphene_relation_key`, so duplicate
+relation rows inside one batch and repeated imports do not duplicate existing
+extraction edges. A retry whose node content, vector, semantic fields,
+user metadata, source URI, relation type, confidence, or evidence
+differs is rejected as an idempotency conflict.
 
 ## Relation Evidence
 
@@ -54,6 +60,43 @@ This gives two implementation modes:
 - database-authored deterministic placement for simple ingestion
 
 When `DBOptions::require_lattice` is enabled, every inserted extraction node must end up with a coordinate. Lattice bonds still obey the same neighbor validation rules as direct `put_edge()` and `put_batch()` calls.
+
+## Controlled-Pilot HTTP API
+
+`POST /v1/extractions` exposes this core operation without duplicating storage
+logic. The authenticated route accepts extraction schema version 1, generates
+vectors from node content using the current pilot embedding function, assigns
+missing lattice coordinates from the server's shared placement sequence, and
+calls `put_extraction()` once.
+
+```json
+{
+  "schema_version": 1,
+  "source_id": "incident-42",
+  "signature": 33,
+  "nodes": [
+    {"external_id": "root/cache", "content": "cache saturation", "role": "root"},
+    {"external_id": "symptom/latency", "content": "checkout latency", "role": "symptom"}
+  ],
+  "relations": [
+    {
+      "from_external_id": "root/cache",
+      "to_external_id": "symptom/latency",
+      "origin": "observed",
+      "role": "causal",
+      "confidence": 0.95,
+      "evidence_id": "postmortem-42"
+    }
+  ]
+}
+```
+
+New commits return HTTP 201. Identical durable replays return HTTP 200 and
+empty `inserted_node_ids`/`inserted_edge_ids`. Changed replays return HTTP 409.
+All validation failures report `atomic=true` and insert nothing. The node limit
+is the configured `--max-bulk-nodes`; relations are capped at 50,000 and the
+global request-size limit still applies. See
+[`api/openapi-v1.yaml`](api/openapi-v1.yaml) for the complete bounded schema.
 
 ## CLI
 

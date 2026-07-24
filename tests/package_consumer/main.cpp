@@ -1,4 +1,5 @@
-#include "graphene/db.hpp"
+#include "graphene/dialectic.hpp"
+#include "graphene/hyperedge.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -55,6 +56,18 @@ int main() {
   if (result.inserted_node_ids.size() != 2 || result.inserted_edge_ids.size() != 1) {
     std::cerr << "unexpected extraction result\n";
     return 2;
+  }
+  DialecticOptions dialectic_options;
+  dialectic_options.mode = QueryMode::Empirical;
+  dialectic_options.semantic_candidates = 2;
+  dialectic_options.max_opposition_rounds = 0;
+  auto dialectic = DialecticEngine(db).reason(
+      child.vector, input.signature, dialectic_options);
+  if (!dialectic.synthesis.has_answer ||
+      dialectic.synthesis.primary_node != result.external_to_node_id.at("root") ||
+      dialectic.durable_writes) {
+    std::cerr << "unexpected dialectic result\n";
+    return 3;
   }
   require(db.validate(), "validate");
   require(db.close(), "close");

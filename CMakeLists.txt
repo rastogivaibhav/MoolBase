@@ -27,8 +27,13 @@ endif()
 add_library(graphenedb
   src/c_api.cpp
   src/db.cpp
+  src/dialectic.cpp
+  src/epistemic.cpp
+  src/hyperedge.cpp
+  src/hypokosh.cpp
   src/kosh_adapter.cpp
   src/lattice_placement.cpp
+  src/learning.cpp
   ${GRAPHENEDB_PLATFORM_SOURCE}
 )
 add_library(GrapheneDB::graphenedb ALIAS graphenedb)
@@ -38,6 +43,12 @@ target_include_directories(graphenedb
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 find_package(Threads REQUIRED)
 target_link_libraries(graphenedb PUBLIC Threads::Threads)
+
+if(GRAPHENEDB_BUILD_TESTS OR GRAPHENEDB_BUILD_BENCH)
+  add_executable(graphenedb_deepmind_causal_suite
+    bench/deepmind/generate_causal_suite.cpp)
+  target_link_libraries(graphenedb_deepmind_causal_suite PRIVATE graphenedb)
+endif()
 
 if(GRAPHENEDB_USE_FAISS)
   find_path(FAISS_INCLUDE_DIR faiss/IndexFlat.h)
@@ -129,6 +140,10 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_acid_lattice_tests tests/test_acid_lattice.cpp)
   target_link_libraries(graphenedb_acid_lattice_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_acid_lattice_tests COMMAND graphenedb_acid_lattice_tests)
+  set_tests_properties(
+    graphenedb_acid_lattice_tests
+    PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
   add_executable(graphenedb_lattice_placement_tests tests/test_lattice_placement.cpp)
   target_link_libraries(graphenedb_lattice_placement_tests PRIVATE graphenedb)
@@ -188,6 +203,26 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_p0_contract_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_p0_contract_tests COMMAND graphenedb_p0_contract_tests)
 
+  add_executable(graphenedb_dialectic_tests tests/test_dialectic.cpp)
+  target_link_libraries(graphenedb_dialectic_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_dialectic_tests COMMAND graphenedb_dialectic_tests)
+
+  add_executable(graphenedb_hyperedge_tests tests/test_hyperedge.cpp)
+  target_link_libraries(graphenedb_hyperedge_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_hyperedge_tests COMMAND graphenedb_hyperedge_tests)
+
+  add_executable(graphenedb_governed_learning_tests tests/test_governed_learning.cpp)
+  target_link_libraries(graphenedb_governed_learning_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_governed_learning_tests COMMAND graphenedb_governed_learning_tests)
+
+  add_test(
+    NAME graphenedb_governed_learning_spec_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_governed_learning_spec.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_governed_learning_spec.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/docs/GOVERNED_LEARNING_V0_SPEC.md
+  )
+
   add_test(
     NAME graphenedb_release_candidate_bundle_meta_tests
     COMMAND ${Python3_EXECUTABLE}
@@ -221,12 +256,36 @@ if(GRAPHENEDB_BUILD_TESTS)
       COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/server_pilot_contract_test.py $<TARGET_FILE:graphenedb_server>
     )
     set_tests_properties(graphenedb_server_pilot_contract_tests PROPERTIES TIMEOUT 120)
+
+    add_test(
+      NAME graphenedb_server_governed_learning_contract_tests
+      COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/server_learning_contract_test.py $<TARGET_FILE:graphenedb_server>
+    )
+    set_tests_properties(graphenedb_server_governed_learning_contract_tests PROPERTIES TIMEOUT 120)
   endif()
 
   add_test(
     NAME graphenedb_docker_security_static_tests
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_docker_security.py ${CMAKE_CURRENT_SOURCE_DIR}
   )
+
+  add_test(
+    NAME graphenedb_deepmind_g2_harness_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_deepmind_g2_harness.py
+            $<TARGET_FILE:graphenedb_deepmind_causal_suite>
+  )
+  set_tests_properties(graphenedb_deepmind_g2_harness_tests
+    PROPERTIES TIMEOUT 120)
+
+  add_test(
+    NAME graphenedb_deepmind_g0_manifest_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_deepmind_foundation_manifest.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/scripts/deepmind_foundation_manifest.py
+  )
+  set_tests_properties(graphenedb_deepmind_g0_manifest_tests
+    PROPERTIES TIMEOUT 120)
 
 endif()
 
@@ -245,6 +304,12 @@ if(GRAPHENEDB_BUILD_BENCH)
 
   add_executable(graphenedb_vector_index_recall_bench bench/bench_vector_index_recall.cpp)
   target_link_libraries(graphenedb_vector_index_recall_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_dialectic_ablation_bench bench/bench_dialectic_ablation.cpp)
+  target_link_libraries(graphenedb_dialectic_ablation_bench PRIVATE graphenedb)
+
+  add_executable(graphenedb_real_postmortems_bench bench/bench_real_postmortems.cpp)
+  target_link_libraries(graphenedb_real_postmortems_bench PRIVATE graphenedb)
 endif()
 
 if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
@@ -262,6 +327,9 @@ if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
 
   add_executable(graphenedb_api_contradiction_supersession examples/api_contradiction_supersession.cpp)
   target_link_libraries(graphenedb_api_contradiction_supersession PRIVATE graphenedb)
+
+  add_executable(graphenedb_dialectic_reasoning examples/dialectic_reasoning.cpp)
+  target_link_libraries(graphenedb_dialectic_reasoning PRIVATE graphenedb)
 
   add_executable(graphenedb_lattice_memory examples/graphene_lattice_memory.cpp)
   target_link_libraries(graphenedb_lattice_memory PRIVATE graphenedb)

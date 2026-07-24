@@ -130,6 +130,7 @@ try:
             and version["api_version"] == 1
             and response.headers.get("X-GrapheneDB-API-Version") == "1"
             and "idempotent_node_writes" in version["features"]
+            and "bounded_dialectic_reasoning" in version["features"]
         )
 
     # Dependency-free client and durable idempotency contract.
@@ -149,6 +150,178 @@ try:
     except GrapheneDBError as exc:
         conflict = exc.status == 409
     results["idempotency_conflict"] = conflict and node_count(port) == 1
+
+    # The API can atomically ingest the typed graph needed by causal and
+    # dialectic retrieval. Stable external IDs make the whole extraction
+    # retry-safe without relying on a process-local cache.
+    extraction = {
+        "schema_version": 1,
+        "source_id": "pilot-incident-42",
+        "source_uri": "https://evidence.example/incidents/42",
+        "extraction_run_id": "extractor-run-1",
+        "signature": 33,
+        "nodes": [
+            {
+                "external_id": "root/cache",
+                "content": "cache saturation is a root cause",
+                "role": "root",
+                "metadata": {"service": "checkout"},
+            },
+            {
+                "external_id": "root/pool",
+                "content": "connection pool exhaustion is a root cause",
+                "role": "root",
+                "metadata": {"service": "checkout"},
+            },
+            {
+                "external_id": "symptom/latency",
+                "content": "checkout latency increased",
+                "role": "symptom",
+                "metadata": {"severity": "sev1", "escaped": "line 1\nline 2"},
+            },
+        ],
+        "relations": [
+            {
+                "from_external_id": "root/cache",
+                "to_external_id": "symptom/latency",
+                "origin": "observed",
+                "role": "causal",
+                "confidence": 0.95,
+                "evidence_id": "postmortem-42-cache",
+                "evidence_text": "cache eviction rate preceded latency",
+            },
+            {
+                "from_external_id": "root/pool",
+                "to_external_id": "symptom/latency",
+                "origin": "observed",
+                "role": "causal",
+                "confidence": 0.93,
+                "evidence_id": "postmortem-42-pool",
+                "evidence_text": "pool wait time preceded latency",
+            },
+        ],
+    }
+    before_extraction = node_count(port)
+    imported = client.put_extraction(extraction)
+    extraction_ids = imported.data["external_to_node_id"]
+    results["atomic_extraction"] = (
+        imported.status == 201
+        and imported.data["atomic"] is True
+        and len(imported.data["inserted_node_ids"]) == 3
+        and len(imported.data["inserted_edge_ids"]) == 2
+        and node_count(port) == before_extraction + 3
+    )
+    replayed_extraction = client.put_extraction(extraction)
+    results["extraction_durable_replay"] = (
+        replayed_extraction.status == 200
+        and replayed_extraction.data["idempotent_replay"] is True
+        and replayed_extraction.data["inserted_node_ids"] == []
+        and replayed_extraction.data["inserted_edge_ids"] == []
+        and node_count(port) == before_extraction + 3
+    )
+
+    changed_extraction = json.loads(json.dumps(extraction))
+    changed_extraction["nodes"][0]["content"] = "changed replay content"
+    try:
+        client.put_extraction(changed_extraction)
+        extraction_conflict = False
+    except GrapheneDBError as exc:
+        extraction_conflict = exc.status == 409
+    results["extraction_conflict"] = (
+        extraction_conflict and node_count(port) == before_extraction + 3
+    )
+
+    before_invalid_extraction = node_count(port)
+    status, invalid_extraction, _ = http_request(
+        port,
+        "POST",
+        "/v1/extractions",
+        {
+            "source_id": "pilot-invalid-atomic",
+            "nodes": [
+                {
+                    "external_id": "would-have-been-inserted",
+                    "content": "must roll back",
+                }
+            ],
+            "relations": [
+                {
+                    "from_external_id": "would-have-been-inserted",
+                    "to_external_id": "missing",
+                    "role": "causal",
+                }
+            ],
+        },
+    )
+    results["extraction_atomic_rollback"] = (
+        status == 400
+        and invalid_extraction["atomic"] is True
+        and node_count(port) == before_invalid_extraction
+    )
+
+    oversized_extraction = {
+        "source_id": "pilot-oversized",
+        "nodes": [
+            {"external_id": f"node-{index}", "content": "bounded"}
+            for index in range(51)
+        ],
+    }
+    status, bounded_extraction, _ = http_request(
+        port, "POST", "/v1/extractions", oversized_extraction
+    )
+    results["extraction_bound"] = (
+        status == 400
+        and "configured maximum of 50" in bounded_extraction["detail"]
+        and node_count(port) == before_invalid_extraction
+    )
+
+    extracted_reasoning = client.reason_dialectic(
+        "checkout latency increased",
+        signature=33,
+        mode="empirical",
+        semantic_candidates=1,
+        max_hops=2,
+    )
+    final_bundle = (
+        extracted_reasoning.data["reopened_bundle"]
+        if extracted_reasoning.data["has_reopened_bundle"]
+        else extracted_reasoning.data["initial_bundle"]
+    )
+    returned_roots = {root["root_node"] for root in final_bundle["roots"]}
+    expected_roots = {
+        extraction_ids["root/cache"],
+        extraction_ids["root/pool"],
+    }
+    results["extraction_enables_multi_root_reasoning"] = (
+        expected_roots.issubset(returned_roots)
+        and all(root["provenance_risk"] == 0 for root in final_bundle["roots"])
+    )
+
+    before_reasoning = node_count(port)
+    reasoned = client.reason_dialectic(
+        "why is checkout slow?",
+        mode="empirical",
+        max_hops=999,
+        max_paths=9999,
+        max_visited_states=9999999,
+    )
+    results["dialectic_read_only"] = (
+        reasoned.status == 200
+        and reasoned.data["durable_writes"] is False
+        and reasoned.data["initial_bundle"]["visited_states"] <= 200000
+        and reasoned.data["synthesis"]["epistemic_status"]
+        in {"abstain", "contested", "provisional", "supported"}
+        and node_count(port) == before_reasoning
+    )
+    status, invalid_mode, _ = http_request(
+        port,
+        "POST",
+        "/v1/reason/dialectic",
+        {"query": "bounded request", "mode": "invalid"},
+    )
+    results["dialectic_mode_validation"] = (
+        status == 400 and "error" in invalid_mode
+    )
 
     # Strict HTTP framing rejects ambiguous or unsupported requests.
     no_length = raw_request(port, (
@@ -201,10 +374,18 @@ try:
     for index in range(4):
         client.put_fact(
             f"temporal fact {index}",
-            metadata={"valid_from": "2026-01-01", "valid_until": "2027-01-01"},
+            metadata={
+                "valid_from": "2026-01-01T00:00:00Z",
+                "valid_until": "2027-01-01T00:00:00Z",
+            },
             idempotency_key=f"temporal-{index}",
         )
-    status, temporal, _ = http_request(port, "POST", "/v1/retrieve/temporal", {"as_of": "2026-06-01", "limit": 2})
+    status, temporal, _ = http_request(
+        port,
+        "POST",
+        "/v1/retrieve/temporal",
+        {"as_of": "2026-06-01T00:00:00Z", "limit": 2},
+    )
     results["temporal_results_bounded"] = status == 200 and temporal["returned"] == 2 and len(temporal["results"]) == 2
 
     # SIGTERM drains workers, checkpoints, and leaves a zero-byte WAL.
