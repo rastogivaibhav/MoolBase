@@ -26,12 +26,29 @@ struct QuerySeed {
   std::string service;
 };
 
+uint64_t mix64(uint64_t value) {
+  value += 0x9e3779b97f4a7c15ULL;
+  value = (value ^ (value >> 30u)) * 0xbf58476d1ce4e5b9ULL;
+  value = (value ^ (value >> 27u)) * 0x94d049bb133111ebULL;
+  return value ^ (value >> 31u);
+}
+
+float signed_unit(uint64_t value) {
+  constexpr double kScale = 1.0 / static_cast<double>(UINT32_MAX);
+  return static_cast<float>(2.0 * static_cast<double>(value & UINT32_MAX) * kScale - 1.0);
+}
+
 std::vector<float> make_vec(uint32_t dim, uint32_t family, uint32_t slot) {
   std::vector<float> out(dim);
-  const float base = static_cast<float>((family % 700u) + 1u) * 0.0017f;
-  const float slot_shift = static_cast<float>(slot) * 0.00027f;
   for (uint32_t i = 0; i < dim; ++i) {
-    out[i] = base + slot_shift + static_cast<float>((i + 1u) * ((family % 17u) + 3u)) * 0.00005f;
+    const uint64_t coordinate = static_cast<uint64_t>(i) * 0xd6e8feb86659fd93ULL;
+    const float incident_component =
+        signed_unit(mix64(static_cast<uint64_t>(family) ^ coordinate));
+    const float slot_component =
+        signed_unit(mix64(static_cast<uint64_t>(family) ^
+                          (static_cast<uint64_t>(slot) + 1u) * 0xa0761d6478bd642fULL ^
+                          coordinate));
+    out[i] = incident_component + 0.03f * slot_component;
   }
   return out;
 }

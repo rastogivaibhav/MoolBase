@@ -12,6 +12,9 @@ param(
   [double]$Soak24Rps = 80,
   [double]$Soak72Rps = 80,
   [int]$StatsIntervalSeconds = 3600,
+  [string]$ContainerPrefix = "graphenedb-soak",
+  [string]$MemoryLimit = "2g",
+  [bool]$Sequential = $true,
   [switch]$RebuildImage,
   [switch]$RegisterResumeTasks
 )
@@ -85,10 +88,15 @@ try {
         --cap-drop ALL `
         --security-opt no-new-privileges:true `
         --pids-limit 256 `
-        --memory 2g `
+        --memory $MemoryLimit `
         --cpus 2.0 `
         $ImageTag | Out-Null
     } else {
+      $expectedImage = (& docker image inspect --format '{{.Id}}' $ImageTag).Trim()
+      $actualImage = (& docker inspect --format '{{.Image}}' $name).Trim()
+      if ($actualImage -ne $expectedImage) {
+        throw "Container $name uses $actualImage, but $ImageTag resolves to $expectedImage. Use a fresh -ContainerPrefix or replace the container explicitly."
+      }
       $status = (& docker inspect --format '{{.State.Status}}' $name).Trim()
       if ($status -ne "running") {
         & docker start $name | Out-Null
@@ -134,8 +142,8 @@ try {
         target_seconds = $Soak24Seconds
         clients = $Soak24Clients
         target_rps = $Soak24Rps
-        container_name = "graphenedb-soak-24h"
-        volume_name = "graphenedb-soak-24h-data"
+        container_name = "$ContainerPrefix-24h"
+        volume_name = "$ContainerPrefix-24h-data"
       },
       @{
         job_name = "72h"
@@ -143,8 +151,8 @@ try {
         target_seconds = $Soak72Seconds
         clients = $Soak72Clients
         target_rps = $Soak72Rps
-        container_name = "graphenedb-soak-72h"
-        volume_name = "graphenedb-soak-72h-data"
+        container_name = "$ContainerPrefix-72h"
+        volume_name = "$ContainerPrefix-72h-data"
       }
     )) {
       $reportDir = Join-Path $ReportRoot $cfg.job_name
@@ -168,9 +176,11 @@ try {
     }
 
     return [ordered]@{
-      version = 1
+      version = 2
       image_tag = $ImageTag
-      api_key = $ApiKey
+      container_prefix = $ContainerPrefix
+      memory_limit = $MemoryLimit
+      sequential = $Sequential
       stats_interval_seconds = $StatsIntervalSeconds
       created_at_utc = $now.ToString("o")
       jobs = $jobs
@@ -209,21 +219,23 @@ try {
       return
     }
 
-    $contribution = 0
-    if ($active.PSObject.Properties.Name -contains "elapsed_seconds" -and $active.elapsed_seconds) {
-      $contribution = [int]$active.elapsed_seconds
-    } else {
-      $started = [DateTime]::Parse($active.started_at_utc).ToUniversalTime()
-      $contribution = [int][Math]::Min(
-        [double]$active.planned_seconds,
-        [Math]::Max(1, (Get-NowUtc).Subtract($started).TotalSeconds)
-      )
+    $resultOk = $false
+    if ($active.status -eq "completed" -and (Test-Path $active.json_path)) {
+      $result = Read-JsonFile $active.json_path
+      $resultOk = $null -ne $result -and $result.ok -eq $true
     }
-
-    $Job.accumulated_seconds = [Math]::Min([int]$Job.target_seconds, [int]$Job.accumulated_seconds + $contribution)
-    $Job.latest_segment_status = $active.status
-    if ($active.status -eq "failed") {
+    if ($resultOk) {
+      $contribution = [Math]::Min([int]$active.planned_seconds, [int]$active.elapsed_seconds)
+      $Job.accumulated_seconds = [Math]::Min(
+        [int]$Job.target_seconds,
+        [int]$Job.accumulated_seconds + $contribution
+      )
+      $Job.latest_segment_status = "completed"
+    } elseif ($active.status -eq "failed" -or $active.status -eq "completed") {
+      $Job.latest_segment_status = "failed"
       $Job.failed = $true
+    } else {
+      $Job.latest_segment_status = "interrupted"
     }
 
     $archiveDir = Join-Path $Job.report_dir "segments"
@@ -305,6 +317,8 @@ try {
         "-ApiKey", $ApiKey,
         "-ContainerName", $Job.container_name,
         "-Seconds", $remaining,
+        "-Clients", $Job.clients,
+        "-TargetRps", $Job.target_rps,
         "-ReportDir", $Job.report_dir
       ) `
       -WorkingDirectory $Root `
@@ -333,6 +347,13 @@ try {
   Ensure-Image -State $state
 
   foreach ($jobName in @("24h", "72h")) {
+    if (
+      $Sequential -and
+      $jobName -eq "72h" -and
+      (-not $state.jobs."24h".completed -or $state.jobs."24h".failed)
+    ) {
+      continue
+    }
     $job = $state.jobs.$jobName
     Reconcile-ActiveSegment -Job $job
     Ensure-SoakSegment -Job $job

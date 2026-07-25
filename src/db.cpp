@@ -300,6 +300,7 @@ struct GrapheneDB::Impl {
   std::unordered_map<uint32_t, std::vector<uint32_t>> out_edges;
   std::unordered_map<uint64_t, std::vector<uint32_t>> planes;
   std::unordered_map<std::string, std::vector<uint32_t>> metadata_index;
+  std::unordered_map<std::string, std::vector<uint32_t>> relation_index;
   std::unordered_map<LatticeCoord, uint32_t, LatticeCoordHash> lattice_nodes;
   std::unordered_map<uint32_t, std::vector<uint32_t>> lattice_edges;
 
@@ -443,6 +444,10 @@ struct GrapheneDB::Impl {
     edges[e.id] = e;
     out_edges[e.from].push_back(e.id);
     in_edges[e.to].push_back(e.id);
+    const auto relation = e.metadata.find("graphene_relation_key");
+    if (relation != e.metadata.end()) {
+      relation_index[relation->second].push_back(e.id);
+    }
     if (is_lattice_bond(e.bond_type)) {
       lattice_edges[e.from].push_back(e.id);
       lattice_edges[e.to].push_back(e.id);
@@ -874,7 +879,7 @@ struct GrapheneDB::Impl {
   }
 
   void rebuild_indexes() {
-    in_edges.clear(); out_edges.clear(); planes.clear(); metadata_index.clear(); lattice_nodes.clear(); lattice_edges.clear();
+    in_edges.clear(); out_edges.clear(); planes.clear(); metadata_index.clear(); relation_index.clear(); lattice_nodes.clear(); lattice_edges.clear();
     vector_index = make_vector_index();
     live_node_count = 0; live_edge_count = 0;
     next_node_id = 0; next_edge_id = 0; version = std::max<uint64_t>(version, 1);
@@ -909,6 +914,10 @@ struct GrapheneDB::Impl {
       if (e.deleted_version != kInfVersion) version = std::max(version, e.deleted_version + 1);
       out_edges[e.from].push_back(e.id);
       in_edges[e.to].push_back(e.id);
+      const auto relation = e.metadata.find("graphene_relation_key");
+      if (relation != e.metadata.end()) {
+        relation_index[relation->second].push_back(e.id);
+      }
       if (visible_edge(e, nodes, current_snap)) {
         ++live_edge_count;
         if (is_lattice_bond(e.bond_type)) {
@@ -1847,12 +1856,14 @@ Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult
         continue;
       }
       const Edge* existing_relation = nullptr;
-      for (const auto& e : impl_->edges) {
-        if (!visible_edge(e, impl_->nodes, snap)) continue;
-        auto it = e.metadata.find("graphene_relation_key");
-        if (it != e.metadata.end() && it->second == relation_key) {
-          existing_relation = &e;
-          break;
+      const auto relation_it = impl_->relation_index.find(relation_key);
+      if (relation_it != impl_->relation_index.end()) {
+        for (uint32_t edge_id : relation_it->second) {
+          if (edge_id < impl_->edges.size() &&
+              visible_edge(impl_->edges[edge_id], impl_->nodes, snap)) {
+            existing_relation = &impl_->edges[edge_id];
+            break;
+          }
         }
       }
       if (existing_relation) {

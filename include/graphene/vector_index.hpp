@@ -33,8 +33,12 @@ public:
 
   std::vector<SearchResult> search(const std::vector<float>& query, size_t k) const override {
     if (query.size() != dimension_ || k == 0) return {};
+    auto better = [](const SearchResult& lhs, const SearchResult& rhs) {
+      if (lhs.score != rhs.score) return lhs.score > rhs.score;
+      return lhs.node_id < rhs.node_id;
+    };
     std::vector<SearchResult> scored;
-    scored.reserve(vectors_.size());
+    scored.reserve(std::min(k, vectors_.size()));
     for (const auto& kv : vectors_) {
       double dot = 0.0, nq = 0.0, nv = 0.0;
       for (size_t i = 0; i < query.size(); ++i) {
@@ -42,11 +46,18 @@ public:
         nq += static_cast<double>(query[i]) * query[i];
         nv += static_cast<double>(kv.second[i]) * kv.second[i];
       }
-      if (nq > 0.0 && nv > 0.0) scored.push_back({kv.first, dot / (std::sqrt(nq) * std::sqrt(nv))});
+      if (nq <= 0.0 || nv <= 0.0) continue;
+      SearchResult candidate{kv.first, dot / (std::sqrt(nq) * std::sqrt(nv))};
+      if (scored.size() < k) {
+        scored.push_back(candidate);
+        std::push_heap(scored.begin(), scored.end(), better);
+      } else if (better(candidate, scored.front())) {
+        std::pop_heap(scored.begin(), scored.end(), better);
+        scored.back() = candidate;
+        std::push_heap(scored.begin(), scored.end(), better);
+      }
     }
-    const size_t kk = std::min(k, scored.size());
-    std::partial_sort(scored.begin(), scored.begin() + kk, scored.end(), [](const auto& a, const auto& b) { return a.score > b.score; });
-    scored.resize(kk);
+    std::sort(scored.begin(), scored.end(), better);
     return scored;
   }
 

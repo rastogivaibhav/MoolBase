@@ -6,6 +6,8 @@ param(
   [Parameter(Mandatory = $true)][string]$ApiKey,
   [Parameter(Mandatory = $true)][string]$ContainerName,
   [Parameter(Mandatory = $true)][int]$Seconds,
+  [Parameter(Mandatory = $true)][int]$Clients,
+  [Parameter(Mandatory = $true)][double]$TargetRps,
   [Parameter(Mandatory = $true)][string]$ReportDir
 )
 
@@ -56,6 +58,8 @@ $arguments = @(
   "--api-key", $ApiKey,
   "--container-name", $ContainerName,
   "--seconds", $Seconds,
+  "--clients", $Clients,
+  "--target-rps", $TargetRps,
   "--output", $jsonPath
 )
 

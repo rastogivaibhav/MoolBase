@@ -1,7 +1,7 @@
 # GrapheneDB server image for controlled pilots.
-# Pin BUILD_IMAGE/RUNTIME_IMAGE to organisation-approved immutable digests in release CI.
-ARG BUILD_IMAGE=debian:bookworm-slim
-ARG RUNTIME_IMAGE=debian:bookworm-slim
+# The build base is pinned. The shipped runtime is scratch plus only the
+# dynamic libraries required by the two GrapheneDB executables.
+ARG BUILD_IMAGE=debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
 
 FROM ${BUILD_IMAGE} AS build
 RUN apt-get update \
@@ -17,18 +17,30 @@ RUN cmake -S . -B build \
       -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIE" \
       -DCMAKE_EXE_LINKER_FLAGS="-pie -Wl,-z,relro,-z,now" \
  && cmake --build build --target graphenedb_server graphenedb_healthcheck -j2 \
- && strip build/graphenedb_server build/graphenedb_healthcheck
+ && strip build/graphenedb_server build/graphenedb_healthcheck \
+ && mkdir -p \
+      /runtime/etc \
+      /runtime/lib/x86_64-linux-gnu \
+      /runtime/lib64 \
+      /runtime/usr/local/bin \
+      /runtime/var/lib/graphenedb \
+ && install -m 0755 build/graphenedb_server /runtime/usr/local/bin/graphenedb_server \
+ && install -m 0755 build/graphenedb_healthcheck /runtime/usr/local/bin/graphenedb_healthcheck \
+ && cp -L /lib/x86_64-linux-gnu/libstdc++.so.6 /runtime/lib/x86_64-linux-gnu/ \
+ && cp -L /lib/x86_64-linux-gnu/libm.so.6 /runtime/lib/x86_64-linux-gnu/ \
+ && cp -L /lib/x86_64-linux-gnu/libgcc_s.so.1 /runtime/lib/x86_64-linux-gnu/ \
+ && cp -L /lib/x86_64-linux-gnu/libc.so.6 /runtime/lib/x86_64-linux-gnu/ \
+ && cp -L /lib64/ld-linux-x86-64.so.2 /runtime/lib64/ \
+ && printf '%s\n' 'graphenedb:x:10001:10001:GrapheneDB:/var/lib/graphenedb:/sbin/nologin' \
+      > /runtime/etc/passwd \
+ && printf '%s\n' 'graphenedb:x:10001:' > /runtime/etc/group \
+ && chown -R 10001:10001 /runtime/var/lib/graphenedb
 
-FROM ${RUNTIME_IMAGE}
+FROM scratch
 LABEL org.opencontainers.image.title="GrapheneDB Server" \
       org.opencontainers.image.description="Physical hex-lattice AI memory database server" \
       org.opencontainers.image.licenses="Apache-2.0"
-RUN groupadd --system --gid 10001 graphenedb \
- && useradd --system --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin graphenedb \
- && mkdir -p /var/lib/graphenedb \
- && chown 10001:10001 /var/lib/graphenedb
-COPY --from=build --chown=0:0 /src/build/graphenedb_server /usr/local/bin/graphenedb_server
-COPY --from=build --chown=0:0 /src/build/graphenedb_healthcheck /usr/local/bin/graphenedb_healthcheck
+COPY --from=build /runtime/ /
 USER 10001:10001
 WORKDIR /var/lib/graphenedb
 VOLUME ["/var/lib/graphenedb"]

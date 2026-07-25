@@ -36,7 +36,7 @@ try {
     $timestamp = [DateTime]::UtcNow.ToString("o")
     $inspectState = ""
     try {
-      $inspectState = (& docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}' $ContainerName 2>$null).Trim()
+      $inspectState = (& docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|oom={{.State.OOMKilled}}|exit={{.State.ExitCode}}|restarts={{.RestartCount}}' $ContainerName 2>$null).Trim()
     } catch {
       $inspectState = "missing|"
     }
