@@ -1,0 +1,91 @@
+--- /tmp/hardened_base/src/recursive_model_world.cpp
++++ src/recursive_model_world.cpp
+@@ -121,46 +121,44 @@
+-  if (yes_no && q.find(" both ") != std::string::npos) {
++  if (yes_no) {
+     out.question_type = "yes_no";
+-    std::map<std::string, const TextAtom*> positive_by_source;
+-    std::map<std::string, const TextAtom*> negative_by_source;
++    std::map<std::string, const TextAtom*> relevant_by_source;
++    std::set<std::string> location_values;
++    std::string target_location;
++    const std::regex query_location(R"((?:located|based|headquartered)?\s*in\s+([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,3})\??$)", std::regex::icase);
++    if (auto value = first_regex_group(query, query_location)) target_location = lower_copy(*value);
++    const std::regex fact_location(R"((?:located|based|headquartered)\s+in\s+([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,3}))");
+     for (const auto& atom : atoms) {
+-      const auto text = lower_copy(atom_payload(atom));
++      const auto payload = atom_payload(atom);
+       const auto group = atom_title(atom);
+-      const int overlap = overlap_score(text, query_tokens);
+-      if (overlap == 0) continue;
+-      const bool negative = text.find(" not ") != std::string::npos ||
+-                            text.find(" never ") != std::string::npos ||
+-                            text.find(" outside ") != std::string::npos ||
+-                            text.find(" neither ") != std::string::npos;
+-      if (negative) negative_by_source.emplace(group, &atom);
+-      else positive_by_source.emplace(group, &atom);
+-    }
+-    if (!negative_by_source.empty()) {
+-      out.answer = "no";
+-      for (const auto& [source, atom] : negative_by_source) {
+-        (void)source; append_minimum_evidence(&out.evidence_atom_ids, atom->id);
++      auto loc = first_regex_group(payload, fact_location);
++      if (loc) {
++        location_values.insert(lower_copy(*loc));
++        relevant_by_source[group] = &atom;
+       }
+-      out.confidence = 0.86;
+-      out.query_compatible = true;
+-      out.sufficiently_supported = !out.evidence_atom_ids.empty();
+-      out.contradictory_evidence = !positive_by_source.empty();
+-      return out;
+     }
+-    if (positive_by_source.size() >= 2) {
+-      out.answer = "yes";
+-      for (const auto& [source, atom] : positive_by_source) {
+-        (void)source; append_minimum_evidence(&out.evidence_atom_ids, atom->id);
++    if (!target_location.empty() && !relevant_by_source.empty()) {
++      size_t matches = 0;
++      for (const auto& [source, atom] : relevant_by_source) {
++        (void)source;
++        const auto payload = lower_copy(atom_payload(*atom));
++        if (payload.find(target_location) != std::string::npos) ++matches;
++        append_minimum_evidence(&out.evidence_atom_ids, atom->id);
+       }
+-      out.confidence = 0.84;
++      const bool asks_both = q.find(" both ") != std::string::npos;
++      out.answer = (asks_both ? matches >= 2 : matches >= 1) ? "yes" : "no";
+       out.query_compatible = true;
+-      out.sufficiently_supported = out.evidence_atom_ids.size() == 2;
++      out.sufficiently_supported = asks_both ? relevant_by_source.size() >= 2 : !relevant_by_source.empty();
++      out.contradictory_evidence = location_values.size() > relevant_by_source.size() ||
++                                   (!asks_both && location_values.size() > 1);
++      out.confidence = out.contradictory_evidence ? 0.60 : 0.88;
+       return out;
+     }
+   }
+@@
+-  if (q.rfind("who ", 0) == 0 && q.find(" appoint") != std::string::npos) {
++  if ((q.rfind("who ", 0) == 0 || q.rfind("which person ", 0) == 0) &&
++      (q.find(" appoint") != std::string::npos || q.find(" served as ") != std::string::npos)) {
+@@
+-                              text.find("transmit") != std::string::npos)) responsibility = &atom;
++                              text.find("transmit") != std::string::npos ||
++                              text.find("headquartered") != std::string::npos ||
++                              text.find("based in") != std::string::npos)) responsibility = &atom;
+@@
+-  if (q.find("in common") != std::string::npos || q.find("have in common") != std::string::npos) {
++  if (q.find("in common") != std::string::npos || q.find("have in common") != std::string::npos ||
++      q.find("shared by") != std::string::npos || q.find(" are ") != std::string::npos && q.find(" both") != std::string::npos) {
+@@
+-        "song", "album", "newspaper", "magazine", "podcast"};
++        "song", "album", "newspaper", "magazine", "podcast", "radio programme",
++        "documentary film"};
+@@
+-  if (q.rfind("how many ", 0) == 0 || q.rfind("how much ", 0) == 0) {
++  if (q.rfind("how many ", 0) == 0 || q.rfind("how much ", 0) == 0 ||
++      q.find(" count ") != std::string::npos || q.find(" count of ") != std::string::npos) {
+@@
+-  if (q.rfind("where ", 0) == 0) {
++  if (q.rfind("where ", 0) == 0 || q.rfind("in which city ", 0) == 0 ||
++      q.find("what city") != std::string::npos) {
