@@ -1,0 +1,20 @@
+{
+  "benchmark": "HypoKosh frozen synthetic unseen operator stress suite",
+  "seed": 20260727,
+  "cases": 100,
+  "official_hotpotqa": false,
+  "answer_em": 0.89,
+  "answer_f1": 0.8966666666666667,
+  "resolution_gate_accuracy": 1.0,
+  "no_silent_promotion_rate": 1.0,
+  "mean_latency_seconds": 0.0022449171799928534,
+  "by_type": {
+    "bridge": {"n": 20, "answer_em": 1.0, "answer_f1": 1.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0},
+    "contradiction": {"n": 10, "answer_em": 0.0, "answer_f1": 0.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 0.0},
+    "date": {"n": 15, "answer_em": 1.0, "answer_f1": 1.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0},
+    "location": {"n": 10, "answer_em": 1.0, "answer_f1": 1.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0},
+    "numeric": {"n": 10, "answer_em": 1.0, "answer_f1": 1.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0},
+    "shared_property": {"n": 20, "answer_em": 0.95, "answer_f1": 0.9833333333333334, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0},
+    "yes_no": {"n": 15, "answer_em": 1.0, "answer_f1": 1.0, "resolution_gate_accuracy": 1.0, "resolved_rate": 1.0}
+  }
+}
