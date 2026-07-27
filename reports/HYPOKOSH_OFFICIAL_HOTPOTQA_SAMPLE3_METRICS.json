@@ -1,0 +1,33 @@
+{
+  "benchmark": "Official HotpotQA dev sample sourced from MultiQA sample artifact",
+  "sample_size": 3,
+  "setting": "oracle supporting context only",
+  "source_repository": "alontalmor/MultiQA",
+  "source_commit": "7115eea27d3c0473c0c709b03b5c33884c912fd8",
+  "source_path": "samples/hotpotqa_sample.jsonl",
+  "answer_exact_match": 0.0,
+  "no_silent_promotion_rate": 1.0,
+  "results": [
+    {
+      "id": "5a7bbb64554299042af8f7cc",
+      "gold_answer": "Terry Richardson",
+      "resolution_status": "RESOLVED",
+      "exact_match": false,
+      "failure": "reasoning path returned instead of comparative answer"
+    },
+    {
+      "id": "5a8db19d5542994ba4e3dd00",
+      "gold_answer": "yes",
+      "resolution_status": "RESOLVED",
+      "exact_match": false,
+      "failure": "evidence path returned instead of yes/no answer"
+    },
+    {
+      "id": "5a8c7595554299585d9e36b6",
+      "gold_answer": "Chief of Protocol",
+      "resolution_status": "HITL_REQUIRED",
+      "exact_match": false,
+      "failure": "open-domain entity bridge not completed"
+    }
+  ]
+}
