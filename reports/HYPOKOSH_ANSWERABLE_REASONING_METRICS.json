@@ -1,0 +1,63 @@
+{
+  "benchmark": "HotpotQA public dev explorer oracle-context pilot",
+  "official_leaderboard_run": false,
+  "dataset_examples": 3,
+  "context_setting": "two gold documents only; no distractor retrieval",
+  "implementation": "governed query-conditioned answer synthesis with minimum sufficient evidence and RESOLVED recalibration",
+  "before": {
+    "answer_em": 0.0,
+    "answer_f1": 0.0289469798,
+    "support_em": 0.3333333333,
+    "support_f1": 0.6190476190,
+    "joint_em": 0.0,
+    "joint_f1": 0.0080780147,
+    "no_silent_promotion_rate": 1.0
+  },
+  "after": {
+    "deterministic": {
+      "answer_em": 1.0,
+      "answer_f1": 1.0,
+      "support_em": 0.6666666667,
+      "support_f1": 0.8333333333,
+      "joint_em": 0.6666666667,
+      "joint_f1": 0.8333333333,
+      "resolved_rate": 1.0,
+      "no_silent_promotion_rate": 1.0,
+      "cases": [
+        {
+          "id": "5a8e0dbd554299068b959e3e",
+          "answer": "video game",
+          "resolution_status": "RESOLVED",
+          "supporting_facts": [["Hot Pixel", 0], ["PlayStation Portable", 3]]
+        },
+        {
+          "id": "5ae1b2b9554299422ee99684",
+          "answer": "Robert Digges Wimberly Connor",
+          "resolution_status": "RESOLVED",
+          "supporting_facts": [["Robert Digges Wimberly Connor", 0], ["National Archives and Records Administration", 1]]
+        },
+        {
+          "id": "5ac4a5de5542995c82c4ad6e",
+          "answer": "yes",
+          "resolution_status": "RESOLVED",
+          "supporting_facts": [["Pago Pago International Airport", 0], ["Hoonah Airport", 0]]
+        }
+      ]
+    },
+    "model_backed": {
+      "answer_em": 1.0,
+      "answer_f1": 1.0,
+      "support_em": 0.6666666667,
+      "support_f1": 0.8333333333,
+      "joint_em": 0.6666666667,
+      "joint_f1": 0.8333333333,
+      "resolved_rate": 1.0,
+      "no_silent_promotion_rate": 1.0
+    }
+  },
+  "validation": {
+    "graphenedb_cli_build": "passed",
+    "graphenedb_recursive_model_world_tests": "passed",
+    "full_all_target_build": "timed out while compiling unrelated stress targets; no changed-target compiler failure"
+  }
+}
