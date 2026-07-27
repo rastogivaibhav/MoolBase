@@ -1,0 +1,29 @@
+{
+  "generated_at_utc": "2026-07-27T10:15:09.616340+00:00",
+  "changes": [
+    "query-relevant yes/no negation handling",
+    "date answer operator",
+    "numeric answer operator",
+    "location answer operator",
+    "minimum evidence de-duplication",
+    "confidence and contradiction-aware RESOLVED gate",
+    "preserve existing domain-specific epistemic resolution when no governed answer operator applies"
+  ],
+  "ctest": {
+    "passed": 45,
+    "failed": 0,
+    "total": 45,
+    "elapsed_seconds": 14.88
+  },
+  "cases": [
+    {"id":"5a8e0dbd554299068b959e3e","kind":"hotpot_pilot","expected":"video game","answer":"video game","resolution_status":"RESOLVED","evidence_count":2,"no_silent_promotion":true,"pass":true},
+    {"id":"5ae1b2b9554299422ee99684","kind":"hotpot_pilot","expected":"Robert Digges Wimberly Connor","answer":"Robert Digges Wimberly Connor","resolution_status":"RESOLVED","evidence_count":2,"no_silent_promotion":true,"pass":true},
+    {"id":"5ac4a5de5542995c82c4ad6e","kind":"hotpot_pilot","expected":"yes","answer":"yes","resolution_status":"RESOLVED","evidence_count":2,"no_silent_promotion":true,"pass":true},
+    {"id":"date","kind":"operator_regression","expected":"March 14, 2022","answer":"March 14, 2022","resolution_status":"RESOLVED","evidence_count":1,"no_silent_promotion":true,"expected_resolved":true,"pass":true},
+    {"id":"numeric","kind":"operator_regression","expected":"18","answer":"18","resolution_status":"RESOLVED","evidence_count":1,"no_silent_promotion":true,"expected_resolved":true,"pass":true},
+    {"id":"location","kind":"operator_regression","expected":"Bristol","answer":"Bristol","resolution_status":"RESOLVED","evidence_count":1,"no_silent_promotion":true,"expected_resolved":true,"pass":true},
+    {"id":"negative_yes_no","kind":"operator_regression","expected":"no","answer":"no","resolution_status":"EVIDENCE_REQUIRED","evidence_count":1,"no_silent_promotion":true,"expected_resolved":false,"pass":true}
+  ],
+  "case_passed": 7,
+  "case_total": 7
+}
