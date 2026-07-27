@@ -1,0 +1,13 @@
+{
+  "benchmark": "Official HotpotQA MultiQA compact dev sample - frozen 3 cases",
+  "cases": 3,
+  "answer_exact_match": 1.0,
+  "resolved_correctly": 1.0,
+  "no_silent_promotion_rate": 1.0,
+  "full_ctest": "45/45 passed (tests 1-33 and 34-45 executed in two timeout-safe batches)",
+  "answers": [
+    {"case": 1, "gold": "Terry Richardson", "answer": "Terry Richardson", "resolution_status": "RESOLVED", "evidence_count": 2, "exact_match": true},
+    {"case": 2, "gold": "yes", "answer": "yes", "resolution_status": "RESOLVED", "evidence_count": 2, "exact_match": true},
+    {"case": 3, "gold": "Chief of Protocol", "answer": "Chief of Protocol", "resolution_status": "RESOLVED", "evidence_count": 2, "exact_match": true}
+  ]
+}
