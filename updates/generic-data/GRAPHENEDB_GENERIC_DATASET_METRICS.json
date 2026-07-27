@@ -1,0 +1,18 @@
+{
+  "cases": 8,
+  "exact_match": 8,
+  "full_pipeline": 8,
+  "canonical_pipeline": 8,
+  "mean_latency_ms": 4.346,
+  "results": [
+    {"name":"supply_jsonl","expected":"Leeds-Hub","answer":"Leeds-Hub","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":4.593},
+    {"name":"software_rdf","expected":"gcp-europe-west2","answer":"gcp-europe-west2","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":4.173},
+    {"name":"iot_tokens","expected":"overpressure","answer":"overpressure","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":4.447},
+    {"name":"finance_tsv","expected":"FY2026-Q3","answer":"FY2026-Q3","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":3.876},
+    {"name":"science_pipe","expected":"signal-450nm","answer":"signal-450nm","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":3.915},
+    {"name":"token_space","expected":"action","answer":"action","exact_match":true,"status":"resolved","rounds":3,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":5.043},
+    {"name":"health_jsonl","expected":"not-detected","answer":"not-detected","exact_match":true,"status":"resolved","rounds":3,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":4.777},
+    {"name":"manufacturing_rdf","expected":"v3.4.1","answer":"v3.4.1","exact_match":true,"status":"resolved","rounds":2,"full_pipeline_complete":true,"canonical_relation_pipeline_complete":true,"path_edges":4,"latency_ms":3.94}
+  ],
+  "regression": {"ctest_passed":45,"ctest_failed":0,"elapsed_seconds":28.42}
+}
