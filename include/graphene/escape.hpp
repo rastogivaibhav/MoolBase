@@ -17,6 +17,8 @@ enum class EscapeAction : uint8_t {
   SeekIndependentEvidence,
   GenerateFalsificationQuestion,
   GenerateMissingEvidenceQuery,
+  PruneRetrievalNoise,
+  VerifySemanticClaim,
   ExploreAnalogy,
   RequestHumanEvidence
 };
@@ -34,6 +36,7 @@ struct EscapePlan {
   uint32_t max_depth{2};
   std::chrono::milliseconds time_budget{500};
   bool requires_human_evidence{false};
+  bool generic_expansion_allowed{false};
 };
 
 class CorrectiveEscape {

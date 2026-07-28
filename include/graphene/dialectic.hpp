@@ -18,6 +18,20 @@ struct JointRequirement {
   bool all_sources_present{false};
 };
 
+enum class PathRoleHint : uint8_t {
+  Auto,
+  Support,
+  Opposition,
+  Noise
+};
+
+enum class SemanticVerificationStatus : uint8_t {
+  Unverified,
+  Verified,
+  Contradicted,
+  NotApplicable
+};
+
 struct DialecticPath {
   uint32_t root_node{0};
   uint32_t anchor_node{0};
@@ -30,6 +44,16 @@ struct DialecticPath {
   std::vector<EvidenceRef> evidence;
   std::vector<ProvenanceFinding> provenance_findings;
   std::vector<JointRequirement> joint_requirements;
+
+  // Path-verifier outputs. The graph expander defaults to an admissible but
+  // unverified path. A domain verifier or benchmark harness can tighten these
+  // values without changing the storage model.
+  double query_relevance{1.0};
+  double target_consistency{1.0};
+  double completeness{1.0};
+  PathRoleHint role_hint{PathRoleHint::Auto};
+  SemanticVerificationStatus semantic_verification{
+      SemanticVerificationStatus::Unverified};
 };
 
 struct RootBundle {
@@ -114,7 +138,7 @@ struct DialecticResult {
 };
 
 class DialecticEngine {
-public:
+ public:
   explicit DialecticEngine(const GrapheneDB& db);
 
   BundleSet expand(const std::vector<float>& query,
@@ -122,6 +146,9 @@ public:
                    const DialecticOptions& options = {},
                    uint64_t snapshot_version = kInfVersion) const;
 
+  // Legacy BundleSet methods remain for source compatibility. Complete
+  // HypoKosh runtime convergence is performed over FiberBundle v2 by the
+  // EpistemicController.
   ConvergedAnswer converge(const BundleSet& bundles,
                            const DialecticOptions& options = {}) const;
 
@@ -134,7 +161,7 @@ public:
                          const DialecticOptions& options = {},
                          uint64_t snapshot_version = kInfVersion) const;
 
-private:
+ private:
   const GrapheneDB& db_;
 };
 

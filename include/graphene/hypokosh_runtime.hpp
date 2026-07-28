@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphene/epistemic_control.hpp"
 #include "graphene/escape.hpp"
 #include "graphene/model_world.hpp"
 #include "graphene/self_healing.hpp"
@@ -37,10 +38,13 @@ struct ReasoningReceipt {
   uint32_t expansion_rounds{0};
   bool graphene_executed{false};
   bool fiber_bundle_built{false};
+  bool fiber_bundle_authoritative{false};
   bool stability_critic_executed{false};
+  bool epistemic_admissibility_executed{false};
   bool lyapunov_trajectory_executed{false};
   bool lyapunov_certificate_valid{false};
   bool lyapunov_goal_reached{false};
+  bool semantic_verification_required{true};
   bool escape_considered{false};
   bool convergence_executed{false};
   bool opposition_executed{false};
@@ -51,6 +55,7 @@ struct ReasoningReceipt {
 struct HypoKoshRuntimeResult {
   FiberBundle initial_bundle;
   StabilityAssessment initial_stability;
+  EpistemicAdmissibility initial_admissibility;
   EscapePlan initial_escape;
   ConvergedAnswer initial_convergence;
   OppositionReport initial_opposition;
@@ -58,6 +63,7 @@ struct HypoKoshRuntimeResult {
 
   FiberBundle final_bundle;
   StabilityAssessment final_stability;
+  EpistemicAdmissibility final_admissibility;
   ConvergedAnswer final_convergence;
   OppositionReport final_opposition;
   SelfHealingPlan final_self_healing;

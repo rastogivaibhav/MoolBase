@@ -9,37 +9,60 @@ EscapePlan CorrectiveEscape::plan(const FiberBundle& bundle,
                                   QueryMode mode) const {
   EscapePlan output;
   std::set<EscapeAction> added;
-  const uint32_t target = bundle.fibers.empty() ? 0 : bundle.fibers.front().target_node;
+  const uint32_t target =
+      bundle.fibers.empty() ? 0 : bundle.fibers.front().target_node;
   auto add = [&](EscapeAction action, const std::string& reason) {
-    if (added.insert(action).second) output.tasks.push_back({action, target, reason});
+    if (added.insert(action).second)
+      output.tasks.push_back({action, target, reason});
   };
 
-  if (assessment.path_diversity < 0.25 || assessment.pattern_lock_score > 0.55) {
-    add(EscapeAction::ExpandMinorityPath, "reopen paths hidden by dominant-pattern convergence");
-    add(EscapeAction::SeekIndependentEvidence, "seek evidence from a source-independent route");
+  if (assessment.retrieval_noise_penalty > 0.0) {
+    add(EscapeAction::PruneRetrievalNoise,
+        "quarantine irrelevant paths before any wider search");
   }
-  if (assessment.contradiction_score > 0.0) {
-    add(EscapeAction::SearchContradiction, "resolve or preserve the strongest contradiction");
-    add(EscapeAction::GenerateFalsificationQuestion, "define a test that discriminates competing explanations");
+  if (assessment.material_contradiction > 0.0) {
+    add(EscapeAction::SearchContradiction,
+        "seek discriminating evidence for the strongest material opposition");
+    add(EscapeAction::GenerateFalsificationQuestion,
+        "define a test that can resolve the competing explanations");
+  }
+  if (assessment.completeness_score < 0.75 ||
+      assessment.missing_evidence_penalty > 0.0) {
+    add(EscapeAction::GenerateMissingEvidenceQuery,
+        "retrieve the missing critical edge rather than widening all paths");
+  }
+  if (assessment.independent_support_score < 0.75) {
+    add(EscapeAction::SeekIndependentEvidence,
+        "search for a new evidence family with independent ancestry");
   }
   if (assessment.temporal_consistency < 1.0) {
-    add(EscapeAction::SearchTemporalNeighbour, "find evidence valid at the requested query time");
+    add(EscapeAction::SearchTemporalNeighbour,
+        "find evidence valid at the requested query time");
   }
-  if (assessment.missing_evidence_penalty > 0.0 || assessment.provenance_score < 0.75) {
-    add(EscapeAction::GenerateMissingEvidenceQuery, "identify the unsupported edge or missing source reference");
+  if (assessment.pattern_lock_score > 0.55 &&
+      assessment.retrieval_noise_penalty == 0.0) {
+    add(EscapeAction::ExpandMinorityPath,
+        "reopen a relevant minority explanation without rewarding noise");
   }
-  if (!assessment.lyapunov_goal_reached || assessment.lyapunov_energy > 0.25) {
-    add(EscapeAction::SeekIndependentEvidence,
-        "reduce Lyapunov energy by adding a source-independent path rather than reinforcing the current pattern");
+  if (assessment.requires_external_verification) {
+    add(EscapeAction::VerifySemanticClaim,
+        "obtain an external verifier result before final resolution");
   }
-  if (mode == QueryMode::Theoretical && assessment.path_diversity < 0.50) {
-    add(EscapeAction::ExploreAnalogy, "explore a labelled analogical bridge without promoting it to truth");
+  if (mode == QueryMode::Theoretical &&
+      assessment.path_diversity < 0.50) {
+    add(EscapeAction::ExploreAnalogy,
+        "explore a labelled analogy without treating it as empirical support");
   }
   if (assessment.requires_abstention || assessment.lyapunov_energy > 0.70) {
     add(EscapeAction::RequestHumanEvidence,
-        "available evidence remains outside the governed Lyapunov stability set");
+        "available evidence remains outside the governed admissibility set");
     output.requires_human_evidence = true;
   }
+
+  // Generic widening is a last resort only when no defect-specific task can be
+  // generated. This prevents the old behaviour where noise itself improved the
+  // stability score.
+  output.generic_expansion_allowed = output.tasks.empty();
   return output;
 }
 

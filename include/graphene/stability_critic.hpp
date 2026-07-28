@@ -10,23 +10,32 @@
 namespace graphene {
 
 struct StabilityWeights {
-  double temporal{0.20};
-  double diversity{0.15};
-  double degeneracy{0.15};
-  double provenance{0.20};
-  double contradiction{0.15};
-  double pattern_lock{0.10};
-  double missing_evidence{0.05};
+  double temporal{0.14};
+  double diversity{0.08};
+  double degeneracy{0.10};
+  double provenance{0.14};
+  double contradiction{0.16};
+  double pattern_lock{0.08};
+  double missing_evidence{0.08};
+  double relevance{0.08};
+  double target_consistency{0.06};
+  double completeness{0.08};
+  double retrieval_noise{0.08};
 };
 
 struct StabilityThresholds {
   double stable_score{0.62};
   double escape_score{0.48};
-  double opposition_score{0.20};
+  double opposition_score{0.15};
   double abstention_score{0.25};
   double lyapunov_stable_energy{0.08};
   double lyapunov_escape_energy{0.25};
   double lyapunov_abstention_energy{0.70};
+  double minimum_relevance{0.50};
+  double minimum_target_consistency{0.50};
+  double minimum_completeness{0.50};
+  double material_contradiction{0.15};
+  double maximum_noise{0.40};
 };
 
 struct StabilityAssessment {
@@ -37,10 +46,23 @@ struct StabilityAssessment {
   double contradiction_score{0.0};
   double pattern_lock_score{0.0};
   double missing_evidence_penalty{0.0};
+
+  // V2 epistemic coordinates. Defaults preserve compatibility for callers that
+  // construct synthetic StabilityAssessment values directly.
+  double relevance_score{1.0};
+  double target_consistency_score{1.0};
+  double completeness_score{1.0};
+  double independent_support_score{1.0};
+  double retrieval_noise_penalty{0.0};
+  double material_contradiction{0.0};
+
   double total_score{0.0};
   double lyapunov_energy{1.0};
   double lyapunov_state_norm{1.0};
   bool lyapunov_goal_reached{false};
+  bool evidence_admissible{false};
+  bool contradiction_blocks_resolution{false};
+  bool requires_external_verification{true};
   bool stable{false};
   bool requires_escape{false};
   bool requires_opposition{false};
@@ -56,17 +78,25 @@ struct LyapunovState {
   double contradiction_excess{0.0};
   double pattern_lock_excess{0.0};
   double missing_evidence_excess{0.0};
+  double relevance_deficit{0.0};
+  double target_consistency_deficit{0.0};
+  double completeness_deficit{0.0};
+  double retrieval_noise_excess{0.0};
   double norm_squared{0.0};
 };
 
 struct LyapunovWeights {
-  double temporal{0.20};
-  double diversity{0.12};
-  double degeneracy{0.13};
-  double provenance{0.20};
-  double contradiction{0.15};
-  double pattern_lock{0.12};
+  double temporal{0.12};
+  double diversity{0.06};
+  double degeneracy{0.08};
+  double provenance{0.12};
+  double contradiction{0.16};
+  double pattern_lock{0.08};
   double missing_evidence{0.08};
+  double relevance{0.08};
+  double target_consistency{0.06};
+  double completeness{0.08};
+  double retrieval_noise{0.08};
 };
 
 struct LyapunovTargets {
@@ -74,9 +104,13 @@ struct LyapunovTargets {
   double diversity_min{0.25};
   double degeneracy_min{0.50};
   double provenance_min{0.75};
-  double contradiction_max{0.20};
+  double contradiction_max{0.15};
   double pattern_lock_max{0.55};
   double missing_evidence_max{0.10};
+  double relevance_min{0.60};
+  double target_consistency_min{0.60};
+  double completeness_min{0.75};
+  double retrieval_noise_max{0.10};
   double equilibrium_energy{0.08};
   double descent_epsilon{0.005};
   double increase_epsilon{0.005};

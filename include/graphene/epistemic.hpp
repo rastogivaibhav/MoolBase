@@ -14,6 +14,13 @@ struct EvidenceRef {
   std::string source_id;
   std::string span;
   std::string observed_at;
+
+  // Optional v2 lineage identities. Older callers can continue supplying only
+  // source_id/span/observed_at. When evidence_family_id is absent the bundle
+  // builder conservatively falls back to source_id.
+  std::string evidence_family_id;
+  std::string derivation_id;
+  std::string content_hash;
 };
 
 struct ProvenanceFinding {
