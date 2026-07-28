@@ -12,6 +12,17 @@ on:
       - 'include/graphene/stability_critic.hpp'
       - 'src/fiber_bundle.cpp'
       - 'src/stability_critic*'
+  pull_request:
+    branches:
+      - release/full-source-developer-preview
+    paths:
+      - '.github/workflows/2wiki-lyapunov.yml'
+      - 'bench/bench_2wiki_lyapunov.cpp'
+      - 'benchmarks/2wiki/**'
+      - 'include/graphene/fiber_bundle.hpp'
+      - 'include/graphene/stability_critic.hpp'
+      - 'src/fiber_bundle.cpp'
+      - 'src/stability_critic*'
   workflow_dispatch:
     inputs:
       sample_size:
