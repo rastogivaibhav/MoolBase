@@ -15,6 +15,8 @@ enum class SafeRepairAction : uint8_t {
   DemoteUnsafeShortcut,
   SearchTemporalWindow,
   GenerateIndependentTest,
+  PruneRetrievalNoise,
+  VerifySemanticClaim,
   StopAndAbstain
 };
 
