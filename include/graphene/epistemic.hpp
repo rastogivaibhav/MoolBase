@@ -6,11 +6,26 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace graphene {
 
 struct EvidenceRef {
+  EvidenceRef() = default;
+  EvidenceRef(std::string source,
+              std::string evidence_span = {},
+              std::string observation_time = {},
+              std::string family = {},
+              std::string derivation = {},
+              std::string hash = {})
+      : source_id(std::move(source)),
+        span(std::move(evidence_span)),
+        observed_at(std::move(observation_time)),
+        evidence_family_id(std::move(family)),
+        derivation_id(std::move(derivation)),
+        content_hash(std::move(hash)) {}
+
   std::string source_id;
   std::string span;
   std::string observed_at;
