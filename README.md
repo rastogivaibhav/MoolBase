@@ -6,6 +6,12 @@ It stores versioned nodes, vectors, metadata, typed edges, source evidence, cont
 
 > Current status: developer preview / controlled pilot. This is not enterprise GA.
 
+## Important branch status
+
+The `codex/generic-data-tokenized` branch contains the latest generic/tokenised reasoning implementation as a committed unified source patch plus its frozen metrics, validation report, and operator/agent documentation. The tested full source snapshot is also available as the release handoff artifact associated with this work.
+
+The branch is not yet a fully materialised replacement of every file from that tested source snapshot. Before merging, apply and review `updates/generic-data/GRAPHENEDB_GENERIC_DATA_TOKENIZED.patch` against the preceding canonical-relation source line, then run the full build and CI suite. See `updates/generic-data/REMOTE_SOURCE_STATUS.md`.
+
 ## What is included
 
 - Embedded C++20 storage engine and CLI
@@ -91,6 +97,9 @@ Optional model-backed proposal experiments additionally use `scikit-learn` and `
 git clone https://github.com/rastogivaibhav/graphenedb_v1.git
 cd graphenedb_v1
 git checkout codex/generic-data-tokenized
+
+# Materialise the latest generic-data patch against the canonical-relation source line before building.
+# Review the patch paths and strip level in your working tree rather than applying it blindly.
 
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
