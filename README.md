@@ -1,176 +1,197 @@
-# GrapheneDB v1 RC4
+# GrapheneDB Developer Preview
 
-**GrapheneDB** is an experimental embedded **causal-memory database** for AI agents, coding assistants, incident-memory systems, and team-brain workflows.
+GrapheneDB is an experimental C++20 embedded, provenance-first causal/lattice-memory database for AI agents, incident investigation, data lineage, research-pack ingestion, and auditable enterprise reasoning.
 
-It is not trying to replace SQLite, Qdrant, or Neo4j. Its niche is narrower:
+It stores versioned nodes, vectors, metadata, typed edges, source evidence, contradiction and supersession signals, then returns a concise answer together with the exact evidence-backed reasoning path that produced it.
 
-> Store AI memory as versioned nodes, embeddings, metadata, and causal/contradiction/supersession edges, then retrieve an explainable evidence bundle rather than only a list of similar chunks.
+> Current status: developer preview / controlled pilot. This is not enterprise GA.
 
-## Status
+## What is included
 
-**Current maturity:** v1 RC4 / controlled pilot + developer-review candidate.
+- Embedded C++20 storage engine and CLI
+- Optional controlled-pilot HTTP server
+- Versioned memory nodes, vectors, metadata, causal and semantic edges
+- Checksummed WAL, replay, checkpointing, backup, compaction and stale-lock recovery
+- Graphene-inspired hexagonal lattice topology and lattice-aware retrieval
+- Text atomisation and canonical relation extraction
+- Domain-neutral structured relation ingestion
+- HypoKosh iterative path planning
+- Dialectic expansion, opposition and convergence
+- Governed answer projection with no-silent-promotion and evidence-required states
+- Answer, ordered reasoning path, source evidence and execution attestation
 
-RC4 builds on the RC3 productization pack and adds portability/core-debt improvements: platform abstraction, cleaner WAL frame construction, manifest-persisted txid, named retrieval tuning constants, cached live counts, std::popcount portability, and a VectorIndex seam.
+## Domain-neutral data
 
-It is not yet external enterprise GA. Remaining GA work is documented in [`docs/GA_READINESS_SCORECARD.md`](docs/GA_READINESS_SCORECARD.md).
+The reasoning layer is not limited to human relationships. It supports arbitrary typed predicates across business, scientific, software, telemetry, healthcare, manufacturing and tokenised datasets.
 
+Supported representations include:
 
-## Platform support
+- ordinary text
+- JSON and JSONL edge records
+- TSV and pipe-delimited triples
+- RDF/N-Triples-style subject-predicate-object records
+- token-tagged records using `SUBJ/REL/OBJ` or `S/P/O`
 
-| Platform | Status | Notes |
-|---|---|---|
-| Linux | Validated | Release build, CTest, examples, 100k stress, and ASAN/UBSAN selected gates passed in this environment. |
-| macOS | Expected | POSIX platform layer should apply; included in CI matrix, but not validated in this sandbox. |
-| Windows | Compile-target / smoke pending | RC4 adds a Windows platform layer and excludes POSIX-only process-kill tests. Windows was not locally compiled in this Linux sandbox. |
+A generic path request is represented as a start entity and an ordered relation path:
 
-See [`docs/PLATFORM_SUPPORT.md`](docs/PLATFORM_SUPPORT.md).
+```json
+{
+  "start": "portal-ui",
+  "relations": ["calls", "reads_from", "hosted_in"],
+  "terminal_type": "region"
+}
+```
 
-## What makes it different?
+A resolved response keeps the answer and path separate:
 
-| System | Primary primitive | Main answer |
-|---|---|---|
-| SQLite | table row | What exact data did I store? |
-| Qdrant-style vector DB | vector point + payload | What is semantically similar? |
-| Graph DB | node + relationship | How is data connected? |
-| GrapheneDB | memory node + vector + causal edge + versioned evidence path | What is relevant, connected, causal, current, and explainable? |
+```json
+{
+  "answer": "gcp-europe-west2",
+  "status": "resolved",
+  "reasoning_path": [
+    {"from":"portal-ui","relation":"calls","to":"catalog-api"},
+    {"from":"catalog-api","relation":"reads_from","to":"product-db"},
+    {"from":"product-db","relation":"hosted_in","to":"gcp-europe-west2"}
+  ],
+  "full_pipeline_complete": true,
+  "canonical_relation_pipeline_complete": true
+}
+```
 
-GrapheneDB's target result is a `MemoryBundle`:
+`full_pipeline_complete` is true only after the following stages execute:
 
 ```text
-semantic candidates
-+ signature-plane reduction
-+ causal path to root memory
-+ contradiction/supersession signals
-+ snapshot version
-+ confidence/reason codes
+input data
+  -> Graphene atomisation and canonical relation emission
+  -> Graphene model world
+  -> HypoKosh iterative controller and path planning
+  -> dialectic expansion
+  -> dialectic opposition
+  -> dialectic convergence
+  -> governed answer projection
+  -> answer + path + evidence + attestation
 ```
 
-## Core capabilities in this RC
+The system must not return an early answer that bypasses these stages.
 
-- C++20 embedded library
-- CLI tool
-- Fixed-dimension vector validation
-- Versioned memory nodes and edges
-- Edge roles: causal, contradicts, supports, supersedes, predictive, analogical, etc.
-- Query modes: empirical, balanced, theoretical
-- Vector search
-- Causal memory bundle retrieval
-- Metadata search API
-- Framed checksummed WAL
-- Committed-transaction replay
-- Torn-tail WAL handling
-- WAL rotation/checkpointing
-- Compaction
-- Backup
-- Stale lock recovery
-- Process-kill crash tests
-- Sanitizer gates
-- Coverage-guided fuzz smoke target
-- KoshDB/LLM-Kosh adapter skeleton and TSV interchange gate
+## Prerequisites
 
-## Quick start
+Recommended Linux setup:
+
+- CMake 3.20+
+- C++20 compiler: GCC 11+, Clang 14+, or equivalent
+- Python 3.10+ for harnesses and contract tests
+- Git
+
+Optional model-backed proposal experiments additionally use `scikit-learn` and `joblib`.
+
+## Build and test
 
 ```bash
-./scripts/build_release.sh
-./scripts/run_all_tests.sh
-./scripts/run_graphene_uniqueness_demo.sh
+git clone https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+git checkout codex/generic-data-tokenized
+
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGRAPHENEDB_BUILD_TESTS=ON \
+  -DGRAPHENEDB_BUILD_BENCH=OFF
+
+cmake --build build -j2
+ctest --test-dir build --output-on-failure
 ```
 
-Manual CMake:
+Focused reasoning verification:
 
 ```bash
-cmake --preset release
-cmake --build --preset release -j2
-ctest --preset release --output-on-failure
-./build-release/graphenedb_uniqueness_demo
+./build/graphenedb_recursive_model_world_tests ./testdata
 ```
 
-## CLI smoke example
+The latest verified local run passed all 45 configured CTest cases. The committed metrics and report are in:
+
+- `updates/generic-data/GRAPHENEDB_GENERIC_DATASET_METRICS.json`
+- `updates/generic-data/GRAPHENEDB_GENERIC_DATA_PIPELINE_REPORT.md`
+- `updates/generic-data/GRAPHENEDB_GENERIC_DATA_TOKENIZED.patch`
+
+## Embedded CLI smoke test
 
 ```bash
-./build-release/graphenedb_cli init /tmp/gdb-demo 3
-./build-release/graphenedb_cli put-node /tmp/gdb-demo 3 "root cause" 0.9,0.1,0.0 131074 root
-./build-release/graphenedb_cli put-node /tmp/gdb-demo 3 "checkout timeout" 0.1,0.9,0.0 131074 symptom
-./build-release/graphenedb_cli put-edge /tmp/gdb-demo 3 0 1 causal
-./build-release/graphenedb_cli search /tmp/gdb-demo 3 0.1,0.9,0.0 131074
+./build/graphenedb_cli init /tmp/gdb-demo 3
+./build/graphenedb_cli put-node /tmp/gdb-demo 3 "root cause" 0.9,0.1,0.0 131074 root
+./build/graphenedb_cli put-node /tmp/gdb-demo 3 "checkout timeout" 0.1,0.9,0.0 131074 symptom
+./build/graphenedb_cli put-edge /tmp/gdb-demo 3 0 1 causal
+./build/graphenedb_cli search /tmp/gdb-demo 3 0.1,0.9,0.0 131074
+./build/graphenedb_cli validate /tmp/gdb-demo 3
 ```
 
-## One-command validation scripts
+Automation-friendly commands support `--json`, including `inspect` and `validate`.
 
-| Script | Purpose |
-|---|---|
-| `scripts/build_release.sh` | Configure and build release artifacts. |
-| `scripts/run_all_tests.sh` | Build and run full CTest suite. |
-| `scripts/run_sanitizers.sh` | Run selected ASAN/UBSAN and TSAN gates. |
-| `scripts/run_100k_stress.sh` | Run 100k-class stress profile. |
-| `scripts/run_1m_stress.sh` | Run 1M-node storage stress profile. |
-| `scripts/run_crash_matrix.sh` | Run process-kill and recovery tests. |
-| `scripts/run_fuzz_smoke.sh` | Build and run LLVM libFuzzer smoke target. |
-| `scripts/run_examples.sh` | Run all API examples and demo programs. |
-| `scripts/run_graphene_uniqueness_demo.sh` | Run the vector vs graph vs Graphene demo. |
+## Reason over text
 
-## Key docs
-
-- [`docs/GRAPHENE_UNIQUENESS.md`](docs/GRAPHENE_UNIQUENESS.md)
-- [`docs/V1_RC_ACCEPTANCE_REPORT.md`](docs/V1_RC_ACCEPTANCE_REPORT.md)
-- [`docs/GA_READINESS_SCORECARD.md`](docs/GA_READINESS_SCORECARD.md)
-- [`docs/CLAUDE_HANDOFF_RECEIPT.md`](docs/CLAUDE_HANDOFF_RECEIPT.md)
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- [`docs/SAFETY_AND_LIMITATIONS.md`](docs/SAFETY_AND_LIMITATIONS.md)
-- [`docs/KOSHDB_ADAPTER_CONTRACT.md`](docs/KOSHDB_ADAPTER_CONTRACT.md)
-- [`docs/PLATFORM_SUPPORT.md`](docs/PLATFORM_SUPPORT.md)
-- [`docs/VECTOR_INDEX.md`](docs/VECTOR_INDEX.md)
-- [`docs/RC4_REVIEWER_RESPONSE_REPORT.md`](docs/RC4_REVIEWER_RESPONSE_REPORT.md)
-
-## API sketch
-
-```cpp
-#include "graphene/db.hpp"
-using namespace graphene;
-
-GrapheneDB db;
-DBOptions opt;
-opt.dimension = 768;
-db.open("./memory.graphenedb", opt);
-
-NodeInput n;
-n.content = "Checkout timeout after GCP ingress change";
-n.vector = embedding;
-n.signature = signature_for(2, 7);
-n.symptom = true;
-n.metadata = {{"type", "incident"}, {"service", "checkout"}};
-uint32_t node_id = 0;
-db.put_node(n, &node_id);
-
-auto bundle = db.causal_search(query_embedding, signature_for(2, 7), QueryMode::Empirical);
+```bash
+./build/graphenedb_cli reason-text testdata/holdout/dialogue_paraphrase.txt \
+  "Why was the external go-live deferred?" \
+  --max-rounds 6 \
+  --json
 ```
 
-More examples are in [`examples/`](examples/).
+The JSON response should be inspected for:
 
-## Current evidence snapshot
+- final answer and status
+- ordered reasoning path
+- source evidence
+- non-zero HypoKosh rounds
+- Graphene, HypoKosh and dialectic execution attestation
+- governed projection outcome
 
-RC4 evidence generated in this sandbox and retained in `reports/`:
+## Optional pilot HTTP server
 
-```text
-Release CTest: 10/10 passed
-Examples/demo: pass
-100k stress: pass
-ASAN/UBSAN selected gates: pass
-TSAN selected gates: not completed in this sandbox due build/link timeout
+```bash
+cmake -S . -B build-server \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGRAPHENEDB_BUILD_TESTS=ON \
+  -DGRAPHENEDB_BUILD_SERVER=ON \
+  -DGRAPHENEDB_BUILD_BENCH=OFF
+
+cmake --build build-server -j2 --target graphenedb_server
+export GRAPHENEDB_API_KEY=development-key
+./build-server/graphenedb_server /tmp/graphenedb 64 8080
 ```
 
-Earlier RC2/RC3 reports are also retained for 1M storage, process-kill, fuzz smoke, and soak evidence. RC4 adds portability/core-debt fixes and developer trust artifacts, not a claim of 24-hour enterprise GA certification.
+Discover the API with `GET /v1/version`. For any non-loopback deployment, place the server behind the documented TLS reverse proxy and follow the security guidance.
 
-## Known limitations
+## Repository orientation
 
-- No distributed mode.
-- No SQL.
-- No persistent secondary metadata index files yet; metadata indexes are rebuilt in memory from durable node records.
-- WAL retention is basic.
-- Fuzz and soak gates are smoke-level in this pack, not long-running certification.
-- KoshDB/LLM-Kosh integration is adapter-level and TSV interchange-based; live repo integration still needs the actual upstream repository/runtime.
-- Vector search has a `VectorIndex` seam and current `FlatVectorIndex` implementation; signature-plane routing reduces causal candidate sets, but HNSW/FAISS integration remains future work.
+- `include/graphene/` — public C and C++ headers
+- `src/` — storage, Graphene, HypoKosh, dialectic and governed reasoning implementation
+- `tools/graphenedb_cli.cpp` — CLI
+- `tools/graphenedb_server.cpp` — optional server
+- `tests/` — unit, durability, crash, lattice, extraction and reasoning tests
+- `bench/` — explicit benchmark programs
+- `scripts/` — build, stress, recovery, release and evidence workflows
+- `docs/` — architecture, storage, security and operator documentation
+- `updates/generic-data/` — generic/tokenised reasoning patch and validation evidence
+
+AI coding agents should read `AGENTS.md` first. Codex-specific guidance is in `CODEX.md`; Claude Code guidance is in `CLAUDE.md`.
+
+## Engineering constraints
+
+- Preserve durable-format compatibility and document storage-format changes.
+- Keep the embedded library authoritative; server endpoints must call tested core APIs.
+- Preserve no-silent-promotion, contradiction handling, temporal validity and abstention.
+- Retain the semantic reasoning path after projecting the concise answer.
+- Do not infer a factual edge from sentence adjacency alone.
+- Do not regress arbitrary predicates into a fixed human-relationship ontology.
+- Do not claim long soak, fuzz, target-scale or enterprise-GA evidence unless those gates were actually run and preserved.
+
+## Current limitations
+
+- No distributed mode or SQL interface
+- Developer preview rather than enterprise GA
+- Generic relation extraction remains deterministic and pattern-oriented for some unstructured inputs
+- Broader ontology mediation, entity resolution and confidence calibration remain roadmap work
+- Long-duration 24h/72h soak and target-host certification remain separate release gates
 
 ## License
 
-Current license is a placeholder. Replace `LICENSE` before public distribution.
+Review and replace the current placeholder licence before unrestricted public distribution.
