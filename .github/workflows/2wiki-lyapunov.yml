@@ -1,0 +1,97 @@
+name: 2Wiki Lyapunov Critic
+
+on:
+  push:
+    branches:
+      - benchmark/2wiki-lyapunov
+    paths:
+      - '.github/workflows/2wiki-lyapunov.yml'
+      - 'bench/bench_2wiki_lyapunov.cpp'
+      - 'benchmarks/2wiki/**'
+      - 'include/graphene/fiber_bundle.hpp'
+      - 'include/graphene/stability_critic.hpp'
+      - 'src/fiber_bundle.cpp'
+      - 'src/stability_critic*'
+  workflow_dispatch:
+    inputs:
+      sample_size:
+        description: Deterministic validation sample size
+        required: false
+        default: '1000'
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SAMPLE_SIZE: ${{ github.event.inputs.sample_size || '1000' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare build directory
+        run: mkdir -p build/2wiki reports/2wiki
+
+      - name: Fetch deterministic 2Wiki validation sample
+        run: |
+          python benchmarks/2wiki/prepare_2wiki.py \
+            --limit "$SAMPLE_SIZE" \
+            --output build/2wiki/2wiki_sample.tsv
+
+      - name: Compile actual FiberBundle and Lyapunov critic benchmark
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Iinclude \
+            bench/bench_2wiki_lyapunov.cpp \
+            src/fiber_bundle.cpp \
+            src/stability_critic.cpp \
+            -o build/2wiki/bench_2wiki_lyapunov
+
+      - name: Run 2Wiki evidence-corruption benchmark
+        run: |
+          build/2wiki/bench_2wiki_lyapunov \
+            build/2wiki/2wiki_sample.tsv \
+            reports/2wiki/results.csv
+
+      - name: Summarise diagnostics
+        run: |
+          python benchmarks/2wiki/summarise_lyapunov.py \
+            --input reports/2wiki/results.csv \
+            --json-output reports/2wiki/summary.json \
+            --markdown-output reports/2wiki/summary.md
+          cat reports/2wiki/summary.md
+
+      - name: Run existing direct Lyapunov test
+        run: |
+          cmake -S . -B build/critic-test \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF
+          cmake --build build/critic-test -j2 --target graphenedb_lyapunov_critic_tests
+          ctest --test-dir build/critic-test \
+            -R '^graphenedb_lyapunov_critic_tests$' \
+            --output-on-failure
+
+      - name: Copy dataset manifest
+        run: cp build/2wiki/2wiki_sample.manifest.json reports/2wiki/
+
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2wiki-lyapunov-${{ github.sha }}
+          path: |
+            build/2wiki/2wiki_sample.tsv
+            build/2wiki/2wiki_sample.manifest.json
+            reports/2wiki/results.csv
+            reports/2wiki/summary.json
+            reports/2wiki/summary.md
+          if-no-files-found: error
+          retention-days: 30
