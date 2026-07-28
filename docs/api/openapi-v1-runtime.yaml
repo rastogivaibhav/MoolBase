@@ -7,7 +7,7 @@ paths:
     post:
       summary: Run the complete bounded HypoKosh experimental runtime
       description: >-
-        Builds an immutable FiberBundle, evaluates StabilityCriticV0, plans
+        Builds an immutable FiberBundle, evaluates the discrete Lyapunov critic, plans
         corrective escape, performs convergence and opposition, allows bounded
         re-expansion, projects a governed epistemic status, and returns a
         deterministic reasoning receipt. No Graphene truth state is promoted.

@@ -4,7 +4,7 @@ This implementation materialises the paper thesis as executable components rathe
 
 ## Runtime path
 
-`Graphene expansion -> immutable FiberBundle -> StabilityCriticV0 -> CorrectiveEscape -> convergence -> opposition -> bounded re-expansion -> governed projection -> model-world event`
+`Graphene expansion -> immutable FiberBundle -> LyapunovCritic -> CorrectiveEscape -> convergence -> opposition -> bounded re-expansion -> governed projection -> model-world event`
 
 ## Implemented contracts
 
@@ -21,4 +21,4 @@ This implementation materialises the paper thesis as executable components rathe
 
 ## Non-claims
 
-`StabilityCriticV0` is inspired by Lyapunov-style stability analysis but is not claimed to be a mathematically proven Lyapunov function. The current model world is a bounded runtime ledger and audit layer, not yet a distributed million-node autonomous scheduler.
+`LyapunovCritic` now evaluates an explicit quadratic candidate over bounded epistemic error coordinates and certifies the observed finite trajectory. It does not prove global asymptotic stability for every possible future transition. The current model world is a bounded runtime ledger and audit layer, not yet a distributed million-node autonomous scheduler.

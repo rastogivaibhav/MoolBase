@@ -167,6 +167,12 @@ int main(int argc, char** argv) {
                 << "\"rounds\":" << result.receipt.expansion_rounds << ","
                 << "\"fiber_bundle_built\":" << (result.receipt.fiber_bundle_built ? "true" : "false") << ","
                 << "\"stability_critic_executed\":" << (result.receipt.stability_critic_executed ? "true" : "false") << ","
+                << "\"lyapunov_trajectory_executed\":" << (result.receipt.lyapunov_trajectory_executed ? "true" : "false") << ","
+                << "\"lyapunov_certificate_valid\":" << (result.receipt.lyapunov_certificate_valid ? "true" : "false") << ","
+                << "\"lyapunov_goal_reached\":" << (result.receipt.lyapunov_goal_reached ? "true" : "false") << ","
+                << "\"lyapunov_initial_energy\":" << result.lyapunov.certificate.initial_energy << ","
+                << "\"lyapunov_final_energy\":" << result.lyapunov.certificate.final_energy << ","
+                << "\"lyapunov_regime\":\"" << (result.lyapunov.observations.empty() ? "insufficient_history" : lyapunov_regime_name(result.lyapunov.observations.back().regime)) << "\","
                 << "\"opposition_executed\":" << (result.receipt.opposition_executed ? "true" : "false") << ","
                 << "\"no_silent_promotion\":" << (result.receipt.no_silent_promotion ? "true" : "false")
                 << "}\n";
@@ -176,6 +182,9 @@ int main(int argc, char** argv) {
       std::cout << "initial_bundle_hash=" << result.receipt.initial_bundle_hash << "\n";
       std::cout << "final_bundle_hash=" << result.receipt.final_bundle_hash << "\n";
       std::cout << "rounds=" << result.receipt.expansion_rounds << "\n";
+      std::cout << "lyapunov_initial_energy=" << result.lyapunov.certificate.initial_energy << "\n";
+      std::cout << "lyapunov_final_energy=" << result.lyapunov.certificate.final_energy << "\n";
+      std::cout << "lyapunov_regime=" << (result.lyapunov.observations.empty() ? "insufficient_history" : lyapunov_regime_name(result.lyapunov.observations.back().regime)) << "\n";
       for (uint32_t edge : result.evidence_edges) std::cout << "evidence_edge=" << edge << "\n";
       for (const auto& uncertainty : result.residual_uncertainty) std::cout << "uncertainty=" << uncertainty << "\n";
     }

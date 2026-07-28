@@ -43,6 +43,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_stability_critic_adversarial_tests
            COMMAND graphenedb_stability_critic_adversarial_tests)
 
+  add_executable(graphenedb_lyapunov_critic_tests
+                 tests/test_lyapunov_critic.cpp)
+  target_link_libraries(graphenedb_lyapunov_critic_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_lyapunov_critic_tests
+           COMMAND graphenedb_lyapunov_critic_tests)
+
   if(TARGET graphenedb_server AND NOT WIN32)
     add_test(NAME graphenedb_server_hypokosh_runtime_contract_tests
              COMMAND ${Python3_EXECUTABLE}

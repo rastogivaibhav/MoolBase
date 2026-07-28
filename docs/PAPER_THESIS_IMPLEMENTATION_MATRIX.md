@@ -7,7 +7,7 @@ This file is the source-to-test contract for the TheHypoKosh experimental runtim
 | Temporal facts, provenance, contradiction and supersession | `include/graphene/types.hpp`, `include/graphene/epistemic.hpp`, storage and dialectic sources | core, dialectic, hyperedge and P0 tests | Implemented; causal edges remain evidence-bearing claims rather than proof of causal identification. |
 | Multi-path non-convergent expansion | `DialecticEngine::expand` and `CompleteHypoKoshRuntime` | `graphenedb_dialectic_tests`, runtime and generic-pipeline tests | Implemented with configured depth/path/branch budgets. |
 | Immutable FiberBundle | `fiber_bundle.hpp/.cpp` | `graphenedb_hypokosh_runtime_tests`, adversarial critic tests | Implemented; exact duplicates collapse and independent support is source-lineage aware. |
-| Lyapunov-style critic | `stability_critic.hpp/.cpp` | runtime and adversarial critic tests | Implemented as `StabilityCriticV0`; not a formally proven Lyapunov function. |
+| Discrete Lyapunov critic | `stability_critic.hpp/.cpp` | direct Lyapunov, runtime, adversarial, CLI and HTTP tests | Implemented with bounded error coordinates, positive quadratic bounds, drift, sufficient decrease, contraction, practical-stability certificates, oscillation and limit-cycle detection. The certificate covers the observed finite trajectory, not every possible future transition. |
 | Corrective escape | `escape.hpp/.cpp` | runtime and adversarial critic tests | Implemented as bounded plans; external discovery is not executed automatically. |
 | Convergent compression | existing dialectic convergence plus complete runtime | dialectic and runtime tests | Implemented; original FiberBundle hash is retained and not mutated. |
 | Opposition engine | existing `DialecticEngine::oppose` | dialectic, runtime and server contract tests | Implemented with bounded reopen decisions and deterministic findings. |
@@ -26,4 +26,4 @@ This file is the source-to-test contract for the TheHypoKosh experimental runtim
 
 ## Release interpretation
 
-The implementation is an **experimental runtime**, not enterprise GA. The complete Linux source has passed release, warnings-as-errors, ASAN/UBSAN focused tests, CLI tests, and live server contracts. Formal mathematical stability proof, official external benchmark comparison, long-duration production-hardware soak, and clean Windows validation remain separate gates.
+The implementation is an **experimental runtime**, not enterprise GA. The complete Linux source has passed release, warnings-as-errors, ASAN/UBSAN focused tests, CLI tests, and live server contracts. Global stability proof for the full transition system, official external benchmark comparison, long-duration production-hardware soak, and clean Windows validation remain separate gates.

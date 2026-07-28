@@ -71,6 +71,11 @@ int main(int argc, char** argv) {
   const std::string output = run_capture(command);
   assert(output.find("\"fiber_bundle_built\":true") != std::string::npos);
   assert(output.find("\"stability_critic_executed\":true") != std::string::npos);
+  assert(output.find("\"lyapunov_trajectory_executed\":true") != std::string::npos);
+  assert(output.find("\"lyapunov_certificate_valid\":true") != std::string::npos);
+  assert(output.find("\"lyapunov_initial_energy\":") != std::string::npos);
+  assert(output.find("\"lyapunov_final_energy\":") != std::string::npos);
+  assert(output.find("\"lyapunov_regime\":\"") != std::string::npos);
   assert(output.find("\"opposition_executed\":true") != std::string::npos);
   assert(output.find("\"no_silent_promotion\":true") != std::string::npos);
   assert(output.find("\"primary_node\":0") != std::string::npos);

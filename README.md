@@ -1,17 +1,17 @@
-# GrapheneDB + TheHypoKosh Experimental Runtime
+# GrapheneDB + TheHypoKosh Discrete Lyapunov Runtime
 
-GrapheneDB is an experimental embedded C++ causal/lattice-memory database. This branch materialises the bounded TheHypoKosh reasoning thesis as executable source rather than documentation-only claims.
+GrapheneDB is an experimental embedded C++ causal/lattice-memory database. This developer-preview branch materialises the bounded TheHypoKosh reasoning loop and replaces the earlier heuristic-only runtime critic with a discrete Lyapunov analysis layer.
 
 ## Maturity
 
-**Experimental runtime / developer-preview candidate. Not enterprise GA.**
+**Experimental runtime / developer preview. Not enterprise GA.**
 
-The implemented path is:
+The executable reasoning path is:
 
 ```text
 Graphene expansion
 → immutable FiberBundle
-→ StabilityCriticV0
+→ discrete Lyapunov critic
 → bounded CorrectiveEscape
 → convergence
 → opposition
@@ -20,31 +20,63 @@ Graphene expansion
 → model-world event
 ```
 
-`StabilityCriticV0` is inspired by Lyapunov-style stability analysis, but it is **not claimed to be a mathematically proven Lyapunov function**.
+The Lyapunov critic certifies or rejects **observed practical stability over the finite recorded reasoning trajectory**. It is not a proof of global asymptotic stability for every possible future graph state or external discovery action.
 
-## Materialised capabilities
+## Complete critic
 
-- temporal and provenance-bearing graph facts and edges
-- causal, supporting, contradicting and superseding relationships
-- atomic all-source hyperedges
-- deterministic multi-path `FiberBundle`
-- exact duplicate-path removal
-- source-lineage-aware independent-path degeneracy
-- temporal, diversity, provenance, contradiction and pattern-lock scoring
-- bounded corrective escape and missing-evidence planning
-- convergent compression without mutating the original bundle
-- opposition, falsification questions and bounded re-expansion
-- governed statuses: `resolved`, `provisionally_resolved`, `contested`, `evidence_required`, `abstain`, `speculative`
-- no-silent-promotion checks
-- bounded self-healing proposals
-- persistent checksummed model-world ledger and audit scheduler
-- empirical, balanced and theoretical reasoning modes
-- relation ontology and ambiguity-preserving entity resolution
-- TSV, pipe, RDF-like and `SUBJ/REL/OBJ` structured-relation ingestion
-- CLI reasoning command
-- authenticated POSIX HTTP runtime endpoint
+The critic constructs a seven-dimensional bounded epistemic error state from:
 
-The source-to-test contract is in [`docs/PAPER_THESIS_IMPLEMENTATION_MATRIX.md`](docs/PAPER_THESIS_IMPLEMENTATION_MATRIX.md).
+- temporal deficit;
+- path-diversity deficit;
+- independent-path degeneracy deficit;
+- provenance deficit;
+- contradiction excess;
+- premature-pattern-lock excess;
+- missing-evidence excess.
+
+It evaluates the positive weighted quadratic candidate:
+
+```text
+V(x) = sum(w_i x_i²) / sum(w_i)
+```
+
+and reports:
+
+- lower and upper quadratic coefficients;
+- per-cycle energy and drift;
+- sufficient-decrease checks;
+- mean and worst contraction ratios;
+- maximum observed energy increase;
+- goal-set arrival and equilibrium dwell;
+- practical-stability and convergence certificates;
+- divergence, oscillation and repeated-state limit-cycle detection;
+- explicit certificate violations.
+
+Empirical, balanced and theoretical modes use different target sets and weights. `StabilityCriticV0` remains as a compatibility facade, but the complete runtime uses `LyapunovCritic`.
+
+See [`docs/LYAPUNOV_CRITIC_V1.md`](docs/LYAPUNOV_CRITIC_V1.md).
+
+## Other runtime capabilities
+
+- deterministic immutable `FiberBundle`;
+- exact duplicate-path removal;
+- source-lineage-aware path independence;
+- temporal and provenance-bearing evidence paths;
+- contradiction and supersession handling;
+- atomic all-source hyperedges;
+- bounded corrective escape and falsification questions;
+- convergence without deleting the original bundle;
+- bounded opposition and re-expansion;
+- governed statuses: `resolved`, `provisionally_resolved`, `contested`, `evidence_required`, `abstain`, `speculative`;
+- no-silent-promotion enforcement;
+- bounded self-healing proposals;
+- persistent checksummed model-world ledger and audits;
+- relation ontology and ambiguity-preserving entity resolution;
+- TSV, pipe, RDF-like and token-tagged structured-relation ingestion;
+- CLI reasoning;
+- authenticated POSIX HTTP reasoning endpoint.
+
+The source-to-test mapping is in [`docs/PAPER_THESIS_IMPLEMENTATION_MATRIX.md`](docs/PAPER_THESIS_IMPLEMENTATION_MATRIX.md).
 
 ## Build and test
 
@@ -58,31 +90,30 @@ cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-Verified Linux result for the exact packaged source:
+Verified exact split-source integration result:
 
 ```text
-44/44 tests passed
+45/45 tests passed
 0 failures
-final exact-source run: 21.13 seconds
-fresh extracted-package run: 20.65 seconds
+23.65 seconds
 ```
 
-The suite covers storage, crash/fault handling, lattice behaviour, one-million-record smoke, dialectic reasoning, hyperedges, governed learning, FiberBundle, StabilityCriticV0 adversarial cases, generic reasoning ingestion, CLI execution, OpenAPI surface validation and the live HTTP runtime contract.
+A fresh extraction of the final source package configured and built successfully. All 45 tests passed; the container execution ceiling required tests 38–45 to be resumed in a second bounded CTest invocation.
 
-See [`reports/HYPOKOSH_RUNTIME_V1_BUILD_TEST_REPORT.md`](reports/HYPOKOSH_RUNTIME_V1_BUILD_TEST_REPORT.md) and [`reports/HYPOKOSH_RUNTIME_V1_FINAL_CTEST.txt`](reports/HYPOKOSH_RUNTIME_V1_FINAL_CTEST.txt).
+Coverage includes storage, C API, WAL/crash/fault handling, stale locks, lattice storage and traversal, one-million-record smoke, extraction ingestion, dialectic reasoning, hyperedges, governed learning, generic relation reasoning, CLI reasoning, complete runtime integration, adversarial critic cases, the direct Lyapunov suite, OpenAPI validation and live HTTP contracts.
+
+See [`reports/LYAPUNOV_CRITIC_V1_BUILD_TEST_REPORT.md`](reports/LYAPUNOV_CRITIC_V1_BUILD_TEST_REPORT.md).
 
 ## CLI
-
-After creating or ingesting a database:
 
 ```bash
 ./build/graphenedb_cli reason /tmp/graphenedb 16 <comma-vector> <signature> \
   --mode empirical --max-rounds 3 --json
 ```
 
-The response includes the governed status, primary node, confidence, immutable initial/final bundle hashes, executed layers and no-silent-promotion result.
+The output includes the governed status, bundle hashes, initial/final Lyapunov energy, final regime and certificate flags.
 
-## HTTP runtime
+## HTTP
 
 ```bash
 export GRAPHENEDB_API_KEY='development-key'
@@ -98,55 +129,32 @@ Content-Type: application/json
 X-API-Key: development-key
 ```
 
-Example request:
+The response includes the complete trajectory, energy drift, quadratic bounds, stability certificate, opposition, self-healing plan, evidence edges and execution receipt.
 
-```json
-{
-  "query": "Why did checkout failures increase?",
-  "signature": 33,
-  "mode": "empirical",
-  "max_hops": 5,
-  "max_paths": 32,
-  "max_recursive_cycles": 2
-}
-```
-
-The endpoint returns evidence edges, stability metrics, opposition, self-healing proposals and a deterministic execution receipt. The API supplement is in [`docs/api/openapi-v1-runtime.yaml`](docs/api/openapi-v1-runtime.yaml).
-
-## Main source locations
+## Main implementation files
 
 ```text
-include/graphene/fiber_bundle.hpp
 include/graphene/stability_critic.hpp
-include/graphene/escape.hpp
 include/graphene/hypokosh_runtime.hpp
-include/graphene/model_world.hpp
-include/graphene/self_healing.hpp
-include/graphene/relation_ontology.hpp
-include/graphene/entity_resolution.hpp
-include/graphene/generic_relation.hpp
-
-src/fiber_bundle.cpp
 src/stability_critic.cpp
-src/escape.cpp
+src/stability_critic_part_*.inc
 src/hypokosh_runtime.cpp
-src/model_world.cpp
+src/hypokosh_runtime_part_*.inc
+src/escape.cpp
 src/self_healing.cpp
-src/relation_ontology.cpp
-src/entity_resolution.cpp
-src/generic_relation.cpp
+tests/test_lyapunov_critic.cpp
+tests/test_hypokosh_runtime.cpp
+scripts/server_hypokosh_runtime_contract_test.py
 ```
 
-The large CLI and POSIX server translation units are stored as small wrapper files plus deterministic `.inc` fragments so the complete source can be reviewed and transported without relying on an unapplied patch.
+Large translation units use small deterministic wrapper files plus `.inc` fragments so the complete source is reviewable and transportable without an unapplied patch.
 
 ## Honest limitations
 
-- no formal proof that `StabilityCriticV0` is a Lyapunov function
-- no official external benchmark result yet
-- model world is a local bounded ledger, not a distributed autonomous million-node scheduler
-- structured-relation parser is bounded and is not a general natural-language semantic parser
-- POSIX HTTP server is unsupported on Windows
-- the separate Antigravity Windows stale-lock candidate is not included and still requires review and clean Windows validation
-- long-duration production-hardware soak, external benchmark comparison and release/security certification remain open gates
-
-No capability should be claimed from a paper or report unless its source and direct test appear in the implementation matrix.
+- no global asymptotic-stability proof for the unbounded model world;
+- no official external benchmark result yet;
+- model world is a local bounded ledger, not a distributed autonomous scheduler;
+- generic parser is bounded and is not a general natural-language semantic parser;
+- POSIX HTTP server is unsupported on Windows;
+- separate Windows stale-lock work still needs review and clean Windows validation;
+- long-duration production-hardware soak and security/release certification remain open gates.

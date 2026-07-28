@@ -11,6 +11,9 @@ SelfHealingPlan RecursiveSelfHealingController::plan(
     const EscapePlan& escape) const {
   SelfHealingPlan output;
   output.observations = stability.reasons;
+  output.observations.push_back(
+      "Lyapunov energy=" + std::to_string(stability.lyapunov_energy) +
+      ", state_norm=" + std::to_string(stability.lyapunov_state_norm));
   output.critiques = opposition.challenged_claims;
   output.discovery_questions = opposition.falsification_questions;
   std::set<SafeRepairAction> added;
@@ -34,9 +37,10 @@ SelfHealingPlan RecursiveSelfHealingController::plan(
     add(SafeRepairAction::SearchTemporalWindow,
         "rerun retrieval at the requested validity window");
   }
-  if (!opposition.falsification_questions.empty()) {
+  if (!opposition.falsification_questions.empty() ||
+      !stability.lyapunov_goal_reached) {
     add(SafeRepairAction::GenerateIndependentTest,
-        "execute or request an independent falsification test");
+        "execute or request an independent test that can reduce the dominant Lyapunov error coordinate");
   }
   if (stability.requires_abstention) {
     add(SafeRepairAction::StopAndAbstain,

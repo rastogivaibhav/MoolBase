@@ -56,6 +56,7 @@ int main() {
   root.root_node = 10;
   root.paths.push_back(path(10, 40, {1, 2}, {"deployment", "metrics"}, 0.91));
   root.paths.push_back(path(10, 40, {3, 4}, {"config", "traces"}, 0.88));
+  // Exact duplicate must not inflate degeneracy.
   root.paths.push_back(path(10, 40, {3, 4}, {"config", "traces"}, 0.88));
   raw.roots.push_back(root);
 
@@ -159,6 +160,15 @@ int main() {
   assert(result.receipt.graphene_executed);
   assert(result.receipt.fiber_bundle_built);
   assert(result.receipt.stability_critic_executed);
+  assert(result.receipt.lyapunov_trajectory_executed);
+  assert(result.receipt.lyapunov_certificate_valid);
+  assert(!result.lyapunov.observations.empty());
+  assert(result.lyapunov.certificate.weights_positive);
+  assert(result.lyapunov.certificate.state_bounded);
+  assert(result.lyapunov.certificate.energy_nonnegative);
+  assert(result.lyapunov.certificate.quadratic_bounds_valid);
+  assert(result.lyapunov.certificate.final_energy >= 0.0);
+  assert(result.lyapunov.certificate.final_energy <= 1.0);
   assert(result.receipt.escape_considered);
   assert(result.receipt.convergence_executed);
   assert(result.receipt.opposition_executed);
@@ -188,6 +198,10 @@ int main() {
   assert(repeated.status == result.status);
   assert(repeated.receipt.initial_bundle_hash == result.receipt.initial_bundle_hash);
   assert(repeated.receipt.final_bundle_hash == result.receipt.final_bundle_hash);
+  assert(repeated.lyapunov.certificate.final_energy ==
+         result.lyapunov.certificate.final_energy);
+  assert(repeated.lyapunov.certificate.violations ==
+         result.lyapunov.certificate.violations);
 
   require(db.close(), "close runtime database");
   fs::remove_all(directory);

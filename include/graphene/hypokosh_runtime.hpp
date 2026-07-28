@@ -23,6 +23,8 @@ struct RuntimeOptions {
   DialecticOptions dialectic;
   StabilityWeights stability_weights;
   StabilityThresholds stability_thresholds;
+  LyapunovWeights lyapunov_weights;
+  LyapunovTargets lyapunov_targets;
   uint32_t max_recursive_cycles{2};
   bool update_model_world{true};
 };
@@ -36,6 +38,9 @@ struct ReasoningReceipt {
   bool graphene_executed{false};
   bool fiber_bundle_built{false};
   bool stability_critic_executed{false};
+  bool lyapunov_trajectory_executed{false};
+  bool lyapunov_certificate_valid{false};
+  bool lyapunov_goal_reached{false};
   bool escape_considered{false};
   bool convergence_executed{false};
   bool opposition_executed{false};
@@ -56,6 +61,7 @@ struct HypoKoshRuntimeResult {
   ConvergedAnswer final_convergence;
   OppositionReport final_opposition;
   SelfHealingPlan final_self_healing;
+  LyapunovTrajectory lyapunov;
 
   GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
   uint32_t primary_node{0};

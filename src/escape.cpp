@@ -28,11 +28,16 @@ EscapePlan CorrectiveEscape::plan(const FiberBundle& bundle,
   if (assessment.missing_evidence_penalty > 0.0 || assessment.provenance_score < 0.75) {
     add(EscapeAction::GenerateMissingEvidenceQuery, "identify the unsupported edge or missing source reference");
   }
+  if (!assessment.lyapunov_goal_reached || assessment.lyapunov_energy > 0.25) {
+    add(EscapeAction::SeekIndependentEvidence,
+        "reduce Lyapunov energy by adding a source-independent path rather than reinforcing the current pattern");
+  }
   if (mode == QueryMode::Theoretical && assessment.path_diversity < 0.50) {
     add(EscapeAction::ExploreAnalogy, "explore a labelled analogical bridge without promoting it to truth");
   }
-  if (assessment.requires_abstention) {
-    add(EscapeAction::RequestHumanEvidence, "available evidence is insufficient for governed resolution");
+  if (assessment.requires_abstention || assessment.lyapunov_energy > 0.70) {
+    add(EscapeAction::RequestHumanEvidence,
+        "available evidence remains outside the governed Lyapunov stability set");
     output.requires_human_evidence = true;
   }
   return output;

@@ -170,6 +170,15 @@ try:
     assert first["receipt"]["graphene_executed"] is True
     assert first["receipt"]["fiber_bundle_built"] is True
     assert first["receipt"]["stability_critic_executed"] is True
+    assert first["receipt"]["lyapunov_trajectory_executed"] is True
+    assert first["receipt"]["lyapunov_certificate_valid"] is True
+    assert first["lyapunov"]["weights_positive"] is True
+    assert first["lyapunov"]["state_bounded"] is True
+    assert first["lyapunov"]["energy_nonnegative"] is True
+    assert first["lyapunov"]["quadratic_bounds_valid"] is True
+    assert 0.0 <= first["lyapunov"]["initial_energy"] <= 1.0
+    assert 0.0 <= first["lyapunov"]["final_energy"] <= 1.0
+    assert len(first["lyapunov"]["observations"]) >= 1
     assert first["receipt"]["escape_considered"] is True
     assert first["receipt"]["convergence_executed"] is True
     assert first["receipt"]["opposition_executed"] is True
@@ -186,6 +195,8 @@ try:
     assert repeated["primary_node"] == first["primary_node"]
     assert repeated["receipt"]["initial_bundle_hash"] == first["receipt"]["initial_bundle_hash"]
     assert repeated["receipt"]["final_bundle_hash"] == first["receipt"]["final_bundle_hash"]
+    assert repeated["lyapunov"]["final_energy"] == first["lyapunov"]["final_energy"]
+    assert repeated["lyapunov"]["violations"] == first["lyapunov"]["violations"]
 
     status, metrics_after = request(port, "GET", "/v1/metrics")
     assert status == 200
@@ -199,6 +210,8 @@ try:
         "initial_bundle_hash": first["receipt"]["initial_bundle_hash"],
         "final_bundle_hash": first["receipt"]["final_bundle_hash"],
         "evidence_edges": len(first["evidence_edges"]),
+        "lyapunov_final_energy": first["lyapunov"]["final_energy"],
+        "lyapunov_regime": first["lyapunov"]["observations"][-1]["regime"],
     }, sort_keys=True))
 finally:
     shutil.rmtree(WORK, ignore_errors=True)

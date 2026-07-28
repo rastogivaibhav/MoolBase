@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased - Complete discrete Lyapunov critic
+
+- Replaced heuristic-only runtime use of `StabilityCriticV0` with `LyapunovCritic`.
+- Added a seven-dimensional bounded epistemic error state and mode-aware goal set.
+- Added a positive weighted quadratic energy function with reported lower and upper
+  quadratic bounds.
+- Added per-cycle drift, sufficient-decrease, contraction, practical-stability,
+  convergence, divergence, oscillation, and finite-state limit-cycle analysis.
+- Added deterministic Lyapunov trajectory receipts to CLI, HTTP, and model-world
+  metadata while retaining `StabilityCriticV0` as a compatibility facade.
+- Added direct mathematical/adversarial tests and extended complete runtime and live
+  server contracts. Full release regression passes 45/45 tests.
+
+## Unreleased - Complete TheHypoKosh experimental runtime
+
+- Added an immutable, deterministic `FiberBundle` with exact duplicate removal,
+  source-lineage-aware independent-path counting, saturating degeneracy, and
+  stable bundle hashes.
+- Added `StabilityCriticV0` for temporal consistency, path diversity, independent
+  support, provenance quality, contradiction, pattern lock, and missing evidence.
+  The implementation is Lyapunov-inspired but makes no formal control-theory claim.
+- Added bounded `CorrectiveEscape`, convergence/opposition/re-expansion orchestration,
+  governed answer statuses, and complete per-layer reasoning receipts.
+- Added recursive self-healing plans that may propose labelled repairs and discovery
+  questions but cannot silently promote inferred or hypothetical claims.
+- Added a typed, checksummed model-world ledger, persistence/reload, audit scheduler,
+  relation ontology, ambiguity-preserving entity resolution, and generic structured
+  relation ingestion.
+- Added the `graphenedb_cli reason` command and authenticated
+  `POST /v1/reason/runtime` server endpoint.
+- Added unit, integration, adversarial, CLI, persistence, generic-domain, and live
+  server contract tests for the complete runtime.
+- Kept the separate Windows stale-lock shared-read candidate outside this runtime;
+  it still requires review and clean Windows validation before being claimed.
+
 ## Unreleased - P0 correctness remediation
 
 - Kept C++ assertions active in Release test targets so contract tests cannot
