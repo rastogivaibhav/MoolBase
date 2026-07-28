@@ -10,6 +10,10 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#include <sys/time.h>
+#endif
 
 namespace graphene::platform {
 
@@ -110,6 +114,21 @@ bool process_is_alive(uint64_t pid) {
 }
 
 std::optional<std::chrono::system_clock::time_point> current_process_start_time() {
+#ifdef __APPLE__
+  int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID,
+                static_cast<int>(::getpid())};
+  struct kinfo_proc process_info {};
+  size_t process_info_size = sizeof(process_info);
+  if (::sysctl(mib, 4, &process_info, &process_info_size, nullptr, 0) != 0 ||
+      process_info_size == 0) {
+    return std::nullopt;
+  }
+  const auto seconds = std::chrono::seconds(
+      static_cast<int64_t>(process_info.kp_proc.p_starttime.tv_sec));
+  const auto microseconds = std::chrono::microseconds(
+      static_cast<int64_t>(process_info.kp_proc.p_starttime.tv_usec));
+  return std::chrono::system_clock::time_point{seconds + microseconds};
+#else
   std::ifstream stat("/proc/self/stat");
   std::ifstream proc_stat("/proc/stat");
   if (!stat || !proc_stat) return std::nullopt;
@@ -149,10 +168,14 @@ std::optional<std::chrono::system_clock::time_point> current_process_start_time(
   const long ticks_per_second = ::sysconf(_SC_CLK_TCK);
   if (ticks_per_second <= 0) return std::nullopt;
 
-  const auto boot = std::chrono::system_clock::time_point{std::chrono::seconds(static_cast<int64_t>(boot_time))};
-  const auto offset = std::chrono::duration_cast<std::chrono::system_clock::duration>(
-      std::chrono::duration<double>(static_cast<double>(start_ticks) / static_cast<double>(ticks_per_second)));
+  const auto boot = std::chrono::system_clock::time_point{
+      std::chrono::seconds(static_cast<int64_t>(boot_time))};
+  const auto offset = std::chrono::duration_cast<
+      std::chrono::system_clock::duration>(std::chrono::duration<double>(
+      static_cast<double>(start_ticks) /
+      static_cast<double>(ticks_per_second)));
   return boot + offset;
+#endif
 }
 
 } // namespace graphene::platform
