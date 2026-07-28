@@ -1,0 +1,85 @@
+#pragma once
+
+#include "graphene/escape.hpp"
+#include "graphene/model_world.hpp"
+#include "graphene/self_healing.hpp"
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace graphene {
+
+enum class GovernedEpistemicStatus : uint8_t {
+  Resolved,
+  ProvisionallyResolved,
+  Contested,
+  EvidenceRequired,
+  Abstain,
+  Speculative
+};
+
+struct RuntimeOptions {
+  DialecticOptions dialectic;
+  StabilityWeights stability_weights;
+  StabilityThresholds stability_thresholds;
+  uint32_t max_recursive_cycles{2};
+  bool update_model_world{true};
+};
+
+struct ReasoningReceipt {
+  uint64_t snapshot_version{0};
+  uint64_t initial_bundle_hash{0};
+  uint64_t final_bundle_hash{0};
+  uint64_t model_world_event_hash{0};
+  uint32_t expansion_rounds{0};
+  bool graphene_executed{false};
+  bool fiber_bundle_built{false};
+  bool stability_critic_executed{false};
+  bool escape_considered{false};
+  bool convergence_executed{false};
+  bool opposition_executed{false};
+  bool governed_projection_executed{false};
+  bool no_silent_promotion{true};
+};
+
+struct HypoKoshRuntimeResult {
+  FiberBundle initial_bundle;
+  StabilityAssessment initial_stability;
+  EscapePlan initial_escape;
+  ConvergedAnswer initial_convergence;
+  OppositionReport initial_opposition;
+  SelfHealingPlan initial_self_healing;
+
+  FiberBundle final_bundle;
+  StabilityAssessment final_stability;
+  ConvergedAnswer final_convergence;
+  OppositionReport final_opposition;
+  SelfHealingPlan final_self_healing;
+
+  GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
+  uint32_t primary_node{0};
+  double confidence{0.0};
+  std::vector<uint32_t> evidence_edges;
+  std::vector<std::string> residual_uncertainty;
+  ReasoningReceipt receipt;
+};
+
+class CompleteHypoKoshRuntime {
+ public:
+  explicit CompleteHypoKoshRuntime(const GrapheneDB& db,
+                                   ModelWorld* model_world = nullptr);
+
+  HypoKoshRuntimeResult reason(const std::vector<float>& query,
+                               uint64_t query_signature,
+                               const RuntimeOptions& options = {},
+                               uint64_t snapshot_version = kInfVersion) const;
+
+ private:
+  const GrapheneDB& db_;
+  ModelWorld* model_world_{nullptr};
+};
+
+const char* governed_status_name(GovernedEpistemicStatus status);
+
+}  // namespace graphene

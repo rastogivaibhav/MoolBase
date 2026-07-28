@@ -8,12 +8,25 @@ import sys
 from pathlib import Path
 
 
+def read_server_source(path: Path) -> str:
+    """Read the server translation unit and local generated include fragments."""
+    source = path.read_text(encoding="utf-8")
+    fragments = []
+    for include in re.findall(r'^#include\s+"(graphenedb_server_part_[^"]+\.inc)"\s*$', source, flags=re.MULTILINE):
+        fragments.append((path.parent / include).read_text(encoding="utf-8"))
+    return source + "\n" + "\n".join(fragments)
+
+
 def main() -> int:
     if len(sys.argv) != 3:
         raise SystemExit("usage: test_openapi_surface.py <server.cpp> <openapi.yaml>")
 
-    server = Path(sys.argv[1]).read_text(encoding="utf-8")
-    openapi = Path(sys.argv[2]).read_text(encoding="utf-8")
+    server = read_server_source(Path(sys.argv[1]))
+    openapi_path = Path(sys.argv[2])
+    openapi = openapi_path.read_text(encoding="utf-8")
+    supplement = openapi_path.with_name("openapi-v1-runtime.yaml")
+    if supplement.exists():
+        openapi += "\n" + supplement.read_text(encoding="utf-8")
 
     implemented = set(re.findall(r'path\s*==\s*"(/v1/[^"]+)"', server))
     implemented.update(re.findall(r'path\.rfind\("(/v1/[^"]+)"', server))
