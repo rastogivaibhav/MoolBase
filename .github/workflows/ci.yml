@@ -15,6 +15,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Restore Unix script execution
+        if: runner.os != 'Windows'
+        run: chmod +x scripts/*.sh
       - name: Configure
         run: cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_BENCH=ON -DGRAPHENEDB_BUILD_EXAMPLES=ON
       - name: Build
@@ -37,6 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore script execution
+        run: chmod +x scripts/*.sh
       - name: Run GA readiness smoke
         run: |
           EXTRACTION_DOCS=5 \
@@ -62,6 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore script execution
+        run: chmod +x scripts/*.sh
       - name: Run release candidate bundle smoke
         run: |
           BUILD_DIR=build-rc-bundle-ci \
@@ -97,6 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore script execution
+        run: chmod +x scripts/*.sh
       - name: Run preview hardware profile smoke
         run: |
           BUILD_DIR=build-preview-profile-ci \
@@ -128,6 +137,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore script execution
+        run: chmod +x scripts/*.sh
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y cmake g++ make
       - name: ASAN/UBSAN selected gates
@@ -137,6 +148,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore script execution
+        run: chmod +x scripts/*.sh
       - name: Install clang
         run: sudo apt-get update && sudo apt-get install -y cmake clang make
       - name: Fuzz smoke
