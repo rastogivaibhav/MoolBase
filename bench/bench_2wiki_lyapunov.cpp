@@ -51,6 +51,7 @@ DialecticPath make_path(const Example& example,
                         bool temporal_consistent,
                         size_t provenance_findings,
                         const std::string& source_namespace) {
+  (void)example;
   DialecticPath path;
   path.root_node = 1;
   path.anchor_node = 100;
