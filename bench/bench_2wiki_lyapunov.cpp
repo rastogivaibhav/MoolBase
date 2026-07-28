@@ -51,7 +51,6 @@ DialecticPath make_path(const Example& example,
                         bool temporal_consistent,
                         size_t provenance_findings,
                         const std::string& source_namespace) {
-  (void)example;
   DialecticPath path;
   path.root_node = 1;
   path.anchor_node = 100;
@@ -63,15 +62,23 @@ DialecticPath make_path(const Example& example,
   path.score = confidence;
   path.contains_contradiction = contradiction;
   path.temporal_consistent = temporal_consistent;
+  path.query_relevance = 1.0;
+  path.target_consistency = 1.0;
+  path.completeness = std::clamp(
+      static_cast<double>(edge_count) /
+          static_cast<double>(std::max<size_t>(2, example.hops)),
+      0.0, 1.0);
   const size_t bounded_sources = std::max<size_t>(1, source_count);
   for (size_t index = 0; index < bounded_sources; ++index) {
     path.evidence.push_back({source_namespace + ":" + std::to_string(index),
                              "2wiki-supporting-fact", ""});
   }
   for (size_t index = 0; index < provenance_findings; ++index) {
-    const uint32_t edge = path.edges.empty() ? 0 : path.edges[index % path.edges.size()];
+    const uint32_t edge =
+        path.edges.empty() ? 0 : path.edges[index % path.edges.size()];
     path.provenance_findings.push_back(
-        {edge, "missing_gold_hop", "controlled 2Wiki evidence corruption"});
+        {edge, "missing_gold_hop",
+         "controlled 2Wiki evidence corruption"});
   }
   return path;
 }
@@ -86,43 +93,61 @@ FiberBundle build_bundle(const Example& example,
 
   const size_t hops = std::max<size_t>(2, example.hops);
   const size_t sources = std::max<size_t>(1, example.source_count);
-  const auto gold = make_path(example, base, hops, sources, 0.95, false, true,
-                              0, "gold:" + example.id);
+  DialecticPath gold = make_path(example, base, hops, sources, 0.95,
+                                 false, true, 0,
+                                 "gold:" + example.id);
+  gold.semantic_verification = SemanticVerificationStatus::Verified;
 
   if (condition == "gold") {
     root.paths.push_back(gold);
   } else if (condition == "missing_hop") {
     const size_t retained_hops = std::max<size_t>(1, hops - 1);
     const size_t retained_sources = std::max<size_t>(1, sources - 1);
-    root.paths.push_back(make_path(example, base, retained_hops,
-                                   retained_sources, 0.90, false, true, 1,
-                                   "gold:" + example.id));
+    DialecticPath missing = make_path(
+        example, base, retained_hops, retained_sources, 0.90, false,
+        true, 1, "gold:" + example.id);
+    missing.semantic_verification =
+        SemanticVerificationStatus::Verified;
+    root.paths.push_back(std::move(missing));
     set.truncated = true;
     set.warnings.push_back("CONTROLLED_MISSING_GOLD_HOP");
   } else if (condition == "contradiction") {
     root.paths.push_back(gold);
-    root.paths.push_back(make_path(example, base + 4000U, hops, sources,
-                                   0.85, true, true, 0,
-                                   "contradiction:" + example.id));
+    DialecticPath opposition = make_path(
+        example, base + 4000U, hops, sources, 0.85, true, true, 0,
+        "contradiction:" + example.id);
+    opposition.role_hint = PathRoleHint::Opposition;
+    opposition.semantic_verification =
+        SemanticVerificationStatus::Contradicted;
+    root.paths.push_back(std::move(opposition));
   } else if (condition == "same_source_duplicate") {
     root.paths.push_back(gold);
-    // Different edge sequence but exactly the same evidence source IDs. A
-    // source-independent critic must not reward this as corroboration.
-    root.paths.push_back(make_path(example, base + 8000U, hops, sources,
-                                   0.90, false, true, 0,
-                                   "gold:" + example.id));
+    // Different route, exactly the same evidence families. FiberBundle v2 must
+    // preserve the route but keep one independent corroboration family.
+    DialecticPath duplicate = make_path(
+        example, base + 8000U, hops, sources, 0.90, false, true, 0,
+        "gold:" + example.id);
+    duplicate.semantic_verification =
+        SemanticVerificationStatus::Verified;
+    root.paths.push_back(std::move(duplicate));
   } else if (condition == "distractor") {
     root.paths.push_back(gold);
-    const size_t distractor_hops = std::max<size_t>(2, std::min<size_t>(hops, 4));
-    root.paths.push_back(make_path(example, base + 12000U,
-                                   distractor_hops, 1, 0.55, false, true, 0,
-                                   "irrelevant-context:" + example.id));
+    const size_t distractor_hops =
+        std::max<size_t>(2, std::min<size_t>(hops, 4));
+    DialecticPath distractor = make_path(
+        example, base + 12000U, distractor_hops, 1, 0.55, false,
+        true, 0, "irrelevant-context:" + example.id);
+    distractor.query_relevance = 0.0;
+    distractor.target_consistency = 0.0;
+    distractor.role_hint = PathRoleHint::Noise;
+    root.paths.push_back(std::move(distractor));
   } else if (condition == "wrong_complete") {
-    // Structurally perfect and fully sourced, but deliberately unrelated to
-    // the gold evidence. This demonstrates the critic's truth-oracle boundary.
-    root.paths.push_back(make_path(example, base + 16000U, hops, sources,
-                                   0.95, false, true, 0,
-                                   "wrong-answer:" + example.id));
+    // Structurally perfect and fully sourced, but semantically unverified. It
+    // should remain indistinguishable to the dynamics critic and must be kept
+    // out of final resolution by the separate semantic-verification gate.
+    root.paths.push_back(make_path(
+        example, base + 16000U, hops, sources, 0.95, false, true, 0,
+        "wrong-answer:" + example.id));
   } else {
     throw std::invalid_argument("unknown condition: " + condition);
   }
@@ -173,7 +198,9 @@ Result evaluate(const Example& example,
   return result;
 }
 
-void write_bool(std::ostream& out, bool value) { out << (value ? 1 : 0); }
+void write_bool(std::ostream& out, bool value) {
+  out << (value ? 1 : 0);
+}
 
 }  // namespace
 
@@ -185,7 +212,8 @@ int main(int argc, char** argv) {
 
   try {
     const auto examples = load_examples(argv[1]);
-    if (examples.empty()) throw std::runtime_error("no 2Wiki examples loaded");
+    if (examples.empty())
+      throw std::runtime_error("no 2Wiki examples loaded");
     std::ofstream output(argv[2]);
     if (!output) throw std::runtime_error("cannot open result CSV");
     output << std::setprecision(17);
@@ -213,15 +241,16 @@ int main(int argc, char** argv) {
            {gold.bundle.immutable_hash, gold.assessment}},
           QueryMode::Empirical);
 
-      const auto independent = [](const FiberBundle& bundle) -> size_t {
-        return bundle.fibers.empty() ? 0 :
-               bundle.fibers.front().independent_path_count;
+      const auto independent = [](const FiberBundle& value) -> size_t {
+        return value.fibers.empty()
+                   ? 0
+                   : value.fibers.front().independent_path_count;
       };
 
-      output << example.id << ',' << example.type << ',' << example.hops << ','
-             << example.source_count << ',' << example.evidence_count << ','
-             << example.distractor_count << ','
-             << gold.assessment.lyapunov_energy << ','
+      output << example.id << ',' << example.type << ','
+             << example.hops << ',' << example.source_count << ','
+             << example.evidence_count << ',' << example.distractor_count
+             << ',' << gold.assessment.lyapunov_energy << ','
              << missing.assessment.lyapunov_energy << ','
              << contradiction.assessment.lyapunov_energy << ','
              << duplicate.assessment.lyapunov_energy << ','
@@ -239,13 +268,17 @@ int main(int argc, char** argv) {
       write_bool(output, duplicate.assessment.stable); output << ',';
       write_bool(output, distractor.assessment.stable); output << ',';
       write_bool(output, wrong.assessment.stable); output << ',';
-      output << independent(gold.bundle) << ',' << independent(duplicate.bundle) << ','
+      output << independent(gold.bundle) << ','
+             << independent(duplicate.bundle) << ','
              << gold.assessment.pattern_lock_score << ','
              << duplicate.assessment.pattern_lock_score << ','
              << distractor.assessment.pattern_lock_score << ',';
-      write_bool(output, repair.certificate.monotonic_nonincreasing); output << ',';
-      write_bool(output, repair.certificate.goal_reached); output << ',';
-      write_bool(output, repair.certificate.convergence_observed); output << '\n';
+      write_bool(output, repair.certificate.monotonic_nonincreasing);
+      output << ',';
+      write_bool(output, repair.certificate.goal_reached);
+      output << ',';
+      write_bool(output, repair.certificate.convergence_observed);
+      output << '\n';
     }
 
     std::cout << "2wiki_examples=" << examples.size() << "\n";
