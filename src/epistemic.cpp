@@ -209,10 +209,13 @@ bool valid_at(const TemporalValidity& validity,
 EdgeProvenance assess_edge_provenance(const Edge& edge) {
   EdgeProvenance result;
   EvidenceRef evidence;
+  // Preserve the original document/system ancestry before falling back to a
+  // per-edge evidence identifier. Otherwise multiple facts extracted from one
+  // source can masquerade as independent evidence families.
   evidence.source_id = first_metadata_value(
       edge.metadata,
-      {"source_id", "evidence_ref", "source", "graphene_evidence_id",
-       "graphene_evidence_uri", "graphene_source_id"});
+      {"source_id", "source", "graphene_source_id", "graphene_source_uri",
+       "evidence_ref", "graphene_evidence_id", "graphene_evidence_uri"});
   evidence.span = first_metadata_value(
       edge.metadata, {"span", "graphene_evidence_text"});
   evidence.observed_at = metadata_value(edge.metadata, "observed_at");
