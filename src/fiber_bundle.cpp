@@ -110,6 +110,103 @@ bool overlaps(const std::vector<std::string>& left,
   return false;
 }
 
+void merge_strings(std::vector<std::string>* target,
+                   const std::vector<std::string>& source) {
+  target->insert(target->end(), source.begin(), source.end());
+  std::sort(target->begin(), target->end());
+  target->erase(std::unique(target->begin(), target->end()), target->end());
+}
+
+SemanticVerificationStatus conservative_semantic_status(
+    SemanticVerificationStatus left,
+    SemanticVerificationStatus right) {
+  if (left == SemanticVerificationStatus::Contradicted ||
+      right == SemanticVerificationStatus::Contradicted) {
+    return SemanticVerificationStatus::Contradicted;
+  }
+  if (left == SemanticVerificationStatus::Verified &&
+      right == SemanticVerificationStatus::Verified) {
+    return SemanticVerificationStatus::Verified;
+  }
+  if (left == SemanticVerificationStatus::NotApplicable &&
+      right == SemanticVerificationStatus::NotApplicable) {
+    return SemanticVerificationStatus::NotApplicable;
+  }
+  return SemanticVerificationStatus::Unverified;
+}
+
+void merge_exact_path(FiberPath* retained, const FiberPath& duplicate) {
+  retained->confidence = std::min(retained->confidence, duplicate.confidence);
+  retained->query_relevance =
+      std::min(retained->query_relevance, duplicate.query_relevance);
+  retained->target_consistency =
+      std::min(retained->target_consistency, duplicate.target_consistency);
+  retained->completeness =
+      std::min(retained->completeness, duplicate.completeness);
+  retained->temporal_consistency =
+      std::min(retained->temporal_consistency,
+               duplicate.temporal_consistency);
+  retained->provenance_quality =
+      std::min(retained->provenance_quality, duplicate.provenance_quality);
+  retained->semantic_verification = conservative_semantic_status(
+      retained->semantic_verification, duplicate.semantic_verification);
+  retained->eligible_for_support =
+      retained->eligible_for_support && duplicate.eligible_for_support;
+  retained->eligible_for_opposition =
+      retained->eligible_for_opposition && duplicate.eligible_for_opposition;
+  retained->irrelevant = retained->irrelevant || duplicate.irrelevant;
+  retained->contains_contradiction =
+      retained->contains_contradiction || duplicate.contains_contradiction;
+  retained->contains_hypothetical =
+      retained->contains_hypothetical || duplicate.contains_hypothetical;
+
+  retained->validity.graph_continuous =
+      retained->validity.graph_continuous &&
+      duplicate.validity.graph_continuous;
+  retained->validity.reaches_target =
+      retained->validity.reaches_target && duplicate.validity.reaches_target;
+  retained->validity.satisfies_joint_requirements =
+      retained->validity.satisfies_joint_requirements &&
+      duplicate.validity.satisfies_joint_requirements;
+  retained->validity.relation_types_valid =
+      retained->validity.relation_types_valid &&
+      duplicate.validity.relation_types_valid;
+  retained->validity.every_critical_edge_has_evidence =
+      retained->validity.every_critical_edge_has_evidence &&
+      duplicate.validity.every_critical_edge_has_evidence;
+  retained->validity.temporal_windows_overlap =
+      retained->validity.temporal_windows_overlap &&
+      duplicate.validity.temporal_windows_overlap;
+  retained->validity.critical_edge_coverage = std::min(
+      retained->validity.critical_edge_coverage,
+      duplicate.validity.critical_edge_coverage);
+  retained->validity.completeness_score = std::min(
+      retained->validity.completeness_score,
+      duplicate.validity.completeness_score);
+
+  merge_strings(&retained->source_lineage, duplicate.source_lineage);
+  merge_strings(&retained->evidence_family_lineage,
+                duplicate.evidence_family_lineage);
+  merge_strings(&retained->derivation_lineage,
+                duplicate.derivation_lineage);
+  merge_strings(&retained->verification_findings,
+                duplicate.verification_findings);
+  merge_strings(&retained->validity.findings,
+                duplicate.validity.findings);
+
+  if (retained->verifier_version != duplicate.verifier_version) {
+    retained->verifier_version = "mixed";
+    retained->verification_findings.push_back(
+        "exact duplicate received results from different verifier versions");
+    std::sort(retained->verification_findings.begin(),
+              retained->verification_findings.end());
+    retained->verification_findings.erase(
+        std::unique(retained->verification_findings.begin(),
+                    retained->verification_findings.end()),
+        retained->verification_findings.end());
+  }
+}
+
 bool contains_edge(const std::vector<uint32_t>& edges, uint32_t edge) {
   return std::find(edges.begin(), edges.end(), edge) != edges.end();
 }
@@ -303,7 +400,7 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
     TargetFiber fiber;
     fiber.target_node = root.root_node;
     fiber.raw_path_count = root.paths.size();
-    std::set<std::string> exact_paths;
+    std::map<std::string, FiberPath> exact_paths;
 
     for (const DialecticPath& path : root.paths) {
       FiberPath converted;
@@ -376,11 +473,13 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       const std::string exact = converted.route_signature + '|' +
                                 converted.evidence_lineage_signature + '|' +
                                 std::to_string(static_cast<int>(converted.role));
-      if (exact_paths.insert(exact).second) {
-        fiber.paths.push_back(std::move(converted));
-      }
+      auto [existing, inserted] = exact_paths.emplace(exact, converted);
+      if (!inserted) merge_exact_path(&existing->second, converted);
     }
 
+    for (auto& entry : exact_paths) {
+      fiber.paths.push_back(std::move(entry.second));
+    }
     std::sort(fiber.paths.begin(), fiber.paths.end(),
               [](const FiberPath& left, const FiberPath& right) {
       return left.id != right.id ? left.id < right.id : left.edges < right.edges;
@@ -411,10 +510,13 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       for (size_t right = left + 1; right < fiber.paths.size(); ++right) {
         if (fiber.paths[right].role == FiberPathRole::Noise) continue;
         // Support and opposition are separate epistemic roles even when they
-        // cite the same document. Correlation collapses repeated support only
-        // within the same role; it must never hide material opposition.
+        // cite the same document. Within a role, sharing a source, evidence
+        // family, or derivation makes the routes correlated rather than
+        // independent corroboration.
         if (fiber.paths[left].role != fiber.paths[right].role) continue;
-        if (overlaps(fiber.paths[left].evidence_family_lineage,
+        if (overlaps(fiber.paths[left].source_lineage,
+                     fiber.paths[right].source_lineage) ||
+            overlaps(fiber.paths[left].evidence_family_lineage,
                      fiber.paths[right].evidence_family_lineage) ||
             overlaps(fiber.paths[left].derivation_lineage,
                      fiber.paths[right].derivation_lineage)) {
