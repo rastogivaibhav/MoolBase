@@ -65,6 +65,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_fiber_bundle_v2_tests
            COMMAND graphenedb_fiber_bundle_v2_tests)
 
+  add_executable(graphenedb_epistemic_lineage_tests
+                 tests/test_epistemic_lineage.cpp)
+  target_link_libraries(graphenedb_epistemic_lineage_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_lineage_tests
+           COMMAND graphenedb_epistemic_lineage_tests)
+
   add_executable(graphenedb_epistemic_control_tests
                  tests/test_epistemic_control.cpp)
   target_link_libraries(graphenedb_epistemic_control_tests PRIVATE graphenedb)
