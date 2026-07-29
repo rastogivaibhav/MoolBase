@@ -12,6 +12,17 @@ on:
       - 'include/graphene/stability_critic.hpp'
       - 'src/fiber_bundle.cpp'
       - 'src/stability_critic.cpp'
+  pull_request:
+    branches:
+      - fix/fiberbundle-v2-lyapunov
+    paths:
+      - '.github/workflows/cross-dataset-epistemic.yml'
+      - 'bench/bench_cross_dataset_epistemic.cpp'
+      - 'benchmarks/cross_dataset/**'
+      - 'include/graphene/fiber_bundle.hpp'
+      - 'include/graphene/stability_critic.hpp'
+      - 'src/fiber_bundle.cpp'
+      - 'src/stability_critic.cpp'
   workflow_dispatch:
     inputs:
       babi_per_task:
