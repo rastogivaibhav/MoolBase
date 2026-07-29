@@ -50,6 +50,28 @@ std::vector<Candidate> support_candidates(const FiberBundle& bundle) {
   return output;
 }
 
+std::vector<Candidate> candidates_for_target(
+    const std::vector<Candidate>& candidates,
+    uint32_t target_node) {
+  std::vector<Candidate> selected;
+  for (const Candidate& candidate : candidates) {
+    if (candidate.fiber->target_node == target_node) {
+      selected.push_back(candidate);
+    }
+  }
+  return selected;
+}
+
+const TargetFiber* find_target_fiber(const FiberBundle& bundle,
+                                     uint32_t target_node) {
+  const auto it = std::find_if(
+      bundle.fibers.begin(), bundle.fibers.end(),
+      [&](const TargetFiber& fiber) {
+        return fiber.target_node == target_node;
+      });
+  return it == bundle.fibers.end() ? nullptr : &*it;
+}
+
 SemanticVerificationStatus strongest_semantic_status(
     const std::vector<Candidate>& candidates) {
   bool verified = false;
@@ -80,33 +102,43 @@ EpistemicAdmissibility EpistemicController::assess(
   output.target_consistency = stability.target_consistency_score;
   output.completeness = stability.completeness_score;
   output.provenance = stability.provenance_score;
-  output.independent_support = stability.independent_support_score;
   output.retrieval_noise = stability.retrieval_noise_penalty;
   output.unresolved_contradiction = stability.material_contradiction;
   output.contradiction_blocks_resolution =
       stability.contradiction_blocks_resolution;
 
   const auto candidates = support_candidates(bundle);
-  output.semantic_verification = strongest_semantic_status(candidates);
-  output.sufficient_independent_support = false;
-  for (const auto& fiber : bundle.fibers) {
-    if (fiber.independent_evidence_family_count >= 2) {
-      output.sufficient_independent_support = true;
-      break;
-    }
-  }
+  const uint32_t selected_target =
+      candidates.empty() ? 0 : candidates.front().fiber->target_node;
+  const auto selected_candidates =
+      candidates_for_target(candidates, selected_target);
+  const TargetFiber* selected_fiber =
+      candidates.empty() ? nullptr : find_target_fiber(bundle, selected_target);
+
+  // Verification and corroboration are properties of the selected hypothesis,
+  // not of the retrieval set as a whole. A verified secondary target must never
+  // promote an unverified primary target.
+  output.semantic_verification =
+      strongest_semantic_status(selected_candidates);
+  output.independent_support = selected_fiber
+      ? selected_fiber->independent_support_score
+      : 0.0;
+  output.sufficient_independent_support =
+      selected_fiber &&
+      selected_fiber->independent_evidence_family_count >= 2;
 
   output.evidence_admissible = stability.evidence_admissible &&
-                               !candidates.empty();
+                               !selected_candidates.empty();
   output.requires_external_verification =
       output.semantic_verification ==
           SemanticVerificationStatus::Unverified ||
       !output.sufficient_independent_support;
 
-  if (candidates.empty())
+  if (selected_candidates.empty())
     output.reasons.push_back("no independent support candidate is available");
   if (!output.sufficient_independent_support)
-    output.reasons.push_back("only one independent evidence family supports the candidate");
+    output.reasons.push_back(
+        "the selected target has fewer than two independent evidence families");
   if (output.contradiction_blocks_resolution)
     output.reasons.push_back("material contradiction blocks resolution");
   if (output.retrieval_noise > 0.0)
@@ -115,10 +147,12 @@ EpistemicAdmissibility EpistemicController::assess(
     output.reasons.push_back("critical-path completeness remains weak");
   if (output.semantic_verification ==
       SemanticVerificationStatus::Unverified)
-    output.reasons.push_back("semantic correctness has not been externally verified");
+    output.reasons.push_back(
+        "semantic correctness of the selected target has not been externally verified");
   if (output.semantic_verification ==
       SemanticVerificationStatus::Contradicted)
-    output.reasons.push_back("semantic verification contradicted the candidate");
+    output.reasons.push_back(
+        "semantic verification contradicted the selected target");
   if (mode == QueryMode::Empirical && output.provenance < 0.85)
     output.reasons.push_back("empirical provenance is below the preferred threshold");
   return output;
@@ -223,6 +257,31 @@ OppositionReport EpistemicController::oppose(
           "What independently sourced observation discriminates target " +
           std::to_string(fiber.target_node) + " from its opposition?");
       reopen.insert(fiber.target_node);
+    }
+  }
+
+  // A separately supported target is not discarded noise. It is a competing
+  // hypothesis and must remain visible to opposition and falsification.
+  if (answer.has_answer) {
+    const auto candidates = support_candidates(bundle);
+    std::set<uint32_t> alternative_targets;
+    for (const Candidate& candidate : candidates) {
+      if (candidate.fiber->target_node == answer.primary_node ||
+          !alternative_targets.insert(candidate.fiber->target_node).second) {
+        continue;
+      }
+      strongest = std::max(strongest, candidate.score);
+      output.challenged_claims.push_back(
+          "independently supported alternative target " +
+          std::to_string(candidate.fiber->target_node) +
+          " competes with selected target " +
+          std::to_string(answer.primary_node));
+      output.falsification_questions.push_back(
+          "Which observation discriminates selected target " +
+          std::to_string(answer.primary_node) + " from alternative target " +
+          std::to_string(candidate.fiber->target_node) + "?");
+      reopen.insert(answer.primary_node);
+      reopen.insert(candidate.fiber->target_node);
     }
   }
 
