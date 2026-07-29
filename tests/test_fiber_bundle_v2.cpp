@@ -75,6 +75,30 @@ int main() {
   const FiberBundle contradicted = builder.build(contradiction_raw);
   assert(contradicted.fibers.front().contradiction_mass > 0.0);
 
+  // A contradiction citing the same source family as support remains a
+  // separate opposition group. Correlation must not silently hide its role.
+  BundleSet shared_opposition_raw;
+  shared_opposition_raw.snapshot_version = 15;
+  RootBundle shared_opposition_root;
+  shared_opposition_root.root_node = 1;
+  shared_opposition_root.paths.push_back(
+      path(1, {11, 12}, "shared-source"));
+  shared_opposition_root.paths.push_back(
+      path(1, {13, 14}, "shared-source", 1.0, true));
+  shared_opposition_raw.roots.push_back(shared_opposition_root);
+  const FiberBundle shared_opposition =
+      builder.build(shared_opposition_raw);
+  const TargetFiber& shared_fiber = shared_opposition.fibers.front();
+  assert(shared_fiber.correlation_groups.size() == 2);
+  assert(shared_fiber.independent_evidence_family_count == 1);
+  assert(shared_fiber.contradiction_mass > 0.0);
+  assert(std::any_of(
+      shared_fiber.correlation_groups.begin(),
+      shared_fiber.correlation_groups.end(),
+      [](const EvidenceCorrelationGroup& group) {
+        return group.role == FiberPathRole::Opposition;
+      }));
+
   BundleSet reordered = independent_raw;
   std::reverse(reordered.roots.front().paths.begin(),
                reordered.roots.front().paths.end());
