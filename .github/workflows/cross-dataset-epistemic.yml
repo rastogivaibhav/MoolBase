@@ -41,14 +41,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cross-dataset-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  benchmark:
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    env:
-      BABI_PER_TASK: ${{ github.event.inputs.babi_per_task || '200' }}
-      HOTPOT: ${{ github.event.inputs.hotpot || '500' }}
-      FEVER_PER_LABEL: ${{ github.event.inputs.fever_per_label || '200' }}
+  source-isolated:
+    name: Source-isolated regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +80,48 @@ jobs:
             --markdown-output reports/cross_dataset/source_isolated_summary.md \
             --enforce
 
-      - name: Download and normalize full public benchmark sample
+      - name: Upload source-isolated evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-dataset-source-isolated-${{ github.sha }}
+          path: |
+            benchmarks/cross_dataset/source_isolated_actual.tsv
+            reports/cross_dataset/source_isolated_results.csv
+            reports/cross_dataset/source_isolated_summary.json
+            reports/cross_dataset/source_isolated_summary.md
+          if-no-files-found: warn
+          retention-days: 30
+
+  public-benchmark:
+    name: Public 2,500-record benchmark
+    needs: source-isolated
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      BABI_PER_TASK: ${{ github.event.inputs.babi_per_task || '200' }}
+      HOTPOT: ${{ github.event.inputs.hotpot || '500' }}
+      FEVER_PER_LABEL: ${{ github.event.inputs.fever_per_label || '200' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare directories
+        run: mkdir -p build/cross_dataset reports/cross_dataset
+
+      - name: Compile actual FiberBundle and Lyapunov critic
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Iinclude \
+            bench/bench_cross_dataset_epistemic.cpp \
+            src/fiber_bundle.cpp \
+            src/stability_critic.cpp \
+            -o build/cross_dataset/bench_cross_dataset_epistemic
+
+      - name: Download and normalize frozen public benchmark sample
         run: |
           python benchmarks/cross_dataset/prepare_cross_dataset.py \
             --output build/cross_dataset/examples.tsv \
@@ -101,16 +143,12 @@ jobs:
             --markdown-output reports/cross_dataset/summary.md \
             --enforce
 
-      - name: Upload evidence
+      - name: Upload public benchmark evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cross-dataset-epistemic-${{ github.sha }}
+          name: cross-dataset-public-${{ github.sha }}
           path: |
-            benchmarks/cross_dataset/source_isolated_actual.tsv
-            reports/cross_dataset/source_isolated_results.csv
-            reports/cross_dataset/source_isolated_summary.json
-            reports/cross_dataset/source_isolated_summary.md
             build/cross_dataset/examples.tsv
             build/cross_dataset/examples.manifest.json
             reports/cross_dataset/results.csv
