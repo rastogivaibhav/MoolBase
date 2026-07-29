@@ -3,6 +3,7 @@
 #include "graphene/epistemic_control.hpp"
 #include "graphene/escape.hpp"
 #include "graphene/model_world.hpp"
+#include "graphene/path_verifier.hpp"
 #include "graphene/self_healing.hpp"
 
 #include <cstdint>
@@ -26,6 +27,7 @@ struct RuntimeOptions {
   StabilityThresholds stability_thresholds;
   LyapunovWeights lyapunov_weights;
   LyapunovTargets lyapunov_targets;
+  const PathVerifier* path_verifier{nullptr};
   uint32_t max_recursive_cycles{2};
   bool update_model_world{true};
 };
@@ -37,6 +39,7 @@ struct ReasoningReceipt {
   uint64_t model_world_event_hash{0};
   uint32_t expansion_rounds{0};
   bool graphene_executed{false};
+  bool path_verifier_executed{false};
   bool fiber_bundle_built{false};
   bool fiber_bundle_authoritative{false};
   bool stability_critic_executed{false};
