@@ -40,14 +40,15 @@ std::vector<std::string> sources(const DialecticPath& path) {
 std::vector<std::string> families(const DialecticPath& path) {
   std::set<std::string> unique;
   for (const auto& evidence : path.evidence) {
-    if (!evidence.evidence_family_id.empty())
+    if (!evidence.evidence_family_id.empty()) {
       unique.insert("family:" + evidence.evidence_family_id);
-    else if (!evidence.content_hash.empty())
+    } else if (!evidence.content_hash.empty()) {
       unique.insert("content:" + evidence.content_hash);
-    else if (!evidence.derivation_id.empty())
+    } else if (!evidence.derivation_id.empty()) {
       unique.insert("derivation:" + evidence.derivation_id);
-    else if (!evidence.source_id.empty())
+    } else if (!evidence.source_id.empty()) {
       unique.insert("source:" + evidence.source_id);
+    }
   }
   return {unique.begin(), unique.end()};
 }
@@ -55,8 +56,7 @@ std::vector<std::string> families(const DialecticPath& path) {
 std::vector<std::string> derivations(const DialecticPath& path) {
   std::set<std::string> unique;
   for (const auto& evidence : path.evidence) {
-    if (!evidence.derivation_id.empty())
-      unique.insert(evidence.derivation_id);
+    if (!evidence.derivation_id.empty()) unique.insert(evidence.derivation_id);
   }
   return {unique.begin(), unique.end()};
 }
@@ -64,15 +64,18 @@ std::vector<std::string> derivations(const DialecticPath& path) {
 FiberPathRole classify(const DialecticPath& path) {
   if (path.role_hint == PathRoleHint::Noise ||
       path.query_relevance < kEligibilityThreshold ||
-      path.target_consistency < kEligibilityThreshold)
+      path.target_consistency < kEligibilityThreshold) {
     return FiberPathRole::Noise;
+  }
   if (path.role_hint == PathRoleHint::Opposition ||
       path.contains_contradiction ||
-      path.semantic_verification == SemanticVerificationStatus::Contradicted)
+      path.semantic_verification == SemanticVerificationStatus::Contradicted) {
     return FiberPathRole::Opposition;
+  }
   if (path.role_hint == PathRoleHint::Support ||
-      path.role_hint == PathRoleHint::Auto)
+      path.role_hint == PathRoleHint::Auto) {
     return FiberPathRole::Support;
+  }
   return FiberPathRole::Unknown;
 }
 
@@ -98,20 +101,121 @@ bool overlaps(const std::vector<std::string>& left,
   size_t j = 0;
   while (i < left.size() && j < right.size()) {
     if (left[i] == right[j]) return true;
-    if (left[i] < right[j]) ++i;
-    else ++j;
+    if (left[i] < right[j]) {
+      ++i;
+    } else {
+      ++j;
+    }
   }
   return false;
+}
+
+bool contains_edge(const std::vector<uint32_t>& edges, uint32_t edge) {
+  return std::find(edges.begin(), edges.end(), edge) != edges.end();
+}
+
+PathValidityAssessment assess_validity(const DialecticPath& path,
+                                       uint32_t target_node) {
+  PathValidityAssessment result;
+  result.reaches_target = !path.nodes.empty() &&
+                          path.nodes.front() == target_node;
+  if (!result.reaches_target) {
+    result.findings.push_back("path does not begin at the asserted target");
+  }
+
+  const bool anchor_matches = !path.nodes.empty() &&
+                              path.nodes.back() == path.anchor_node;
+  const bool adjacent_node_cycle =
+      std::adjacent_find(path.nodes.begin(), path.nodes.end()) !=
+      path.nodes.end();
+  result.graph_continuous = result.reaches_target && anchor_matches &&
+                            path.nodes.size() >= 2 && !path.edges.empty() &&
+                            !adjacent_node_cycle;
+  if (!result.graph_continuous) {
+    result.findings.push_back(
+        "path chain is empty, cyclic, or disconnected from its anchor");
+  }
+
+  result.satisfies_joint_requirements = true;
+  for (const auto& requirement : path.joint_requirements) {
+    bool complete = requirement.all_sources_present &&
+                    !requirement.source_nodes.empty() &&
+                    !requirement.member_edges.empty();
+    for (uint32_t member_edge : requirement.member_edges) {
+      complete = complete && contains_edge(path.edges, member_edge);
+    }
+    if (!complete) {
+      result.satisfies_joint_requirements = false;
+      result.findings.push_back("incomplete joint requirement: " +
+                                requirement.hyperedge_id);
+    }
+  }
+
+  std::set<uint32_t> unique_edges(path.edges.begin(), path.edges.end());
+  std::set<uint32_t> missing_evidence_edges;
+  result.relation_types_valid = true;
+  for (const auto& finding : path.provenance_findings) {
+    if (finding.code == "MISSING_EVIDENCE") {
+      missing_evidence_edges.insert(finding.edge_id);
+    }
+    if (finding.code == "RELATION_TYPE_INVALID" ||
+        finding.code == "RELATION_DOMAIN_INVALID" ||
+        finding.code == "RELATION_RANGE_INVALID") {
+      result.relation_types_valid = false;
+    }
+  }
+  if (!result.relation_types_valid) {
+    result.findings.push_back("relation ontology validation failed");
+  }
+
+  if (unique_edges.empty()) {
+    result.critical_edge_coverage = 0.0;
+  } else {
+    size_t missing = 0;
+    for (uint32_t edge : missing_evidence_edges) {
+      if (unique_edges.count(edge) != 0) ++missing;
+    }
+    result.critical_edge_coverage = std::clamp(
+        1.0 - static_cast<double>(missing) /
+                  static_cast<double>(unique_edges.size()),
+        0.0, 1.0);
+  }
+  result.every_critical_edge_has_evidence =
+      !unique_edges.empty() && missing_evidence_edges.empty() &&
+      !path.evidence.empty();
+  if (!result.every_critical_edge_has_evidence) {
+    result.findings.push_back(
+        "one or more critical edges lack source evidence");
+  }
+
+  result.temporal_windows_overlap = path.temporal_consistent;
+  if (!result.temporal_windows_overlap) {
+    result.findings.push_back(
+        "path evidence is not valid in one common temporal window");
+  }
+
+  result.completeness_score = std::min(
+      std::clamp(path.completeness, 0.0, 1.0),
+      result.critical_edge_coverage);
+  if (!result.graph_continuous || !result.reaches_target ||
+      !result.satisfies_joint_requirements ||
+      !result.relation_types_valid ||
+      !result.temporal_windows_overlap) {
+    result.completeness_score = 0.0;
+  }
+  return result;
 }
 
 struct DisjointSet {
   explicit DisjointSet(size_t size) : parent(size), rank(size, 0) {
     std::iota(parent.begin(), parent.end(), 0);
   }
+
   size_t find(size_t value) {
     if (parent[value] != value) parent[value] = find(parent[value]);
     return parent[value];
   }
+
   void unite(size_t left, size_t right) {
     left = find(left);
     right = find(right);
@@ -120,6 +224,7 @@ struct DisjointSet {
     parent[right] = left;
     if (rank[left] == rank[right]) ++rank[left];
   }
+
   std::vector<size_t> parent;
   std::vector<uint8_t> rank;
 };
@@ -136,12 +241,33 @@ double jaccard_distance(const std::vector<uint32_t>& left,
   std::set<uint32_t> a(left.begin(), left.end());
   std::set<uint32_t> b(right.begin(), right.end());
   size_t intersection = 0;
-  for (uint32_t value : a) if (b.count(value)) ++intersection;
+  for (uint32_t value : a) {
+    if (b.count(value)) ++intersection;
+  }
   const size_t union_size = a.size() + b.size() - intersection;
   return union_size == 0
              ? 0.0
              : 1.0 - static_cast<double>(intersection) /
                          static_cast<double>(union_size);
+}
+
+void append_path_state_hash(uint64_t* hash, const FiberPath& path) {
+  *hash = append_hash(*hash, "q" + std::to_string(path.query_relevance));
+  *hash = append_hash(*hash, "t" + std::to_string(path.target_consistency));
+  *hash = append_hash(*hash, "c" + std::to_string(path.completeness));
+  *hash = append_hash(*hash, "p" + std::to_string(path.provenance_quality));
+  *hash = append_hash(*hash, "v" +
+      std::to_string(static_cast<int>(path.semantic_verification)));
+  *hash = append_hash(*hash, path.validity.graph_continuous ? "gc1" : "gc0");
+  *hash = append_hash(*hash, path.validity.reaches_target ? "rt1" : "rt0");
+  *hash = append_hash(*hash,
+                      path.validity.satisfies_joint_requirements ? "jr1" : "jr0");
+  *hash = append_hash(*hash,
+                      path.validity.every_critical_edge_has_evidence ? "ev1" : "ev0");
+  *hash = append_hash(*hash,
+                      path.validity.temporal_windows_overlap ? "tw1" : "tw0");
+  *hash = append_hash(*hash,
+                      "ec" + std::to_string(path.validity.critical_edge_coverage));
 }
 
 }  // namespace
@@ -189,26 +315,38 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       converted.query_relevance = std::clamp(path.query_relevance, 0.0, 1.0);
       converted.target_consistency =
           std::clamp(path.target_consistency, 0.0, 1.0);
-      converted.completeness = std::clamp(path.completeness, 0.0, 1.0);
       converted.temporal_consistency = path.temporal_consistent ? 1.0 : 0.0;
-      converted.provenance_quality = path.edges.empty()
-          ? (converted.evidence.empty() ? 0.0 : 1.0)
-          : std::clamp(1.0 - static_cast<double>(path.provenance_findings.size()) /
-                                 static_cast<double>(path.edges.size()),
-                       0.0, 1.0);
+      converted.validity = assess_validity(path, root.root_node);
+      converted.completeness = converted.validity.completeness_score;
+
+      const double finding_quality = path.edges.empty()
+          ? 0.0
+          : std::clamp(
+                1.0 - static_cast<double>(path.provenance_findings.size()) /
+                          static_cast<double>(path.edges.size()),
+                0.0, 1.0);
+      converted.provenance_quality = std::min(
+          finding_quality, converted.validity.critical_edge_coverage);
       converted.contains_contradiction = path.contains_contradiction;
       converted.contains_hypothetical = path.contains_hypothetical;
       converted.semantic_verification = path.semantic_verification;
       converted.role = classify(path);
       converted.irrelevant = converted.role == FiberPathRole::Noise;
+      const bool structurally_valid =
+          converted.validity.graph_continuous &&
+          converted.validity.reaches_target &&
+          converted.validity.satisfies_joint_requirements &&
+          converted.validity.relation_types_valid &&
+          converted.validity.every_critical_edge_has_evidence &&
+          converted.validity.temporal_windows_overlap;
       converted.eligible_for_support =
-          converted.role == FiberPathRole::Support &&
+          converted.role == FiberPathRole::Support && structurally_valid &&
           converted.query_relevance >= kEligibilityThreshold &&
           converted.target_consistency >= kEligibilityThreshold &&
           converted.completeness >= kEligibilityThreshold &&
           converted.provenance_quality > 0.0;
       converted.eligible_for_opposition =
-          converted.role == FiberPathRole::Opposition &&
+          converted.role == FiberPathRole::Opposition && structurally_valid &&
           converted.query_relevance >= kEligibilityThreshold &&
           converted.target_consistency >= kEligibilityThreshold &&
           converted.provenance_quality > 0.0;
@@ -222,8 +360,9 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       const std::string exact = converted.route_signature + '|' +
                                 converted.evidence_lineage_signature + '|' +
                                 std::to_string(static_cast<int>(converted.role));
-      if (exact_paths.insert(exact).second)
+      if (exact_paths.insert(exact).second) {
         fiber.paths.push_back(std::move(converted));
+      }
     }
 
     std::sort(fiber.paths.begin(), fiber.paths.end(),
@@ -232,13 +371,23 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
     });
     fiber.unique_route_count = fiber.paths.size();
     for (const FiberPath& path : fiber.paths) {
-      if (path.role == FiberPathRole::Noise) ++fiber.noise_path_count;
-      else ++fiber.relevant_path_count;
+      if (path.role == FiberPathRole::Noise) {
+        ++fiber.noise_path_count;
+      } else {
+        ++fiber.relevant_path_count;
+        if (!path.eligible_for_support && !path.eligible_for_opposition) {
+          ++fiber.invalid_path_count;
+        }
+      }
     }
     fiber.retrieval_noise_ratio = fiber.paths.empty()
         ? 0.0
         : static_cast<double>(fiber.noise_path_count) /
               static_cast<double>(fiber.paths.size());
+    fiber.invalid_path_ratio = fiber.relevant_path_count == 0
+        ? 0.0
+        : static_cast<double>(fiber.invalid_path_count) /
+              static_cast<double>(fiber.relevant_path_count);
 
     DisjointSet dsu(fiber.paths.size());
     for (size_t left = 0; left < fiber.paths.size(); ++left) {
@@ -252,20 +401,22 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
         if (overlaps(fiber.paths[left].evidence_family_lineage,
                      fiber.paths[right].evidence_family_lineage) ||
             overlaps(fiber.paths[left].derivation_lineage,
-                     fiber.paths[right].derivation_lineage))
+                     fiber.paths[right].derivation_lineage)) {
           dsu.unite(left, right);
+        }
       }
     }
 
     std::map<size_t, std::vector<size_t>> components;
     for (size_t index = 0; index < fiber.paths.size(); ++index) {
-      if (fiber.paths[index].role != FiberPathRole::Noise)
+      if (fiber.paths[index].role != FiberPathRole::Noise) {
         components[dsu.find(index)].push_back(index);
+      }
     }
 
     std::vector<const FiberPath*> representatives;
     double completeness = 0.0;
-    size_t evidence_backed = 0;
+    double evidence_coverage = 0.0;
     for (const auto& entry : components) {
       EvidenceCorrelationGroup group;
       std::set<std::string> family_ids;
@@ -279,8 +430,9 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
         derivation_ids.insert(path.derivation_lineage.begin(),
                               path.derivation_lineage.end());
         if (!best || quality(path) > quality(*best) ||
-            (quality(path) == quality(*best) && path.id < best->id))
+            (quality(path) == quality(*best) && path.id < best->id)) {
           best = &path;
+        }
       }
       group.evidence_family_ids.assign(family_ids.begin(), family_ids.end());
       group.derivation_ids.assign(derivation_ids.begin(), derivation_ids.end());
@@ -300,11 +452,12 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
           ++fiber.independent_evidence_family_count;
           representatives.push_back(best);
           completeness += best->completeness;
-          if (!best->evidence_family_lineage.empty()) ++evidence_backed;
+          evidence_coverage += best->validity.critical_edge_coverage;
         }
-        if (best->eligible_for_opposition)
+        if (best->eligible_for_opposition) {
           fiber.contradiction_mass = std::max(fiber.contradiction_mass,
                                               quality(*best));
+        }
       }
       std::sort(group.path_ids.begin(), group.path_ids.end());
       fiber.correlation_groups.push_back(std::move(group));
@@ -325,18 +478,18 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
         : completeness / static_cast<double>(representatives.size());
     fiber.evidence_coverage = representatives.empty()
         ? 0.0
-        : static_cast<double>(evidence_backed) /
-              static_cast<double>(representatives.size());
+        : evidence_coverage / static_cast<double>(representatives.size());
 
     if (representatives.size() > 1) {
       double sum = 0.0;
       size_t pairs = 0;
-      for (size_t left = 0; left < representatives.size(); ++left)
+      for (size_t left = 0; left < representatives.size(); ++left) {
         for (size_t right = left + 1; right < representatives.size(); ++right) {
           sum += jaccard_distance(representatives[left]->edges,
                                   representatives[right]->edges);
           ++pairs;
         }
+      }
       fiber.relevant_route_diversity =
           pairs == 0 ? 0.0 : std::clamp(sum / static_cast<double>(pairs),
                                        0.0, 1.0);
@@ -358,16 +511,20 @@ uint64_t FiberBundleBuilder::hash(const FiberBundle& bundle) {
     value = append_hash(value, "i" +
         std::to_string(fiber.independent_evidence_family_count));
     value = append_hash(value, "n" + std::to_string(fiber.noise_path_count));
+    value = append_hash(value, "x" + std::to_string(fiber.invalid_path_count));
     for (const FiberPath& path : fiber.paths) {
       value = append_hash(value, "p" + std::to_string(path.id));
       value = append_hash(value,
                           "r" + std::to_string(static_cast<int>(path.role)));
+      append_path_state_hash(&value, path);
     }
-    for (const EvidenceCorrelationGroup& group : fiber.correlation_groups)
+    for (const EvidenceCorrelationGroup& group : fiber.correlation_groups) {
       value = append_hash(value, "g" + std::to_string(group.id));
+    }
   }
-  for (const std::string& warning : bundle.warnings)
+  for (const std::string& warning : bundle.warnings) {
     value = append_hash(value, "w" + warning);
+  }
   return value;
 }
 
