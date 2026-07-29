@@ -26,6 +26,16 @@ DialecticPath path(uint32_t root,
   return value;
 }
 
+FiberBundle build_one(const DialecticPath& value, uint64_t snapshot) {
+  BundleSet raw;
+  raw.snapshot_version = snapshot;
+  RootBundle root;
+  root.root_node = value.root_node;
+  root.paths.push_back(value);
+  raw.roots.push_back(std::move(root));
+  return FiberBundleBuilder().build(raw);
+}
+
 }  // namespace
 
 int main() {
@@ -46,6 +56,11 @@ int main() {
   assert(correlated_fiber.independent_path_count == 1);
   assert(correlated_fiber.relevant_route_diversity == 0.0);
   assert(correlated_fiber.correlation_groups.size() == 1);
+  assert(correlated_fiber.invalid_path_count == 0);
+  assert(correlated_fiber.paths.front().validity.graph_continuous);
+  assert(correlated_fiber.paths.front().validity.reaches_target);
+  assert(correlated_fiber.paths.front().validity.every_critical_edge_has_evidence);
+  assert(correlated_fiber.paths.front().validity.completeness_score == 1.0);
 
   BundleSet independent_raw;
   independent_raw.snapshot_version = 12;
@@ -99,10 +114,55 @@ int main() {
         return group.role == FiberPathRole::Opposition;
       }));
 
+  // Edge-level evidence is mandatory. A sourced-looking path with an explicit
+  // missing-evidence finding cannot count as independent support.
+  DialecticPath missing_evidence = path(1, {20, 21}, "partial-source");
+  missing_evidence.provenance_findings.push_back(
+      {21, "MISSING_EVIDENCE", "critical bridge has no evidence"});
+  const FiberBundle unsupported = build_one(missing_evidence, 16);
+  const FiberPath& unsupported_path = unsupported.fibers.front().paths.front();
+  assert(!unsupported_path.validity.every_critical_edge_has_evidence);
+  assert(unsupported_path.validity.critical_edge_coverage == 0.5);
+  assert(!unsupported_path.eligible_for_support);
+  assert(unsupported.fibers.front().independent_evidence_family_count == 0);
+  assert(unsupported.fibers.front().invalid_path_count == 1);
+
+  // Hyperedge paths remain invalid until every declared source/member is
+  // present in the path.
+  DialecticPath incomplete_joint = path(1, {30, 31}, "joint-source");
+  JointRequirement requirement;
+  requirement.hyperedge_id = "joint-1";
+  requirement.target_node = 1;
+  requirement.source_nodes = {2, 3};
+  requirement.member_edges = {30, 32};
+  requirement.all_sources_present = false;
+  incomplete_joint.joint_requirements.push_back(requirement);
+  const FiberBundle joint_bundle = build_one(incomplete_joint, 17);
+  const FiberPath& joint_path = joint_bundle.fibers.front().paths.front();
+  assert(!joint_path.validity.satisfies_joint_requirements);
+  assert(joint_path.validity.completeness_score == 0.0);
+  assert(!joint_path.eligible_for_support);
+
+  // Obvious chain discontinuity is recorded rather than silently accepted.
+  DialecticPath broken = path(1, {40}, "broken-source");
+  broken.nodes = {7, 99};
+  const FiberBundle broken_bundle = build_one(broken, 18);
+  const FiberPath& broken_path = broken_bundle.fibers.front().paths.front();
+  assert(!broken_path.validity.reaches_target);
+  assert(!broken_path.validity.graph_continuous);
+  assert(!broken_path.eligible_for_support);
+
   BundleSet reordered = independent_raw;
   std::reverse(reordered.roots.front().paths.begin(),
                reordered.roots.front().paths.end());
   assert(builder.build(reordered).immutable_hash ==
+         independent.immutable_hash);
+
+  // Verifier-state changes alter the immutable bundle receipt even when route
+  // and evidence identity remain the same.
+  BundleSet lower_relevance = independent_raw;
+  lower_relevance.roots.front().paths.front().query_relevance = 0.75;
+  assert(builder.build(lower_relevance).immutable_hash !=
          independent.immutable_hash);
 
   std::cout << "fiber_bundle_v2_contract_passed=true\n";
