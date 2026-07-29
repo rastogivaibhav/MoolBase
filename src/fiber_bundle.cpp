@@ -258,6 +258,10 @@ void append_path_state_hash(uint64_t* hash, const FiberPath& path) {
   *hash = append_hash(*hash, "p" + std::to_string(path.provenance_quality));
   *hash = append_hash(*hash, "v" +
       std::to_string(static_cast<int>(path.semantic_verification)));
+  *hash = append_hash(*hash, "vv" + path.verifier_version);
+  for (const auto& finding : path.verification_findings) {
+    *hash = append_hash(*hash, "vf" + finding);
+  }
   *hash = append_hash(*hash, path.validity.graph_continuous ? "gc1" : "gc0");
   *hash = append_hash(*hash, path.validity.reaches_target ? "rt1" : "rt0");
   *hash = append_hash(*hash,
@@ -311,12 +315,24 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       converted.source_lineage = sources(path);
       converted.evidence_family_lineage = families(path);
       converted.derivation_lineage = derivations(path);
+      converted.verifier_version = path.verifier_version;
+      converted.verification_findings = path.verification_findings;
       converted.confidence = std::clamp(path.score, 0.0, 1.0);
       converted.query_relevance = std::clamp(path.query_relevance, 0.0, 1.0);
       converted.target_consistency =
           std::clamp(path.target_consistency, 0.0, 1.0);
       converted.temporal_consistency = path.temporal_consistent ? 1.0 : 0.0;
       converted.validity = assess_validity(path, root.root_node);
+      converted.validity.findings.insert(
+          converted.validity.findings.end(),
+          converted.verification_findings.begin(),
+          converted.verification_findings.end());
+      std::sort(converted.validity.findings.begin(),
+                converted.validity.findings.end());
+      converted.validity.findings.erase(
+          std::unique(converted.validity.findings.begin(),
+                      converted.validity.findings.end()),
+          converted.validity.findings.end());
       converted.completeness = converted.validity.completeness_score;
 
       const double finding_quality = path.edges.empty()
