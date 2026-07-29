@@ -12,7 +12,8 @@ DialecticPath path(uint32_t root,
                    std::vector<uint32_t> edges,
                    const std::string& source,
                    double relevance = 1.0,
-                   bool contradiction = false) {
+                   bool contradiction = false,
+                   const std::string& family = {}) {
   DialecticPath value;
   value.root_node = root;
   value.anchor_node = 99;
@@ -22,7 +23,7 @@ DialecticPath path(uint32_t root,
   value.query_relevance = relevance;
   value.target_consistency = relevance;
   value.contains_contradiction = contradiction;
-  value.evidence.push_back({source, "span", ""});
+  value.evidence.push_back({source, "span", "", family});
   return value;
 }
 
@@ -62,8 +63,24 @@ int main() {
   assert(correlated_fiber.paths.front().validity.every_critical_edge_has_evidence);
   assert(correlated_fiber.paths.front().validity.completeness_score == 1.0);
 
+  // Explicit family labels cannot split one underlying source into fabricated
+  // independent evidence. Source ancestry remains a correlation boundary.
+  BundleSet family_split_raw;
+  family_split_raw.snapshot_version = 12;
+  RootBundle family_split_root;
+  family_split_root.root_node = 1;
+  family_split_root.paths.push_back(
+      path(1, {5, 6}, "shared-document", 1.0, false, "family-a"));
+  family_split_root.paths.push_back(
+      path(1, {7, 8}, "shared-document", 1.0, false, "family-b"));
+  family_split_raw.roots.push_back(std::move(family_split_root));
+  const FiberBundle family_split = builder.build(family_split_raw);
+  assert(family_split.fibers.front().paths.size() == 2);
+  assert(family_split.fibers.front().correlation_groups.size() == 1);
+  assert(family_split.fibers.front().independent_evidence_family_count == 1);
+
   BundleSet independent_raw;
-  independent_raw.snapshot_version = 12;
+  independent_raw.snapshot_version = 13;
   RootBundle independent_root;
   independent_root.root_node = 1;
   independent_root.paths.push_back(path(1, {1, 2}, "source-a"));
@@ -74,7 +91,7 @@ int main() {
   assert(independent.fibers.front().relevant_route_diversity > 0.90);
 
   BundleSet noise_raw = independent_raw;
-  noise_raw.snapshot_version = 13;
+  noise_raw.snapshot_version = 14;
   DialecticPath noise = path(1, {7, 8}, "noise-source", 0.0);
   noise.role_hint = PathRoleHint::Noise;
   noise_raw.roots.front().paths.push_back(noise);
@@ -84,7 +101,7 @@ int main() {
   assert(noisy.fibers.front().retrieval_noise_ratio > 0.0);
 
   BundleSet contradiction_raw = independent_raw;
-  contradiction_raw.snapshot_version = 14;
+  contradiction_raw.snapshot_version = 15;
   contradiction_raw.roots.front().paths.push_back(
       path(1, {9, 10}, "opposition-source", 1.0, true));
   const FiberBundle contradicted = builder.build(contradiction_raw);
@@ -93,7 +110,7 @@ int main() {
   // A contradiction citing the same source family as support remains a
   // separate opposition group. Correlation must not silently hide its role.
   BundleSet shared_opposition_raw;
-  shared_opposition_raw.snapshot_version = 15;
+  shared_opposition_raw.snapshot_version = 16;
   RootBundle shared_opposition_root;
   shared_opposition_root.root_node = 1;
   shared_opposition_root.paths.push_back(
@@ -119,7 +136,7 @@ int main() {
   DialecticPath missing_evidence = path(1, {20, 21}, "partial-source");
   missing_evidence.provenance_findings.push_back(
       {21, "MISSING_EVIDENCE", "critical bridge has no evidence"});
-  const FiberBundle unsupported = build_one(missing_evidence, 16);
+  const FiberBundle unsupported = build_one(missing_evidence, 17);
   const FiberPath& unsupported_path = unsupported.fibers.front().paths.front();
   assert(!unsupported_path.validity.every_critical_edge_has_evidence);
   assert(unsupported_path.validity.critical_edge_coverage == 0.5);
@@ -137,7 +154,7 @@ int main() {
   requirement.member_edges = {30, 32};
   requirement.all_sources_present = false;
   incomplete_joint.joint_requirements.push_back(requirement);
-  const FiberBundle joint_bundle = build_one(incomplete_joint, 17);
+  const FiberBundle joint_bundle = build_one(incomplete_joint, 18);
   const FiberPath& joint_path = joint_bundle.fibers.front().paths.front();
   assert(!joint_path.validity.satisfies_joint_requirements);
   assert(joint_path.validity.completeness_score == 0.0);
@@ -146,7 +163,7 @@ int main() {
   // Obvious chain discontinuity is recorded rather than silently accepted.
   DialecticPath broken = path(1, {40}, "broken-source");
   broken.nodes = {7, 99};
-  const FiberBundle broken_bundle = build_one(broken, 18);
+  const FiberBundle broken_bundle = build_one(broken, 19);
   const FiberPath& broken_path = broken_bundle.fibers.front().paths.front();
   assert(!broken_path.validity.reaches_target);
   assert(!broken_path.validity.graph_continuous);
@@ -157,6 +174,43 @@ int main() {
                reordered.roots.front().paths.end());
   assert(builder.build(reordered).immutable_hash ==
          independent.immutable_hash);
+
+  // Exact route/evidence duplicates are merged conservatively. Conflicting
+  // verifier outcomes cannot become order-dependent or retain the optimistic
+  // result merely because it appeared first.
+  DialecticPath optimistic =
+      path(1, {50, 51}, "duplicate-source", 0.95, false, "duplicate-family");
+  optimistic.semantic_verification = SemanticVerificationStatus::Verified;
+  optimistic.verifier_version = "verifier-v1";
+  DialecticPath cautious =
+      path(1, {50, 51}, "duplicate-source", 0.70, false, "duplicate-family");
+  cautious.semantic_verification = SemanticVerificationStatus::Unverified;
+  cautious.verifier_version = "verifier-v2";
+
+  BundleSet duplicate_forward;
+  duplicate_forward.snapshot_version = 20;
+  RootBundle duplicate_root;
+  duplicate_root.root_node = 1;
+  duplicate_root.paths = {optimistic, cautious};
+  duplicate_forward.roots.push_back(duplicate_root);
+  BundleSet duplicate_reverse = duplicate_forward;
+  std::reverse(duplicate_reverse.roots.front().paths.begin(),
+               duplicate_reverse.roots.front().paths.end());
+  const FiberBundle merged_forward = builder.build(duplicate_forward);
+  const FiberBundle merged_reverse = builder.build(duplicate_reverse);
+  assert(merged_forward.fibers.front().paths.size() == 1);
+  assert(merged_forward.immutable_hash == merged_reverse.immutable_hash);
+  const FiberPath& merged = merged_forward.fibers.front().paths.front();
+  assert(merged.query_relevance == 0.70);
+  assert(merged.target_consistency == 0.70);
+  assert(merged.semantic_verification ==
+         SemanticVerificationStatus::Unverified);
+  assert(merged.verifier_version == "mixed");
+  assert(std::find(
+      merged.verification_findings.begin(),
+      merged.verification_findings.end(),
+      "exact duplicate received results from different verifier versions") !=
+      merged.verification_findings.end());
 
   // Verifier-state changes alter the immutable bundle receipt even when route
   // and evidence identity remain the same.
