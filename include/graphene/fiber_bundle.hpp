@@ -16,6 +16,18 @@ enum class FiberPathRole : uint8_t {
   Unknown
 };
 
+struct PathValidityAssessment {
+  bool graph_continuous{false};
+  bool reaches_target{false};
+  bool satisfies_joint_requirements{false};
+  bool relation_types_valid{true};
+  bool every_critical_edge_has_evidence{false};
+  bool temporal_windows_overlap{false};
+  double critical_edge_coverage{0.0};
+  double completeness_score{0.0};
+  std::vector<std::string> findings;
+};
+
 struct FiberPath {
   uint64_t id{0};
   uint32_t target_node{0};
@@ -37,6 +49,7 @@ struct FiberPath {
   double completeness{1.0};
   double temporal_consistency{0.0};
   double provenance_quality{0.0};
+  PathValidityAssessment validity;
 
   FiberPathRole role{FiberPathRole::Unknown};
   SemanticVerificationStatus semantic_verification{
@@ -67,6 +80,7 @@ struct TargetFiber {
   size_t unique_route_count{0};
   size_t relevant_path_count{0};
   size_t noise_path_count{0};
+  size_t invalid_path_count{0};
   size_t independent_evidence_family_count{0};
 
   // Backward-compatible alias for independent_evidence_family_count.
@@ -77,6 +91,7 @@ struct TargetFiber {
   double independent_support_score{0.0};
   double contradiction_mass{0.0};
   double retrieval_noise_ratio{0.0};
+  double invalid_path_ratio{0.0};
   double completeness_score{0.0};
   double evidence_coverage{0.0};
 };
