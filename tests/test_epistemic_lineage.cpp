@@ -26,8 +26,24 @@ int main() {
   assert(explicit_result.evidence.front().derivation_id == "extract-run-9");
   assert(explicit_result.evidence.front().content_hash == "sha256:abc");
 
+  Edge extracted;
+  extracted.id = 8;
+  extracted.origin = EdgeOrigin::Observed;
+  extracted.role = EdgeRole::Supports;
+  extracted.metadata = {
+      {"graphene_source_id", "document-17"},
+      {"graphene_source_uri", "file:///document-17.json"},
+      {"graphene_evidence_id", "edge-fact-99"},
+      {"graphene_evidence_uri", "file:///document-17.json#fact-99"},
+      {"graphene_evidence_text", "supporting sentence"}};
+  const EdgeProvenance extracted_result = assess_edge_provenance(extracted);
+  assert(extracted_result.findings.empty());
+  assert(extracted_result.evidence.size() == 1);
+  assert(extracted_result.evidence.front().source_id == "document-17");
+  assert(extracted_result.evidence.front().span == "supporting sentence");
+
   Edge inferred;
-  inferred.id = 8;
+  inferred.id = 9;
   inferred.origin = EdgeOrigin::Inferred;
   inferred.role = EdgeRole::Compressed;
   inferred.metadata = {
@@ -39,7 +55,7 @@ int main() {
   assert(inferred_result.findings.empty());
 
   Edge unsupported;
-  unsupported.id = 9;
+  unsupported.id = 10;
   unsupported.origin = EdgeOrigin::Observed;
   unsupported.role = EdgeRole::Supports;
   const EdgeProvenance unsupported_result =
