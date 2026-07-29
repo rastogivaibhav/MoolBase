@@ -131,7 +131,7 @@ void add_relation(ExtractionInput* input,
   rel.evidence_uri = "memory://bench/extraction/" + evidence_id;
   rel.evidence_text = evidence_text;
   rel.metadata["path_kind"] = path_kind;
-  rel.metadata["graphene_profile"] = "rich-extraction";
+  rel.metadata["workload_profile"] = "rich-extraction";
   rel.bond_type = bond;
   rel.defect_type = defect;
   rel.layer_coupling = coupling;
@@ -178,7 +178,7 @@ BuiltDocument build_document(uint32_t doc, uint32_t nodes_per_doc, uint32_t dim)
       node.metadata["source_kind"] = kind;
       node.metadata["cluster"] = std::to_string(group);
       node.metadata["slot"] = std::to_string(slot);
-      node.metadata["graphene_profile"] = "rich-extraction";
+      node.metadata["workload_profile"] = "rich-extraction";
       node.metadata["carbon_zone"] = slot == 3 ? "stacked" : (slot == 5 ? "defect" : "sheet");
       node.lattice = motif_coord(cluster_index, slot, base_layer);
       if (slot == 0) node.role = ExtractionRole::Root;
