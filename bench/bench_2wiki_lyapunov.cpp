@@ -53,12 +53,15 @@ DialecticPath make_path(const Example& example,
                         const std::string& source_namespace) {
   DialecticPath path;
   path.root_node = 1;
-  path.anchor_node = 100;
-  path.nodes.push_back(1);
+  path.nodes.push_back(path.root_node);
   for (size_t index = 0; index < edge_count; ++index) {
     path.nodes.push_back(static_cast<uint32_t>(101 + index));
     path.edges.push_back(edge_offset + static_cast<uint32_t>(index));
   }
+  if (path.nodes.size() != path.edges.size() + 1) {
+    throw std::logic_error("2Wiki path chain is malformed");
+  }
+  path.anchor_node = path.nodes.back();
   path.score = confidence;
   path.contains_contradiction = contradiction;
   path.temporal_consistent = temporal_consistent;
@@ -77,7 +80,7 @@ DialecticPath make_path(const Example& example,
     const uint32_t edge =
         path.edges.empty() ? 0 : path.edges[index % path.edges.size()];
     path.provenance_findings.push_back(
-        {edge, "missing_gold_hop",
+        {edge, "MISSING_EVIDENCE",
          "controlled 2Wiki evidence corruption"});
   }
   return path;
@@ -122,7 +125,7 @@ FiberBundle build_bundle(const Example& example,
     root.paths.push_back(std::move(opposition));
   } else if (condition == "same_source_duplicate") {
     root.paths.push_back(gold);
-    // Different route, exactly the same evidence families. FiberBundle v2 must
+    // Different route, exactly the same source ancestry. FiberBundle v2 must
     // preserve the route but keep one independent corroboration family.
     DialecticPath duplicate = make_path(
         example, base + 8000U, hops, sources, 0.90, false, true, 0,
