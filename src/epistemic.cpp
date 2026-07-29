@@ -36,9 +36,7 @@ int64_t days_from_civil(int year, unsigned month, unsigned day) {
   const int era = (year >= 0 ? year : year - 399) / 400;
   const unsigned yoe = static_cast<unsigned>(year - era * 400);
   const unsigned adjusted_month = month > 2 ? month - 3 : month + 9;
-  const unsigned doy =
-      (153 * adjusted_month + 2) / 5 +
-      day - 1;
+  const unsigned doy = (153 * adjusted_month + 2) / 5 + day - 1;
   const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
   return static_cast<int64_t>(era) * 146097 + static_cast<int64_t>(doe) -
          719468;
@@ -58,6 +56,16 @@ std::string metadata_value(const std::map<std::string, std::string>& metadata,
                            const std::string& key) {
   const auto it = metadata.find(key);
   return it == metadata.end() ? std::string{} : it->second;
+}
+
+std::string first_metadata_value(
+    const std::map<std::string, std::string>& metadata,
+    const std::initializer_list<const char*>& keys) {
+  for (const char* key : keys) {
+    const std::string value = metadata_value(metadata, key);
+    if (!value.empty()) return value;
+  }
+  return {};
 }
 
 } // namespace
@@ -201,27 +209,21 @@ bool valid_at(const TemporalValidity& validity,
 EdgeProvenance assess_edge_provenance(const Edge& edge) {
   EdgeProvenance result;
   EvidenceRef evidence;
-  evidence.source_id = metadata_value(edge.metadata, "source_id");
-  if (evidence.source_id.empty()) {
-    evidence.source_id = metadata_value(edge.metadata, "evidence_ref");
-  }
-  if (evidence.source_id.empty()) {
-    evidence.source_id = metadata_value(edge.metadata, "source");
-  }
-  if (evidence.source_id.empty()) {
-    evidence.source_id = metadata_value(edge.metadata, "graphene_evidence_id");
-  }
-  if (evidence.source_id.empty()) {
-    evidence.source_id = metadata_value(edge.metadata, "graphene_evidence_uri");
-  }
-  if (evidence.source_id.empty()) {
-    evidence.source_id = metadata_value(edge.metadata, "graphene_source_id");
-  }
-  evidence.span = metadata_value(edge.metadata, "span");
-  if (evidence.span.empty()) {
-    evidence.span = metadata_value(edge.metadata, "graphene_evidence_text");
-  }
+  evidence.source_id = first_metadata_value(
+      edge.metadata,
+      {"source_id", "evidence_ref", "source", "graphene_evidence_id",
+       "graphene_evidence_uri", "graphene_source_id"});
+  evidence.span = first_metadata_value(
+      edge.metadata, {"span", "graphene_evidence_text"});
   evidence.observed_at = metadata_value(edge.metadata, "observed_at");
+  evidence.evidence_family_id = first_metadata_value(
+      edge.metadata,
+      {"evidence_family_id", "graphene_evidence_family_id"});
+  evidence.derivation_id = first_metadata_value(
+      edge.metadata, {"derivation_id", "derived_from"});
+  evidence.content_hash = first_metadata_value(
+      edge.metadata,
+      {"evidence_content_hash", "graphene_evidence_hash", "content_hash"});
   if (!evidence.source_id.empty()) result.evidence.push_back(evidence);
 
   if ((edge.origin == EdgeOrigin::Observed ||
@@ -240,7 +242,7 @@ EdgeProvenance assess_edge_provenance(const Edge& edge) {
     }
   }
   if (edge.origin == EdgeOrigin::Inferred &&
-      metadata_value(edge.metadata, "derived_from").empty()) {
+      evidence.derivation_id.empty()) {
     result.findings.push_back(
         {edge.id, "INFERRED_WITHOUT_DERIVATION",
          "inferred edge has no derived_from reference"});
@@ -251,8 +253,7 @@ EdgeProvenance assess_edge_provenance(const Edge& edge) {
         {edge.id, "REINFORCED_TRUTH_PROMOTION",
          "reinforcement cannot promote an edge to discovered truth"});
   }
-  if (edge.role == EdgeRole::Compressed &&
-      metadata_value(edge.metadata, "derived_from").empty()) {
+  if (edge.role == EdgeRole::Compressed && evidence.derivation_id.empty()) {
     result.findings.push_back(
         {edge.id, "COMPRESSED_WITHOUT_MECHANISM",
          "compressed shortcut has no mechanistic derivation reference"});
