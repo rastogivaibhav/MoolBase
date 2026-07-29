@@ -46,14 +46,15 @@ struct DialecticPath {
   std::vector<JointRequirement> joint_requirements;
 
   // Path-verifier outputs. The graph expander defaults to an admissible but
-  // unverified path. A domain verifier or benchmark harness can tighten these
-  // values without changing the storage model.
+  // unverified path. A domain verifier may only tighten these coordinates.
   double query_relevance{1.0};
   double target_consistency{1.0};
   double completeness{1.0};
   PathRoleHint role_hint{PathRoleHint::Auto};
   SemanticVerificationStatus semantic_verification{
       SemanticVerificationStatus::Unverified};
+  std::string verifier_version;
+  std::vector<std::string> verification_findings;
 };
 
 struct RootBundle {
