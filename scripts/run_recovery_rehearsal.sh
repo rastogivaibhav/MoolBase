@@ -50,7 +50,7 @@ log_line "source_compact=pass"
 log_line "backup_verified=pass"
 
 "$CLI" inspect "$BACKUP" 4 --json |
-  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["nodes_visible"] == 3; assert d["edges_visible"] == 2; print(f"restored_nodes={d[\"nodes_visible\"]}\nrestored_edges={d[\"edges_visible\"]}")' |
+  python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["nodes_visible"] == 3; assert d["edges_visible"] == 2; print("restored_nodes={}\nrestored_edges={}".format(d["nodes_visible"], d["edges_visible"]))' |
   tee -a "$OUT"
 
 "$CLI" validate "$BACKUP" 4 --json |
