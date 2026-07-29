@@ -42,6 +42,8 @@ struct FiberPath {
   std::string route_signature;
   std::string evidence_lineage_signature;
   std::string causal_ancestry_signature;
+  std::string verifier_version;
+  std::vector<std::string> verification_findings;
 
   double confidence{0.0};
   double query_relevance{1.0};
