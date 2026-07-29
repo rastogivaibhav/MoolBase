@@ -128,6 +128,10 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
 
   BundleSet expansion = dialectic.expand(
       query, query_signature, options.dialectic, resolved_snapshot);
+  if (options.path_verifier) {
+    apply_path_verifier(&expansion, *options.path_verifier, query,
+                        query_signature, options.dialectic.mode);
+  }
   result.initial_bundle = bundle_builder.build(expansion);
   result.initial_stability = critic.assess(
       result.initial_bundle, options.dialectic.mode,
@@ -178,6 +182,10 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     current_options = next_options;
     BundleSet reopened = dialectic.expand(
         query, query_signature, current_options, resolved_snapshot);
+    if (options.path_verifier) {
+      apply_path_verifier(&reopened, *options.path_verifier, query,
+                          query_signature, current_options.mode);
+    }
     FiberBundle reopened_bundle = bundle_builder.build(reopened);
     StabilityAssessment reopened_stability = critic.assess(
         reopened_bundle, current_options.mode,
@@ -269,6 +277,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   result.receipt.final_bundle_hash =
       result.final_bundle.immutable_hash;
   result.receipt.graphene_executed = true;
+  result.receipt.path_verifier_executed = options.path_verifier != nullptr;
   result.receipt.fiber_bundle_built = true;
   result.receipt.fiber_bundle_authoritative = true;
   result.receipt.stability_critic_executed = true;
@@ -331,6 +340,8 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     hypothesis.metadata["semantic_verification"] =
         std::to_string(static_cast<int>(
             result.final_admissibility.semantic_verification));
+    hypothesis.metadata["path_verifier_executed"] =
+        result.receipt.path_verifier_executed ? "true" : "false";
     model_world_->add(std::move(hypothesis),
                       "record governed reasoning result");
 
