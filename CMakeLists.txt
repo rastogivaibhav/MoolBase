@@ -19,12 +19,13 @@ target_sources(graphenedb PRIVATE
   src/stability_critic.cpp
 )
 
-# The retained stress harness uses GCC's popcount spelling. Keep the test
-# portable on MSVC without changing production code or weakening the gate.
+# The retained stress harness uses GCC's popcount spelling. Force-include a
+# typed compatibility shim on MSVC without altering production code or
+# weakening the stress assertion.
 if(MSVC AND TARGET graphenedb_rc_stress_tests)
-  target_compile_options(graphenedb_rc_stress_tests PRIVATE /FIintrin.h)
-  target_compile_definitions(graphenedb_rc_stress_tests
-                             PRIVATE __builtin_popcountll=__popcnt64)
+  target_compile_options(
+    graphenedb_rc_stress_tests
+    PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/tests/msvc_compat.hpp")
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
