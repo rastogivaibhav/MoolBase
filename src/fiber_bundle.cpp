@@ -245,6 +245,10 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       if (fiber.paths[left].role == FiberPathRole::Noise) continue;
       for (size_t right = left + 1; right < fiber.paths.size(); ++right) {
         if (fiber.paths[right].role == FiberPathRole::Noise) continue;
+        // Support and opposition are separate epistemic roles even when they
+        // cite the same document. Correlation collapses repeated support only
+        // within the same role; it must never hide material opposition.
+        if (fiber.paths[left].role != fiber.paths[right].role) continue;
         if (overlaps(fiber.paths[left].evidence_family_lineage,
                      fiber.paths[right].evidence_family_lineage) ||
             overlaps(fiber.paths[left].derivation_lineage,
