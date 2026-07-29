@@ -59,14 +59,6 @@ jobs:
       - name: Prepare directories
         run: mkdir -p build/cross_dataset reports/cross_dataset
 
-      - name: Download and normalize public benchmark data
-        run: |
-          python benchmarks/cross_dataset/prepare_cross_dataset.py \
-            --output build/cross_dataset/examples.tsv \
-            --babi-per-task "$BABI_PER_TASK" \
-            --hotpot "$HOTPOT" \
-            --fever-per-label "$FEVER_PER_LABEL"
-
       - name: Compile actual FiberBundle and Lyapunov critic
         run: |
           g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
@@ -76,13 +68,32 @@ jobs:
             src/stability_critic.cpp \
             -o build/cross_dataset/bench_cross_dataset_epistemic
 
-      - name: Run benchmark-derived epistemic diagnostics
+      - name: Run committed source-isolated regression
+        run: |
+          build/cross_dataset/bench_cross_dataset_epistemic \
+            benchmarks/cross_dataset/source_isolated_actual.tsv \
+            reports/cross_dataset/source_isolated_results.csv
+          python benchmarks/cross_dataset/summarise_cross_dataset.py \
+            --input reports/cross_dataset/source_isolated_results.csv \
+            --json-output reports/cross_dataset/source_isolated_summary.json \
+            --markdown-output reports/cross_dataset/source_isolated_summary.md \
+            --enforce
+
+      - name: Download and normalize full public benchmark sample
+        run: |
+          python benchmarks/cross_dataset/prepare_cross_dataset.py \
+            --output build/cross_dataset/examples.tsv \
+            --babi-per-task "$BABI_PER_TASK" \
+            --hotpot "$HOTPOT" \
+            --fever-per-label "$FEVER_PER_LABEL"
+
+      - name: Run full benchmark-derived epistemic diagnostics
         run: |
           build/cross_dataset/bench_cross_dataset_epistemic \
             build/cross_dataset/examples.tsv \
             reports/cross_dataset/results.csv
 
-      - name: Summarize and enforce frozen targets
+      - name: Summarize and enforce frozen full-run targets
         run: |
           python benchmarks/cross_dataset/summarise_cross_dataset.py \
             --input reports/cross_dataset/results.csv \
@@ -96,6 +107,10 @@ jobs:
         with:
           name: cross-dataset-epistemic-${{ github.sha }}
           path: |
+            benchmarks/cross_dataset/source_isolated_actual.tsv
+            reports/cross_dataset/source_isolated_results.csv
+            reports/cross_dataset/source_isolated_summary.json
+            reports/cross_dataset/source_isolated_summary.md
             build/cross_dataset/examples.tsv
             build/cross_dataset/examples.manifest.json
             reports/cross_dataset/results.csv
