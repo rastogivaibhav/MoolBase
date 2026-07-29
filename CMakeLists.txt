@@ -14,6 +14,7 @@ target_sources(graphenedb PRIVATE
   src/generic_relation.cpp
   src/hypokosh_runtime.cpp
   src/model_world.cpp
+  src/path_verifier.cpp
   src/relation_ontology.cpp
   src/self_healing.cpp
   src/stability_critic.cpp
@@ -70,6 +71,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_epistemic_lineage_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_epistemic_lineage_tests
            COMMAND graphenedb_epistemic_lineage_tests)
+
+  add_executable(graphenedb_path_verifier_tests
+                 tests/test_path_verifier.cpp)
+  target_link_libraries(graphenedb_path_verifier_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_path_verifier_tests
+           COMMAND graphenedb_path_verifier_tests)
 
   add_executable(graphenedb_epistemic_control_tests
                  tests/test_epistemic_control.cpp)
