@@ -29,6 +29,13 @@ struct RuntimeOptions {
   LyapunovTargets lyapunov_targets;
   const PathVerifier* path_verifier{nullptr};
   uint32_t max_recursive_cycles{2};
+  // Recovery recursion remains available for incomplete evidence. Opposition-
+  // only secondary research is opt-in so an adequate first answer is not
+  // automatically expanded again.
+  bool enable_opposition_research{false};
+  // A completed FiberBundle can remain unchanged while the search frontier
+  // advances through intermediate nodes. Permit bounded patience for that case.
+  uint32_t unchanged_recovery_patience{2};
   bool update_model_world{true};
 };
 
@@ -38,6 +45,10 @@ struct ReasoningReceipt {
   uint64_t final_bundle_hash{0};
   uint64_t model_world_event_hash{0};
   uint32_t expansion_rounds{0};
+  uint32_t frontier_progress_rounds{0};
+  uint32_t unchanged_bundle_rounds{0};
+  bool stopped_for_no_progress{false};
+  bool opposition_research_enabled{false};
   bool graphene_executed{false};
   bool path_verifier_executed{false};
   bool fiber_bundle_built{false};
