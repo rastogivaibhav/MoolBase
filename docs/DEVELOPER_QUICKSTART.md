@@ -27,7 +27,7 @@ The repository is currently private, so GitHub authentication is required.
 Linux or macOS:
 
 ```bash
-scripts/developer_quickstart.sh
+bash scripts/developer_quickstart.sh
 ```
 
 Windows PowerShell:
@@ -69,7 +69,7 @@ Start with `examples/hypokosh_runtime.cpp`. It is intentionally small and uses a
 Run:
 
 ```bash
-scripts/verify_developer_install.sh
+bash scripts/verify_developer_install.sh
 ```
 
 This performs a clean five-stage check:
@@ -121,10 +121,10 @@ ctest --test-dir build/release --output-on-failure
 
 | Goal | Start here |
 |---|---|
-| See it run | `scripts/developer_quickstart.sh` or `.ps1` |
+| See it run | `bash scripts/developer_quickstart.sh` or the PowerShell script |
 | Learn the embedded API | `examples/installed_consumer/main.cpp` |
 | Explore governed reasoning | `examples/hypokosh_runtime.cpp` |
-| Validate package installation | `scripts/verify_developer_install.sh` |
+| Validate package installation | `bash scripts/verify_developer_install.sh` |
 | Run structural benchmarks | `docs/benchmarks/PORTABLE_CROSS_DATASET_VALIDATION.md` |
 | Study the critic | `docs/LYAPUNOV_CRITIC_V1.md` |
 
