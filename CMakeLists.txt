@@ -98,3 +98,9 @@ if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
   add_executable(graphenedb_hypokosh_runtime_demo examples/hypokosh_runtime.cpp)
   target_link_libraries(graphenedb_hypokosh_runtime_demo PRIVATE graphenedb)
 endif()
+
+if(GRAPHENEDB_BUILD_BENCH)
+  add_executable(graphenedb_dialectic_intervention_bench
+                 bench/bench_dialectic_intervention.cpp)
+  target_link_libraries(graphenedb_dialectic_intervention_bench PRIVATE graphenedb)
+endif()
