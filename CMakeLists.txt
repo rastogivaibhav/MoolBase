@@ -1,126 +1,113 @@
 cmake_minimum_required(VERSION 3.16)
-project(graphenedb_v1 LANGUAGES CXX)
+project(GrapheneDB VERSION 0.6.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# GrapheneDB top-level build. The established storage/server build remains in
+# cmake/GrapheneDBBase.cmake; this layer materialises the complete experimental
+# HypoKosh runtime and its direct validation targets.
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/GrapheneDBBase.cmake)
 
-option(GRAPHENEDB_BUILD_TESTS "Build GrapheneDB tests" ON)
-option(GRAPHENEDB_BUILD_BENCH "Build GrapheneDB benchmarks" ON)
-option(GRAPHENEDB_USE_FAISS "Compile with real FAISS. Fails if FAISS is missing." OFF)
-option(GRAPHENEDB_BUILD_FUZZERS "Build LLVM libFuzzer targets" OFF)
-option(GRAPHENEDB_BUILD_EXAMPLES "Build GrapheneDB API examples and demos" ON)
-
-set(GRAPHENEDB_PLATFORM_SOURCE src/platform_posix.cpp)
-if(WIN32)
-  set(GRAPHENEDB_PLATFORM_SOURCE src/platform_windows.cpp)
-endif()
-
-add_library(graphenedb
-  src/db.cpp
-  src/kosh_adapter.cpp
-  ${GRAPHENEDB_PLATFORM_SOURCE}
+target_sources(graphenedb PRIVATE
+  src/entity_resolution.cpp
+  src/epistemic_receipt.cpp
+  src/epistemic_control.cpp
+  src/escape.cpp
+  src/fiber_bundle.cpp
+  src/generic_relation.cpp
+  src/hypokosh_runtime.cpp
+  src/model_world.cpp
+  src/path_verifier.cpp
+  src/relation_ontology.cpp
+  src/self_healing.cpp
+  src/stability_critic.cpp
 )
-target_include_directories(graphenedb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-find_package(Threads REQUIRED)
-target_link_libraries(graphenedb PUBLIC Threads::Threads)
 
-if(GRAPHENEDB_USE_FAISS)
-  find_path(FAISS_INCLUDE_DIR faiss/IndexFlat.h)
-  find_library(FAISS_LIBRARY faiss)
-  if(NOT FAISS_INCLUDE_DIR OR NOT FAISS_LIBRARY)
-    message(FATAL_ERROR "GRAPHENEDB_USE_FAISS=ON but FAISS headers/library were not found. Install FAISS or turn the option OFF.")
-  endif()
-  target_include_directories(graphenedb PRIVATE ${FAISS_INCLUDE_DIR})
-  target_link_libraries(graphenedb PRIVATE ${FAISS_LIBRARY})
-  target_compile_definitions(graphenedb PRIVATE GRAPHENEDB_HAS_FAISS=1)
-endif()
-
-if(NOT GRAPHENEDB_BUILD_FUZZERS)
-  add_executable(graphenedb_cli tools/graphenedb_cli.cpp)
-  target_link_libraries(graphenedb_cli PRIVATE graphenedb)
+# The retained stress harness uses GCC's popcount spelling. Force-include a
+# typed compatibility shim on MSVC without altering production code or
+# weakening the stress assertion.
+if(MSVC AND TARGET graphenedb_rc_stress_tests)
+  target_compile_options(
+    graphenedb_rc_stress_tests
+    PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/tests/msvc_compat.hpp")
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
-  enable_testing()
-  add_executable(graphenedb_tests tests/test_graphenedb.cpp)
-  target_link_libraries(graphenedb_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_tests COMMAND graphenedb_tests)
-
-  add_executable(graphenedb_rc_crash_tests tests/test_rc_gate_crash.cpp)
-  target_link_libraries(graphenedb_rc_crash_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_crash_tests COMMAND graphenedb_rc_crash_tests)
-
-  add_executable(graphenedb_rc_fuzz_tests tests/test_rc_gate_fuzz.cpp)
-  target_link_libraries(graphenedb_rc_fuzz_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_fuzz_tests COMMAND graphenedb_rc_fuzz_tests)
-
-  add_executable(graphenedb_rc_kosh_adapter_tests tests/test_rc_gate_kosh_adapter.cpp)
-  target_link_libraries(graphenedb_rc_kosh_adapter_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_kosh_adapter_tests COMMAND graphenedb_rc_kosh_adapter_tests)
-
-  add_executable(graphenedb_rc_stress_tests tests/test_rc_gate_stress.cpp)
-  target_link_libraries(graphenedb_rc_stress_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_stress_tests COMMAND graphenedb_rc_stress_tests --incidents 5000 --queries 100 --dim 64 --reopen 1)
-
-  add_executable(graphenedb_rc_lock_rotation_metadata_tests tests/test_rc_gate_lock_rotation_metadata.cpp)
-  target_link_libraries(graphenedb_rc_lock_rotation_metadata_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_lock_rotation_metadata_tests COMMAND graphenedb_rc_lock_rotation_metadata_tests)
-
-  if(NOT WIN32)
-    add_executable(graphenedb_rc_process_kill_tests tests/test_rc_gate_process_kill.cpp)
-    target_link_libraries(graphenedb_rc_process_kill_tests PRIVATE graphenedb)
-    add_test(NAME graphenedb_rc_process_kill_tests COMMAND graphenedb_rc_process_kill_tests)
+  add_executable(graphenedb_cli_reason_tests tests/test_cli_reason.cpp)
+  target_link_libraries(graphenedb_cli_reason_tests PRIVATE graphenedb)
+  if(TARGET graphenedb_cli)
+    add_test(NAME graphenedb_cli_reason_tests
+             COMMAND graphenedb_cli_reason_tests $<TARGET_FILE:graphenedb_cli>)
   endif()
 
-  add_executable(graphenedb_rc_real_kosh_adapter_tests tests/test_rc_gate_real_kosh_adapter.cpp)
-  target_link_libraries(graphenedb_rc_real_kosh_adapter_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_real_kosh_adapter_tests COMMAND graphenedb_rc_real_kosh_adapter_tests)
+  add_executable(graphenedb_generic_reasoning_pipeline_tests
+                 tests/test_generic_reasoning_pipeline.cpp)
+  target_link_libraries(graphenedb_generic_reasoning_pipeline_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_generic_reasoning_pipeline_tests
+           COMMAND graphenedb_generic_reasoning_pipeline_tests)
 
-  add_executable(graphenedb_rc_soak_tests tests/test_rc_gate_soak.cpp)
-  target_link_libraries(graphenedb_rc_soak_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_soak_tests COMMAND graphenedb_rc_soak_tests --seconds 2 --dim 16)
+  add_executable(graphenedb_hypokosh_runtime_tests tests/test_hypokosh_runtime.cpp)
+  target_link_libraries(graphenedb_hypokosh_runtime_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_hypokosh_runtime_tests
+           COMMAND graphenedb_hypokosh_runtime_tests)
 
-  add_executable(graphenedb_rc_1m_storage_tests tests/test_rc_gate_1m_storage.cpp)
-  target_link_libraries(graphenedb_rc_1m_storage_tests PRIVATE graphenedb)
-  add_test(NAME graphenedb_rc_1m_storage_smoke COMMAND graphenedb_rc_1m_storage_tests --nodes 10000 --queries 3 --dim 2 --reopen 1)
+  add_executable(graphenedb_stability_critic_adversarial_tests
+                 tests/test_stability_critic_adversarial.cpp)
+  target_link_libraries(graphenedb_stability_critic_adversarial_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_stability_critic_adversarial_tests
+           COMMAND graphenedb_stability_critic_adversarial_tests)
 
-endif()
+  add_executable(graphenedb_lyapunov_critic_tests
+                 tests/test_lyapunov_critic.cpp)
+  target_link_libraries(graphenedb_lyapunov_critic_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_lyapunov_critic_tests
+           COMMAND graphenedb_lyapunov_critic_tests)
 
-if(GRAPHENEDB_BUILD_BENCH)
-  add_executable(graphenedb_bench bench/bench_graphenedb.cpp)
-  target_link_libraries(graphenedb_bench PRIVATE graphenedb)
+  add_executable(graphenedb_fiber_bundle_v2_tests
+                 tests/test_fiber_bundle_v2.cpp)
+  target_link_libraries(graphenedb_fiber_bundle_v2_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_fiber_bundle_v2_tests
+           COMMAND graphenedb_fiber_bundle_v2_tests)
+
+  add_executable(graphenedb_epistemic_lineage_tests
+                 tests/test_epistemic_lineage.cpp)
+  target_link_libraries(graphenedb_epistemic_lineage_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_lineage_tests
+           COMMAND graphenedb_epistemic_lineage_tests)
+
+  add_executable(graphenedb_path_verifier_tests
+                 tests/test_path_verifier.cpp)
+  target_link_libraries(graphenedb_path_verifier_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_path_verifier_tests
+           COMMAND graphenedb_path_verifier_tests)
+
+  add_executable(graphenedb_epistemic_control_tests
+                 tests/test_epistemic_control.cpp)
+  target_link_libraries(graphenedb_epistemic_control_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_control_tests
+           COMMAND graphenedb_epistemic_control_tests)
+
+  add_executable(graphenedb_epistemic_receipt_tests
+                 tests/test_epistemic_receipt.cpp)
+  target_link_libraries(graphenedb_epistemic_receipt_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_receipt_tests
+           COMMAND graphenedb_epistemic_receipt_tests)
+
+  if(TARGET graphenedb_server AND NOT WIN32)
+    add_test(NAME graphenedb_server_hypokosh_runtime_contract_tests
+             COMMAND ${Python3_EXECUTABLE}
+                     ${CMAKE_CURRENT_SOURCE_DIR}/scripts/server_hypokosh_runtime_contract_test.py
+                     $<TARGET_FILE:graphenedb_server>)
+    set_tests_properties(graphenedb_server_hypokosh_runtime_contract_tests
+                         PROPERTIES TIMEOUT 120)
+  endif()
 endif()
 
 if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
-  add_executable(graphenedb_uniqueness_demo examples/graphene_uniqueness_demo.cpp)
-  target_link_libraries(graphenedb_uniqueness_demo PRIVATE graphenedb)
-
-  add_executable(graphenedb_api_coding_memory examples/api_coding_memory.cpp)
-  target_link_libraries(graphenedb_api_coding_memory PRIVATE graphenedb)
-
-  add_executable(graphenedb_api_incident_memory examples/api_incident_memory.cpp)
-  target_link_libraries(graphenedb_api_incident_memory PRIVATE graphenedb)
-
-  add_executable(graphenedb_api_team_brain examples/api_team_brain.cpp)
-  target_link_libraries(graphenedb_api_team_brain PRIVATE graphenedb)
+  add_executable(graphenedb_hypokosh_runtime_demo examples/hypokosh_runtime.cpp)
+  target_link_libraries(graphenedb_hypokosh_runtime_demo PRIVATE graphenedb)
 endif()
 
-if(GRAPHENEDB_BUILD_FUZZERS)
-  if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    message(FATAL_ERROR "GRAPHENEDB_BUILD_FUZZERS=ON requires Clang/libFuzzer")
-  endif()
-  target_compile_options(graphenedb PRIVATE -fsanitize=fuzzer-no-link -fno-omit-frame-pointer)
-  add_executable(graphenedb_wal_fuzzer fuzz/fuzz_wal_open.cpp)
-  target_link_libraries(graphenedb_wal_fuzzer PRIVATE graphenedb)
-  target_compile_options(graphenedb_wal_fuzzer PRIVATE -fsanitize=fuzzer -fno-omit-frame-pointer)
-  target_link_options(graphenedb_wal_fuzzer PRIVATE -fsanitize=fuzzer)
+if(GRAPHENEDB_BUILD_BENCH)
+  add_executable(graphenedb_dialectic_intervention_bench
+                 bench/bench_dialectic_intervention.cpp)
+  target_link_libraries(graphenedb_dialectic_intervention_bench PRIVATE graphenedb)
 endif()
-
-install(TARGETS graphenedb
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
-if(TARGET graphenedb_cli)
-  install(TARGETS graphenedb_cli RUNTIME DESTINATION bin)
-endif()
-install(DIRECTORY include/ DESTINATION include)

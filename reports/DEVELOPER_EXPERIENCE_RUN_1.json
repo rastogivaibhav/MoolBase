@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-30",
+  "branch": "benchmark/cross-dataset-epistemic-suite",
+  "latest_head_after_commit": "2d02befd4ab51e0e9308fb06c6aaeab56c299aee",
+  "local_validation": {
+    "source_snapshot": "e8829d184b28904e8908a63f3901b1609d1e8327",
+    "platform": "Linux x86_64",
+    "cmake": "3.31.6",
+    "compiler": "GNU C++ 14.2.0",
+    "clean_build": true,
+    "install": true,
+    "find_package": true,
+    "external_consumer_build": true,
+    "external_consumer_run": true,
+    "consumer_nodes": 2,
+    "consumer_edges": 1,
+    "top_result": "checkout failures increased"
+  },
+  "latest_head_hosted_validation": {
+    "workflow_run_id": 30533581790,
+    "conclusion": "failure_before_checkout",
+    "ubuntu_steps_exposed": 0,
+    "windows_steps_exposed": 0
+  },
+  "claim_boundary": "The local clean install test used the provided source snapshot plus the committed onboarding assets. Exact latest-head hosted execution is pending because the GitHub runner stopped before checkout."
+}

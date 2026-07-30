@@ -1,0 +1,173 @@
+{
+  "health": [
+    200,
+    {
+      "status": "ok",
+      "engine": "physical-hex-lattice"
+    }
+  ],
+  "unauth_metrics": [
+    401,
+    {
+      "error": "unauthorized"
+    }
+  ],
+  "insert_seq": {
+    "count": 300,
+    "p50_ms": 3.6355940010253107,
+    "p95_ms": 8.01153130005332,
+    "max_ms": 11.500420001539169
+  },
+  "insert_concurrent": {
+    "count": 300,
+    "p50_ms": 57.584559499446186,
+    "p95_ms": 71.1309523005184,
+    "max_ms": 77.61906299856491,
+    "bad": 0
+  },
+  "point_read": {
+    "count": 100,
+    "p50_ms": 0.5539509993468528,
+    "p95_ms": 0.6950814996343979,
+    "max_ms": 1.0483340010978281
+  },
+  "lattice_search": {
+    "count": 100,
+    "p50_ms": 0.5664165000780486,
+    "p95_ms": 0.6573997010491439,
+    "max_ms": 0.9046530012710718,
+    "avg_neighbors": 18.0
+  },
+  "hybrid_search": {
+    "count": 50,
+    "p50_ms": 0.7262450008056476,
+    "p95_ms": 0.9033097994688433,
+    "max_ms": 4.641311999876052
+  },
+  "validate": [
+    200,
+    {
+      "ok": true,
+      "report": "OK\n"
+    }
+  ],
+  "backup": [
+    200,
+    {
+      "ok": true,
+      "destination": "/tmp/gdb_next_server_backup"
+    }
+  ],
+  "compact": [
+    200,
+    {
+      "ok": true
+    }
+  ],
+  "metrics_before_restart": [
+    200,
+    {
+      "uptime_seconds": 3,
+      "requests": 857,
+      "node_inserts": 600,
+      "edge_inserts": 0,
+      "vector_searches": 50,
+      "lattice_searches": 100,
+      "validation_calls": 1,
+      "errors": 1,
+      "node_count": 600,
+      "edge_count": 0
+    }
+  ],
+  "post_restart_read": [
+    200,
+    {
+      "id": 42,
+      "content": "customer memory 42: refund escalation renewal risk signal 8"
+    }
+  ],
+  "post_restart_lattice": [
+    200,
+    {
+      "neighbors": [
+        9,
+        10,
+        21,
+        22,
+        23,
+        24,
+        40,
+        41,
+        43,
+        44,
+        65,
+        66,
+        67,
+        68,
+        69,
+        98,
+        99,
+        100
+      ]
+    }
+  ],
+  "post_restart_validate": [
+    200,
+    {
+      "ok": true,
+      "report": "OK\n"
+    }
+  ],
+  "db_files": [
+    [
+      "LOCK",
+      6
+    ],
+    [
+      "MANIFEST",
+      278
+    ],
+    [
+      "graphene.data",
+      387921
+    ],
+    [
+      "graphene.lattice",
+      38076
+    ],
+    [
+      "graphene.lattice.bin",
+      6769960
+    ],
+    [
+      "graphene.nodeidx",
+      10644
+    ],
+    [
+      "graphene.wal",
+      0
+    ]
+  ],
+  "backup_files": [
+    [
+      "MANIFEST",
+      271
+    ],
+    [
+      "graphene.lattice",
+      38076
+    ],
+    [
+      "graphene.lattice.bin",
+      6769960
+    ],
+    [
+      "graphene.nodeidx",
+      10644
+    ],
+    [
+      "graphene.wal",
+      429620
+    ]
+  ]
+}

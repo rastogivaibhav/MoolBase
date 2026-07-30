@@ -1,0 +1,14 @@
+{
+  auto_https disable_redirects
+}
+
+{$GRAPHENEDB_HOST:localhost} {
+  reverse_proxy graphenedb:8080 {
+    header_up X-Forwarded-Proto https
+    header_up X-Forwarded-For {remote_host}
+  }
+  encode zstd gzip
+  request_body {
+    max_size 4MB
+  }
+}

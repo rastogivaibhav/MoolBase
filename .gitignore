@@ -31,3 +31,12 @@ LOCK
 .vscode/
 .idea/
 *.swp
+
+# Python/runtime scratch
+__pycache__/
+*.py[cod]
+tmp/
+
+# Local benchmark and soak output
+reports/container-soaks-resumable/
+reports/storage-reduction/

@@ -1,0 +1,12 @@
+{
+  "database_network_access": false,
+  "durable_writes_during_query": false,
+  "external_model_calls": false,
+  "filesystem_scope": [
+    "prepared D0 evidence directory",
+    "ephemeral GrapheneDB working directory"
+  ],
+  "tools": [
+    "GrapheneDB embedded C++ API"
+  ]
+}

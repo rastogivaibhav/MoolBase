@@ -1,0 +1,38 @@
+name: Developer experience
+
+on:
+  pull_request:
+    paths:
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'examples/**'
+      - 'scripts/developer_quickstart.*'
+      - 'scripts/verify_developer_install.sh'
+      - 'docs/DEVELOPER_QUICKSTART.md'
+      - '.github/workflows/developer-experience.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-clean-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: First-run reasoning demo
+        run: bash scripts/developer_quickstart.sh
+      - name: Clean install and external consumer
+        run: bash scripts/verify_developer_install.sh
+
+  windows-first-run:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: First-run reasoning demo
+        shell: pwsh
+        run: .\scripts\developer_quickstart.ps1

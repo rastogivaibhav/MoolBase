@@ -1,84 +1,90 @@
-# GrapheneDB Agent Instructions
+# GrapheneDB Agent Context
 
-GrapheneDB is a C++20 embedded provenance-first causal/lattice-memory database with an optional controlled-pilot HTTP server. The current developer-preview line also contains Graphene text/model-world ingestion, HypoKosh iterative reasoning, dialectic expansion/opposition/convergence, governed answer projection, and a domain-neutral canonical relation pipeline for structured and token-tagged datasets.
+GrapheneDB v0.6.0-rc1 is a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
 
-## Product boundary
+The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
 
-GrapheneDB is not a SQL database, distributed cluster, general vector-database replacement, or material-science simulator. The embedded storage engine is authoritative. The HTTP server is optional and must remain a narrow versioned wrapper over tested core APIs.
+## Start Here
 
-The reasoning contract is:
+Read before broad changes:
 
-```text
-input data
-  -> Graphene atomisation and canonical relation emission
-  -> Graphene model world
-  -> HypoKosh iterative path planning
-  -> dialectic expansion, opposition and convergence
-  -> governed answer projection
-  -> answer + reasoning path + source evidence + execution attestation
-```
+- `README.md`
+- `docs/ARCHITECTURE.md`
+- `docs/STORAGE_FORMAT.md`
+- `docs/PILOT_RELEASE_CONTRACT.md`
+- `docs/api/openapi-v1.yaml`
+- `reports/pilot-rc1/PILOT_RC1_CODE_REVIEW_AND_VALIDATION.md` when present
 
-Do not add an early answer-return shortcut that bypasses any of these stages. Preserve the reasoning path; it is not interchangeable with the concise answer.
+Domain references:
 
-## Read first
+- Lattice: `docs/GRAPHENE_LATTICE_MODEL.md`, `docs/LATTICE_RETRIEVAL.md`
+- Packaging: `docs/PACKAGING_DISTRIBUTION.md`
+- Security: `SECURITY.md`, `deploy/`, `Dockerfile`, `docker-compose.secure.yml`
+- Release workflows: `scripts/run_pilot_rc1_gate.sh`, `scripts/verify_package_install.sh`
 
-1. `README.md`
-2. `docs/ARCHITECTURE.md`
-3. `docs/STORAGE_FORMAT.md`
-4. `docs/DIALECTIC_REASONING_V0.md`
-5. `docs/EXTRACTION_INGESTION.md`
-6. `updates/generic-data/GRAPHENEDB_GENERIC_DATA_PIPELINE_REPORT.md`
-7. `updates/generic-data/GRAPHENEDB_GENERIC_DATASET_METRICS.json`
+## Project Layout
 
-## Code map
+- `include/graphene/` — public C/C++ API.
+- `src/` — storage and retrieval implementation.
+- `tools/graphenedb_cli.cpp` — embedded CLI.
+- `tools/graphenedb_server.cpp` — optional controlled-pilot HTTP server.
+- `clients/python/` — dependency-free Python pilot client.
+- `tests/` — core, durability, crash, and lattice tests.
+- `bench/` — explicit benchmark executables.
+- `scripts/` — release, stress, package, server, and evidence workflows.
+- `reports/` — generated validation evidence; avoid committing scratch output.
 
-- `include/graphene/`, `src/` — public API and implementation
-- `src/text_model_world.cpp` — text atomisation and canonical relation extraction
-- `src/recursive_model_world.cpp` — HypoKosh iterative controller, typed path reasoning and governed projection
-- `src/dialectic.cpp` — dialectic reasoning stages
-- `tools/graphenedb_cli.cpp` — CLI
-- `tools/graphenedb_server.cpp` — optional HTTP server
-- `tests/test_recursive_model_world.cpp` — generic, tokenised and full-pipeline assertions
-- `bench/` — explicit benchmarks
-- `scripts/` — build, stress, release and evidence workflows
+## Non-Negotiable Engineering Rules
 
-## Non-negotiable rules
+- Preserve durable-format compatibility. Any durable record change requires a format-version decision, migration/recovery tests, and `docs/STORAGE_FORMAT.md` updates.
+- Keep the embedded library authoritative; server endpoints must call tested core APIs rather than duplicate storage logic.
+- Writes exposed over HTTP must be retry-safe or explicitly document why not. Preserve `Idempotency-Key` behavior for `/v1/nodes` and `/v1/facts`.
+- Keep bulk ingestion atomic and bounded. Never reintroduce partial per-item bulk writes.
+- Keep the worker pool and request queue bounded. Do not use detached per-connection threads.
+- Do not weaken request-size, hop, result-count, rate-limit, bind-address, or reverse-proxy controls without evidence.
+- Do not silently promote inferred/reinforced data into observed/discovered truth.
+- Keep JSON logs and API responses valid for arbitrary user-controlled text.
+- Treat graceful shutdown, checkpointing, restart, backup/restore, and second-open rejection as database correctness contracts.
+- Public claims must match evidence. `v0.6.0-rc1` is a controlled-pilot release candidate, not unrestricted public GA.
+- Do not add Kosh/dialectic/model-world features to the DB correctness branch unless the user explicitly reopens that scope.
 
-- Preserve durable-format compatibility. Document and test every storage-format change.
-- Keep the embedded library authoritative; do not duplicate database logic in the server.
-- Preserve no-silent-promotion and evidence-required/HITL behaviour.
-- Every resolved reasoning answer must retain a source-grounded semantic path.
-- Adjacency may help parse context but cannot be the sole factual edge in a resolved path.
-- Domain-neutral predicates must remain supported; do not regress to a hard-coded human relationship ontology.
-- Structured and token-tagged inputs must preserve punctuation, decimals and original predicate wording.
-- Public claims must match committed evidence. This is a developer preview, not enterprise GA.
-- Do not commit build directories, temporary databases, credentials or scratch outputs.
+## Verification
 
-## Build and test
+Fast pilot contract:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-  -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build -j2
-ctest --test-dir build --output-on-failure
+ctest --test-dir build --output-on-failure -j2
+python3 scripts/server_pilot_contract_test.py ./build/graphenedb_server
 ```
 
-Focused reasoning verification:
+Repeatable pilot RC gate:
 
 ```bash
-./build/graphenedb_recursive_model_world_tests ./testdata
+bash scripts/run_pilot_rc1_gate.sh
 ```
 
-Controlled-pilot server verification:
+Explicit larger profiles remain separate from default CTest:
 
 ```bash
-cmake -S . -B build-server -DCMAKE_BUILD_TYPE=Release \
-  -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_SERVER=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
-cmake --build build-server -j2 --target graphenedb_server
-python3 scripts/server_pilot_contract_test.py ./build-server/graphenedb_server
+bash scripts/run_100k_stress.sh
+bash scripts/run_1m_stress.sh
+bash scripts/run_rc_gate_pack.sh
 ```
 
-Larger stress, soak, fuzz and target-host gates remain separate from default CTest. Do not claim they ran unless their evidence was actually produced.
+Package-consumer verification:
+
+```bash
+bash scripts/verify_package_install.sh
+```
+
+## Immediate Next Step
+
+Do not add new features by default. The next evidence gates are:
+
+1. 24-hour and then 72-hour soak on intended production hardware/filesystem.
+2. Actual OCI build, SBOM, and Trivy/Grype scan with pinned base-image digests.
+3. Resolve the slow 5,000-incident in-process stress profile and the higher-load long-soak harness shutdown issue.
+4. Replace the placeholder licence before public distribution.
+5. Only after those gates, decide whether to call this a public preview or continue as a design-partner pilot.
