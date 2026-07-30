@@ -1,0 +1,112 @@
+{
+  "benchmark": "GrapheneDB cross-dataset epistemic structural suite",
+  "claim_boundary": "Tests evidence structure and governed stability, not QA exact match or semantic truth generation.",
+  "examples": 46,
+  "meets_targets": true,
+  "nei_not_stable": 1.0,
+  "nei_repair_required": 1.0,
+  "refute_blocks": 1.0,
+  "support": {
+    "contradiction_blocks": 1.0,
+    "contradiction_ordering": 1.0,
+    "distractor_non_improvement": 1.0,
+    "distractor_not_stable": 1.0,
+    "duplicate_independence_safe": 1.0,
+    "duplicate_non_improvement": 1.0,
+    "energy_mean": {
+      "contradiction_energy": 0.8833333333333333,
+      "distractor_energy": 0.3157894736842105,
+      "duplicate_energy": 0.09025083144280863,
+      "gold_energy": 0.09025083144280863,
+      "independent_energy": 0.0,
+      "missing_energy": 1.0
+    },
+    "examples": 44,
+    "independent_score_non_worsening": 1.0,
+    "independent_support_detected": 1.0,
+    "missing_not_stable": 1.0,
+    "missing_ordering": 1.0
+  },
+  "support_by_dataset": {
+    "babi": {
+      "contradiction_blocks": 1.0,
+      "contradiction_ordering": 1.0,
+      "distractor_non_improvement": 1.0,
+      "distractor_not_stable": 1.0,
+      "duplicate_independence_safe": 1.0,
+      "duplicate_non_improvement": 1.0,
+      "energy_mean": {
+        "contradiction_energy": 0.8833333333333333,
+        "distractor_energy": 0.3157894736842105,
+        "duplicate_energy": 0.09025083144280863,
+        "gold_energy": 0.09025083144280863,
+        "independent_energy": 0.0,
+        "missing_energy": 1.0
+      },
+      "examples": 40,
+      "independent_score_non_worsening": 1.0,
+      "independent_support_detected": 1.0,
+      "missing_not_stable": 1.0,
+      "missing_ordering": 1.0
+    },
+    "fever": {
+      "contradiction_blocks": 1.0,
+      "contradiction_ordering": 1.0,
+      "distractor_non_improvement": 1.0,
+      "distractor_not_stable": 1.0,
+      "duplicate_independence_safe": 1.0,
+      "duplicate_non_improvement": 1.0,
+      "energy_mean": {
+        "contradiction_energy": 0.8833333333333333,
+        "distractor_energy": 0.3157894736842105,
+        "duplicate_energy": 0.09025083144280863,
+        "gold_energy": 0.09025083144280863,
+        "independent_energy": 0.0,
+        "missing_energy": 1.0
+      },
+      "examples": 1,
+      "independent_score_non_worsening": 1.0,
+      "independent_support_detected": 1.0,
+      "missing_not_stable": 1.0,
+      "missing_ordering": 1.0
+    },
+    "hotpotqa": {
+      "contradiction_blocks": 1.0,
+      "contradiction_ordering": 1.0,
+      "distractor_non_improvement": 1.0,
+      "distractor_not_stable": 1.0,
+      "duplicate_independence_safe": 1.0,
+      "duplicate_non_improvement": 1.0,
+      "energy_mean": {
+        "contradiction_energy": 0.8833333333333333,
+        "distractor_energy": 0.3157894736842105,
+        "duplicate_energy": 0.09025083144280863,
+        "gold_energy": 0.09025083144280863,
+        "independent_energy": 0.0,
+        "missing_energy": 1.0
+      },
+      "examples": 3,
+      "independent_score_non_worsening": 1.0,
+      "independent_support_detected": 1.0,
+      "missing_not_stable": 1.0,
+      "missing_ordering": 1.0
+    }
+  },
+  "targets": {
+    "contradiction_blocks": 1.0,
+    "contradiction_ordering": 0.99,
+    "distractor_non_improvement": 1.0,
+    "duplicate_independence_safe": 1.0,
+    "duplicate_non_improvement": 1.0,
+    "independent_score_non_worsening": 0.99,
+    "independent_support_detected": 0.99,
+    "missing_ordering": 0.99,
+    "nei_not_stable": 1.0,
+    "nei_repair_required": 1.0,
+    "refute_blocks": 1.0,
+    "temporal_mismatch_not_stable": 1.0,
+    "temporal_mismatch_ordering": 0.99
+  },
+  "temporal_mismatch_not_stable": 1.0,
+  "temporal_mismatch_ordering": 1.0
+}

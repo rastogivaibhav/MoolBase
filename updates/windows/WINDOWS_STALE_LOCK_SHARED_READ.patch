@@ -1,0 +1,75 @@
+--- include/graphene/platform.hpp
++++ include/graphene/platform.hpp
+@@ -18,6 +18,7 @@
+ Status flush_path(const std::filesystem::path& path);
+ Status durable_replace(const std::filesystem::path& source, const std::filesystem::path& destination);
+ Status truncate_and_flush(const std::filesystem::path& path);
++Status read_text_shared(const std::filesystem::path& path, std::string* contents);
+ 
+ uint64_t current_pid();
+ bool process_is_alive(uint64_t pid);
+--- src/platform_posix.cpp
++++ src/platform_posix.cpp
+@@ -155,5 +155,16 @@
+   return boot + offset;
+ }
+ 
++Status read_text_shared(const std::filesystem::path& path, std::string* contents) {
++  if (!contents) return Status::error(ErrorCode::InvalidInput, "contents pointer is null");
++  std::ifstream in(path, std::ios::binary);
++  if (!in) return Status::error(ErrorCode::IoError, "open read failed");
++  std::ostringstream buffer;
++  buffer << in.rdbuf();
++  if (!in.good() && !in.eof()) return Status::error(ErrorCode::IoError, "read failed");
++  *contents = buffer.str();
++  return Status::ok();
++}
++
+ } // namespace graphene::platform
+ #endif
+--- src/platform_windows.cpp
++++ src/platform_windows.cpp
+@@ -140,5 +140,28 @@
+       std::chrono::duration_cast<std::chrono::system_clock::duration>(std::chrono::nanoseconds(unix_100ns * 100ULL))};
+ }
+ 
++Status read_text_shared(const std::filesystem::path& path, std::string* contents) {
++  if (!contents) return Status::error(ErrorCode::InvalidInput, "contents pointer is null");
++  HANDLE h = ::CreateFileW(path.wstring().c_str(), GENERIC_READ,
++                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
++                           nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
++  if (h == INVALID_HANDLE_VALUE) {
++    return Status::error(ErrorCode::IoError, "CreateFileW shared read failed");
++  }
++  LARGE_INTEGER size{};
++  if (!::GetFileSizeEx(h, &size) || size.QuadPart < 0 || size.QuadPart > 4096) {
++    ::CloseHandle(h);
++    return Status::error(ErrorCode::IoError, "invalid lock file size");
++  }
++  std::string value(static_cast<size_t>(size.QuadPart), '\0');
++  DWORD read = 0;
++  const BOOL ok = value.empty() || ::ReadFile(h, value.data(), static_cast<DWORD>(value.size()), &read, nullptr);
++  ::CloseHandle(h);
++  if (!ok) return Status::error(ErrorCode::IoError, "ReadFile shared read failed");
++  value.resize(read);
++  *contents = std::move(value);
++  return Status::ok();
++}
++
+ } // namespace graphene::platform
+ #endif
+--- src/db.cpp
++++ src/db.cpp
+@@ -1229,8 +1229,10 @@
+       bool removed_stale = false;
+       if (opt.recover_stale_lock) {
+         uint64_t pid = 0;
+-        {
+-          std::ifstream in(lock_path);
++        std::string lock_contents;
++        const auto read_status = platform::read_text_shared(lock_path, &lock_contents);
++        if (read_status) {
++          std::istringstream in(lock_contents);
+           in >> pid;
+         }
+         bool stale_same_pid_restart = false;

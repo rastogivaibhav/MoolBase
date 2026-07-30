@@ -1,0 +1,97 @@
+Internal ctest changing into directory: /mnt/data/work_full/build_final_exact
+Test project /mnt/data/work_full/build_final_exact
+      Start  1: graphenedb_tests
+ 1/44 Test  #1: graphenedb_tests .....................................   Passed    0.10 sec
+      Start  2: graphenedb_c_api_tests
+ 2/44 Test  #2: graphenedb_c_api_tests ...............................   Passed    0.01 sec
+      Start  3: graphenedb_rc_crash_tests
+ 3/44 Test  #3: graphenedb_rc_crash_tests ............................   Passed    0.05 sec
+      Start  4: graphenedb_rc_fuzz_tests
+ 4/44 Test  #4: graphenedb_rc_fuzz_tests .............................   Passed    0.51 sec
+      Start  5: graphenedb_rc_kosh_adapter_tests
+ 5/44 Test  #5: graphenedb_rc_kosh_adapter_tests .....................   Passed    0.01 sec
+      Start  6: graphenedb_rc_stress_tests
+ 6/44 Test  #6: graphenedb_rc_stress_tests ...........................   Passed    0.55 sec
+      Start  7: graphenedb_rc_lock_rotation_metadata_tests
+ 7/44 Test  #7: graphenedb_rc_lock_rotation_metadata_tests ...........   Passed    0.11 sec
+      Start  8: graphenedb_lattice_tests
+ 8/44 Test  #8: graphenedb_lattice_tests .............................   Passed    0.02 sec
+      Start  9: graphenedb_physical_lattice_storage_tests
+ 9/44 Test  #9: graphenedb_physical_lattice_storage_tests ............   Passed    0.02 sec
+      Start 10: graphenedb_physical_lattice_primary_tests
+10/44 Test #10: graphenedb_physical_lattice_primary_tests ............   Passed    0.05 sec
+      Start 11: graphenedb_dense_hex_lattice_index_tests
+11/44 Test #11: graphenedb_dense_hex_lattice_index_tests .............   Passed    1.01 sec
+      Start 12: graphenedb_dense_hex_lattice_stress_tests
+12/44 Test #12: graphenedb_dense_hex_lattice_stress_tests ............   Passed    0.02 sec
+      Start 13: graphenedb_acid_lattice_tests
+13/44 Test #13: graphenedb_acid_lattice_tests ........................   Passed    0.04 sec
+      Start 14: graphenedb_lattice_placement_tests
+14/44 Test #14: graphenedb_lattice_placement_tests ...................   Passed    0.01 sec
+      Start 15: graphenedb_extraction_ingest_tests
+15/44 Test #15: graphenedb_extraction_ingest_tests ...................   Passed    0.02 sec
+      Start 16: graphenedb_cli_import_tests
+16/44 Test #16: graphenedb_cli_import_tests ..........................   Passed    0.13 sec
+      Start 17: graphenedb_cli_extract_tests
+17/44 Test #17: graphenedb_cli_extract_tests .........................   Passed    0.02 sec
+      Start 18: graphenedb_rc5_crash_matrix_tests
+18/44 Test #18: graphenedb_rc5_crash_matrix_tests ....................   Passed    0.05 sec
+      Start 19: graphenedb_rc5_fault_injection_tests
+19/44 Test #19: graphenedb_rc5_fault_injection_tests .................   Passed    0.09 sec
+      Start 20: graphenedb_rc_process_kill_tests
+20/44 Test #20: graphenedb_rc_process_kill_tests .....................   Passed    0.23 sec
+      Start 21: graphenedb_real_filesystem_failure_tests
+21/44 Test #21: graphenedb_real_filesystem_failure_tests .............   Passed    0.00 sec
+      Start 22: graphenedb_disk_pressure_tests
+22/44 Test #22: graphenedb_disk_pressure_tests .......................   Passed    0.00 sec
+      Start 23: graphenedb_rc_real_kosh_adapter_tests
+23/44 Test #23: graphenedb_rc_real_kosh_adapter_tests ................   Passed    0.01 sec
+      Start 24: graphenedb_rc_soak_tests
+24/44 Test #24: graphenedb_rc_soak_tests .............................   Passed    2.09 sec
+      Start 25: graphenedb_rc_1m_storage_smoke
+25/44 Test #25: graphenedb_rc_1m_storage_smoke .......................   Passed    0.66 sec
+      Start 26: graphenedb_p0_contract_tests
+26/44 Test #26: graphenedb_p0_contract_tests .........................   Passed    0.06 sec
+      Start 27: graphenedb_dialectic_tests
+27/44 Test #27: graphenedb_dialectic_tests ...........................   Passed    0.01 sec
+      Start 28: graphenedb_hyperedge_tests
+28/44 Test #28: graphenedb_hyperedge_tests ...........................   Passed    0.01 sec
+      Start 29: graphenedb_governed_learning_tests
+29/44 Test #29: graphenedb_governed_learning_tests ...................   Passed    0.01 sec
+      Start 30: graphenedb_governed_learning_spec_tests
+30/44 Test #30: graphenedb_governed_learning_spec_tests ..............   Passed    1.75 sec
+      Start 31: graphenedb_release_candidate_bundle_meta_tests
+31/44 Test #31: graphenedb_release_candidate_bundle_meta_tests .......   Passed    1.77 sec
+      Start 32: graphenedb_openapi_surface_tests
+32/44 Test #32: graphenedb_openapi_surface_tests .....................   Passed    0.55 sec
+      Start 33: graphenedb_storage_reduction_benchmark_unit_tests
+33/44 Test #33: graphenedb_storage_reduction_benchmark_unit_tests ....   Passed    0.65 sec
+      Start 34: graphenedb_server_launch_hardening_tests
+34/44 Test #34: graphenedb_server_launch_hardening_tests .............   Passed    1.36 sec
+      Start 35: graphenedb_server_pilot_contract_tests
+35/44 Test #35: graphenedb_server_pilot_contract_tests ...............   Passed    0.81 sec
+      Start 36: graphenedb_server_governed_learning_contract_tests
+36/44 Test #36: graphenedb_server_governed_learning_contract_tests ...   Passed    0.89 sec
+      Start 37: graphenedb_docker_security_static_tests
+37/44 Test #37: graphenedb_docker_security_static_tests ..............   Passed    0.62 sec
+      Start 38: graphenedb_deepmind_g2_harness_tests
+38/44 Test #38: graphenedb_deepmind_g2_harness_tests .................   Passed    0.65 sec
+      Start 39: graphenedb_deepmind_g0_manifest_tests
+39/44 Test #39: graphenedb_deepmind_g0_manifest_tests ................   Passed    5.57 sec
+      Start 40: graphenedb_cli_reason_tests
+40/44 Test #40: graphenedb_cli_reason_tests ..........................   Passed    0.02 sec
+      Start 41: graphenedb_generic_reasoning_pipeline_tests
+41/44 Test #41: graphenedb_generic_reasoning_pipeline_tests ..........   Passed    0.01 sec
+      Start 42: graphenedb_hypokosh_runtime_tests
+42/44 Test #42: graphenedb_hypokosh_runtime_tests ....................   Passed    0.01 sec
+      Start 43: graphenedb_stability_critic_adversarial_tests
+43/44 Test #43: graphenedb_stability_critic_adversarial_tests ........   Passed    0.00 sec
+      Start 44: graphenedb_server_hypokosh_runtime_contract_tests
+44/44 Test #44: graphenedb_server_hypokosh_runtime_contract_tests ....   Passed    0.58 sec
+
+100% tests passed, 0 tests failed out of 44
+
+Label Time Summary:
+stress-smoke    =   0.55 sec*proc (1 test)
+
+Total Test time (real) =  21.13 sec

@@ -1,0 +1,19 @@
+FROM ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential ca-certificates git python3 python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+COPY . .
+RUN chmod +x scripts/run_cross_dataset_local.sh scripts/capture_cross_dataset_environment.py
+
+ENV BABI_PER_TASK=200 \
+    HOTPOT=500 \
+    FEVER_PER_LABEL=200 \
+    CROSS_DATASET_SEED=20260729
+
+ENTRYPOINT ["bash", "scripts/run_cross_dataset_local.sh"]
+CMD ["offline"]

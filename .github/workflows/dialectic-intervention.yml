@@ -1,0 +1,39 @@
+name: Dialectic intervention benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'include/graphene/dialectic.hpp'
+      - 'include/graphene/hypokosh_runtime.hpp'
+      - 'src/dialectic.cpp'
+      - 'src/dialectic_frontier_part_*.inc'
+      - 'src/hypokosh_runtime.cpp'
+      - 'src/hypokosh_runtime_frontier_part_*.inc'
+      - 'tests/test_hypokosh_runtime.cpp'
+      - 'tests/test_hypokosh_runtime_frontier_part_*.inc'
+      - 'bench/bench_dialectic_intervention.cpp'
+      - 'bench/bench_dialectic_intervention_part_*.inc'
+      - 'benchmarks/dialectic_intervention/**'
+      - 'scripts/run_dialectic_intervention.sh'
+      - '.github/workflows/dialectic-intervention.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controlled-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run frontier-aware intervention suite
+        run: bash scripts/run_dialectic_intervention.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dialectic-intervention-${{ github.sha }}
+          path: reports/dialectic_intervention/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,10 +1,10 @@
 # Platform Support Matrix
 
-| Platform | RC4 status | Notes |
+| Platform | RC5 status | Notes |
 |---|---|---|
-| Linux | Validated | Release build, CTest, examples, 100k stress, ASAN/UBSAN selected gates passed in this environment. |
-| macOS | Expected | POSIX platform layer should apply; CI matrix includes macOS build/test. Not validated in this sandbox. |
-| Windows | Compile-target / smoke pending | RC4 adds a Windows platform layer for append/flush/close/PID liveness and disables POSIX-only process-kill tests. Windows compile was not validated in this Linux sandbox. |
+| Linux | CI target | Release build/test, package consumer smoke, sanitizer smoke, fuzz smoke, GA readiness smoke, and release-candidate bundle smoke are configured in GitHub Actions. Preserve CI artifacts before release. |
+| macOS | CI target | POSIX platform layer should apply; CI matrix includes macOS build/test. Preserve CI artifacts before release. |
+| Windows | Embedded/CLI smoke validated with policy caveat | `GRAPHENEDB_BUILD_SERVER` defaults to `OFF`, so normal Windows builds contain the embedded library, CLI, tests, benchmarks, and examples without attempting the POSIX server. The optional pilot server remains unsupported on Windows and configuring it `ON` fails explicitly. `graphenedb_cli_extract_tests` uses a Python harness on Windows. Local Windows Application Control can still block newly linked executables, so full default gates must run on an approved release host. |
 
 ## POSIX-only tests
 
@@ -12,6 +12,6 @@
 
 ## Remaining portability work
 
-- Replace file-based lock creation with fully atomic cross-platform locking.
+- Replace file-based lock creation with fully atomic cross-platform locking if stronger multi-process guarantees are required.
 - Add Windows-specific crash process tests using `CreateProcess` + `TerminateProcess`.
-- Add GitHub-hosted Windows CI evidence before claiming Windows support.
+- Preserve GitHub-hosted Windows CI evidence before claiming Windows release support.

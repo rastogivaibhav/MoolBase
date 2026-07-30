@@ -1,206 +1,182 @@
-# GrapheneDB Developer Preview
+# GrapheneDB v0.6.0-alpha.1
 
-GrapheneDB is an experimental C++20 embedded, provenance-first causal/lattice-memory database for AI agents, incident investigation, data lineage, research-pack ingestion, and auditable enterprise reasoning.
+GrapheneDB is an experimental embedded C++ evidence and causal-memory database for agentic systems. It combines typed graph retrieval with lineage-aware FiberBundles, a Lyapunov-inspired stability critic and governed decisions such as answer, deepen, contest or abstain.
 
-It stores versioned nodes, vectors, metadata, typed edges, source evidence, contradiction and supersession signals, then returns a concise answer together with the exact evidence-backed reasoning path that produced it.
+## Maturity
 
-> Current status: developer preview / controlled pilot. This is not enterprise GA.
+**Experimental developer alpha for research and controlled pilots. Not enterprise GA and not a semantic truth engine.**
 
-## Important branch status
+## Five-minute start
 
-The `codex/generic-data-tokenized` branch contains the latest generic/tokenised reasoning implementation as a committed unified source patch plus its frozen metrics, validation report, and operator/agent documentation. The tested full source snapshot is also available as the release handoff artifact associated with this work.
+Clone the consolidated release branch and run the disposable reasoning demo:
 
-The branch is not yet a fully materialised replacement of every file from that tested source snapshot. Before merging, apply and review `updates/generic-data/GRAPHENEDB_GENERIC_DATA_TOKENIZED.patch` against the preceding canonical-relation source line, then run the full build and CI suite. See `updates/generic-data/REMOTE_SOURCE_STATUS.md`.
-
-## What is included
-
-- Embedded C++20 storage engine and CLI
-- Optional controlled-pilot HTTP server
-- Versioned memory nodes, vectors, metadata, causal and semantic edges
-- Checksummed WAL, replay, checkpointing, backup, compaction and stale-lock recovery
-- Graphene-inspired hexagonal lattice topology and lattice-aware retrieval
-- Text atomisation and canonical relation extraction
-- Domain-neutral structured relation ingestion
-- HypoKosh iterative path planning
-- Dialectic expansion, opposition and convergence
-- Governed answer projection with no-silent-promotion and evidence-required states
-- Answer, ordered reasoning path, source evidence and execution attestation
-
-## Domain-neutral data
-
-The reasoning layer is not limited to human relationships. It supports arbitrary typed predicates across business, scientific, software, telemetry, healthcare, manufacturing and tokenised datasets.
-
-Supported representations include:
-
-- ordinary text
-- JSON and JSONL edge records
-- TSV and pipe-delimited triples
-- RDF/N-Triples-style subject-predicate-object records
-- token-tagged records using `SUBJ/REL/OBJ` or `S/P/O`
-
-A generic path request is represented as a start entity and an ordered relation path:
-
-```json
-{
-  "start": "portal-ui",
-  "relations": ["calls", "reads_from", "hosted_in"],
-  "terminal_type": "region"
-}
+```bash
+git clone --branch release/v0.6.0-alpha.1 --single-branch \
+  https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+bash scripts/developer_quickstart.sh
 ```
 
-A resolved response keeps the answer and path separate:
+Windows PowerShell:
 
-```json
-{
-  "answer": "gcp-europe-west2",
-  "status": "resolved",
-  "reasoning_path": [
-    {"from":"portal-ui","relation":"calls","to":"catalog-api"},
-    {"from":"catalog-api","relation":"reads_from","to":"product-db"},
-    {"from":"product-db","relation":"hosted_in","to":"gcp-europe-west2"}
-  ],
-  "full_pipeline_complete": true,
-  "canonical_relation_pipeline_complete": true
-}
+```powershell
+.\scripts\developer_quickstart.ps1
 ```
 
-`full_pipeline_complete` is true only after the following stages execute:
+Verify installation from an unrelated CMake project:
+
+```bash
+bash scripts/verify_developer_install.sh
+```
+
+Run the complete exact-head alpha gate:
+
+```bash
+bash scripts/run_alpha_release_gate.sh
+```
+
+The alpha gate performs a clean build, full CTest run, installed-package consumer test, controlled dialectic intervention benchmark, offline cross-dataset structural gate and immutable evidence-manifest generation.
+
+See [`docs/DEVELOPER_QUICKSTART.md`](docs/DEVELOPER_QUICKSTART.md) for prerequisites, expected output and next steps.
+
+## Runtime path
 
 ```text
-input data
-  -> Graphene atomisation and canonical relation emission
-  -> Graphene model world
-  -> HypoKosh iterative controller and path planning
-  -> dialectic expansion
-  -> dialectic opposition
-  -> dialectic convergence
-  -> governed answer projection
-  -> answer + path + evidence + attestation
+Graphene expansion
+→ immutable FiberBundle v2
+→ semantic-verifier boundary
+→ epistemic admissibility
+→ Lyapunov-inspired stability critic
+→ convergence and opposition
+→ targeted recovery when evidence is incomplete
+→ optional opposition-led secondary research
+→ governed answer projection
+→ compact epistemic receipt
+→ selective model-world event
 ```
 
-The system must not return an early answer that bypasses these stages.
+Recursive search is not always on. By default, the runtime performs one bounded pass and re-expands only for a graph-searchable defect such as a missing hop, insufficient independent evidence, contradiction, temporal mismatch, retrieval noise or a relevant minority path. Opposition-only secondary or tertiary research is opt-in.
 
-## Prerequisites
+## Main capabilities
 
-Recommended Linux setup:
+- deterministic immutable `FiberBundle` schema v2;
+- separation of graph-route, source, evidence-family and derivation lineage;
+- exact duplicate-path removal and correlated-evidence grouping;
+- support, opposition and noise kept as distinct epistemic roles;
+- target-scoped semantic-verifier interface;
+- temporal, provenance and critical-edge completeness checks;
+- material contradiction as a resolution blocker and energy barrier;
+- frontier-aware bounded recursive recovery;
+- operational opposition `reopen_nodes` for targeted secondary research;
+- governed statuses: `resolved`, `provisionally_resolved`, `contested`, `evidence_required`, `abstain`, `speculative`;
+- no-silent-promotion enforcement;
+- deterministic compact epistemic receipts for durable storage;
+- persistent checksummed model-world ledger and audits;
+- relation ontology and ambiguity-preserving entity resolution;
+- embedded C++ API, C API, CLI and authenticated POSIX HTTP endpoint.
 
-- CMake 3.20+
-- C++20 compiler: GCC 11+, Clang 14+, or equivalent
-- Python 3.10+ for harnesses and contract tests
-- Git
+## Compact receipts instead of full-bundle persistence
 
-Optional model-backed proposal experiments additionally use `scikit-learn` and `joblib`.
+The complete FiberBundle is normally an ephemeral query workspace. Persist a content-addressed receipt instead:
+
+```cpp
+#include "graphene/epistemic_receipt.hpp"
+
+HypoKoshRuntimeResult result = runtime.reason(query, signature, options);
+CompactEpistemicReceipt receipt =
+    build_compact_epistemic_receipt(result);
+```
+
+The receipt retains selected path IDs, evidence/source/derivation lineage, bundle and evidence references, governed status, energy, semantic-verification state and residual uncertainty without copying source documents, indexes or every recursive-cycle state.
+
+See [`docs/REASONING_MODES_AND_RECEIPTS.md`](docs/REASONING_MODES_AND_RECEIPTS.md).
 
 ## Build and test
 
+For a first local build, keep the optional server disabled:
+
 ```bash
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
-git checkout codex/generic-data-tokenized
-
-# Materialise the latest generic-data patch against the canonical-relation source line before building.
-# Review the patch paths and strip level in your working tree rather than applying it blindly.
-
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
-
+  -DGRAPHENEDB_BUILD_SERVER=OFF \
+  -DGRAPHENEDB_BUILD_BENCH=ON \
+  -DGRAPHENEDB_BUILD_EXAMPLES=ON
 cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-Focused reasoning verification:
+### Validation status
+
+The full pre-remediation split-source baseline passed **45/45 tests** with zero failures. The current frontier-aware changes have additionally passed:
+
+- strict C++20 syntax validation with `-Wall -Wextra -Wpedantic -Werror` for the modified dialectic, runtime, runtime-contract and intervention benchmark translation units;
+- a rebuilt 700-execution controlled intervention suite with all frozen gates passing;
+- a standalone strict-build compact-receipt contract;
+- a clean build, install, `find_package(GrapheneDB)` and external consumer execution for the package contract.
+
+The final release head still requires an exact-head full run on an authenticated machine because the available GitHub-hosted jobs are terminating before checkout with zero recorded steps. No green hosted result is claimed.
+
+## Controlled intervention result
+
+Across six difficult evidence-recovery families:
+
+| Policy | Final accuracy | Mean cycles | Mean visited states |
+|---|---:|---:|---:|
+| No cycle | 0.0% | 0.00 | 2.67 |
+| Old unchanged-bundle stop | 66.7% | 1.83 | 10.17 |
+| Frontier-aware targeted | 100.0% | 3.00 | 16.00 |
+| Forced broad retrieval | 83.3% | 3.00 | 34.00 |
+
+This is a controlled mechanism benchmark, not semantic truth or public-dataset end-to-end accuracy.
+
+## CLI
 
 ```bash
-./build/graphenedb_recursive_model_world_tests ./testdata
+./build/graphenedb_cli reason /tmp/graphenedb 16 <comma-vector> <signature> \
+  --mode empirical --max-rounds 3 --json
 ```
 
-The latest verified local run passed all 45 configured CTest cases. The committed metrics and report are in:
+The output includes governed status, bundle hashes, initial/final energy, final regime and certificate flags.
 
-- `updates/generic-data/GRAPHENEDB_GENERIC_DATASET_METRICS.json`
-- `updates/generic-data/GRAPHENEDB_GENERIC_DATA_PIPELINE_REPORT.md`
-- `updates/generic-data/GRAPHENEDB_GENERIC_DATA_TOKENIZED.patch`
-
-## Embedded CLI smoke test
+## HTTP
 
 ```bash
-./build/graphenedb_cli init /tmp/gdb-demo 3
-./build/graphenedb_cli put-node /tmp/gdb-demo 3 "root cause" 0.9,0.1,0.0 131074 root
-./build/graphenedb_cli put-node /tmp/gdb-demo 3 "checkout timeout" 0.1,0.9,0.0 131074 symptom
-./build/graphenedb_cli put-edge /tmp/gdb-demo 3 0 1 causal
-./build/graphenedb_cli search /tmp/gdb-demo 3 0.1,0.9,0.0 131074
-./build/graphenedb_cli validate /tmp/gdb-demo 3
+export GRAPHENEDB_API_KEY='development-key'
+./build/graphenedb_server /tmp/graphenedb 16 8080 \
+  --bind-address 127.0.0.1 --workers 2 --queue-capacity 32
 ```
 
-Automation-friendly commands support `--json`, including `inspect` and `validate`.
+Invoke `POST /v1/reason/runtime` with `X-API-Key`. The POSIX HTTP server remains unsupported on Windows; the embedded library is the preferred first-run path.
 
-## Reason over text
+## Main implementation files
 
-```bash
-./build/graphenedb_cli reason-text testdata/holdout/dialogue_paraphrase.txt \
-  "Why was the external go-live deferred?" \
-  --max-rounds 6 \
-  --json
+```text
+include/graphene/fiber_bundle.hpp
+include/graphene/path_verifier.hpp
+include/graphene/epistemic_control.hpp
+include/graphene/stability_critic.hpp
+include/graphene/hypokosh_runtime.hpp
+include/graphene/epistemic_receipt.hpp
+src/fiber_bundle.cpp
+src/epistemic_control.cpp
+src/stability_critic.cpp
+src/stability_critic_part_*.inc
+src/dialectic.cpp
+src/dialectic_frontier_part_*.inc
+src/hypokosh_runtime.cpp
+src/hypokosh_runtime_frontier_part_*.inc
+src/epistemic_receipt.cpp
 ```
 
-The JSON response should be inspected for:
+Large translation units use deterministic wrapper files plus `.inc` fragments so the complete source is reviewable and transportable without an unapplied patch.
 
-- final answer and status
-- ordered reasoning path
-- source evidence
-- non-zero HypoKosh rounds
-- Graphene, HypoKosh and dialectic execution attestation
-- governed projection outcome
+## Honest limitations
 
-## Optional pilot HTTP server
-
-```bash
-cmake -S . -B build-server \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_SERVER=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
-
-cmake --build build-server -j2 --target graphenedb_server
-export GRAPHENEDB_API_KEY=development-key
-./build-server/graphenedb_server /tmp/graphenedb 64 8080
-```
-
-Discover the API with `GET /v1/version`. For any non-loopback deployment, place the server behind the documented TLS reverse proxy and follow the security guidance.
-
-## Repository orientation
-
-- `include/graphene/` — public C and C++ headers
-- `src/` — storage, Graphene, HypoKosh, dialectic and governed reasoning implementation
-- `tools/graphenedb_cli.cpp` — CLI
-- `tools/graphenedb_server.cpp` — optional server
-- `tests/` — unit, durability, crash, lattice, extraction and reasoning tests
-- `bench/` — explicit benchmark programs
-- `scripts/` — build, stress, recovery, release and evidence workflows
-- `docs/` — architecture, storage, security and operator documentation
-- `updates/generic-data/` — generic/tokenised reasoning patch and validation evidence
-
-AI coding agents should read `AGENTS.md` first. Codex-specific guidance is in `CODEX.md`; Claude Code guidance is in `CLAUDE.md`.
-
-## Engineering constraints
-
-- Preserve durable-format compatibility and document storage-format changes.
-- Keep the embedded library authoritative; server endpoints must call tested core APIs.
-- Preserve no-silent-promotion, contradiction handling, temporal validity and abstention.
-- Retain the semantic reasoning path after projecting the concise answer.
-- Do not infer a factual edge from sentence adjacency alone.
-- Do not regress arbitrary predicates into a fixed human-relationship ontology.
-- Do not claim long soak, fuzz, target-scale or enterprise-GA evidence unless those gates were actually run and preserved.
-
-## Current limitations
-
-- No distributed mode or SQL interface
-- Developer preview rather than enterprise GA
-- Generic relation extraction remains deterministic and pattern-oriented for some unstructured inputs
-- Broader ontology mediation, entity resolution and confidence calibration remain roadmap work
-- Long-duration 24h/72h soak and target-host certification remain separate release gates
-
-## License
-
-Review and replace the current placeholder licence before unrestricted public distribution.
+- no global asymptotic-stability proof for an unbounded model world;
+- no completed downloaded 2,500-record public-data benchmark yet;
+- structural stability is not semantic truth;
+- model world is a local bounded ledger, not a distributed autonomous scheduler;
+- generic parsing is bounded and is not general natural-language understanding;
+- clean final-head Windows validation remains pending;
+- long-duration production-hardware soak, SBOM/security scan and signed release certification remain open gates.

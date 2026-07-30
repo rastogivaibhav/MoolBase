@@ -1,0 +1,6 @@
+checking src/stability_critic.cpp
+checking src/hypokosh_runtime.cpp
+checking src/escape.cpp
+checking src/self_healing.cpp
+checking tests/test_lyapunov_critic.cpp
+checking tests/test_hypokosh_runtime.cpp

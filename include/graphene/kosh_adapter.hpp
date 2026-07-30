@@ -1,5 +1,5 @@
 #pragma once
-#include "graphene/db.hpp"
+#include "graphene/dialectic.hpp"
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -22,8 +22,16 @@ class KoshAdapter {
 public:
   explicit KoshAdapter(GrapheneDB& db);
   Status ingest_memory(const KoshMemoryRecord& memory, uint32_t* out_id = nullptr);
-  Status link(uint32_t from, uint32_t to, EdgeRole role = EdgeRole::Causal, EdgeOrigin origin = EdgeOrigin::Observed, double confidence = 0.9);
+  Status link(uint32_t from,
+              uint32_t to,
+              EdgeRole role = EdgeRole::Causal,
+              EdgeOrigin origin = EdgeOrigin::Observed,
+              double confidence = 0.9,
+              std::map<std::string, std::string> provenance = {});
   MemoryBundle retrieve_causal_bundle(const std::vector<float>& query, uint64_t signature, QueryMode mode = QueryMode::Empirical) const;
+  DialecticResult retrieve_dialectic(const std::vector<float>& query,
+                                     uint64_t signature,
+                                     const DialecticOptions& options = {}) const;
 
   // Minimal local interchange for LLM-Kosh/KoshDB gate tests. Format is tab-separated:
   // external_id, type, signature, incident, root(0/1), symptom(0/1), vector_csv, content_hex, metadata k=v;k=v

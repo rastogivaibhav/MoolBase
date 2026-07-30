@@ -1,0 +1,36 @@
+name: Alpha release gate
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      cross_dataset_mode:
+        description: Cross-dataset mode
+        required: false
+        default: offline
+        type: choice
+        options: [offline, public, all]
+
+permissions:
+  contents: read
+
+jobs:
+  linux-release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GRAPHENEDB_CROSS_DATASET_MODE: ${{ inputs.cross_dataset_mode || 'offline' }}
+      GRAPHENEDB_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact-head alpha gate
+        run: bash scripts/run_alpha_release_gate.sh
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-alpha-gate-${{ github.sha }}
+          path: reports/alpha-release-gate/
+          if-no-files-found: warn
+          retention-days: 30

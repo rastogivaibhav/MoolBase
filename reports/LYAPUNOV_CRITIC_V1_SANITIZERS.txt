@@ -1,0 +1,1 @@
+complete_hypokosh_runtime_contract_passed=true

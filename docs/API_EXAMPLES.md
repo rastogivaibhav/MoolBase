@@ -54,3 +54,44 @@ Run:
 ```bash
 ./build-release/graphenedb_api_team_brain
 ```
+
+## Contradiction And Supersession
+
+Store a current root cause, a stale hypothesis, and a current action that supersedes older advice:
+
+```cpp
+EdgeInput contradicts;
+contradicts.from = root;
+contradicts.to = stale_hypothesis;
+contradicts.role = EdgeRole::Contradicts;
+
+EdgeInput supersedes;
+supersedes.from = current_action;
+supersedes.to = stale_hypothesis;
+supersedes.role = EdgeRole::Supersedes;
+```
+
+Run:
+
+```bash
+./build-release/graphenedb_api_contradiction_supersession
+```
+
+## Lattice Memory
+
+Store graphene-inspired axial coordinates and validated neighbor bonds:
+
+```cpp
+NodeInput n;
+n.lattice = LatticeCoord{0, 0, 0};
+
+EdgeInput e;
+e.bond_type = BondType::Sigma;
+e.layer_coupling = LayerCoupling::SameLayer;
+```
+
+Run:
+
+```bash
+./build-release/graphenedb_lattice_memory
+```

@@ -1,0 +1,19 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential ca-certificates cmake git python3 \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . .
+
+RUN cmake -S . -B build-validation \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DGRAPHENEDB_BUILD_TESTS=ON \
+      -DGRAPHENEDB_BUILD_SERVER=ON \
+      -DGRAPHENEDB_BUILD_BENCH=ON \
+      -DGRAPHENEDB_BUILD_EXAMPLES=ON \
+ && cmake --build build-validation -j2
+
+CMD ["ctest", "--test-dir", "build-validation", "--output-on-failure", "-j2"]

@@ -1,37 +1,15 @@
-# Codex Repository Guide
+# Codex Notes
 
-Use `AGENTS.md` as the authoritative instruction file and `README.md` as the operator quick start.
+Use `AGENTS.md` as the primary repository instruction file.
 
-## Objective
+GrapheneDB v0.6.0-rc1 is an embedded C++20 causal/physical-lattice database with an optional controlled-pilot HTTP server. Preserve the embedded core as the source of truth. Keep server concurrency, request admission, retry safety, graceful checkpoint shutdown, durable-format compatibility, and reverse-proxy-only deployment constraints intact.
 
-Maintain GrapheneDB as a domain-neutral, provenance-first reasoning substrate. A successful resolved response must be produced through Graphene ingestion/model-world construction, HypoKosh iterative reasoning, dialectic expansion/opposition/convergence, and governed projection. Return both the concise answer and the validated evidence path.
+The current branch is a **pilot release candidate**, not unrestricted public GA. The default task is validation and stabilization, not new Kosh/dialectic features.
 
-## First commands
+Run:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-  -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
-cmake --build build -j2
-ctest --test-dir build --output-on-failure
-./build/graphenedb_recursive_model_world_tests ./testdata
+bash scripts/run_pilot_rc1_gate.sh
 ```
 
-## Change protocol
-
-1. Inspect the relevant public header, implementation and existing tests.
-2. Add a failing test before changing reasoning or durable behaviour.
-3. Avoid case-specific answer regexes when a typed relation or graph constraint can express the behaviour.
-4. Preserve arbitrary predicates and token-tagged/structured input support.
-5. Verify non-zero HypoKosh rounds and full execution attestation for reasoning tests.
-6. Run focused tests, then the complete CTest suite.
-7. Update README/docs and committed evidence only when results were actually reproduced.
-
-## Never do
-
-- bypass Graphene, HypoKosh or dialectic stages for convenience;
-- return an evidence path in place of the requested answer;
-- discard the reasoning path after projection;
-- infer a factual edge from sentence adjacency alone;
-- weaken provenance, temporal validity, contradiction or no-silent-promotion checks;
-- claim GA, scale, soak, fuzz or benchmark results without artifacts.
+Before public distribution, complete external 24h/72h soak, actual OCI/SBOM/vulnerability scanning, resolve remaining long-profile performance/harness issues, and replace the placeholder licence.

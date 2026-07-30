@@ -1,0 +1,158 @@
+name: Cross-dataset epistemic suite
+
+on:
+  push:
+    branches:
+      - benchmark/cross-dataset-epistemic-suite
+    paths:
+      - '.github/workflows/cross-dataset-epistemic.yml'
+      - 'bench/bench_cross_dataset_epistemic.cpp'
+      - 'benchmarks/cross_dataset/**'
+      - 'include/graphene/fiber_bundle.hpp'
+      - 'include/graphene/stability_critic.hpp'
+      - 'src/fiber_bundle.cpp'
+      - 'src/stability_critic.cpp'
+  pull_request:
+    branches:
+      - fix/fiberbundle-v2-lyapunov
+    paths:
+      - '.github/workflows/cross-dataset-epistemic.yml'
+      - 'bench/bench_cross_dataset_epistemic.cpp'
+      - 'benchmarks/cross_dataset/**'
+      - 'include/graphene/fiber_bundle.hpp'
+      - 'include/graphene/stability_critic.hpp'
+      - 'src/fiber_bundle.cpp'
+      - 'src/stability_critic.cpp'
+  workflow_dispatch:
+    inputs:
+      babi_per_task:
+        description: bAbI examples per selected task
+        required: false
+        default: '200'
+      hotpot:
+        description: HotpotQA validation examples
+        required: false
+        default: '500'
+      fever_per_label:
+        description: FEVER examples per label
+        required: false
+        default: '200'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-dataset-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-isolated:
+    name: Source-isolated regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare directories
+        run: mkdir -p build/cross_dataset reports/cross_dataset
+
+      - name: Compile actual FiberBundle and Lyapunov critic
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Iinclude \
+            bench/bench_cross_dataset_epistemic.cpp \
+            src/fiber_bundle.cpp \
+            src/stability_critic.cpp \
+            -o build/cross_dataset/bench_cross_dataset_epistemic
+
+      - name: Run committed source-isolated regression
+        run: |
+          build/cross_dataset/bench_cross_dataset_epistemic \
+            benchmarks/cross_dataset/source_isolated_actual.tsv \
+            reports/cross_dataset/source_isolated_results.csv
+          python benchmarks/cross_dataset/summarise_cross_dataset.py \
+            --input reports/cross_dataset/source_isolated_results.csv \
+            --json-output reports/cross_dataset/source_isolated_summary.json \
+            --markdown-output reports/cross_dataset/source_isolated_summary.md \
+            --enforce
+
+      - name: Upload source-isolated evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-dataset-source-isolated-${{ github.sha }}
+          path: |
+            benchmarks/cross_dataset/source_isolated_actual.tsv
+            reports/cross_dataset/source_isolated_results.csv
+            reports/cross_dataset/source_isolated_summary.json
+            reports/cross_dataset/source_isolated_summary.md
+          if-no-files-found: warn
+          retention-days: 30
+
+  public-benchmark:
+    name: Public 2,500-record benchmark
+    needs: source-isolated
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      BABI_PER_TASK: ${{ github.event.inputs.babi_per_task || '200' }}
+      HOTPOT: ${{ github.event.inputs.hotpot || '500' }}
+      FEVER_PER_LABEL: ${{ github.event.inputs.fever_per_label || '200' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare directories
+        run: mkdir -p build/cross_dataset reports/cross_dataset
+
+      - name: Compile actual FiberBundle and Lyapunov critic
+        run: |
+          g++ -std=c++20 -O2 -Wall -Wextra -Wpedantic -Werror \
+            -Iinclude \
+            bench/bench_cross_dataset_epistemic.cpp \
+            src/fiber_bundle.cpp \
+            src/stability_critic.cpp \
+            -o build/cross_dataset/bench_cross_dataset_epistemic
+
+      - name: Download and normalize frozen public benchmark sample
+        run: |
+          python benchmarks/cross_dataset/prepare_cross_dataset.py \
+            --output build/cross_dataset/examples.tsv \
+            --babi-per-task "$BABI_PER_TASK" \
+            --hotpot "$HOTPOT" \
+            --fever-per-label "$FEVER_PER_LABEL"
+
+      - name: Run full benchmark-derived epistemic diagnostics
+        run: |
+          build/cross_dataset/bench_cross_dataset_epistemic \
+            build/cross_dataset/examples.tsv \
+            reports/cross_dataset/results.csv
+
+      - name: Summarize and enforce frozen full-run targets
+        run: |
+          python benchmarks/cross_dataset/summarise_cross_dataset.py \
+            --input reports/cross_dataset/results.csv \
+            --json-output reports/cross_dataset/summary.json \
+            --markdown-output reports/cross_dataset/summary.md \
+            --enforce
+
+      - name: Upload public benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-dataset-public-${{ github.sha }}
+          path: |
+            build/cross_dataset/examples.tsv
+            build/cross_dataset/examples.manifest.json
+            reports/cross_dataset/results.csv
+            reports/cross_dataset/summary.json
+            reports/cross_dataset/summary.md
+          if-no-files-found: warn
+          retention-days: 30
