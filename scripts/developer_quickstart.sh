@@ -40,7 +40,7 @@ GrapheneDB is ready to explore.
 
 Next steps:
   Full tests:       cmake --build "${BUILD_DIR}" --parallel ${JOBS} && ctest --test-dir "${BUILD_DIR}" --output-on-failure
-  Install check:    scripts/verify_developer_install.sh
+  Install check:    bash scripts/verify_developer_install.sh
   C++ API example:  examples/installed_consumer/main.cpp
   Runtime guide:    docs/DEVELOPER_QUICKSTART.md
 EOF_MESSAGE
