@@ -8,6 +8,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/GrapheneDBBase.cmake)
 
 target_sources(graphenedb PRIVATE
   src/entity_resolution.cpp
+  src/epistemic_receipt.cpp
   src/epistemic_control.cpp
   src/escape.cpp
   src/fiber_bundle.cpp
@@ -83,6 +84,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_epistemic_control_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_epistemic_control_tests
            COMMAND graphenedb_epistemic_control_tests)
+
+  add_executable(graphenedb_epistemic_receipt_tests
+                 tests/test_epistemic_receipt.cpp)
+  target_link_libraries(graphenedb_epistemic_receipt_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_receipt_tests
+           COMMAND graphenedb_epistemic_receipt_tests)
 
   if(TARGET graphenedb_server AND NOT WIN32)
     add_test(NAME graphenedb_server_hypokosh_runtime_contract_tests
