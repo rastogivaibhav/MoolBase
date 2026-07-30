@@ -6,6 +6,31 @@ GrapheneDB is an experimental embedded C++ causal/lattice-memory database. This 
 
 **Experimental runtime / developer preview. Not enterprise GA.**
 
+## Five-minute start
+
+Clone the developer-preview branch and run the disposable reasoning demo:
+
+```bash
+git clone --branch benchmark/cross-dataset-epistemic-suite --single-branch \
+  https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+scripts/developer_quickstart.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\developer_quickstart.ps1
+```
+
+To prove that GrapheneDB can be installed and consumed from an unrelated CMake project:
+
+```bash
+scripts/verify_developer_install.sh
+```
+
+That verification performs a clean build, installs GrapheneDB into a temporary prefix, builds `examples/installed_consumer` with `find_package(GrapheneDB CONFIG REQUIRED)`, and runs the external consumer. See [`docs/DEVELOPER_QUICKSTART.md`](docs/DEVELOPER_QUICKSTART.md) for prerequisites, expected output and next steps.
+
 The executable reasoning path is:
 
 ```text
@@ -80,12 +105,15 @@ The source-to-test mapping is in [`docs/PAPER_THESIS_IMPLEMENTATION_MATRIX.md`](
 
 ## Build and test
 
+For a first local build, keep the optional server disabled:
+
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_SERVER=ON \
-  -DGRAPHENEDB_BUILD_BENCH=OFF
+  -DGRAPHENEDB_BUILD_SERVER=OFF \
+  -DGRAPHENEDB_BUILD_BENCH=OFF \
+  -DGRAPHENEDB_BUILD_EXAMPLES=ON
 cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
