@@ -122,6 +122,10 @@ struct DialecticOptions {
   uint32_t max_opposition_rounds{1};
   double minimum_confidence{0.45};
   double reexpansion_threshold{0.25};
+  // Opposition and escape can request specific hypotheses to be reopened. The
+  // expander turns root nodes into downstream anchor candidates instead of
+  // treating the root itself as fresh corroborating evidence.
+  std::vector<uint32_t> reopen_nodes;
   std::string as_of;
 };
 
