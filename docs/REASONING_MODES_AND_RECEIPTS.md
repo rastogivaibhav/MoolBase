@@ -45,6 +45,23 @@ new intermediate nodes. The runtime therefore distinguishes:
 The default unchanged-recovery patience is two rounds and all recursion remains
 capped at three cycles.
 
+## Compact receipt API
+
+The complete runtime result can be reduced to a durable, content-addressed
+receipt without retaining the full FiberBundle:
+
+```cpp
+#include "graphene/epistemic_receipt.hpp"
+
+HypoKoshRuntimeResult result = runtime.reason(query, signature, options);
+CompactEpistemicReceipt receipt =
+    build_compact_epistemic_receipt(result);
+```
+
+The receipt canonically deduplicates evidence edges and lineage references,
+retains selected FiberPath IDs, records the governed status and uncertainty,
+and produces a deterministic `content_hash` for audit and storage deduplication.
+
 ## Storage policy
 
 FiberBundle is primarily an ephemeral, deterministic reasoning projection. A
