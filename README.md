@@ -14,7 +14,7 @@ Clone the developer-preview branch and run the disposable reasoning demo:
 git clone --branch benchmark/cross-dataset-epistemic-suite --single-branch \
   https://github.com/rastogivaibhav/graphenedb_v1.git
 cd graphenedb_v1
-scripts/developer_quickstart.sh
+bash scripts/developer_quickstart.sh
 ```
 
 Windows PowerShell:
@@ -26,7 +26,7 @@ Windows PowerShell:
 To prove that GrapheneDB can be installed and consumed from an unrelated CMake project:
 
 ```bash
-scripts/verify_developer_install.sh
+bash scripts/verify_developer_install.sh
 ```
 
 That verification performs a clean build, installs GrapheneDB into a temporary prefix, builds `examples/installed_consumer` with `find_package(GrapheneDB CONFIG REQUIRED)`, and runs the external consumer. See [`docs/DEVELOPER_QUICKSTART.md`](docs/DEVELOPER_QUICKSTART.md) for prerequisites, expected output and next steps.
