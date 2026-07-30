@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "total_runs": 700,
+  "hard_families": [
+    "independent_candidate",
+    "minority_path",
+    "missing_hop_2",
+    "missing_hop_3",
+    "missing_hop_4",
+    "noise_trap"
+  ],
+  "policy_summary": {
+    "broad_forced_3": {
+      "runs": 120,
+      "final_accuracy": 0.8333333333333334,
+      "mean_cycles": 3.0,
+      "mean_visited": 34.0,
+      "correction_rate": 0.8333333333333334,
+      "harm_rate": 0.0
+    },
+    "no_cycle": {
+      "runs": 120,
+      "final_accuracy": 0.0,
+      "mean_cycles": 0.0,
+      "mean_visited": 2.6666666666666665,
+      "correction_rate": 0.0,
+      "harm_rate": 0.0
+    },
+    "targeted_current_stop": {
+      "runs": 120,
+      "final_accuracy": 0.6666666666666666,
+      "mean_cycles": 1.8333333333333333,
+      "mean_visited": 10.166666666666666,
+      "correction_rate": 0.6666666666666666,
+      "harm_rate": 0.0
+    },
+    "targeted_forced_3": {
+      "runs": 120,
+      "final_accuracy": 1.0,
+      "mean_cycles": 3.0,
+      "mean_visited": 16.0,
+      "correction_rate": 1.0,
+      "harm_rate": 0.0
+    },
+    "targeted_frontier_aware": {
+      "runs": 120,
+      "final_accuracy": 1.0,
+      "mean_cycles": 3.0,
+      "mean_visited": 16.0,
+      "correction_rate": 1.0,
+      "harm_rate": 0.0
+    }
+  },
+  "family_policy": {
+    "already_correct:broad_forced_3": {"runs":20,"initial_accuracy":1.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":14.0,"mean_stop_regret_cycles":3.0},
+    "already_correct:no_cycle": {"runs":20,"initial_accuracy":1.0,"final_accuracy":1.0,"mean_cycles":0.0,"mean_visited":2.0,"mean_stop_regret_cycles":0.0},
+    "already_correct:targeted_current_stop": {"runs":20,"initial_accuracy":1.0,"final_accuracy":1.0,"mean_cycles":1.0,"mean_visited":4.0,"mean_stop_regret_cycles":1.0},
+    "already_correct:targeted_forced_3": {"runs":20,"initial_accuracy":1.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":8.0,"mean_stop_regret_cycles":3.0},
+    "already_correct:targeted_frontier_aware": {"runs":20,"initial_accuracy":1.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":8.0,"mean_stop_regret_cycles":3.0},
+    "independent_candidate:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":20.0,"mean_stop_regret_cycles":2.0},
+    "independent_candidate:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":2.0,"mean_stop_regret_cycles":0.0},
+    "independent_candidate:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":2.0,"mean_visited":14.0,"mean_stop_regret_cycles":1.0},
+    "independent_candidate:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":20.0,"mean_stop_regret_cycles":2.0},
+    "independent_candidate:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":20.0,"mean_stop_regret_cycles":2.0},
+    "minority_path:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":15.0,"mean_stop_regret_cycles":2.0},
+    "minority_path:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":2.0,"mean_stop_regret_cycles":0.0},
+    "minority_path:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":11.0,"mean_stop_regret_cycles":2.0},
+    "minority_path:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":11.0,"mean_stop_regret_cycles":2.0},
+    "minority_path:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":11.0,"mean_stop_regret_cycles":2.0},
+    "missing_hop_2:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":27.0,"mean_stop_regret_cycles":2.0},
+    "missing_hop_2:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":3.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_2:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":2.0,"mean_visited":11.0,"mean_stop_regret_cycles":1.0},
+    "missing_hop_2:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":15.0,"mean_stop_regret_cycles":2.0},
+    "missing_hop_2:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":15.0,"mean_stop_regret_cycles":2.0},
+    "missing_hop_3:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":44.0,"mean_stop_regret_cycles":1.0},
+    "missing_hop_3:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":3.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_3:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":1.0,"mean_visited":7.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_3:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":17.0,"mean_stop_regret_cycles":1.0},
+    "missing_hop_3:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":17.0,"mean_stop_regret_cycles":1.0},
+    "missing_hop_4:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":47.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_4:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":3.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_4:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":1.0,"mean_visited":7.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_4:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":18.0,"mean_stop_regret_cycles":0.0},
+    "missing_hop_4:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":18.0,"mean_stop_regret_cycles":0.0},
+    "noise_trap:broad_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":3.0,"mean_visited":51.0,"mean_stop_regret_cycles":0.0},
+    "noise_trap:no_cycle": {"runs":20,"initial_accuracy":0.0,"final_accuracy":0.0,"mean_cycles":0.0,"mean_visited":3.0,"mean_stop_regret_cycles":0.0},
+    "noise_trap:targeted_current_stop": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":2.0,"mean_visited":11.0,"mean_stop_regret_cycles":1.0},
+    "noise_trap:targeted_forced_3": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":15.0,"mean_stop_regret_cycles":2.0},
+    "noise_trap:targeted_frontier_aware": {"runs":20,"initial_accuracy":0.0,"final_accuracy":1.0,"mean_cycles":3.0,"mean_visited":15.0,"mean_stop_regret_cycles":2.0}
+  },
+  "gates": {
+    "frontier_aware_solves_all_hard_families": true,
+    "current_stop_exposes_deep_chain_failure": true,
+    "targeted_uses_less_search_than_broad": true,
+    "broad_noise_trap_fails": true,
+    "frontier_aware_noise_trap_passes": true
+  },
+  "all_gates_pass": true
+}
