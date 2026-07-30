@@ -10,12 +10,12 @@ This guide is for a developer who wants a first successful GrapheneDB run before
 - Linux or macOS for the shell quickstart;
 - Windows PowerShell plus a C++ build toolchain for the PowerShell quickstart.
 
-The reasoning runtime is an experimental developer preview, not an enterprise-GA decision system.
+The reasoning runtime is an experimental developer alpha, not an enterprise-GA decision system.
 
-## 1. Clone the developer-preview branch
+## 1. Clone the consolidated alpha branch
 
 ```bash
-git clone --branch benchmark/cross-dataset-epistemic-suite --single-branch \
+git clone --branch release/v0.6.0-alpha.1 --single-branch \
   https://github.com/rastogivaibhav/graphenedb_v1.git
 cd graphenedb_v1
 ```
@@ -104,14 +104,48 @@ cmake --build build
 
 A complete consumer is available in `examples/installed_consumer`.
 
-## 6. Run the full validation suite
+## 6. Persist a compact answer receipt
+
+Do not persist every complete FiberBundle by default. Reduce the runtime result to a deterministic receipt:
+
+```cpp
+#include "graphene/epistemic_receipt.hpp"
+
+HypoKoshRuntimeResult result = runtime.reason(query, signature, options);
+CompactEpistemicReceipt receipt =
+    build_compact_epistemic_receipt(result);
+```
+
+The receipt preserves selected path IDs, evidence/source/derivation lineage, bundle and evidence references, governed status, energy and uncertainty while avoiding duplicate storage of source data, indexes and full recursive workspaces.
+
+## 7. Run the complete alpha release gate
+
+On an authenticated Linux/macOS clone:
+
+```bash
+bash scripts/run_alpha_release_gate.sh
+```
+
+The gate performs:
+
+1. clean exact-head Release configuration;
+2. build of all configured targets;
+3. full CTest execution;
+4. installed-package external consumer verification;
+5. the controlled dialectic intervention benchmark;
+6. the offline cross-dataset structural gate;
+7. immutable manifest and SHA-256 generation.
+
+Use `GRAPHENEDB_CROSS_DATASET_MODE=public` only on a networked machine when you intentionally want the downloaded public-data run.
+
+## 8. Run the standard validation suite
 
 ```bash
 cmake -S . -B build/release \
   -DCMAKE_BUILD_TYPE=Release \
   -DGRAPHENEDB_BUILD_TESTS=ON \
   -DGRAPHENEDB_BUILD_SERVER=OFF \
-  -DGRAPHENEDB_BUILD_BENCH=OFF \
+  -DGRAPHENEDB_BUILD_BENCH=ON \
   -DGRAPHENEDB_BUILD_EXAMPLES=ON
 cmake --build build/release --parallel 2
 ctest --test-dir build/release --output-on-failure
@@ -121,10 +155,13 @@ ctest --test-dir build/release --output-on-failure
 
 | Goal | Start here |
 |---|---|
-| See it run | `bash scripts/developer_quickstart.sh` or the PowerShell script |
+| See it run | `scripts/developer_quickstart.sh` or `.ps1` |
 | Learn the embedded API | `examples/installed_consumer/main.cpp` |
 | Explore governed reasoning | `examples/hypokosh_runtime.cpp` |
-| Validate package installation | `bash scripts/verify_developer_install.sh` |
+| Persist compact results | `include/graphene/epistemic_receipt.hpp` |
+| Validate package installation | `scripts/verify_developer_install.sh` |
+| Run the complete alpha gate | `scripts/run_alpha_release_gate.sh` |
+| Reproduce recursion experiments | `scripts/run_dialectic_intervention.sh` |
 | Run structural benchmarks | `docs/benchmarks/PORTABLE_CROSS_DATASET_VALIDATION.md` |
 | Study the critic | `docs/LYAPUNOV_CRITIC_V1.md` |
 
