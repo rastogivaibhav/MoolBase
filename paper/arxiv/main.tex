@@ -1,0 +1,57 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{longtable}
+\usepackage{seqsplit}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\newcommand{\system}{GrapheneDB}
+\newcommand{\commit}{49e9340f461ebb4f54c837425c662b06217ded4e}
+\newcommand{\statusResolved}{\texttt{resolved}}
+\newcommand{\statusProvisional}{\texttt{provisionally\_resolved}}
+\newcommand{\statusContested}{\texttt{contested}}
+\newcommand{\statusEvidence}{\texttt{evidence\_required}}
+\newcommand{\statusAbstain}{\texttt{abstain}}
+\newcommand{\statusSpeculative}{\texttt{speculative}}
+
+\title{\textbf{GrapheneDB: Lineage-Aware Epistemic Control for Evidence-Grounded Agentic Systems}}
+\author{Vaibhav Rastogi\\Independent Researcher, United Kingdom}
+\date{31 July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Retrieval systems can return relevant information without establishing that the retrieved artifacts are independent, temporally valid, complete, or sufficient grounds for an agentic conclusion. This paper presents \system, an experimental embedded C++ evidence and causal-memory database that places an epistemic control layer between retrieval and action. The system constructs immutable \emph{FiberBundles} of candidate evidence paths, separates graph-route identity from source, evidence-family, and derivation lineage, quarantines opposition and retrieval noise from positive support, and projects governed states such as resolved, contested, evidence required, or abstain. A Lyapunov-inspired critic evaluates an eleven-coordinate bounded error state over observed reasoning trajectories. Recursive search is conditional rather than always on: the runtime re-expands only for a diagnosed graph-searchable defect, while opposition-led secondary research is opt-in. We report two controlled evaluations. In a 700-execution intervention benchmark, frontier-aware targeted recovery solved all hard hidden-evidence families, compared with 66.7\% for the previous unchanged-bundle stopping rule and 83.3\% for forced broad retrieval, while visiting 16 versus 34 states on average. A 46-record source-isolated structural suite derived from bAbI, HotpotQA, and FEVER achieved all frozen invariant gates for missing evidence, contradiction, duplicate-source resistance, independent corroboration, temporal mismatch, and abstention. These results validate controller and evidence-structure mechanisms, not semantic truth or general superiority over external database and agent systems.
+\end{abstract}
+
+\noindent\textbf{Keywords:} epistemic control; evidence lineage; agent memory; graph database; retrieval-augmented generation; recursive evidence recovery; provenance; abstention
+
+\input{sections/01_introduction_related.tex}
+\input{sections/02_system_design.tex}
+\input{sections/03_implementation_evaluation.tex}
+\input{sections/04_results_positioning.tex}
+\input{sections/05_discussion_limitations.tex}
+\input{sections/06_repro_conclusion.tex}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\input{sections/appendix_claims.tex}
+
+\end{document}
