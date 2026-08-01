@@ -93,6 +93,24 @@ jobs:
           chmod 0600 "$HOME/.kube/config"
           kubectl cluster-info
 
+      - name: Render and validate hardened resources
+        env:
+          PUBLIC_HOSTNAME: ${{ inputs.public_hostname }}
+          SITE_ORIGIN: ${{ inputs.chatgpt_site_origin }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          mkdir -p deployment-rendered
+          sed "s/evidence-lab.example.com/${PUBLIC_HOSTNAME}/g" \
+            deploy/evidence-lab/kubernetes/evidence-lab.yaml \
+            > deployment-rendered/evidence-lab.yaml
+          python scripts/preflight_evidence_lab_deployment.py \
+            deployment-rendered/evidence-lab.yaml \
+            --hostname "$PUBLIC_HOSTNAME" \
+            --site-origin "$SITE_ORIGIN" \
+            --expected-commit "$EXPECTED_COMMIT"
+          kubectl apply --dry-run=server -f deployment-rendered/evidence-lab.yaml
+
       - name: Apply hardened Evidence Lab resources
         env:
           PUBLIC_HOSTNAME: ${{ inputs.public_hostname }}
@@ -105,10 +123,7 @@ jobs:
           GHCR_PAT: ${{ secrets.EVIDENCE_LAB_GHCR_PAT }}
         run: |
           set -euo pipefail
-          manifest="$(mktemp)"
-          sed "s/evidence-lab.example.com/${PUBLIC_HOSTNAME}/g" \
-            deploy/evidence-lab/kubernetes/evidence-lab.yaml > "$manifest"
-          kubectl apply -f "$manifest"
+          kubectl apply -f deployment-rendered/evidence-lab.yaml
           kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
             --docker-server=ghcr.io \
             --docker-username="$GHCR_USERNAME" \
@@ -148,6 +163,7 @@ jobs:
         if: always()
         run: |
           mkdir -p deployment-evidence
+          cp -R deployment-rendered/. deployment-evidence/ 2>/dev/null || true
           kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc -o wide \
             > deployment-evidence/resources.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
