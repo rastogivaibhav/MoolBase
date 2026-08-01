@@ -109,7 +109,7 @@ jobs:
             --hostname "$PUBLIC_HOSTNAME" \
             --site-origin "$SITE_ORIGIN" \
             --expected-commit "$EXPECTED_COMMIT"
-          kubectl apply --dry-run=server -f deployment-rendered/evidence-lab.yaml
+          kubectl apply --dry-run=client -f deployment-rendered/evidence-lab.yaml
 
       - name: Apply hardened Evidence Lab resources
         env:
