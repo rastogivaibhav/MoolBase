@@ -10,6 +10,7 @@ import secrets
 import shutil
 import signal
 import socket
+import stat
 import subprocess
 import tempfile
 import time
@@ -42,11 +43,7 @@ def _event(stage: str, detail: str, **extra: Any) -> dict[str, Any]:
 
 
 class RecordedReferenceBackend(Backend):
-    """Deterministic recorded output for UI development and disconnected preview.
-
-    This mode is intentionally labelled recorded_reference by the public contract.
-    It never claims that GrapheneDB executed.
-    """
+    """Deterministic recorded output for UI development and disconnected preview."""
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -102,8 +99,11 @@ class SubprocessGrapheneDBBackend(Backend):
         if not binary:
             raise BackendError("GRAPHENEDB_SERVER_BINARY is required for live backend mode")
         self.binary = Path(binary).resolve()
-        if not self.binary.exists():
+        if not self.binary.is_file():
             raise BackendError(f"GrapheneDB server binary not found: {self.binary}")
+        mode = self.binary.stat().st_mode
+        if mode & (stat.S_IWGRP | stat.S_IWOTH):
+            raise BackendError("GrapheneDB server binary must not be group- or world-writable")
 
     @staticmethod
     def _free_port() -> int:
@@ -111,17 +111,39 @@ class SubprocessGrapheneDBBackend(Backend):
             sock.bind(("127.0.0.1", 0))
             return int(sock.getsockname()[1])
 
+    def _limit_worker(self) -> None:
+        os.umask(0o077)
+        try:
+            import resource
+
+            resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+            resource.setrlimit(resource.RLIMIT_AS, (self.settings.worker_memory_bytes, self.settings.worker_memory_bytes))
+            resource.setrlimit(resource.RLIMIT_CPU, (self.settings.worker_cpu_seconds, self.settings.worker_cpu_seconds + 5))
+            resource.setrlimit(resource.RLIMIT_NOFILE, (self.settings.worker_open_files, self.settings.worker_open_files))
+            resource.setrlimit(resource.RLIMIT_NPROC, (self.settings.worker_processes, self.settings.worker_processes))
+            resource.setrlimit(resource.RLIMIT_FSIZE, (self.settings.worker_file_bytes, self.settings.worker_file_bytes))
+        except (ImportError, ValueError, OSError) as exc:
+            if self.settings.public_mode:
+                raise RuntimeError(f"failed to apply worker resource limits: {exc}") from exc
+
     @contextmanager
     def _server(self) -> Iterator[tuple[httpx.Client, dict[str, Any]]]:
         work = Path(tempfile.mkdtemp(prefix="graphenedb-evidence-lab-run-"))
+        work.chmod(0o700)
         db = work / "db"
-        db.mkdir(parents=True)
+        db.mkdir(mode=0o700, parents=True)
         port = self._free_port()
         api_key = secrets.token_urlsafe(32)
         log_path = work / "server.log"
         log = open(log_path, "w+", encoding="utf-8")
-        env = dict(os.environ)
-        env["GRAPHENEDB_API_KEY"] = api_key
+        env = {
+            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+            "HOME": str(work),
+            "TMPDIR": str(work),
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "GRAPHENEDB_API_KEY": api_key,
+        }
         process = subprocess.Popen(
             [
                 str(self.binary), str(db), str(self.settings.graphenedb_dimension), str(port),
@@ -129,10 +151,14 @@ class SubprocessGrapheneDBBackend(Backend):
                 "--workers", "2", "--queue-capacity", "32",
                 "--rate-limit-rps", "1000", "--rate-limit-burst", "1000",
             ],
-            stdout=subprocess.DEVNULL,
+            cwd=work,
+            stdout=log,
             stderr=log,
             env=env,
             text=True,
+            close_fds=True,
+            start_new_session=True,
+            preexec_fn=self._limit_worker if os.name == "posix" else None,
         )
         client = httpx.Client(
             base_url=f"http://127.0.0.1:{port}",
@@ -142,7 +168,8 @@ class SubprocessGrapheneDBBackend(Backend):
         try:
             for _ in range(240):
                 if process.poll() is not None:
-                    log.flush(); log.seek(0)
+                    log.flush()
+                    log.seek(0)
                     raise BackendError("GrapheneDB server exited during startup: " + log.read()[-4000:])
                 try:
                     response = client.get("/v1/health")
@@ -159,11 +186,20 @@ class SubprocessGrapheneDBBackend(Backend):
         finally:
             client.close()
             if process.poll() is None:
-                process.send_signal(signal.SIGTERM)
                 try:
+                    if os.name == "posix":
+                        os.killpg(process.pid, signal.SIGTERM)
+                    else:
+                        process.send_signal(signal.SIGTERM)
                     process.wait(timeout=15)
-                except subprocess.TimeoutExpired:
-                    process.kill()
+                except (ProcessLookupError, subprocess.TimeoutExpired):
+                    try:
+                        if os.name == "posix":
+                            os.killpg(process.pid, signal.SIGKILL)
+                        else:
+                            process.kill()
+                    except ProcessLookupError:
+                        pass
                     process.wait(timeout=5)
             log.close()
             shutil.rmtree(work, ignore_errors=True)
@@ -255,10 +291,6 @@ class SubprocessGrapheneDBBackend(Backend):
         events: list[dict[str, Any]] = []
         with self._server() as (client, version):
             events.append(_event("worker_started", "Disposable GrapheneDB server became healthy.", version=version))
-            # External IDs in the pilot extraction API are resolved atomically within
-            # one extraction request. Keep the public per-edge source/family/derivation
-            # lineage in relation metadata while committing the complete canonical graph
-            # as one disposable dataset transaction.
             extraction_request = {
                 "schema_version": 1,
                 "source_id": f"evidence-lab:{dataset.manifest.dataset_id}",
@@ -282,7 +314,10 @@ class SubprocessGrapheneDBBackend(Backend):
             if response.status_code != 200:
                 raise BackendError(f"reasoning failed ({response.status_code}): {response.text[:4000]}")
             raw = response.json()
-            raw["_evidence_lab_version"] = version
+            raw["_evidence_lab_version"] = {
+                **version,
+                "source_commit": self.settings.source_commit,
+            }
             events.append(_event("reasoning_completed", f"GrapheneDB returned status {raw.get('status', 'unknown')}."))
             return raw, events
 
@@ -292,4 +327,8 @@ def create_backend(settings: Settings) -> Backend:
         return RecordedReferenceBackend(settings)
     if settings.backend_mode in {"live", "subprocess"}:
         return SubprocessGrapheneDBBackend(settings)
+    if settings.backend_mode == "kubernetes":
+        from .kubernetes_backend import KubernetesJobBackend
+
+        return KubernetesJobBackend(settings)
     raise BackendError(f"unsupported EVIDENCE_LAB_BACKEND={settings.backend_mode!r}")
