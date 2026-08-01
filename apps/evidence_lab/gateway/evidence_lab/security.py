@@ -48,6 +48,16 @@ class UploadSecurityReport:
 
 
 _ALLOWED_EXTENSIONS = {".json", ".ndjson", ".jsonl", ".csv", ".tsv", ".zip"}
+_ALLOWED_ARCHIVE_BASENAMES = {
+    "manifest.json",
+    "nodes.csv",
+    "edges.csv",
+    "queries.json",
+    "evidence.csv",
+    "expected-gates.json",
+    "readme.md",
+    "sha256sums",
+}
 _NESTED_ARCHIVES = {".zip", ".tar", ".gz", ".tgz", ".bz2", ".xz", ".7z", ".rar"}
 _SECRET_PATTERNS: tuple[tuple[str, re.Pattern[bytes]], ...] = (
     ("private_key", re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
@@ -135,12 +145,19 @@ def _scan_zip(
         if len(members) > max_archive_members:
             raise UploadSecurityError(f"archive has too many members: {filename}")
         total = 0
+        seen_basenames: set[str] = set()
         for member in members:
             if member.is_dir() or member.filename.endswith("/"):
                 continue
             path = PurePosixPath(member.filename.replace("\\", "/"))
             if path.is_absolute() or ".." in path.parts or not path.name:
                 raise UploadSecurityError(f"unsafe archive path: {member.filename}")
+            basename = path.name.casefold()
+            if basename not in _ALLOWED_ARCHIVE_BASENAMES:
+                raise UploadSecurityError(f"unsupported archive member: {member.filename}")
+            if basename in seen_basenames:
+                raise UploadSecurityError(f"duplicate archive basename: {path.name}")
+            seen_basenames.add(basename)
             if len(member.filename) > max_filename_length:
                 raise UploadSecurityError(f"overlong archive filename: {member.filename}")
             if member.flag_bits & 0x1:
