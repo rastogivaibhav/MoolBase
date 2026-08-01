@@ -107,12 +107,14 @@ jobs:
           sed "s/evidence-lab.example.com/${PUBLIC_HOSTNAME}/g" \
             deploy/evidence-lab/kubernetes/evidence-lab.yaml \
             > deployment-rendered/evidence-lab.yaml
+          cp deploy/evidence-lab/kubernetes/cleanup-cronjob.yaml \
+            deployment-rendered/cleanup-cronjob.yaml
           python scripts/preflight_evidence_lab_deployment.py \
             deployment-rendered/evidence-lab.yaml \
             --hostname "$PUBLIC_HOSTNAME" \
             --site-origin "$SITE_ORIGIN" \
             --expected-commit "$EXPECTED_COMMIT"
-          kubectl apply --dry-run=client -f deployment-rendered/evidence-lab.yaml
+          kubectl apply --dry-run=client -f deployment-rendered
 
       - name: Resolve immutable deployment images
         id: immutable_images
@@ -143,7 +145,7 @@ jobs:
           CLAMAV_IMAGE: ${{ steps.immutable_images.outputs.clamav }}
         run: |
           set -euo pipefail
-          kubectl apply -f deployment-rendered/evidence-lab.yaml
+          kubectl apply -f deployment-rendered
           kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
             --docker-server=ghcr.io \
             --docker-username="$GHCR_USERNAME" \
@@ -160,6 +162,8 @@ jobs:
             deployment/evidence-lab-gateway gateway="$GATEWAY_IMAGE"
           kubectl -n graphenedb-evidence-lab set image \
             deployment/evidence-lab-clamav clamd="$CLAMAV_IMAGE"
+          kubectl -n graphenedb-evidence-lab set image \
+            cronjob/evidence-lab-cleanup cleanup="$GATEWAY_IMAGE"
           kubectl -n graphenedb-evidence-lab rollout restart deployment/evidence-lab-gateway
 
       - name: Wait for malware scanner and gateway
@@ -167,7 +171,7 @@ jobs:
           set -euo pipefail
           kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-clamav --timeout=10m
           kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gateway --timeout=10m
-          kubectl -n graphenedb-evidence-lab get pods,svc,ingress
+          kubectl -n graphenedb-evidence-lab get pods,svc,ingress,cronjob
 
       - name: Run deployed live validation gate
         env:
@@ -192,7 +196,7 @@ jobs:
           printf 'gateway=%s\nworker=%s\nclamav=%s\n' \
             "$GATEWAY_IMAGE" "$WORKER_IMAGE" "$CLAMAV_IMAGE" \
             > deployment-evidence/images.txt
-          kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc -o wide \
+          kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc,cronjob -o wide \
             > deployment-evidence/resources.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
             > deployment-evidence/gateway.txt 2>&1 || true
