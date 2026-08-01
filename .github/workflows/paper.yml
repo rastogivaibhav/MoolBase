@@ -1,0 +1,50 @@
+name: Paper and arXiv package
+
+on:
+  pull_request:
+    paths:
+      - "paper/**"
+      - "scripts/check_arxiv_package.py"
+      - "scripts/package_arxiv_source.sh"
+      - ".github/workflows/paper.yml"
+      - "CITATION.cff"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install TeX tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk chktex texlive-latex-base texlive-latex-recommended \
+            texlive-latex-extra texlive-fonts-recommended
+
+      - name: Validate and build paper
+        run: make -C paper check
+
+      - name: Create arXiv source package
+        run: make -C paper arxiv
+
+      - name: Verify archive checksum and contents
+        run: |
+          sha256sum -c paper/build/arxiv/graphenedb-arxiv-source.sha256
+          tar -tzf paper/build/arxiv/graphenedb-arxiv-source.tar.gz
+
+      - name: Upload paper artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-paper
+          path: |
+            paper/main.pdf
+            paper/build/arxiv/graphenedb-arxiv-source.tar.gz
+            paper/build/arxiv/graphenedb-arxiv-source.sha256
+          if-no-files-found: error
