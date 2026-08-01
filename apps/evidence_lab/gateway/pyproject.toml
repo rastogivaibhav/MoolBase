@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graphenedb-evidence-lab"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sandbox gateway for the GrapheneDB public developer Evidence Lab"
 requires-python = ">=3.11"
 dependencies = [
@@ -16,7 +16,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+kubernetes = [
+  "kubernetes>=30,<34",
+]
 test = [
+  "pytest>=8,<9",
+  "pytest-asyncio>=0.24,<1",
+]
+all = [
+  "kubernetes>=30,<34",
   "pytest>=8,<9",
   "pytest-asyncio>=0.24,<1",
 ]
