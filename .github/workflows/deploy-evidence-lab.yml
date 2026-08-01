@@ -1,0 +1,151 @@
+name: Deploy Evidence Lab
+
+on:
+  workflow_dispatch:
+    inputs:
+      public_hostname:
+        description: Public gateway hostname, for example evidence.example.com
+        required: true
+        type: string
+      chatgpt_site_origin:
+        description: Published ChatGPT Sites origin
+        required: true
+        type: string
+      release_version:
+        description: Public GrapheneDB release label
+        required: true
+        default: v0.6.0-alpha.1
+        type: string
+      expected_commit:
+        description: Exact GrapheneDB source commit represented by the worker image
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: evidence-lab-production
+  cancel-in-progress: false
+
+jobs:
+  build-deploy-validate:
+    runs-on: ubuntu-latest
+    environment: evidence-lab-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate deployment inputs
+        env:
+          HOSTNAME_INPUT: ${{ inputs.public_hostname }}
+          SITE_ORIGIN: ${{ inputs.chatgpt_site_origin }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$HOSTNAME_INPUT" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$SITE_ORIGIN" =~ ^https:// ]]
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push gateway image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/evidence_lab/gateway/Dockerfile.production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/graphenedb-evidence-lab-gateway:${{ github.sha }}
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/evidence_lab/worker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/graphenedb-evidence-lab-worker:${{ github.sha }}
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure cluster credentials
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.EVIDENCE_LAB_KUBE_CONFIG_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "$KUBE_CONFIG_B64"
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          chmod 0600 "$HOME/.kube/config"
+          kubectl cluster-info
+
+      - name: Apply hardened Evidence Lab resources
+        env:
+          PUBLIC_HOSTNAME: ${{ inputs.public_hostname }}
+          SITE_ORIGIN: ${{ inputs.chatgpt_site_origin }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          OWNER: ${{ github.repository_owner }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          manifest="$(mktemp)"
+          sed "s/evidence-lab.example.com/${PUBLIC_HOSTNAME}/g" \
+            deploy/evidence-lab/kubernetes/evidence-lab.yaml > "$manifest"
+          kubectl apply -f "$manifest"
+          kubectl -n graphenedb-evidence-lab create secret generic evidence-lab-secrets \
+            --from-literal=EVIDENCE_LAB_ALLOWED_ORIGINS="${SITE_ORIGIN},https://${PUBLIC_HOSTNAME}" \
+            --from-literal=EVIDENCE_LAB_ALLOWED_HOSTS="${PUBLIC_HOSTNAME}" \
+            --from-literal=EVIDENCE_LAB_KUBERNETES_WORKER_IMAGE="ghcr.io/${OWNER}/graphenedb-evidence-lab-worker:${IMAGE_TAG}" \
+            --from-literal=GRAPHENEDB_SOURCE_COMMIT="${EXPECTED_COMMIT}" \
+            --from-literal=GRAPHENEDB_PUBLIC_VERSION="${RELEASE_VERSION}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl -n graphenedb-evidence-lab set image \
+            deployment/evidence-lab-gateway \
+            gateway="ghcr.io/${OWNER}/graphenedb-evidence-lab-gateway:${IMAGE_TAG}"
+          kubectl -n graphenedb-evidence-lab rollout restart deployment/evidence-lab-gateway
+
+      - name: Wait for malware scanner and gateway
+        run: |
+          set -euo pipefail
+          kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-clamav --timeout=10m
+          kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gateway --timeout=10m
+          kubectl -n graphenedb-evidence-lab get pods,svc,ingress
+
+      - name: Run deployed live validation gate
+        env:
+          PUBLIC_HOSTNAME: ${{ inputs.public_hostname }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          python -m pip install 'httpx>=0.27,<1'
+          python scripts/validate_evidence_lab_public.py \
+            "https://${PUBLIC_HOSTNAME}" \
+            --expected-commit "$EXPECTED_COMMIT" \
+            --timeout 240
+
+      - name: Capture deployment evidence
+        if: always()
+        run: |
+          mkdir -p deployment-evidence
+          kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc -o wide \
+            > deployment-evidence/resources.txt 2>&1 || true
+          kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
+            > deployment-evidence/gateway.txt 2>&1 || true
+          kubectl -n graphenedb-evidence-lab get events --sort-by=.lastTimestamp \
+            > deployment-evidence/events.txt 2>&1 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-lab-deployment-${{ github.sha }}
+          path: deployment-evidence
+          retention-days: 30
