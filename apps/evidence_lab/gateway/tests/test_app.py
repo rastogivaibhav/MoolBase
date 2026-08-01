@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -95,9 +96,19 @@ def test_upload_run_and_bundle() -> None:
     assert bundle.status_code == 200
     with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
         names = set(archive.namelist())
-    assert "normalised/dataset.json" in names
-    assert "result/compact-receipt.json" in names
-    assert "SHA256SUMS" in names
+        assert "source/dataset.json" in names
+        assert archive.read("source/dataset.json") == data
+        assert "normalised/dataset.json" in names
+        assert "result/compact-receipt.json" in names
+        assert "reproduce.sh" in names
+        replay = archive.read("reproduce.sh").decode("utf-8")
+        assert "/v1/public/uploads" in replay
+        assert "/v1/public/runs" in replay
+        checksum_lines = archive.read("SHA256SUMS").decode("utf-8").splitlines()
+        expected = dict(line.split("  ", 1)[::-1] for line in checksum_lines)
+        for name in names - {"SHA256SUMS"}:
+            assert name in expected
+            assert hashlib.sha256(archive.read(name)).hexdigest() == expected[name]
 
 
 def test_rejects_unresolved_edge() -> None:
