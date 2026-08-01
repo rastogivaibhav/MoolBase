@@ -1,0 +1,22 @@
+{
+  "title": "GrapheneDB: Lineage-Aware Epistemic Control and Frontier-Aware Evidence Recovery for Agentic Systems",
+  "authors": [
+    {
+      "name": "Vaibhav Rastogi",
+      "affiliation": "PENDING HUMAN CONFIRMATION",
+      "orcid": "PENDING HUMAN CONFIRMATION"
+    }
+  ],
+  "abstract": "Retrieval-augmented agents can access external information, yet commonly conflate the number of retrieved artifacts with the amount of independent evidence supporting a conclusion. Copies, summaries, dashboards, and derived records may appear as multiple supporting items while sharing one source ancestry; contradictions and missing causal hops may be hidden by ranking and synthesis. We present GrapheneDB, an experimental embedded C++20 evidence and causal-memory database that constructs immutable, lineage-aware reasoning views and governs whether an agent should answer, deepen retrieval, contest a conclusion, request evidence, or abstain. Its FiberBundle representation separates graph-route identity, source lineage, evidence-family lineage, and derivation lineage; an epistemic controller evaluates admissibility and contradiction; a Lyapunov-inspired critic measures finite-trajectory practical stability; and a bounded recovery controller performs defect-specific re-expansion. A controlled intervention benchmark comprising 700 deterministic executions shows that a previous stop rule based only on completed-bundle equality solved 66.7% of hard hidden-evidence families, while frontier-aware targeted recovery solved 100%; forced broad retrieval solved 83.3% and visited 34 states on average compared with 16 for targeted recovery. These results establish mechanism behaviour in controlled graph scenarios, not semantic truth or general superiority over external databases and agents.",
+  "comments": "PENDING FINAL PAGE AND FIGURE COUNT. Technical preprint. C++20 implementation and reproducibility package: PENDING PUBLIC ARCHIVAL URL.",
+  "primary_category": "cs.DB",
+  "cross_lists": ["cs.AI"],
+  "report_number": "",
+  "journal_reference": "",
+  "doi": "",
+  "paper_license": "PENDING HUMAN SELECTION",
+  "code_release_tag": "PENDING IMMUTABLE PUBLIC TAG",
+  "code_commit": "PENDING EXACT COMMIT",
+  "code_url": "PENDING PUBLIC ARCHIVAL URL",
+  "submission_owner_is_author": true
+}
