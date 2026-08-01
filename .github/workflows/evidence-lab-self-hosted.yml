@@ -1,0 +1,164 @@
+name: Evidence Lab Self-Hosted Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact commit to validate; must equal the checked-out workflow commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evidence-lab-self-hosted-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  exact-head-validation:
+    runs-on: [self-hosted, linux, x64, graphenedb]
+    timeout-minutes: 60
+    steps:
+      - name: Clean previous workspace content
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "$GITHUB_WORKSPACE" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify immutable source identity
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
+          git status --porcelain=v1
+
+      - name: Validate runner host
+        shell: bash
+        run: bash scripts/preflight_evidence_lab_validation_host.sh
+
+      - name: Create isolated Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv-evidence-lab
+          . .venv-evidence-lab/bin/activate
+          python -m pip install --upgrade pip wheel
+          pip install -e 'apps/evidence_lab/gateway[all]'
+
+      - name: Run gateway, security, retention and isolation tests
+        shell: bash
+        env:
+          EVIDENCE_LAB_BACKEND: recorded
+          EVIDENCE_LAB_SAMPLES_DIR: ${{ github.workspace }}/apps/evidence_lab/samples
+          EVIDENCE_LAB_DATA_DIR: ${{ runner.temp }}/graphenedb-evidence-lab-tests
+          EVIDENCE_LAB_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+        run: |
+          set -euo pipefail
+          . .venv-evidence-lab/bin/activate
+          pytest -q apps/evidence_lab/gateway/tests
+
+      - name: Validate samples and static sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sample in apps/evidence_lab/samples/*; do
+            (cd "$sample" && sha256sum -c SHA256SUMS)
+          done
+          . .venv-evidence-lab/bin/activate
+          python -m py_compile \
+            apps/evidence_lab/gateway/evidence_lab/*.py \
+            scripts/validate_evidence_lab_public.py \
+            scripts/preflight_evidence_lab_deployment.py
+          bash -n \
+            scripts/preflight_evidence_lab_validation_host.sh \
+            scripts/run_evidence_lab_local.sh \
+            scripts/run_evidence_lab_live_gate.sh
+          node --check apps/evidence_lab/site/app.js
+
+      - name: Run exact-head live GrapheneDB gate
+        shell: bash
+        env:
+          GRAPHENEDB_JOBS: "2"
+          EVIDENCE_LAB_GATE_REPORT_DIR: ${{ github.workspace }}/reports/evidence-lab-self-hosted
+        run: |
+          set -euo pipefail
+          . .venv-evidence-lab/bin/activate
+          bash scripts/run_evidence_lab_live_gate.sh 2>&1 | tee evidence-lab-live-gate.log
+          grep -F 'EVIDENCE_LAB_EXACT_HEAD_LIVE_GATE=PASS' evidence-lab-live-gate.log
+
+      - name: Build production containers
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            -f apps/evidence_lab/gateway/Dockerfile.production \
+            -t evidence-lab-gateway:self-hosted .
+          docker build \
+            --label org.opencontainers.image.revision="$GITHUB_SHA" \
+            -f apps/evidence_lab/worker/Dockerfile \
+            -t evidence-lab-worker:self-hosted .
+
+      - name: Smoke production gateway container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker rm -f evidence-lab-gateway-self-hosted >/dev/null 2>&1 || true
+          docker run -d --name evidence-lab-gateway-self-hosted \
+            -p 127.0.0.1:18080:8080 \
+            -e EVIDENCE_LAB_BACKEND=recorded \
+            -e EVIDENCE_LAB_PUBLIC_MODE=false \
+            -e EVIDENCE_LAB_ALLOWED_HOSTS=127.0.0.1,localhost \
+            evidence-lab-gateway:self-hosted
+          trap 'docker logs evidence-lab-gateway-self-hosted > evidence-lab-container.log 2>&1 || true; docker rm -f evidence-lab-gateway-self-hosted >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:18080/v1/public/health > evidence-lab-container-health.json; then
+              break
+            fi
+            sleep 0.2
+          done
+          curl -fsS http://127.0.0.1:18080/v1/public/health
+
+      - name: Capture immutable evidence
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p evidence-lab-self-hosted-evidence
+          git rev-parse HEAD > evidence-lab-self-hosted-evidence/commit.txt
+          git status --porcelain=v1 > evidence-lab-self-hosted-evidence/git-status.txt
+          cp evidence-lab-live-gate.log evidence-lab-self-hosted-evidence/ 2>/dev/null || true
+          cp evidence-lab-container.log evidence-lab-self-hosted-evidence/ 2>/dev/null || true
+          cp evidence-lab-container-health.json evidence-lab-self-hosted-evidence/ 2>/dev/null || true
+          cp -R reports/evidence-lab-self-hosted evidence-lab-self-hosted-evidence/reports 2>/dev/null || true
+          docker image inspect evidence-lab-gateway:self-hosted > evidence-lab-self-hosted-evidence/gateway-image.json 2>/dev/null || true
+          docker image inspect evidence-lab-worker:self-hosted > evidence-lab-self-hosted-evidence/worker-image.json 2>/dev/null || true
+          find evidence-lab-self-hosted-evidence -type f -print0 | sort -z | xargs -0 sha256sum > evidence-lab-self-hosted-evidence/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-lab-self-hosted-${{ github.sha }}
+          path: evidence-lab-self-hosted-evidence
+          retention-days: 30
+
+      - name: Clean sensitive and generated workspace data
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f evidence-lab-gateway-self-hosted >/dev/null 2>&1 || true
+          rm -rf \
+            "$RUNNER_TEMP/graphenedb-evidence-lab-tests" \
+            "$RUNNER_TEMP/graphenedb-evidence-lab-live" \
+            build/evidence-lab-live \
+            .venv-evidence-lab
