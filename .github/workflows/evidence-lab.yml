@@ -7,8 +7,11 @@ on:
       - "deploy/evidence-lab/**"
       - "docker-compose.evidence-lab.yml"
       - "scripts/run_evidence_lab_local.sh"
+      - "scripts/run_evidence_lab_live_gate.sh"
       - "scripts/validate_evidence_lab_public.py"
+      - "scripts/preflight_evidence_lab_deployment.py"
       - ".github/workflows/evidence-lab.yml"
+      - ".github/workflows/deploy-evidence-lab.yml"
       - "CMakeLists.txt"
       - "cmake/**"
       - "include/**"
@@ -44,9 +47,13 @@ jobs:
           for sample in apps/evidence_lab/samples/*; do
             (cd "$sample" && sha256sum -c SHA256SUMS)
           done
-      - name: Validate Python and static site syntax
+      - name: Validate Python, shell and static site syntax
         run: |
-          python -m py_compile apps/evidence_lab/gateway/evidence_lab/*.py scripts/validate_evidence_lab_public.py
+          python -m py_compile \
+            apps/evidence_lab/gateway/evidence_lab/*.py \
+            scripts/validate_evidence_lab_public.py \
+            scripts/preflight_evidence_lab_deployment.py
+          bash -n scripts/run_evidence_lab_local.sh scripts/run_evidence_lab_live_gate.sh
           node --check apps/evidence_lab/site/app.js
 
   exact-head-live-integration:
@@ -114,5 +121,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build production gateway image
         run: docker build -f apps/evidence_lab/gateway/Dockerfile.production -t evidence-lab-gateway:test .
+      - name: Smoke production gateway image
+        run: |
+          docker run -d --rm --name evidence-lab-gateway-smoke \
+            -p 18080:8080 \
+            -e EVIDENCE_LAB_BACKEND=recorded \
+            -e EVIDENCE_LAB_PUBLIC_MODE=false \
+            -e EVIDENCE_LAB_ALLOWED_HOSTS=127.0.0.1,localhost \
+            evidence-lab-gateway:test
+          trap 'docker stop evidence-lab-gateway-smoke || true' EXIT
+          for attempt in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:18080/v1/public/health >/dev/null; then
+              exit 0
+            fi
+            sleep 0.2
+          done
+          docker logs evidence-lab-gateway-smoke
+          exit 1
       - name: Build isolated worker image
         run: docker build -f apps/evidence_lab/worker/Dockerfile -t evidence-lab-worker:test .
