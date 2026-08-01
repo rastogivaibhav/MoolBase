@@ -84,6 +84,15 @@ def test_security_headers_and_request_id() -> None:
     assert response.headers["x-request-id"].startswith("req_")
 
 
+def test_untrusted_host_is_rejected_but_health_probe_is_allowed() -> None:
+    rejected = client.post("/v1/public/sessions", headers={"Host": "attacker.invalid"})
+    assert rejected.status_code == 400
+    assert rejected.json()["error"] == "invalid_host"
+
+    health = client.get("/v1/public/health", headers={"Host": "10.10.10.10:8080"})
+    assert health.status_code == 200
+
+
 def test_upload_reports_security_pass() -> None:
     session_id = create_session()
     result = upload(session_id)
