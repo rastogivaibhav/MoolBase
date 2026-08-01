@@ -3,6 +3,7 @@ set -euo pipefail
 
 WORKER_IMAGE="${1:-}"
 NAMESPACE="${2:-graphenedb-evidence-lab}"
+POLICY_NAME="graphenedb-evidence-lab-worker-jobs"
 GATEWAY_IDENTITY="system:serviceaccount:${NAMESPACE}:evidence-lab-gateway"
 
 fail() {
@@ -12,6 +13,50 @@ fail() {
 
 [[ "$WORKER_IMAGE" =~ ^ghcr\.io/rastogivaibhav/graphenedb-evidence-lab-worker@sha256:[0-9a-f]{64}$ ]] || \
   fail "worker image must be an immutable GrapheneDB worker digest"
+
+TYPECHECK_COMPLETE=false
+for attempt in $(seq 1 100); do
+  set +e
+  POLICY_JSON="$(kubectl get validatingadmissionpolicy "$POLICY_NAME" -o json 2>/dev/null)"
+  FETCH_STATUS=$?
+  set -e
+  if [[ "$FETCH_STATUS" -ne 0 ]]; then
+    sleep 0.2
+    continue
+  fi
+
+  set +e
+  TYPECHECK_OUTPUT="$(printf '%s' "$POLICY_JSON" | python3 -c '
+import json
+import sys
+
+policy = json.load(sys.stdin)
+type_checking = (policy.get("status") or {}).get("typeChecking")
+if type_checking is None:
+    raise SystemExit(2)
+warnings = type_checking.get("expressionWarnings") or []
+if warnings:
+    print(json.dumps(warnings, indent=2, sort_keys=True))
+    raise SystemExit(1)
+print("EVIDENCE_LAB_ADMISSION_POLICY_TYPECHECK=PASS")
+')"
+  TYPECHECK_STATUS=$?
+  set -e
+
+  if [[ "$TYPECHECK_STATUS" -eq 0 ]]; then
+    printf '%s\n' "$TYPECHECK_OUTPUT"
+    TYPECHECK_COMPLETE=true
+    break
+  fi
+  if [[ "$TYPECHECK_STATUS" -eq 1 ]]; then
+    printf '%s\n' "$TYPECHECK_OUTPUT" >&2
+    fail "Kubernetes reported CEL expression type-check warnings"
+  fi
+  sleep 0.2
+done
+
+[[ "$TYPECHECK_COMPLETE" == true ]] || \
+  fail "Kubernetes did not complete admission-policy type checking"
 
 kubectl auth can-i create jobs.batch \
   --namespace "$NAMESPACE" \
