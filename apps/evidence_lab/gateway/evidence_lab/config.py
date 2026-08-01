@@ -54,6 +54,7 @@ class Settings:
     kubernetes_mount_path: str
     kubernetes_service_account: str
     kubernetes_image_pull_policy: str
+    kubernetes_image_pull_secret: str | None
     kubernetes_worker_cpu_request: str
     kubernetes_worker_cpu_limit: str
     kubernetes_worker_memory_request: str
@@ -86,6 +87,7 @@ class Settings:
             if item.strip()
         )
         max_upload = int(os.environ.get("EVIDENCE_LAB_MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
+        pull_secret = os.environ.get("EVIDENCE_LAB_KUBERNETES_IMAGE_PULL_SECRET", "ghcr-pull").strip()
         return cls(
             data_dir=data_dir,
             samples_dir=samples_dir,
@@ -127,6 +129,7 @@ class Settings:
             kubernetes_mount_path=os.environ.get("EVIDENCE_LAB_KUBERNETES_MOUNT_PATH", "/var/lib/evidence-lab"),
             kubernetes_service_account=os.environ.get("EVIDENCE_LAB_KUBERNETES_SERVICE_ACCOUNT", "evidence-lab-worker"),
             kubernetes_image_pull_policy=os.environ.get("EVIDENCE_LAB_KUBERNETES_IMAGE_PULL_POLICY", "IfNotPresent"),
+            kubernetes_image_pull_secret=pull_secret or None,
             kubernetes_worker_cpu_request=os.environ.get("EVIDENCE_LAB_WORKER_CPU_REQUEST", "250m"),
             kubernetes_worker_cpu_limit=os.environ.get("EVIDENCE_LAB_WORKER_CPU_LIMIT", "1"),
             kubernetes_worker_memory_request=os.environ.get("EVIDENCE_LAB_WORKER_MEMORY_REQUEST", "256Mi"),
