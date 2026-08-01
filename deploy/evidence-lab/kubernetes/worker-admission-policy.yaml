@@ -51,6 +51,19 @@ spec:
           object.spec.template.spec.shareProcessNamespace == false)
       message: Worker Jobs may not add auxiliary containers or host/process namespace access.
     - expression: >-
+        (!has(object.spec.template.spec.nodeName) ||
+          object.spec.template.spec.nodeName == '') &&
+        (!has(object.spec.template.spec.nodeSelector) ||
+          size(object.spec.template.spec.nodeSelector) == 0) &&
+        !has(object.spec.template.spec.affinity) &&
+        (!has(object.spec.template.spec.tolerations) ||
+          size(object.spec.template.spec.tolerations) == 0) &&
+        (!has(object.spec.template.spec.priorityClassName) ||
+          object.spec.template.spec.priorityClassName == '') &&
+        (!has(object.spec.template.spec.runtimeClassName) ||
+          object.spec.template.spec.runtimeClassName == '')
+      message: Worker Jobs may not select privileged nodes, priority classes or alternate runtimes.
+    - expression: >-
         size(object.spec.template.spec.containers) == 1 &&
         object.spec.template.spec.containers[0].name == 'worker' &&
         object.spec.template.spec.containers[0].image.matches(
@@ -60,11 +73,17 @@ spec:
           ['python', '-m', 'evidence_lab.worker_entrypoint'] &&
         (!has(object.spec.template.spec.containers[0].args) ||
           size(object.spec.template.spec.containers[0].args) == 0) &&
+        (!has(object.spec.template.spec.containers[0].envFrom) ||
+          size(object.spec.template.spec.containers[0].envFrom) == 0) &&
+        (!has(object.spec.template.spec.containers[0].volumeDevices) ||
+          size(object.spec.template.spec.containers[0].volumeDevices) == 0) &&
+        (!has(object.spec.template.spec.containers[0].ports) ||
+          size(object.spec.template.spec.containers[0].ports) == 0) &&
         !has(object.spec.template.spec.containers[0].lifecycle) &&
         !has(object.spec.template.spec.containers[0].livenessProbe) &&
         !has(object.spec.template.spec.containers[0].readinessProbe) &&
         !has(object.spec.template.spec.containers[0].startupProbe)
-      message: Worker Jobs must use the immutable image and fixed entrypoint without lifecycle or probe command hooks.
+      message: Worker Jobs must use the immutable image and fixed entrypoint without secret imports, device mounts or command hooks.
     - expression: >-
         size(object.spec.template.spec.containers[0].env) == 9 &&
         object.spec.template.spec.containers[0].env.all(e,
@@ -141,8 +160,13 @@ spec:
     - expression: >-
         object.spec.backoffLimit == 0 &&
         object.spec.activeDeadlineSeconds <= 150 &&
-        object.spec.ttlSecondsAfterFinished <= 300
-      message: Worker Jobs must remain single-attempt and time bounded.
+        object.spec.ttlSecondsAfterFinished <= 300 &&
+        (!has(object.spec.parallelism) || object.spec.parallelism == 1) &&
+        (!has(object.spec.completions) || object.spec.completions == 1) &&
+        (!has(object.spec.completionMode) ||
+          object.spec.completionMode == 'NonIndexed') &&
+        (!has(object.spec.suspend) || object.spec.suspend == false)
+      message: Worker Jobs must remain single-pod, single-attempt and time bounded.
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicyBinding
