@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 import secrets
@@ -41,8 +40,7 @@ class KubernetesJobBackend(Backend):
 
     @staticmethod
     def _job_name() -> str:
-        token = secrets.token_hex(10)
-        return f"evidence-lab-{token}"[:63]
+        return f"evidence-lab-{secrets.token_hex(10)}"[:63]
 
     def _job_directory(self, job_name: str) -> Path:
         directory = self.settings.data_dir / "jobs" / job_name
@@ -65,6 +63,7 @@ class KubernetesJobBackend(Backend):
             c.V1EnvVar(name="GRAPHENEDB_PUBLIC_VERSION", value=self.settings.public_version),
             c.V1EnvVar(name="EVIDENCE_LAB_RUN_TIMEOUT_SECONDS", value=str(self.settings.run_timeout_seconds)),
             c.V1EnvVar(name="EVIDENCE_LAB_PUBLIC_MODE", value="true"),
+            c.V1EnvVar(name="TMPDIR", value="/tmp"),
         ]
         container = c.V1Container(
             name="worker",
@@ -76,7 +75,8 @@ class KubernetesJobBackend(Backend):
                 c.V1VolumeMount(
                     name="evidence-lab-data",
                     mount_path=self.settings.kubernetes_mount_path,
-                )
+                ),
+                c.V1VolumeMount(name="tmp", mount_path="/tmp"),
             ],
             resources=c.V1ResourceRequirements(
                 requests={
@@ -121,7 +121,14 @@ class KubernetesJobBackend(Backend):
                         claim_name=self.settings.kubernetes_pvc_name,
                         read_only=False,
                     ),
-                )
+                ),
+                c.V1Volume(
+                    name="tmp",
+                    empty_dir=c.V1EmptyDirVolumeSource(
+                        medium="Memory",
+                        size_limit=self.settings.kubernetes_worker_ephemeral_storage_limit,
+                    ),
+                ),
             ],
         )
         template = c.V1PodTemplateSpec(
@@ -191,8 +198,7 @@ class KubernetesJobBackend(Backend):
                 raise BackendError(str(raw_output["error"]))
             raw = dict(raw_output["raw"])
             raw["_evidence_lab_worker_image_digest"] = self.settings.kubernetes_worker_image
-            worker_events = list(raw_output.get("events") or [])
-            events.extend(worker_events)
+            events.extend(list(raw_output.get("events") or []))
             events.append(
                 _event(
                     "worker_job_completed",
