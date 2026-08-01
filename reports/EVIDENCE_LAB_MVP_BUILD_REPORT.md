@@ -1,206 +1,171 @@
-# GrapheneDB Evidence Lab — implementation, hardening and deployment report
+# GrapheneDB Evidence Lab — implementation, security and deployment report
 
 Date: 2026-08-01  
-Branch: `feature/public-evidence-lab-mvp`  
-Status: deployment-ready code; public infrastructure and exact-head live evidence pending
+Source branch: `feature/public-evidence-lab-mvp`  
+Frozen validation branch: `release/evidence-lab-alpha.1-rc3`  
+Status: deployment-candidate code; exact-head live and public-cluster evidence pending
 
-## Scope implemented
+## Product scope implemented
 
-### Developer experience
+The Evidence Lab provides:
 
-- FastAPI public gateway under `/v1/public`;
-- anonymous expiring sessions and delete-now;
-- inspectable and downloadable CC0 sample library;
-- JSON, NDJSON/JSONL, canonical ZIP and multi-file CSV/TSV ingestion;
-- canonical reference validation, graph-size limits and deterministic dataset hashes;
-- recorded-reference backend with explicit non-live labelling;
-- live GrapheneDB adapter using atomic `/v1/extractions` and `/v1/reason/runtime`;
-- evidence graph, governed status, metrics, compact receipt and execution events;
-- responsive frontend suitable as the ChatGPT Sites reference implementation;
-- public privacy and security templates.
+- a responsive ChatGPT Sites reference frontend;
+- anonymous, one-hour sessions with immediate delete-now;
+- inspectable and downloadable CC0 sample packs;
+- JSON, JSONL/NDJSON, canonical ZIP and multi-file CSV/TSV ingestion;
+- canonical graph validation, lineage preservation and deterministic dataset hashes;
+- explicit recorded-reference mode that never claims GrapheneDB executed;
+- live GrapheneDB ingestion through `/v1/extractions` and reasoning through `/v1/reason/runtime`;
+- governed status, evidence graph, execution metrics, events and compact epistemic receipts;
+- complete reproduction bundles with source input, canonical graph, raw result, receipt, replay scripts and SHA-256 inventory.
 
-### Reproducibility
+## Upload and gateway security
 
-Every run bundle now contains:
+Uploads are screened before parsing for:
 
-- the exact original uploaded files or published sample files under `source/`;
-- the exact normalised GrapheneDB dataset;
-- execution configuration, events and raw engine result;
-- public result, evidence graph and compact receipt;
-- worker image reference and exact source commit;
-- executable POSIX gateway replay;
-- PowerShell replay guidance;
-- a SHA-256 inventory covering every bundled file.
+- unsupported extensions, binary content and signature mismatches;
+- path traversal, ZIP Slip, symlinks and encrypted archive members;
+- nested archives, duplicate basenames and executable-like extras;
+- excessive member count, member size, expansion size and compression ratio;
+- private keys and common cloud/developer credential patterns;
+- malware through ClamAV INSTREAM in public mode.
 
-The public validator rejects bundles without source inputs, replay scripts, complete checksums or matching run/commit identity. A public Kubernetes run must identify a worker image by immutable `@sha256:` digest.
+The gateway implements Host and CORS allowlists, request-size controls, request identifiers, no-store and browser-security headers, per-client/session rate limits, sanitised public errors and cross-session dataset/run/bundle isolation.
 
-### Upload hardening
+## Worker isolation
 
-- extension and content-signature checks;
-- UTF-8/binary rejection for structured text formats;
-- path traversal and ZIP Slip rejection;
-- symlink and encrypted-member rejection;
-- nested archive rejection;
-- archive member count, member size, uncompressed-size and compression-ratio limits;
-- allowlisted canonical archive filenames and duplicate-basename rejection;
-- executable-like or ambiguous archive extras rejected;
-- credential-pattern scanning for private keys and common cloud/developer tokens;
-- optional or mandatory ClamAV INSTREAM scanning before parsing;
-- duplicate upload filename rejection;
-- request body limits before complete buffering.
+Local validation uses a resource-limited subprocess with process-group termination and private temporary storage.
 
-### Gateway hardening
+Public execution uses one Kubernetes Job per run with:
 
-- public Host and CORS allowlists;
-- approved cross-origin API responses for ChatGPT Sites;
-- Kubernetes health-probe compatibility without disabling public Host validation;
-- request identifiers;
-- secure response headers and no-store caching;
-- per-client and anonymous-session sliding-window rate limits;
-- sanitised backend errors in public mode;
-- cross-session dataset, run and bundle isolation tests;
-- non-root gateway container with read-only deployment filesystem.
-
-### Worker isolation
-
-- resource-limited local subprocess mode for exact-head validation;
-- minimal environment and private temporary workspace;
-- process group termination and workspace deletion;
-- address-space, CPU, open-file, process-count, output-file and core-dump limits;
-- self-contained worker binary build with missing-link check;
-- Kubernetes one-Job-per-run production backend;
-- no worker service-account token;
+- a tokenless worker service account;
+- an immutable worker image digest and fixed Python entrypoint;
+- no init or ephemeral containers;
+- no lifecycle, probe, `envFrom`, device or port hooks;
+- a fixed nine-variable environment contract;
+- non-root UID/GID 10001;
+- read-only root filesystem;
+- all Linux capabilities dropped;
+- RuntimeDefault seccomp;
+- no host namespaces, alternate runtime, priority class or custom node scheduling;
+- only the private Evidence Lab PVC and memory-backed `/tmp`;
 - deny-all worker ingress and egress;
-- non-root, read-only root filesystem, RuntimeDefault seccomp and all capabilities dropped;
-- CPU, memory, ephemeral-storage and wall-clock limits;
-- private image-pull credentials;
-- bounded retry for shared-storage output visibility;
-- automatic Job, process and workspace deletion.
+- CPU, memory, ephemeral-storage and wall-clock bounds;
+- one pod, one attempt and bounded Job retention;
+- automatic Job and workspace deletion.
 
-### Retention
+## Gateway Job-creation admission guard
 
-- anonymous sessions expire after one hour;
-- delete-now removes the session tree immediately;
-- a restricted Kubernetes CronJob independently removes expired sessions every ten minutes;
-- cleanup does not require a Kubernetes API token and uses the same private PVC.
+The gateway must create Kubernetes Jobs, so RBAC alone would allow a compromised gateway to submit a different workload. RC3 adds a cluster `ValidatingAdmissionPolicy` and binding that constrain gateway-created Jobs to the exact worker contract.
 
-### Deployment automation
+The deployment gate:
 
-- exact-source gateway and worker Dockerfiles;
-- Kubernetes namespace, restricted Pod Security labels, RBAC, private RWX PVC, ClamAV, gateway Service, TLS Ingress, NetworkPolicy and cleanup CronJob;
-- deployment preflight validator;
-- guarded GitHub Actions deployment workflow;
-- private GHCR pull-secret creation;
-- gateway, worker and ClamAV deployment by immutable image digest;
-- deployment source commit forced to equal the workflow checkout commit;
-- mandatory post-deployment live validation;
-- captured deployment evidence artifact;
-- ChatGPT Sites API connection guide.
+1. requires Kubernetes 1.30 or newer;
+2. installs the policy with `failurePolicy: Fail` and `Deny`/`Audit` actions;
+3. waits for `status.typeChecking`;
+4. rejects every CEL expression warning;
+5. uses the gateway's actual `create` permission to dry-run an exact worker;
+6. modifies that manifest to use the gateway service account and confirms the request is denied by the Evidence Lab policy.
 
-## Validation completed before final hardening
-
-Environment:
-
-- Linux x86-64;
-- Python 3.13;
-- FastAPI 0.128.2;
-- Pydantic 2.13.4;
-- GNU C++ 14.2.0 for the available local GrapheneDB source snapshot.
-
-Passed:
-
-1. Original gateway suite — 4/4 tests.
-2. Python compilation for the original gateway modules.
-3. JavaScript syntax validation.
-4. Both sample `SHA256SUMS` inventories.
-5. Deterministic sample loading and hashing.
-6. Recorded-mode HTTP smoke:
-   - health;
-   - session creation;
-   - sample listing;
-   - upload and validation;
-   - sample and uploaded-dataset runs;
-   - recorded/live boundary fields;
-   - graph, metrics and compact receipt;
-   - reproduction-bundle generation.
-7. Build of `graphenedb_server` from the available local source snapshot.
-8. Focused upload-security checks for clean structured data, traversal, ZIP Slip, nested archives and credential leakage.
-
-The expanded latest-head tests, exact live integration and container builds are present in CI but have not executed because the GitHub Actions runner fails before checkout.
-
-## Live integration findings
-
-### Atomic extraction contract
-
-The first live gateway run reached a real GrapheneDB server and initially failed during relation ingestion because the pilot extraction API resolves `external_id` references atomically within one extraction request. Sending nodes first and relations in separate source batches returned:
+Required markers:
 
 ```text
-relation endpoint external_id not found
+EVIDENCE_LAB_ADMISSION_POLICY_TYPECHECK=PASS
+EVIDENCE_LAB_WORKER_ADMISSION_POLICY=PASS
 ```
 
-The adapter now submits the complete canonical node-and-relation graph in one atomic `/v1/extractions` request. Per-edge public source, evidence-family and derivation lineage remains in relation metadata.
+## Namespace resource guardrails
 
-### Local source snapshot limitation
+The Kubernetes profile includes:
 
-The only full GrapheneDB source archive available in the local execution environment was older than the merged runtime endpoint. It built `graphenedb_server` and accepted atomic extraction, but returned `404` for `/v1/reason/runtime`.
+- a `LimitRange` bounding each container to 1 CPU, 2 GiB memory and 512 MiB ephemeral storage;
+- a `ResourceQuota` bounding aggregate CPU, memory, pods, Jobs, CronJobs, PVCs and requested storage;
+- restricted Pod Security Admission labels;
+- a private RWX PVC;
+- immutable gateway, worker and ClamAV image digests;
+- a ten-minute cleanup CronJob for expired sessions.
 
-That result does not indicate a failure in the current GitHub implementation. It establishes that the old archive cannot be used as evidence for the exact current head.
+## Reproducibility contract
 
-## Exact-head validation and runner status
+Every completed run ZIP includes:
 
-The branch contains two independent exact-head gates:
-
-```bash
-bash scripts/run_evidence_lab_live_gate.sh
+```text
+source/
+normalised/dataset.json
+execution/configuration.json
+execution/events.json
+execution/raw-engine-result.json
+result/public-result.json
+result/evidence-graph.json
+result/compact-receipt.json
+reproduce.sh
+reproduce.ps1
+README.md
+SHA256SUMS
 ```
 
-and the `exact-head-live-integration` GitHub Actions job.
+The public validator requires two live sample runs, one live uploaded-dataset run, exact source identity, immutable worker identity, three valid bundles, complete checksums and post-delete inaccessibility.
 
-Each gate builds `graphenedb_server` from the checked-out branch and requires:
+## Validation completed
 
-- two live sample runs;
-- one live uploaded-dataset run;
-- `live=true` and `run_mode=live_graphenedb`;
-- receipt confirmation that GrapheneDB executed;
-- exact source-commit identity;
-- immutable worker image identity in the public profile;
-- original source inputs inside all three bundles;
-- complete SHA-256 inventories and replay scripts;
-- immediate anonymous-session deletion and inaccessible artifacts afterwards.
+Completed locally before the final cluster-only controls:
 
-GitHub Actions Evidence Lab run `30692296363` failed before checkout. Gateway job `91349043063` recorded no steps; dependent live-integration and container jobs were skipped. An earlier failed run was explicitly retried and again returned zero steps and no log blob. This is a runner/account infrastructure failure, not a failing test assertion or compiler diagnostic.
+- original gateway suite: 4/4 tests;
+- Python and JavaScript syntax checks;
+- sample checksum verification;
+- deterministic sample loading and hashing;
+- recorded-mode HTTP and bundle flow;
+- focused scanner tests for clean input, traversal, ZIP Slip, nested archives and credential leakage;
+- build of the available local GrapheneDB server snapshot;
+- correction of the atomic extraction contract after a real server integration attempt.
 
-No exact-head live PASS is claimed until the local gate or a functioning CI runner completes successfully.
+The repository now also contains generated-worker contract tests, admission-policy script syntax checks, exact-head live gates, container builds and post-deployment validation. These latest gates have not executed on GitHub-hosted runners because the repository's Actions jobs repeatedly terminate before checkout with zero steps and no log artifact.
 
-## Public deployment boundary
+## Live integration finding
 
-The production deployment package is implemented but has not been applied to a real public cluster in this work session. No public endpoint, TLS certificate, DNS record or ChatGPT Sites backend connection is claimed.
+The first real-server run exposed that external node IDs used by relations must be resolved atomically in one extraction request. The adapter now submits the complete canonical node-and-relation graph in one `/v1/extractions` transaction while preserving source, evidence-family and derivation lineage in relation metadata.
 
-Deployment requires operator-provided values that cannot be invented or embedded in source:
+The local source archive available after that correction predates `/v1/reason/runtime`; it cannot serve as exact-current-head evidence.
 
-- protected kubeconfig for the target cluster;
+## Deployment automation
+
+The guarded deployment workflow:
+
+1. verifies the expected commit equals the workflow checkout;
+2. builds and pushes gateway and worker images;
+3. resolves immutable gateway, worker and ClamAV digests;
+4. verifies Kubernetes 1.30+;
+5. renders and dry-runs the namespace, quota, admission and application resources;
+6. installs the admission policy and namespace guardrails;
+7. creates private-registry and application secrets;
+8. proves the positive and negative worker admission cases;
+9. deploys ClamAV, gateway and cleanup components;
+10. runs the public HTTPS validation gate;
+11. preserves rendered resources, image identities, policy status, quotas and cluster events.
+
+## Current blockers
+
+No public endpoint is claimed. Completion requires operator-controlled inputs:
+
+- a Kubernetes 1.30+ cluster and protected kubeconfig;
+- permission to install the cluster-scoped policy and impersonate the gateway service account for its self-test;
+- private RWX storage;
 - GHCR package-read credentials;
-- public gateway hostname and DNS;
-- TLS issuer/certificate;
-- published ChatGPT Sites HTTPS origin;
-- private RWX storage class;
-- operator legal name and security contact for the policy pages.
+- public DNS and TLS;
+- the published ChatGPT Sites HTTPS origin;
+- approved operator, privacy and security contact text;
+- public code-licence and sample-rights confirmation.
 
-The guarded deployment workflow refuses placeholders, builds immutable images, deploys the hardened profile and runs the public live gate before it can be treated as successful.
+The exact frozen RC must then produce:
 
-## Remaining release gates
+```text
+EVIDENCE_LAB_HOST_PREFLIGHT=PASS
+EVIDENCE_LAB_EXACT_HEAD_LIVE_GATE=PASS
+EVIDENCE_LAB_ADMISSION_POLICY_TYPECHECK=PASS
+EVIDENCE_LAB_WORKER_ADMISSION_POLICY=PASS
+EVIDENCE_LAB_LIVE_VALIDATION=PASS
+```
 
-1. Restore GitHub Actions execution or run the exact-head live gate on an approved Linux host.
-2. Obtain one green latest-head gateway/security test run, container build and exact live integration.
-3. Provision the protected `evidence-lab-production` GitHub environment and required secrets.
-4. Confirm private RWX storage, restricted Pod Security, ingress and TLS support on the target cluster.
-5. Replace public privacy/security operator placeholders.
-6. Run the guarded deployment workflow with the real hostname and ChatGPT Sites origin.
-7. Preserve successful live-validation output, image digests and deployment evidence.
-8. Connect ChatGPT Sites to the validated HTTPS gateway and test from a logged-out external browser.
+## Claim boundary
 
-These external gates are tracked in issue #14.
-
-## Honest claim boundary
-
-This work provides a sandboxed public developer alpha implementation and deployment package. It is not a hosted production database, semantic truth engine, regulated-data service or enterprise-GA system.
+This is a sandboxed public developer-alpha implementation and guarded deployment package. It is not a hosted production database, regulated-data service, semantic truth engine or enterprise-GA system.
