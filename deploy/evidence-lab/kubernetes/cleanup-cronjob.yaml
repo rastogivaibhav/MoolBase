@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: evidence-lab-cleanup
+  namespace: graphenedb-evidence-lab
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 300
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: graphenedb-evidence-lab
+            app.kubernetes.io/component: cleanup
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          imagePullSecrets:
+            - name: ghcr-pull
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: cleanup
+              image: ghcr.io/rastogivaibhav/graphenedb-evidence-lab-gateway:0.2.0
+              imagePullPolicy: IfNotPresent
+              command: ["python", "-m", "evidence_lab.cleanup_entrypoint"]
+              env:
+                - name: EVIDENCE_LAB_DATA_DIR
+                  value: /var/lib/evidence-lab
+                - name: EVIDENCE_LAB_SESSION_TTL_SECONDS
+                  value: "3600"
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+                  ephemeral-storage: 64Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                runAsUser: 10001
+                runAsGroup: 10001
+                seccompProfile:
+                  type: RuntimeDefault
+              volumeMounts:
+                - name: data
+                  mountPath: /var/lib/evidence-lab
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: evidence-lab-data
+            - name: tmp
+              emptyDir:
+                sizeLimit: 32Mi
