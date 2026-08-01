@@ -49,6 +49,7 @@ jobs:
           [[ "$HOSTNAME_INPUT" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$SITE_ORIGIN" =~ ^https:// ]]
           [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
           test -n "$KUBE_CONFIG_B64"
           test -n "$GHCR_USERNAME"
           test -n "$GHCR_PAT"
@@ -62,6 +63,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Build and push gateway image
+        id: gateway_image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -71,6 +73,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/graphenedb-evidence-lab-gateway:${{ github.sha }}
 
       - name: Build and push worker image
+        id: worker_image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -111,16 +114,33 @@ jobs:
             --expected-commit "$EXPECTED_COMMIT"
           kubectl apply --dry-run=client -f deployment-rendered/evidence-lab.yaml
 
+      - name: Resolve immutable deployment images
+        id: immutable_images
+        env:
+          OWNER: ${{ github.repository_owner }}
+          GATEWAY_DIGEST: ${{ steps.gateway_image.outputs.digest }}
+          WORKER_DIGEST: ${{ steps.worker_image.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$GATEWAY_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$WORKER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          CLAMAV_DIGEST="$(docker buildx imagetools inspect clamav/clamav:stable --format '{{json .Manifest.Digest}}' | tr -d '"')"
+          [[ "$CLAMAV_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "gateway=ghcr.io/${OWNER}/graphenedb-evidence-lab-gateway@${GATEWAY_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "worker=ghcr.io/${OWNER}/graphenedb-evidence-lab-worker@${WORKER_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "clamav=clamav/clamav@${CLAMAV_DIGEST}" >> "$GITHUB_OUTPUT"
+
       - name: Apply hardened Evidence Lab resources
         env:
           PUBLIC_HOSTNAME: ${{ inputs.public_hostname }}
           SITE_ORIGIN: ${{ inputs.chatgpt_site_origin }}
           RELEASE_VERSION: ${{ inputs.release_version }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
-          OWNER: ${{ github.repository_owner }}
-          IMAGE_TAG: ${{ github.sha }}
           GHCR_USERNAME: ${{ secrets.EVIDENCE_LAB_GHCR_USERNAME }}
           GHCR_PAT: ${{ secrets.EVIDENCE_LAB_GHCR_PAT }}
+          GATEWAY_IMAGE: ${{ steps.immutable_images.outputs.gateway }}
+          WORKER_IMAGE: ${{ steps.immutable_images.outputs.worker }}
+          CLAMAV_IMAGE: ${{ steps.immutable_images.outputs.clamav }}
         run: |
           set -euo pipefail
           kubectl apply -f deployment-rendered/evidence-lab.yaml
@@ -132,13 +152,14 @@ jobs:
           kubectl -n graphenedb-evidence-lab create secret generic evidence-lab-secrets \
             --from-literal=EVIDENCE_LAB_ALLOWED_ORIGINS="${SITE_ORIGIN},https://${PUBLIC_HOSTNAME}" \
             --from-literal=EVIDENCE_LAB_ALLOWED_HOSTS="${PUBLIC_HOSTNAME}" \
-            --from-literal=EVIDENCE_LAB_KUBERNETES_WORKER_IMAGE="ghcr.io/${OWNER}/graphenedb-evidence-lab-worker:${IMAGE_TAG}" \
+            --from-literal=EVIDENCE_LAB_KUBERNETES_WORKER_IMAGE="${WORKER_IMAGE}" \
             --from-literal=GRAPHENEDB_SOURCE_COMMIT="${EXPECTED_COMMIT}" \
             --from-literal=GRAPHENEDB_PUBLIC_VERSION="${RELEASE_VERSION}" \
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n graphenedb-evidence-lab set image \
-            deployment/evidence-lab-gateway \
-            gateway="ghcr.io/${OWNER}/graphenedb-evidence-lab-gateway:${IMAGE_TAG}"
+            deployment/evidence-lab-gateway gateway="$GATEWAY_IMAGE"
+          kubectl -n graphenedb-evidence-lab set image \
+            deployment/evidence-lab-clamav clamd="$CLAMAV_IMAGE"
           kubectl -n graphenedb-evidence-lab rollout restart deployment/evidence-lab-gateway
 
       - name: Wait for malware scanner and gateway
@@ -161,9 +182,16 @@ jobs:
 
       - name: Capture deployment evidence
         if: always()
+        env:
+          GATEWAY_IMAGE: ${{ steps.immutable_images.outputs.gateway }}
+          WORKER_IMAGE: ${{ steps.immutable_images.outputs.worker }}
+          CLAMAV_IMAGE: ${{ steps.immutable_images.outputs.clamav }}
         run: |
           mkdir -p deployment-evidence
           cp -R deployment-rendered/. deployment-evidence/ 2>/dev/null || true
+          printf 'gateway=%s\nworker=%s\nclamav=%s\n' \
+            "$GATEWAY_IMAGE" "$WORKER_IMAGE" "$CLAMAV_IMAGE" \
+            > deployment-evidence/images.txt
           kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc -o wide \
             > deployment-evidence/resources.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
