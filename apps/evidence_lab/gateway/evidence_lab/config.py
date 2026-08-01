@@ -64,7 +64,9 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        default_root = Path(__file__).resolve().parents[3]
+        module_path = Path(__file__).resolve()
+        parents = module_path.parents
+        default_root = parents[3] if len(parents) > 3 else module_path.parent.parent
         samples_dir = Path(
             os.environ.get(
                 "EVIDENCE_LAB_SAMPLES_DIR",
