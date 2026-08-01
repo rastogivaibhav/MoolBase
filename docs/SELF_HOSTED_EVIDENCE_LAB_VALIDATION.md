@@ -67,7 +67,7 @@ Install the runner as a service only on a dedicated machine. For a one-time disp
 Use branch:
 
 ```text
-release/evidence-lab-alpha.1-rc2
+release/evidence-lab-alpha.1-rc3
 ```
 
 From GitHub Actions, run:
@@ -83,18 +83,19 @@ The workflow performs:
 1. clean checkout;
 2. host preflight;
 3. isolated Python environment creation;
-4. gateway, security, retention and cross-session tests;
-5. sample checksum and source syntax validation;
-6. exact-head GrapheneDB server build;
-7. two live sample runs and one live uploaded-dataset run;
-8. exact commit and compact receipt verification;
-9. reproduction-bundle source and SHA-256 validation;
-10. production gateway and worker image builds;
-11. gateway-container smoke test;
-12. evidence artifact generation;
-13. generated workspace cleanup.
+4. gateway, upload-security, retention and cross-session tests;
+5. generated Kubernetes worker-contract tests;
+6. sample checksum and source syntax validation;
+7. exact-head GrapheneDB server build;
+8. two live sample runs and one live uploaded-dataset run;
+9. exact commit and compact receipt verification;
+10. reproduction-bundle source and SHA-256 validation;
+11. production gateway and worker image builds;
+12. gateway-container smoke test;
+13. evidence artifact generation;
+14. generated workspace cleanup.
 
-Required success markers include:
+Required self-hosted success markers include:
 
 ```text
 EVIDENCE_LAB_HOST_PREFLIGHT=PASS
@@ -112,7 +113,7 @@ evidence-lab-self-hosted-<commit>
 A trusted engineer may execute the exact gate from a fresh clone:
 
 ```bash
-git clone --branch release/evidence-lab-alpha.1-rc2 --single-branch \
+git clone --branch release/evidence-lab-alpha.1-rc3 --single-branch \
   https://github.com/rastogivaibhav/graphenedb_v1.git
 cd graphenedb_v1
 
@@ -123,9 +124,9 @@ bash scripts/run_evidence_lab_live_gate.sh 2>&1 | tee evidence-lab-live-gate.log
 grep -F 'EVIDENCE_LAB_EXACT_HEAD_LIVE_GATE=PASS' evidence-lab-live-gate.log
 
 docker build -f apps/evidence_lab/gateway/Dockerfile.production \
-  -t evidence-lab-gateway:rc2 .
+  -t evidence-lab-gateway:rc3 .
 docker build -f apps/evidence_lab/worker/Dockerfile \
-  -t evidence-lab-worker:rc2 .
+  -t evidence-lab-worker:rc3 .
 ```
 
 Record:
@@ -136,17 +137,37 @@ Record:
 - host OS, compiler, CMake, Python and Docker versions;
 - SHA-256 values for all evidence files.
 
-A direct local PASS can unblock technical review, but the public deployment must still pass the post-deployment HTTPS validator.
+A direct local PASS can unblock technical review, but the public deployment must still pass the post-deployment HTTPS validator and the Kubernetes admission-policy self-test.
+
+## Cluster-side admission gate
+
+The public cluster must be Kubernetes 1.30 or newer. The guarded deployment installs a `ValidatingAdmissionPolicy` that restricts the gateway service account to the exact immutable, tokenless GrapheneDB worker Job shape.
+
+After the immutable worker image is available, run:
+
+```bash
+bash scripts/validate_evidence_lab_admission_policy.sh \
+  'ghcr.io/rastogivaibhav/graphenedb-evidence-lab-worker@sha256:FULL_DIGEST'
+```
+
+Required marker:
+
+```text
+EVIDENCE_LAB_WORKER_ADMISSION_POLICY=PASS
+```
+
+This proves both sides of the control: the exact worker is accepted and an arbitrary gateway-created Job is denied.
 
 ## After a successful run
 
 1. Attach or link the evidence artifact in PR #13.
-2. Mark PR #13 ready for review.
-3. Do not merge solely because the local gate passed; review the security and deployment diff.
-4. Provision the production Kubernetes and DNS values tracked in issue #14.
-5. Deploy only from the same frozen commit or create a new RC and repeat the full gate.
-6. Run the public HTTPS validator after deployment.
-7. Complete the ChatGPT Sites private-preview and logged-out browser gates.
+2. Keep PR #13 draft until the exact RC3 live gate passes.
+3. After the live PASS, mark PR #13 ready for security and deployment review.
+4. Do not merge solely because the local gate passed; review the admission, security and deployment diff.
+5. Provision the production Kubernetes and DNS values tracked in issue #14.
+6. Deploy only from the same frozen commit or create a new RC and repeat the full gate.
+7. Run the admission-policy self-test and public HTTPS validator after deployment.
+8. Complete the ChatGPT Sites private-preview and logged-out browser gates.
 
 ## Runner cleanup
 
