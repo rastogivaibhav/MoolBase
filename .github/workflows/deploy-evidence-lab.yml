@@ -36,16 +36,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate deployment inputs
+      - name: Validate deployment inputs and required secrets
         env:
           HOSTNAME_INPUT: ${{ inputs.public_hostname }}
           SITE_ORIGIN: ${{ inputs.chatgpt_site_origin }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          KUBE_CONFIG_B64: ${{ secrets.EVIDENCE_LAB_KUBE_CONFIG_B64 }}
+          GHCR_USERNAME: ${{ secrets.EVIDENCE_LAB_GHCR_USERNAME }}
+          GHCR_PAT: ${{ secrets.EVIDENCE_LAB_GHCR_PAT }}
         run: |
           set -euo pipefail
           [[ "$HOSTNAME_INPUT" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$SITE_ORIGIN" =~ ^https:// ]]
           [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test -n "$KUBE_CONFIG_B64"
+          test -n "$GHCR_USERNAME"
+          test -n "$GHCR_PAT"
 
       - uses: docker/login-action@v3
         with:
@@ -82,7 +88,6 @@ jobs:
           KUBE_CONFIG_B64: ${{ secrets.EVIDENCE_LAB_KUBE_CONFIG_B64 }}
         run: |
           set -euo pipefail
-          test -n "$KUBE_CONFIG_B64"
           mkdir -p "$HOME/.kube"
           printf '%s' "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
           chmod 0600 "$HOME/.kube/config"
@@ -96,12 +101,19 @@ jobs:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
           OWNER: ${{ github.repository_owner }}
           IMAGE_TAG: ${{ github.sha }}
+          GHCR_USERNAME: ${{ secrets.EVIDENCE_LAB_GHCR_USERNAME }}
+          GHCR_PAT: ${{ secrets.EVIDENCE_LAB_GHCR_PAT }}
         run: |
           set -euo pipefail
           manifest="$(mktemp)"
           sed "s/evidence-lab.example.com/${PUBLIC_HOSTNAME}/g" \
             deploy/evidence-lab/kubernetes/evidence-lab.yaml > "$manifest"
           kubectl apply -f "$manifest"
+          kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="$GHCR_USERNAME" \
+            --docker-password="$GHCR_PAT" \
+            --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n graphenedb-evidence-lab create secret generic evidence-lab-secrets \
             --from-literal=EVIDENCE_LAB_ALLOWED_ORIGINS="${SITE_ORIGIN},https://${PUBLIC_HOSTNAME}" \
             --from-literal=EVIDENCE_LAB_ALLOWED_HOSTS="${PUBLIC_HOSTNAME}" \
