@@ -100,12 +100,20 @@ class KubernetesJobBackend(Backend):
                 seccomp_profile=c.V1SeccompProfile(type="RuntimeDefault"),
             ),
         )
+        image_pull_secrets = None
+        if self.settings.kubernetes_image_pull_secret:
+            image_pull_secrets = [
+                c.V1LocalObjectReference(
+                    name=self.settings.kubernetes_image_pull_secret,
+                )
+            ]
         pod_spec = c.V1PodSpec(
             restart_policy="Never",
             service_account_name=self.settings.kubernetes_service_account,
             automount_service_account_token=False,
             enable_service_links=False,
             termination_grace_period_seconds=10,
+            image_pull_secrets=image_pull_secrets,
             security_context=c.V1PodSecurityContext(
                 fs_group=10001,
                 run_as_non_root=True,
