@@ -1,0 +1,72 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: graphenedb-evidence-lab-worker-jobs
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["batch"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["jobs"]
+  matchConditions:
+    - name: evidence-lab-gateway-service-account
+      expression: >-
+        request.userInfo.username ==
+        'system:serviceaccount:graphenedb-evidence-lab:evidence-lab-gateway'
+  validations:
+    - expression: >-
+        object.metadata.namespace == 'graphenedb-evidence-lab' &&
+        object.metadata.labels['app.kubernetes.io/name'] ==
+        'graphenedb-evidence-lab-worker' &&
+        object.metadata.labels['app.kubernetes.io/component'] == 'worker'
+      message: The Evidence Lab gateway may create only labelled worker Jobs in its own namespace.
+    - expression: >-
+        object.spec.template.spec.serviceAccountName == 'evidence-lab-worker' &&
+        object.spec.template.spec.automountServiceAccountToken == false &&
+        object.spec.template.spec.restartPolicy == 'Never' &&
+        object.spec.template.spec.enableServiceLinks == false
+      message: Worker Jobs must use the tokenless evidence-lab-worker service account.
+    - expression: >-
+        size(object.spec.template.spec.containers) == 1 &&
+        object.spec.template.spec.containers[0].name == 'worker' &&
+        object.spec.template.spec.containers[0].image.matches(
+          '^ghcr\\.io/rastogivaibhav/graphenedb-evidence-lab-worker@sha256:[0-9a-f]{64}$'
+        ) &&
+        object.spec.template.spec.containers[0].command ==
+          ['python', '-m', 'evidence_lab.worker_entrypoint']
+      message: Worker Jobs must use the immutable GrapheneDB worker image and fixed entrypoint.
+    - expression: >-
+        object.spec.template.spec.containers[0].securityContext.runAsNonRoot == true &&
+        object.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false &&
+        object.spec.template.spec.containers[0].securityContext.privileged == false &&
+        object.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true &&
+        object.spec.template.spec.containers[0].securityContext.capabilities.drop.exists(x, x == 'ALL') &&
+        object.spec.template.spec.containers[0].securityContext.seccompProfile.type == 'RuntimeDefault'
+      message: Worker containers must retain the restricted security context.
+    - expression: >-
+        (!has(object.spec.template.spec.hostNetwork) || object.spec.template.spec.hostNetwork == false) &&
+        (!has(object.spec.template.spec.hostPID) || object.spec.template.spec.hostPID == false) &&
+        (!has(object.spec.template.spec.hostIPC) || object.spec.template.spec.hostIPC == false) &&
+        size(object.spec.template.spec.volumes) == 2 &&
+        object.spec.template.spec.volumes.exists(v,
+          v.name == 'evidence-lab-data' &&
+          has(v.persistentVolumeClaim) &&
+          v.persistentVolumeClaim.claimName == 'evidence-lab-data') &&
+        object.spec.template.spec.volumes.exists(v,
+          v.name == 'tmp' && has(v.emptyDir))
+      message: Worker Jobs may mount only the private Evidence Lab PVC and bounded temporary storage.
+    - expression: >-
+        object.spec.backoffLimit == 0 &&
+        object.spec.activeDeadlineSeconds <= 150 &&
+        object.spec.ttlSecondsAfterFinished <= 300
+      message: Worker Jobs must remain single-attempt and time bounded.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: graphenedb-evidence-lab-worker-jobs
+spec:
+  policyName: graphenedb-evidence-lab-worker-jobs
+  validationActions: [Deny, Audit]
