@@ -63,7 +63,7 @@ kubectl auth can-i create jobs.batch \
   --as "$GATEWAY_IDENTITY" | grep -Fx yes >/dev/null || \
   fail "gateway service account cannot create worker jobs"
 
-cat <<YAML | kubectl apply --server-side --dry-run=server \
+cat <<YAML | kubectl create --dry-run=server \
   --as "$GATEWAY_IDENTITY" -f - >/dev/null
 apiVersion: batch/v1
 kind: Job
@@ -135,7 +135,7 @@ spec:
 YAML
 
 set +e
-DENIAL_OUTPUT="$(cat <<YAML | kubectl apply --server-side --dry-run=server \
+DENIAL_OUTPUT="$(cat <<YAML | kubectl create --dry-run=server \
   --as "$GATEWAY_IDENTITY" -f - 2>&1
 apiVersion: batch/v1
 kind: Job
