@@ -82,7 +82,8 @@ jobs:
           bash -n \
             scripts/preflight_evidence_lab_validation_host.sh \
             scripts/run_evidence_lab_local.sh \
-            scripts/run_evidence_lab_live_gate.sh
+            scripts/run_evidence_lab_live_gate.sh \
+            scripts/validate_evidence_lab_admission_policy.sh
           node --check apps/evidence_lab/site/app.js
 
       - name: Run exact-head live GrapheneDB gate
