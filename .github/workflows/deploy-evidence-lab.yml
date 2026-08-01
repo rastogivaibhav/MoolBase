@@ -117,6 +117,8 @@ jobs:
             > deployment-rendered/evidence-lab.yaml
           cp deploy/evidence-lab/kubernetes/cleanup-cronjob.yaml \
             deployment-rendered/cleanup-cronjob.yaml
+          cp deploy/evidence-lab/kubernetes/resource-guardrails.yaml \
+            deployment-rendered/resource-guardrails.yaml
           cp deploy/evidence-lab/kubernetes/worker-admission-policy.yaml \
             deployment-rendered/worker-admission-policy.yaml
           python scripts/preflight_evidence_lab_deployment.py \
@@ -160,7 +162,8 @@ jobs:
           kubectl apply -f deployment-rendered/worker-admission-policy.yaml
           kubectl apply \
             -f deployment-rendered/evidence-lab.yaml \
-            -f deployment-rendered/cleanup-cronjob.yaml
+            -f deployment-rendered/cleanup-cronjob.yaml \
+            -f deployment-rendered/resource-guardrails.yaml
           kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
             --docker-server=ghcr.io \
             --docker-username="$GHCR_USERNAME" \
@@ -187,7 +190,7 @@ jobs:
           set -euo pipefail
           kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-clamav --timeout=10m
           kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gateway --timeout=10m
-          kubectl -n graphenedb-evidence-lab get pods,svc,ingress,cronjob
+          kubectl -n graphenedb-evidence-lab get pods,svc,ingress,cronjob,resourcequota,limitrange
 
       - name: Run deployed live validation gate
         env:
@@ -212,10 +215,10 @@ jobs:
           printf 'gateway=%s\nworker=%s\nclamav=%s\n' \
             "$GATEWAY_IMAGE" "$WORKER_IMAGE" "$CLAMAV_IMAGE" \
             > deployment-evidence/images.txt
-          kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc,cronjob -o wide \
+          kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc,cronjob,resourcequota,limitrange -o wide \
             > deployment-evidence/resources.txt 2>&1 || true
-          kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding \
-            > deployment-evidence/admission-policy.txt 2>&1 || true
+          kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding -o yaml \
+            > deployment-evidence/admission-policy.yaml 2>&1 || true
           kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
             > deployment-evidence/gateway.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab get events --sort-by=.lastTimestamp \
