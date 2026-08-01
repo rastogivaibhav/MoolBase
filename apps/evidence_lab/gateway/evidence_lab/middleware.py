@@ -13,13 +13,43 @@ from starlette.types import ASGIApp
 
 
 class RequestSecurityMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, *, max_content_length: int) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        max_content_length: int,
+        allowed_hosts: tuple[str, ...],
+    ) -> None:
         super().__init__(app)
         self.max_content_length = max_content_length
+        self.allowed_hosts = tuple(item.casefold() for item in allowed_hosts)
+
+    def _host_allowed(self, host: str) -> bool:
+        candidate = host.split(":", 1)[0].strip("[]").casefold()
+        for allowed in self.allowed_hosts:
+            if allowed == "*" or candidate == allowed:
+                return True
+            if allowed.startswith("*.") and candidate.endswith(allowed[1:]):
+                return True
+        return False
 
     async def dispatch(self, request: Request, call_next: Callable):
         request_id = request.headers.get("X-Request-ID") or f"req_{secrets.token_urlsafe(12)}"
         request.state.request_id = request_id
+
+        if not request.url.path.endswith("/health"):
+            host = request.headers.get("host", "")
+            if not host or not self._host_allowed(host):
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "error": "invalid_host",
+                        "detail": "request Host is not allowed",
+                        "request_id": request_id,
+                    },
+                    headers={"X-Request-ID": request_id},
+                )
+
         content_length = request.headers.get("content-length")
         if content_length:
             try:
