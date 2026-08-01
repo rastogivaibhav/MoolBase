@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 import asyncio
+import os
 import secrets
 import time
 from typing import Callable
@@ -18,10 +19,19 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         *,
         max_content_length: int,
-        allowed_hosts: tuple[str, ...],
+        allowed_hosts: tuple[str, ...] | None = None,
     ) -> None:
         super().__init__(app)
         self.max_content_length = max_content_length
+        if allowed_hosts is None:
+            allowed_hosts = tuple(
+                item.strip()
+                for item in os.environ.get(
+                    "EVIDENCE_LAB_ALLOWED_HOSTS",
+                    "localhost,127.0.0.1,testserver",
+                ).split(",")
+                if item.strip()
+            )
         self.allowed_hosts = tuple(item.casefold() for item in allowed_hosts)
 
     def _host_allowed(self, host: str) -> bool:
@@ -33,11 +43,20 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
                 return True
         return False
 
+    def _rewrite_health_probe_host(self, request: Request) -> None:
+        replacement = next((item for item in self.allowed_hosts if item != "*" and not item.startswith("*.")), "localhost")
+        headers = [(key, value) for key, value in request.scope.get("headers", []) if key.lower() != b"host"]
+        headers.append((b"host", replacement.encode("ascii", "strict")))
+        request.scope["headers"] = headers
+
     async def dispatch(self, request: Request, call_next: Callable):
         request_id = request.headers.get("X-Request-ID") or f"req_{secrets.token_urlsafe(12)}"
         request.state.request_id = request_id
 
-        if not request.url.path.endswith("/health"):
+        is_health = request.url.path.endswith("/health")
+        if is_health:
+            self._rewrite_health_probe_host(request)
+        else:
             host = request.headers.get("host", "")
             if not host or not self._host_allowed(host):
                 return JSONResponse(
