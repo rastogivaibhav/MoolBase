@@ -7,11 +7,13 @@ WORKDIR /src
 COPY . /src
 RUN cmake -S /src -B /build -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_SHARED_LIBS=OFF \
       -DGRAPHENEDB_BUILD_TESTS=OFF \
       -DGRAPHENEDB_BUILD_SERVER=ON \
       -DGRAPHENEDB_BUILD_BENCH=OFF \
       -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
-    && cmake --build /build --target graphenedb_server --parallel 2
+    && cmake --build /build --target graphenedb_server --parallel 2 \
+    && ! ldd /build/graphenedb_server | grep -q 'not found'
 
 FROM python:3.12-slim
 
