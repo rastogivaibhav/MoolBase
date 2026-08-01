@@ -62,6 +62,7 @@ app.add_middleware(
 app.add_middleware(
     RequestSecurityMiddleware,
     max_content_length=settings.max_upload_bytes + 1024 * 1024,
+    allowed_hosts=settings.allowed_hosts,
 )
 app.add_middleware(
     CORSMiddleware,
@@ -312,22 +313,22 @@ async def upload_dataset(
     files: Annotated[list[UploadFile], File(description="One canonical JSON/NDJSON/ZIP or a nodes+edges+queries file set")],
     session_id: str = Depends(session_id_dependency),
 ) -> UploadValidation:
-    source_files: dict[str, bytes] = {}
+    source_inputs: dict[str, bytes] = {}
     total = 0
     for upload in files:
         if not upload.filename:
             raise HTTPException(status_code=400, detail="every upload requires a filename")
         filename = Path(upload.filename).name
-        if filename.casefold() in {name.casefold() for name in source_files}:
+        if filename.casefold() in {name.casefold() for name in source_inputs}:
             raise HTTPException(status_code=400, detail="duplicate filenames are not accepted")
         data = await upload.read(settings.max_upload_bytes + 1)
         total += len(data)
         if len(data) > settings.max_upload_bytes or total > settings.max_upload_bytes:
             raise HTTPException(status_code=413, detail="upload exceeds public size limit")
-        source_files[filename] = data
+        source_inputs[filename] = data
 
     security = scan_uploads(
-        source_files,
+        source_inputs,
         max_files=settings.max_upload_files,
         max_filename_length=settings.max_filename_length,
         max_archive_members=settings.max_archive_members,
@@ -340,13 +341,13 @@ async def upload_dataset(
         clamav_required=settings.clamav_required,
         clamav_timeout_seconds=settings.clamav_timeout_seconds,
     )
-    dataset = load_uploaded_files(source_files, max_uncompressed=settings.max_archive_uncompressed_bytes)
+    dataset = load_uploaded_files(source_inputs, max_uncompressed=settings.max_archive_uncompressed_bytes)
     validate_limits(dataset, settings.max_nodes, settings.max_edges, settings.max_queries)
-    stored_id = store.save_dataset(session_id, dataset, source_files)
+    stored_id = store.save_dataset(session_id, dataset, source_inputs)
     return UploadValidation(
         dataset_id=stored_id,
         dataset_hash=dataset_hash(dataset),
-        source_files=sorted(source_files),
+        source_files=sorted(source_inputs),
         node_count=len(dataset.nodes),
         edge_count=len(dataset.edges),
         query_count=len(dataset.queries),
@@ -375,10 +376,14 @@ def get_dataset(dataset_id: str, session_id: str = Depends(session_id_dependency
 @app.post("/v1/public/runs", response_model=PublicRunResult)
 def create_run(request: RunRequest, session_id: str = Depends(session_id_dependency)) -> PublicRunResult:
     if request.sample_id:
-        dataset = load_sample_directory(_sample_path(request.sample_id))
+        sample_path = _sample_path(request.sample_id)
+        dataset = load_sample_directory(sample_path)
+        source_inputs = {path.name: path.read_bytes() for path in sample_files(sample_path)}
     else:
         try:
-            dataset = store.load_dataset(session_id, request.dataset_id or "")
+            dataset_id = request.dataset_id or ""
+            dataset = store.load_dataset(session_id, dataset_id)
+            source_inputs = store.load_dataset_source_files(session_id, dataset_id)
         except StoreError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
     query = next((item for item in dataset.queries if item.query_id == request.query_id), None)
@@ -389,7 +394,7 @@ def create_run(request: RunRequest, session_id: str = Depends(session_id_depende
     raw, events = backend.run(dataset, query, request.policy)
     duration_ms = max(0, int((time.perf_counter() - start_clock) * 1000))
     result = _public_result(dataset, query.query_id, request.policy, raw, events, started, duration_ms)
-    bundle = build_reproduction_bundle(dataset, result)
+    bundle = build_reproduction_bundle(dataset, result, source_inputs)
     store.save_run(session_id, result, bundle)
     return result
 
