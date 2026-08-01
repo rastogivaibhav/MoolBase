@@ -10,9 +10,10 @@ import time
 import zipfile
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from .backend import BackendError, create_backend
 from .bundles import build_reproduction_bundle
@@ -26,6 +27,7 @@ from .datasets import (
     sample_files,
     validate_limits,
 )
+from .middleware import RequestSecurityMiddleware, SlidingWindowRateLimitMiddleware
 from .models import (
     Dataset,
     Metric,
@@ -35,6 +37,7 @@ from .models import (
     SessionResponse,
     UploadValidation,
 )
+from .security import UploadSecurityError, scan_uploads
 from .store import FileStore, StoreError
 
 
@@ -44,19 +47,29 @@ backend = create_backend(settings)
 
 app = FastAPI(
     title="GrapheneDB Public Evidence Lab Gateway",
-    version="0.1.0",
+    version="0.2.0",
     description=(
         "Public sandbox gateway for verified samples, bounded structured uploads, "
         "real or explicitly recorded GrapheneDB runs, and reproducibility bundles."
     ),
+)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
+app.add_middleware(
+    SlidingWindowRateLimitMiddleware,
+    requests=settings.rate_limit_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+)
+app.add_middleware(
+    RequestSecurityMiddleware,
+    max_content_length=settings.max_upload_bytes + 1024 * 1024,
 )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.allowed_origins),
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "X-Session-ID"],
-    expose_headers=["Content-Disposition"],
+    allow_headers=["Content-Type", "X-Session-ID", "X-Request-ID"],
+    expose_headers=["Content-Disposition", "X-Request-ID"],
 )
 
 
@@ -180,6 +193,7 @@ def _public_result(
         dataset_hash=dataset_hash(dataset),
         graphenedb_version=version,
         graphenedb_commit=commit,
+        worker_image_digest=raw.get("_evidence_lab_worker_image_digest"),
         started_at=started,
         completed_at=datetime.now(timezone.utc),
         duration_ms=duration_ms,
@@ -200,13 +214,28 @@ def _public_result(
 
 
 @app.exception_handler(DatasetError)
-def dataset_error_handler(_, exc: DatasetError) -> JSONResponse:
-    return JSONResponse(status_code=422, content={"error": "invalid_dataset", "detail": str(exc)})
+def dataset_error_handler(request: Request, exc: DatasetError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={"error": "invalid_dataset", "detail": str(exc), "request_id": getattr(request.state, "request_id", None)},
+    )
+
+
+@app.exception_handler(UploadSecurityError)
+def security_error_handler(request: Request, exc: UploadSecurityError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={"error": "upload_security_rejection", "detail": str(exc), "request_id": getattr(request.state, "request_id", None)},
+    )
 
 
 @app.exception_handler(BackendError)
-def backend_error_handler(_, exc: BackendError) -> JSONResponse:
-    return JSONResponse(status_code=502, content={"error": "backend_failure", "detail": str(exc)})
+def backend_error_handler(request: Request, exc: BackendError) -> JSONResponse:
+    detail = str(exc) if not settings.public_mode else "isolated GrapheneDB execution failed"
+    return JSONResponse(
+        status_code=502,
+        content={"error": "backend_failure", "detail": detail, "request_id": getattr(request.state, "request_id", None)},
+    )
 
 
 @app.get("/v1/public/health")
@@ -215,12 +244,15 @@ def health() -> dict[str, Any]:
         "status": "ok",
         "service": "graphenedb-evidence-lab",
         "backend_mode": settings.backend_mode,
-        "live_backend_configured": settings.backend_mode in {"live", "subprocess"},
+        "live_backend_configured": settings.backend_mode in {"live", "subprocess", "kubernetes"},
+        "security_profile": "public" if settings.public_mode else "development",
+        "malware_scan_required": settings.clamav_required,
     }
 
 
 @app.post("/v1/public/sessions", response_model=SessionResponse)
 def create_session() -> SessionResponse:
+    store.cleanup_expired()
     session_id, expires_at = store.create_session()
     return SessionResponse(
         session_id=session_id,
@@ -283,14 +315,32 @@ async def upload_dataset(
     source_files: dict[str, bytes] = {}
     total = 0
     for upload in files:
-        data = await upload.read()
-        total += len(data)
-        if total > settings.max_upload_bytes:
-            raise HTTPException(status_code=413, detail="upload exceeds public size limit")
         if not upload.filename:
             raise HTTPException(status_code=400, detail="every upload requires a filename")
-        source_files[Path(upload.filename).name] = data
-    dataset = load_uploaded_files(source_files, max_uncompressed=settings.max_upload_bytes * 4)
+        filename = Path(upload.filename).name
+        if filename.casefold() in {name.casefold() for name in source_files}:
+            raise HTTPException(status_code=400, detail="duplicate filenames are not accepted")
+        data = await upload.read(settings.max_upload_bytes + 1)
+        total += len(data)
+        if len(data) > settings.max_upload_bytes or total > settings.max_upload_bytes:
+            raise HTTPException(status_code=413, detail="upload exceeds public size limit")
+        source_files[filename] = data
+
+    security = scan_uploads(
+        source_files,
+        max_files=settings.max_upload_files,
+        max_filename_length=settings.max_filename_length,
+        max_archive_members=settings.max_archive_members,
+        max_archive_member_bytes=settings.max_archive_member_bytes,
+        max_uncompressed_bytes=settings.max_archive_uncompressed_bytes,
+        max_compression_ratio=settings.max_archive_compression_ratio,
+        block_secrets=settings.block_secrets,
+        clamav_host=settings.clamav_host,
+        clamav_port=settings.clamav_port,
+        clamav_required=settings.clamav_required,
+        clamav_timeout_seconds=settings.clamav_timeout_seconds,
+    )
+    dataset = load_uploaded_files(source_files, max_uncompressed=settings.max_archive_uncompressed_bytes)
     validate_limits(dataset, settings.max_nodes, settings.max_edges, settings.max_queries)
     stored_id = store.save_dataset(session_id, dataset, source_files)
     return UploadValidation(
@@ -303,6 +353,7 @@ async def upload_dataset(
         evidence_family_count=len({edge.evidence_family_id for edge in dataset.edges}),
         derivation_count=len({edge.derivation_id for edge in dataset.edges}),
         warnings=dataset_warnings(dataset),
+        security=security.to_dict(),
         executable=True,
     )
 
