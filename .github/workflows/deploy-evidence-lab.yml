@@ -95,6 +95,14 @@ jobs:
           printf '%s' "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
           chmod 0600 "$HOME/.kube/config"
           kubectl cluster-info
+          python - <<'PY'
+          import json, subprocess
+          version = json.loads(subprocess.check_output(["kubectl", "version", "-o", "json"]))
+          minor = int(version["serverVersion"]["minor"].rstrip("+"))
+          if minor < 30:
+              raise SystemExit("Kubernetes 1.30+ is required for ValidatingAdmissionPolicy")
+          print(f"kubernetes_server_minor={minor}")
+          PY
 
       - name: Render and validate hardened resources
         env:
@@ -109,12 +117,16 @@ jobs:
             > deployment-rendered/evidence-lab.yaml
           cp deploy/evidence-lab/kubernetes/cleanup-cronjob.yaml \
             deployment-rendered/cleanup-cronjob.yaml
+          cp deploy/evidence-lab/kubernetes/worker-admission-policy.yaml \
+            deployment-rendered/worker-admission-policy.yaml
           python scripts/preflight_evidence_lab_deployment.py \
             deployment-rendered/evidence-lab.yaml \
             --hostname "$PUBLIC_HOSTNAME" \
             --site-origin "$SITE_ORIGIN" \
             --expected-commit "$EXPECTED_COMMIT"
           kubectl apply --dry-run=client -f deployment-rendered
+          kubectl apply --server-side --dry-run=server \
+            -f deployment-rendered/worker-admission-policy.yaml
 
       - name: Resolve immutable deployment images
         id: immutable_images
@@ -145,7 +157,10 @@ jobs:
           CLAMAV_IMAGE: ${{ steps.immutable_images.outputs.clamav }}
         run: |
           set -euo pipefail
-          kubectl apply -f deployment-rendered
+          kubectl apply -f deployment-rendered/worker-admission-policy.yaml
+          kubectl apply \
+            -f deployment-rendered/evidence-lab.yaml \
+            -f deployment-rendered/cleanup-cronjob.yaml
           kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
             --docker-server=ghcr.io \
             --docker-username="$GHCR_USERNAME" \
@@ -164,6 +179,7 @@ jobs:
             deployment/evidence-lab-clamav clamd="$CLAMAV_IMAGE"
           kubectl -n graphenedb-evidence-lab set image \
             cronjob/evidence-lab-cleanup cleanup="$GATEWAY_IMAGE"
+          bash scripts/validate_evidence_lab_admission_policy.sh "$WORKER_IMAGE"
           kubectl -n graphenedb-evidence-lab rollout restart deployment/evidence-lab-gateway
 
       - name: Wait for malware scanner and gateway
@@ -198,6 +214,8 @@ jobs:
             > deployment-evidence/images.txt
           kubectl -n graphenedb-evidence-lab get all,ingress,networkpolicy,pvc,cronjob -o wide \
             > deployment-evidence/resources.txt 2>&1 || true
+          kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding \
+            > deployment-evidence/admission-policy.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab describe deployment/evidence-lab-gateway \
             > deployment-evidence/gateway.txt 2>&1 || true
           kubectl -n graphenedb-evidence-lab get events --sort-by=.lastTimestamp \
