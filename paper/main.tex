@@ -1,10 +1,30 @@
 \documentclass[10pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,booktabs,graphicx,hyperref,microtype}
+\usepackage{amsmath,amssymb,booktabs,array,graphicx,hyperref,microtype}
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{url}
-\title{GrapheneDB: Lineage-Aware Epistemic Control and Frontier-Aware Evidence Recovery for Agentic Systems}
+\usepackage{verbatim}
+
+\newcommand{\system}{GrapheneDB}
+\newcommand{\fib}{\mathcal{F}}
+\newcommand{\paths}{\mathcal{P}}
+\newcommand{\families}{\mathcal{G}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\artifactstatus}{Artifact identifiers pending public release freeze}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  pdftitle={GrapheneDB: Lineage-Aware Epistemic Control and Frontier-Aware Evidence Recovery for Agentic Systems},
+  pdfauthor={Vaibhav Rastogi}
+}
+
+\title{GrapheneDB: Lineage-Aware Epistemic Control and\\Frontier-Aware Evidence Recovery for Agentic Systems}
 \author{Vaibhav Rastogi}
 \date{Technical preprint, 2026}
 
@@ -12,32 +32,46 @@
 \maketitle
 
 \begin{abstract}
-Retrieval-augmented agents can access external information, yet commonly conflate the number of retrieved artifacts with the amount of independent evidence supporting a conclusion. Copies, summaries, dashboards, and derived records may appear as multiple supporting items while sharing one source ancestry; contradictions and missing causal hops may be hidden by ranking and synthesis. We present GrapheneDB, an experimental embedded C++20 evidence and causal-memory database that constructs immutable, lineage-aware reasoning views and governs whether an agent should answer, deepen retrieval, contest a conclusion, request evidence, or abstain. Its FiberBundle representation separates graph-route identity, source lineage, evidence-family lineage, and derivation lineage; an epistemic controller evaluates admissibility and contradiction; a Lyapunov-inspired critic measures finite-trajectory practical stability; and a bounded recovery controller performs defect-specific re-expansion. A controlled intervention benchmark comprising 700 deterministic executions shows that a previous stop rule based only on completed-bundle equality solved 66.7\% of hard hidden-evidence families, while frontier-aware targeted recovery solved 100\%; forced broad retrieval solved 83.3\% and visited 34 states on average compared with 16 for targeted recovery. These results establish mechanism behaviour in controlled graph scenarios, not semantic truth or general superiority over external databases and agents. We describe the architecture, implementation, experiments, negative findings, reproducibility package, and threats to validity.
+Retrieval-augmented agents can access external information, yet commonly conflate the number of retrieved artifacts with the amount of independent evidence supporting a conclusion. Copies, summaries, dashboards, and derived records may appear as multiple supporting items while sharing one source ancestry; contradictions and missing causal hops may be hidden by ranking and synthesis. We present GrapheneDB, an experimental embedded C++20 evidence and causal-memory database that constructs immutable, lineage-aware reasoning views and governs whether an agent should answer, deepen retrieval, contest a conclusion, request evidence, or abstain. Its FiberBundle representation separates graph-route identity, source lineage, evidence-family lineage, and derivation lineage; an epistemic controller evaluates admissibility and contradiction; a Lyapunov-inspired critic measures finite-trajectory practical stability; and a bounded recovery controller performs defect-specific re-expansion. A controlled intervention benchmark comprising 700 deterministic executions shows that a previous stop rule based only on completed-bundle equality solved 66.7\% of hard hidden-evidence families, while frontier-aware targeted recovery solved 100\%; forced broad retrieval solved 83.3\% and visited 34 states on average compared with 16 for targeted recovery. These results establish mechanism behaviour in controlled graph scenarios, not semantic truth or general superiority over external databases and agents. We describe the architecture, algorithms, implementation, experiments, negative findings, reproducibility package, and threats to validity.
 \end{abstract}
 
-\section{Introduction}
-Large language models paired with non-parametric retrieval have improved access to external knowledge and provenance-bearing passages~\cite{lewis2020rag}. However, retrieving relevant text does not by itself establish that a conclusion is independently corroborated, causally complete, temporally valid, or free from material contradiction. A practical failure mode is \emph{premature convergence}: several semantically similar artifacts are retrieved, a single fluent answer is produced, and shared ancestry or missing evidence is not visible to the caller.
+\noindent\textbf{Keywords:} evidence lineage; agent memory; graph reasoning; epistemic control; provenance; contradiction; abstention; bounded recursive retrieval.
 
-GrapheneDB addresses a narrower systems problem: how should an agentic runtime represent retrieved evidence and decide whether the current evidence state is sufficient for action? The system is not a foundation model, a causal-identification oracle, or a semantic truth engine. It is an embedded evidence database and runtime control layer intended to complement retrievers, language models, and agent frameworks.
+\section{Introduction}
+Large language models paired with non-parametric retrieval have improved access to external knowledge and provenance-bearing passages~\cite{lewis2020rag}. Graph-structured retrieval extends this idea by exploiting relations among entities and documents~\cite{edge2024graphrag}. However, retrieving relevant text does not by itself establish that a conclusion is independently corroborated, causally complete, temporally valid, or free from material contradiction. A practical failure mode is \emph{premature convergence}: several semantically similar artifacts are retrieved, a single fluent answer is produced, and shared ancestry or missing evidence is not visible to the caller.
+
+GrapheneDB addresses a narrower systems problem: how should an agentic runtime represent retrieved evidence and decide whether the current evidence state is sufficient for action? The system is not a foundation model, a causal-identification oracle, or a semantic truth engine. It is an embedded evidence database and runtime control layer intended to complement retrievers, language models, graph stores, and agent frameworks.
 
 The central design distinction is
 \[
 \text{retrieved paths} \neq \text{independent evidence families}.
 \]
-A source document, a dashboard derived from it, and an agent summary of that dashboard may constitute three artifacts but only one evidence ancestry. GrapheneDB therefore separates graph-route, source, evidence-family, and derivation identities, preserves support, opposition, and noise as distinct roles, and projects governed states such as \texttt{resolved}, \texttt{contested}, \texttt{evidence\_required}, and \texttt{abstain}.
+A source document, a dashboard derived from it, and an agent summary of that dashboard may constitute three artifacts but only one evidence ancestry. GrapheneDB therefore separates graph-route, source, evidence-family, and derivation identities, preserves support, opposition, and noise as distinct roles, and projects governed states such as \code{resolved}, \code{contested}, \code{evidence\_required}, and \code{abstain}.
 
-This paper makes the following contributions:
+This paper makes six contributions:
 \begin{enumerate}[leftmargin=*]
   \item A lineage-aware \emph{FiberBundle} representation for immutable query-time evidence views.
-  \item A target-scoped epistemic admissibility controller that prevents correlated retrieval from being treated as independent corroboration and treats material contradiction as a resolution blocker.
+  \item A target-scoped admissibility controller that prevents configured correlated retrieval from being treated as independent corroboration and treats material contradiction as a resolution blocker.
   \item A bounded, frontier-aware recovery mechanism that distinguishes completed-answer change from traversal progress through intermediate graph states.
   \item An opt-in opposition-research mode in which explicit reopen targets influence subsequent retrieval rather than merely producing textual critique.
   \item A deterministic compact epistemic receipt for durable storage without persisting the complete recursive workspace.
-  \item Controlled intervention and cross-dataset structural benchmarks, including a negative result that exposed premature stopping on deeper evidence chains.
+  \item Controlled intervention and source-isolated structural benchmarks, including a negative result that exposed premature stopping on deeper evidence chains.
 \end{enumerate}
 
+\section{Design Requirements and Non-Goals}
+The system is designed around five requirements.
+\begin{description}[leftmargin=3.1cm,style=nextline]
+  \item[Lineage separation] Distinguish graph route, source identity, evidence family, and derivation ancestry.
+  \item[Target scope] Judge evidence for the selected claim rather than averaging unrelated targets.
+  \item[Bounded recovery] Re-search only when a diagnosed defect is graph-searchable and budgets permit.
+  \item[Contradiction visibility] Preserve material opposition and prevent silent compression into a single score.
+  \item[Durable accountability] Emit a compact deterministic receipt that explains the governed outcome.
+\end{description}
+
+The present work does not attempt to prove causal identification, infer hidden source dependence automatically, train a new language model, replace mature distributed graph/vector databases, or establish semantic answer correctness. The million-node model-world, implementation-outcome learning loop, and small-model training path described in earlier architectural work remain future directions rather than present claims.
+
 \section{Problem Formulation}
-Let a query $q$ retrieve candidate target nodes and traverse a typed, temporal graph. A path $p$ comprises nodes, edges, confidence, temporal validity, provenance, semantic-verification state, and lineage identifiers. A target fiber $F_t$ contains paths reaching target $t$ and correlation groups that identify paths sharing evidence ancestry.
+Let a query $q$ retrieve candidate target nodes and traverse a typed, temporal graph $G=(V,E)$. A path $p\in\paths_t$ reaching target $t$ contains nodes, edges, confidence, temporal validity, provenance, semantic-verification state, and lineage identifiers. A target fiber $F_t$ contains the paths reaching $t$ plus correlation groups that identify paths sharing evidence ancestry.
 
 For path $p$, define four identities:
 \begin{itemize}[leftmargin=*]
@@ -46,19 +80,96 @@ For path $p$, define four identities:
   \item $e(p)$: evidence-family identity;
   \item $d(p)$: derivation identity.
 \end{itemize}
-Two routes may be graph-distinct while remaining epistemically correlated because $e(p_1)=e(p_2)$ or because their derivations share ancestry. The controller therefore counts independent support using correlation-group representatives rather than raw path count.
+Two routes may be graph-distinct while remaining epistemically correlated because they share an evidence family or configured derivation ancestry. GrapheneDB does not claim to discover every hidden dependency. Instead, it prevents known shared ancestry from inflating independent support.
 
-A query result is projected to a governed status from the selected convergence, admissibility assessment, opposition, and finite-trajectory stability. Resolution requires admissible evidence, adequate independent support, no blocking contradiction, semantic verification where required, and observed practical stability. Otherwise the system may return a provisional, contested, evidence-required, speculative, or abstaining state.
+Let $\Gamma_t$ be the set of correlation groups for target $t$. Independent support is counted at group level:
+\[
+I_t = \left|\left\{g\in\Gamma_t:\exists p\in g\;\text{with role support and admissible}(p)\right\}\right|.
+\]
+A raw path count $|\paths_t|$ is retained for audit but is not used as the independence count.
 
-\section{Architecture}
+For a target $t$, the controller evaluates an admissibility vector
+\[
+a_t=(R_t,C_t,P_t,T_t,V_t,N_t),
+\]
+where relevance $R_t$, critical-path completeness $C_t$, provenance quality $P_t$, temporal consistency $T_t$, semantic verification $V_t$, and retrieval-noise tolerance $N_t$ are target-scoped. A material contradiction flag $O_t$ is evaluated separately. A resolved state requires admissibility, configured independent-support threshold, no blocking contradiction, and observed finite-trajectory stability. Otherwise the system returns a provisional, contested, evidence-required, speculative, or abstaining state.
+
+\section{System Architecture}
+Figure~\ref{fig:architecture} summarises the runtime.
+
+\begin{figure}[t]
+\centering
+\fbox{\begin{minipage}{0.93\linewidth}
+\centering
+Retriever or agent tool output\\
+$\downarrow$\\
+Typed temporal graph + evidence references\\
+$\downarrow$\\
+Lineage-aware FiberBundle builder\\
+$\downarrow$\\
+Target-scoped admissibility + Lyapunov-inspired stability critic\\
+$\downarrow$\\
+\begin{tabular}{ccccc}
+answer & deepen & contest & request evidence & abstain
+\end{tabular}\\
+$\downarrow$\\
+Compact content-addressed epistemic receipt
+\end{minipage}}
+\caption{GrapheneDB is positioned between retrieval and agent action. It governs evidence sufficiency; it does not replace the generator or upstream retrieval system.}
+\label{fig:architecture}
+\end{figure}
+
 \subsection{Graph and Evidence Storage}
-GrapheneDB is an embedded C++20 database with typed nodes and edges, vector retrieval, temporal metadata, evidence references, write-ahead logging, checksummed persistence, and a local command-line and optional POSIX HTTP surface. The database stores source evidence and graph structure. Rich reasoning state is constructed as an ephemeral projection rather than duplicated permanently.
+GrapheneDB is an embedded C++20 database with typed nodes and edges, vector retrieval, temporal metadata, evidence references, write-ahead logging, checksummed persistence, a command-line interface, and an optional POSIX HTTP surface. The database stores source evidence and graph structure. Rich reasoning state is constructed as an ephemeral projection rather than duplicated permanently.
+
+The experimental epistemic layer is compiled into the same library through CMake. The implementation includes source units for entity resolution, epistemic control and receipts, escape planning, FiberBundle construction, generic relations, the HypoKosh runtime, model-world scaffolding, path verification, relation ontology, self-healing, and stability criticism.
 
 \subsection{FiberBundle v2}
-The FiberBundle builder converts graph expansion output into deterministic target fibers. Each path records confidence, relevance, target consistency, completeness, provenance quality, temporal consistency, role, semantic-verification status, evidence references, and lineage. Exact duplicate paths are removed. Correlation groups preserve one representative for independent positive support while retaining correlated paths for audit. Support, opposition, and retrieval noise are never collapsed into one score-only list.
+The FiberBundle builder converts graph expansion output into deterministic target fibers. Each path records confidence, relevance, target consistency, completeness, provenance quality, temporal consistency, role, semantic-verification status, evidence references, and lineage. Exact duplicates are removed. Correlation groups preserve one representative for independent positive support while retaining correlated paths for audit. Support, opposition, and retrieval noise are never collapsed into a single score-only list.
+
+Algorithm~\ref{alg:bundle} states the construction logic at a high level.
+
+\begin{figure}[t]
+\centering
+\fbox{\begin{minipage}{0.93\linewidth}
+\textbf{Algorithm 1: Build and govern a target FiberBundle}\label{alg:bundle}
+\begin{enumerate}[leftmargin=*,nosep]
+  \item Validate path continuity, target reachability, joint requirements, edge evidence, and temporal overlap.
+  \item Canonicalise path, source, evidence-family, and derivation identifiers.
+  \item Deduplicate exact routes while retaining lineage-bearing audit records.
+  \item Partition paths by target and role: support, opposition, noise, or unknown.
+  \item Form configured correlation groups from evidence-family and derivation ancestry.
+  \item Select independent support representatives and compute target-scoped admissibility.
+  \item Evaluate contradiction and finite-trajectory stability.
+  \item Project a governed status and, when needed, a bounded defect-specific recovery plan.
+  \item Emit a compact deterministic receipt for the selected target and decision.
+\end{enumerate}
+\end{minipage}}
+\caption{The controller counts independent correlation groups, not raw path multiplicity.}
+\end{figure}
 
 \subsection{Epistemic Admissibility and Convergence}
 The epistemic controller evaluates the selected target rather than averaging properties across unrelated targets. It checks relevance, target consistency, critical-path completeness, provenance, independent evidence-family support, retrieval noise, semantic verification, and unresolved contradiction. Convergence is a bounded view over the immutable bundle; discarded alternatives remain available to opposition and audit.
+
+Table~\ref{tab:status} summarises the governed states used by the runtime.
+
+\begin{table}[t]
+\centering
+\caption{Governed epistemic status projection.}
+\label{tab:status}
+\begin{tabular}{p{0.22\linewidth}p{0.70\linewidth}}
+\toprule
+Status & Intended meaning \\
+\midrule
+\code{resolved} & Admissibility, support, contradiction, verification, and stability gates pass for the selected target. \\
+provisionally resolved & Useful support exists but a non-blocking uncertainty remains. \\
+\code{contested} & Material opposition or independently supported alternative prevents final resolution. \\
+\code{evidence\_required} & A specific missing observation, verifier decision, or critical graph hop blocks resolution. \\
+\code{speculative} & The route is retained for exploration but is explicitly below empirical acceptance. \\
+\code{abstain} & The system lacks sufficient grounds for a supported conclusion. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Lyapunov-Inspired Stability Critic}
 The critic constructs a bounded epistemic error state $x$ from temporal, diversity, degeneracy, provenance, contradiction, pattern-lock, missing-evidence, relevance, target-consistency, completeness, and retrieval-noise coordinates. It evaluates a positive weighted quadratic candidate
@@ -74,10 +185,32 @@ The escape planner maps diagnosed defects to bounded actions: seek missing criti
 The original runtime used a change in immutable completed-bundle hash as its primary new-information criterion. This was insufficient: increasing the depth budget can reach a new intermediate node without completing a new root path, leaving the bundle unchanged even though the search frontier advanced. The remediated controller separately tracks completed-bundle change and frontier progress, including visited states and depth. It applies bounded unchanged-bundle patience and stops only after genuine no-progress, configured limits, oscillation, or a repeated retrieval state.
 
 \subsection{Opposition Research}
-Opposition identifies material contradiction and independently supported alternatives and emits falsification questions and \texttt{reopen\_nodes}. Ordinary recovery remains the default. Optional secondary or tertiary research operationalises those reopen targets as downstream anchors for the next expansion, preventing opposition from being merely textual critique.
+Opposition identifies material contradiction and independently supported alternatives and emits falsification questions and \code{reopen\_nodes}. Ordinary recovery remains the default. Optional secondary or tertiary research operationalises those reopen targets as downstream anchors for the next expansion, preventing opposition from being merely textual critique.
 
 \subsection{Compact Epistemic Receipts}
 The full FiberBundle is normally ephemeral. A durable compact receipt stores the selected target, governed status, bundle hash, selected path identifiers, evidence-edge references, source/evidence-family/derivation lineage, verifier versions, independent-support count, contradiction and completeness summaries, energy, and residual uncertainty. Canonical ordering and a content hash permit deduplication and reproducibility without storing source data, indexes, and every recursive workspace as separate permanent copies.
+
+\section{Implementation Map}
+Table~\ref{tab:implementation} links the paper mechanisms to the C++20 code and tests present in the repository. The immutable release tag and commit will replace the artifact placeholders before submission.
+
+\begin{table}[t]
+\centering
+\caption{Implementation and test map.}
+\label{tab:implementation}
+\begin{tabular}{p{0.25\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+Mechanism & Principal implementation & Direct validation \\
+\midrule
+FiberBundle and lineage & \path{src/fiber_bundle.cpp}, public headers & \path{tests/test_fiber_bundle_v2.cpp}, \path{tests/test_epistemic_lineage.cpp} \\
+Epistemic control & \path{src/epistemic_control.cpp} & \path{tests/test_epistemic_control.cpp} \\
+Path verification & \path{src/path_verifier.cpp} & \path{tests/test_path_verifier.cpp} \\
+Stability critic & \path{src/stability_critic.cpp} & \path{tests/test_lyapunov_critic.cpp}, adversarial critic tests \\
+Runtime recovery & \path{src/hypokosh_runtime.cpp}, \path{src/escape.cpp} & runtime and generic-pipeline tests \\
+Compact receipts & \path{src/epistemic_receipt.cpp} & \path{tests/test_epistemic_receipt.cpp} \\
+Controlled benchmark & \path{bench/bench_dialectic_intervention.cpp} & benchmark runner and frozen report gates \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Experimental Methodology}
 \subsection{Research Questions}
@@ -90,12 +223,15 @@ We evaluate four mechanism questions:
 \end{enumerate}
 
 \subsection{Controlled Intervention Benchmark}
-The benchmark defines seven deterministic graph families: missing two-, three-, and four-hop evidence; minority path; independent candidate; noise trap; and already-correct. Twenty signature variants per family are run under five policies: no cycle, the previous targeted stop, forced targeted three-cycle recovery, forced broad three-cycle retrieval, and frontier-aware targeted recovery. The benchmark comprises 700 executions. Repetitions vary identifiers and signatures while preserving topology; they are not a substitute for independent natural-language datasets.
+The benchmark defines seven deterministic graph families: missing two-, three-, and four-hop evidence; minority path; independent candidate; noise trap; and already-correct. Twenty signature variants per family are run under five policies: no cycle, the previous targeted stop, forced targeted three-cycle recovery, forced broad three-cycle retrieval, and frontier-aware targeted recovery. The benchmark therefore comprises $7\times20\times5=700$ executions. Repetitions vary identifiers and signatures while preserving topology; they are not a substitute for independent natural-language datasets.
 
-Primary metrics are final root accuracy, recursive cycles, and visited states. The frozen gates require frontier-aware recovery to solve all hard families, expose the old deeper-chain failure, use less search than broad retrieval, and resist the broad-retrieval noise trap.
+Primary metrics are final root accuracy, recursive cycles, and visited states. The frozen gates require frontier-aware recovery to solve all controlled hard families, expose the old deeper-chain failure, use less search than broad retrieval, and resist the broad-retrieval noise trap.
 
-\subsection{Cross-Dataset Structural Tests}
-A separate source-isolated suite maps evidence structures derived from bAbI, HotpotQA, and FEVER-style records into FiberBundles and tests ordering and control properties: missing-evidence penalty, contradiction blocking, same-source duplicate resistance, distractor resistance, independent corroboration, temporal mismatch, refutation blocking, and insufficient-evidence non-resolution. These tests evaluate structural critic behaviour, not generated answer accuracy.
+\subsection{Source-Isolated Structural Tests}
+A separate suite maps evidence structures derived from bAbI~\cite{weston2015babi}, HotpotQA~\cite{yang2018hotpotqa}, and FEVER~\cite{thorne2018fever} style records into FiberBundles and tests ordering and control properties: missing-evidence penalty, contradiction blocking, same-source duplicate resistance, distractor resistance, independent corroboration, temporal mismatch, refutation blocking, and insufficient-evidence non-resolution. These tests evaluate structural critic behaviour, not generated answer accuracy. Public-data execution remains a distinct optional gate because dataset versions, sample manifests, licences, and network acquisition must be frozen independently.
+
+\subsection{Reproducibility Controls}
+The repository provides a clean-build alpha gate, full CTest execution, installed-package consumer verification, intervention benchmark runner, structural benchmark runner, manifest generation, and SHA-256 checksums. The paper package adds a deterministic arXiv source packager, metadata validator, and LaTeX workflow. Exact compiler, operating-system, commit, release tag, and machine-readable outputs must be frozen before submission.
 
 \section{Results}
 Table~\ref{tab:intervention} reports the hard-family aggregate.
@@ -117,47 +253,65 @@ Frontier-aware targeted & 100.0\% & 3.00 & 16.00 \\
 \end{tabular}
 \end{table}
 
-No-cycle retrieval failed all hard hidden-evidence families. The old stop rule solved two-hop and non-depth defects but terminated before completing three- and four-hop roots, yielding 66.7\%. Frontier-aware targeted recovery solved all hard families. Broad retrieval solved the deeper-hop cases but failed the noise trap because widening admitted a high-confidence irrelevant root; it also visited more than twice as many states on average as targeted recovery.
+No-cycle retrieval failed all hard hidden-evidence families. The old stop rule solved two-hop and non-depth defects but terminated before completing three- and four-hop roots, yielding 66.7\%. Frontier-aware targeted recovery solved all controlled hard families. Broad retrieval solved the deeper-hop cases but failed the noise trap because widening admitted a high-confidence irrelevant root; it also visited more than twice as many states on average as targeted recovery.
 
 The principal scientific result is conditional rather than universal: recursive search is useful when a diagnosed evidence defect requires it, but always-on or generic widening is neither necessary nor reliably beneficial. The negative result concerning completed-bundle equality directly changed the implementation.
 
 The source-isolated structural suite passed its frozen diagnostic gates for duplicate independence, contradiction blocking, distractor non-improvement, independent corroboration, temporal mismatch, and insufficient-evidence handling. Because identical structural bundles intentionally receive identical critic treatment across domains, these results do not establish semantic correctness.
+
+\section{Discussion}
+\subsection{Why Lineage Is Not Merely Provenance Metadata}
+Database provenance explains how outputs depend on inputs~\cite{buneman2001provenance,green2007provenance}. GrapheneDB uses provenance operationally: dependency information changes whether support is counted independently and whether a result may be resolved. This is closer to truth-maintenance and argumentation concerns~\cite{doyle1979tms,dung1995argumentation} than to a passive audit field, while remaining an engineering synthesis rather than a complete formal logic.
+
+\subsection{Why Abstention Is a Database-Control Decision}
+Selective prediction research studies when a model should decline to predict~\cite{elyaniv2010selective}. GrapheneDB moves part of this decision outside the generator. A language model may be fluent, but the evidence database can still return \code{evidence\_required} or \code{abstain} when independent support, completeness, or contradiction gates fail.
+
+\subsection{Where Semantic Verification Enters}
+A path verifier interface allows domain or model-backed checks to mark semantic entailment, contradiction, or unresolved status. The present paper does not claim a generally reliable semantic verifier. GrapheneDB governs and records verifier results; it does not convert an unreliable verifier into truth.
 
 \section{Related Work}
 Retrieval-augmented generation combines parametric generation with non-parametric memory and improves knowledge-intensive generation~\cite{lewis2020rag}. GraphRAG aggregates graph-structured evidence for global, query-focused summarisation~\cite{edge2024graphrag}. Self-RAG adds learned retrieval and critique signals~\cite{asai2023selfrag}. ReAct interleaves reasoning traces and actions~\cite{yao2022react}; Reflexion stores verbal feedback across trials~\cite{shinn2023reflexion}.
 
 GrapheneDB differs in scope. It does not propose a new generator or train a retrieval policy. It provides an embedded persistence and control substrate in which evidence ancestry, independent corroboration, contradiction, admissibility, bounded recovery, and durable receipts are first-class runtime objects. General graph and vector databases can serve as upstream or complementary stores; GrapheneDB does not claim their ecosystem maturity, distributed scale, or query-language breadth. Agent checkpointing and conversational memory systems preserve execution state, whereas GrapheneDB focuses on whether remembered or retrieved claims have sufficient evidence grounds for action.
 
-The design is also related to provenance systems, truth-maintenance systems, argumentation, uncertainty estimation, and selective prediction. The current implementation should be understood as a systems synthesis with experimentally tested control mechanisms rather than a formal epistemic logic or verified causal-inference framework.
+The design also draws from temporal data management~\cite{jensen1999temporal}, causal reasoning~\cite{pearl2009causality}, database provenance~\cite{buneman2001provenance,green2007provenance}, truth-maintenance systems~\cite{doyle1979tms}, abstract argumentation~\cite{dung1995argumentation}, and selective classification~\cite{elyaniv2010selective}. The current implementation should be understood as a systems synthesis with experimentally tested control mechanisms rather than a formal epistemic logic or verified causal-inference framework.
 
 \section{Threats to Validity and Non-Claims}
 \begin{itemize}[leftmargin=*]
   \item The intervention benchmark uses controlled graph topologies; repeated signatures do not constitute independent real-world samples.
-  \item The oracle-like scenario construction diagnoses the intended missing-evidence defect. The experiments do not prove that every real critic diagnosis is correct.
-  \item The structural cross-dataset suite tests representation and ordering properties rather than language understanding or answer exact match.
+  \item The scenario construction diagnoses the intended missing-evidence defect. The experiments do not prove that every real critic diagnosis is correct.
+  \item The structural suite tests representation and ordering properties rather than language understanding or answer exact match.
   \item Causal edges are stored reasoning assertions with provenance, not proof of causal identification.
+  \item Configured lineage prevents known dependence from inflating support; it does not automatically discover all hidden dependence.
   \item The Lyapunov-inspired critic reports finite-trajectory practical stability, not global convergence of an open model world.
   \item No claim is made that GrapheneDB is faster or more scalable than mature vector or graph databases.
   \item No claim is made that GrapheneDB independently determines semantic truth.
-  \item Public external baselines, clean multi-platform release evidence, long-duration soak, and production security certification remain future work.
+  \item Public external baselines, statistical generalisation, clean multi-platform release evidence, long-duration soak, and production security certification remain future work.
 \end{itemize}
 
-\section{Reproducibility}
-The repository contains the C++20 implementation, CMake build, tests, intervention harness, structural benchmark, quickstart, installed-package consumer, and an alpha release gate. A release-quality reproduction should record the exact commit, compiler, operating system, complete CTest output, benchmark summaries, package-consumer result, and SHA-256 manifest. The canonical command is:
+\section{Reproducibility and Artifact Availability}
+The repository contains the C++20 implementation, CMake build, tests, intervention harness, structural benchmark, quickstart, installed-package consumer, and an alpha release gate. The canonical release command is:
 \begin{verbatim}
 bash scripts/run_alpha_release_gate.sh
 \end{verbatim}
-The intervention benchmark may be run independently with:
+The controlled intervention benchmark may be run independently with:
 \begin{verbatim}
 bash scripts/run_dialectic_intervention.sh
 \end{verbatim}
-The public-data cross-dataset mode requires network access and dataset-licence review and must remain distinguished from the committed offline structural regression.
+The paper source is built and packaged with:
+\begin{verbatim}
+make -C paper check
+make -C paper arxiv
+\end{verbatim}
+A release-quality reproduction must record the exact commit, compiler, operating system, complete CTest output, benchmark summaries, installed-consumer result, paper build log, and SHA-256 manifest. The public-data structural mode requires network access and dataset-licence review and must remain distinguished from the committed offline regression.
+
+\paragraph{Artifact status.} \artifactstatus. The final arXiv version must cite an immutable public release tag and archival URL rather than a moving private branch.
 
 \section{Conclusion}
 GrapheneDB operationalises a distinction often hidden in agentic systems: retrieving information is not the same as possessing independent and admissible grounds for action. Its lineage-aware FiberBundle, target-scoped epistemic controller, bounded critic, frontier-aware recovery, opposition anchors, and compact receipts form an implemented evidence-control substrate. Controlled experiments show that targeted recursion can recover hidden multi-hop evidence efficiently, while an unchanged completed bundle is an unsafe stopping signal and broad widening can introduce noise. The work supports a public research and developer alpha, but not claims of semantic truth, universal reasoning superiority, or enterprise production readiness.
 
 \section*{Acknowledgements and Tool Disclosure}
-The author used AI-assisted coding and writing tools during implementation, test design, code review, and manuscript preparation. All claims, source selection, experiments, interpretations, and final text remain the responsibility of the human author. AI systems are not authors.
+The author used AI-assisted coding and writing tools during implementation, test design, code review, and manuscript preparation. All claims, source selection, experiments, interpretations, and final text remain the responsibility of the human author. AI systems are not authors. Employer, affiliation, funding, and third-party acknowledgements will be finalised only after the relevant human and legal approvals.
 
 \bibliographystyle{plain}
 \bibliography{references}
