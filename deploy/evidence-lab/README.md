@@ -8,6 +8,7 @@ This deployment keeps ChatGPT Sites as the public user interface and exposes onl
 - dataset archives reject traversal, symlinks, nested archives, executable-like extras, duplicate basenames and excessive expansion ratios;
 - the gateway has no GrapheneDB binary in the production profile;
 - every run creates one restricted Kubernetes Job;
+- the gateway service account is constrained by a `ValidatingAdmissionPolicy`: it may create only the immutable, tokenless GrapheneDB worker shape;
 - the worker has no service-account token;
 - a deny-all NetworkPolicy blocks worker ingress and egress;
 - the worker root filesystem is read-only and all Linux capabilities are dropped;
@@ -18,7 +19,8 @@ This deployment keeps ChatGPT Sites as the public user interface and exposes onl
 
 ## Prerequisites
 
-- Kubernetes 1.27 or newer with Pod Security Admission;
+- Kubernetes 1.30 or newer with Pod Security Admission and `ValidatingAdmissionPolicy` enabled;
+- deployment credentials allowed to create cluster-scoped admission policies and impersonate the gateway service account for the policy self-test;
 - an ingress controller and TLS issuer;
 - a `ReadWriteMany` storage class for the private gateway/worker exchange PVC;
 - a container registry accessible by the cluster;
@@ -55,17 +57,25 @@ Run **Deploy Evidence Lab** manually and provide:
 
 The workflow then:
 
-1. validates all inputs and required secrets;
+1. validates all inputs, secrets and Kubernetes 1.30+;
 2. builds and pushes gateway and exact-source worker images;
-3. renders and preflights the Kubernetes manifest;
-4. creates private-registry and application secrets;
-5. deploys ClamAV and the gateway;
-6. waits for readiness;
-7. runs two samples and one uploaded dataset through live GrapheneDB;
-8. verifies all reproduction-bundle checksums;
-9. saves deployment evidence as a workflow artifact.
+3. resolves gateway, worker and ClamAV image digests;
+4. renders and preflights the Kubernetes resources;
+5. installs the worker Job admission guard;
+6. creates private-registry and application secrets;
+7. proves that the admission guard accepts the exact worker and rejects an arbitrary Job;
+8. deploys ClamAV and the gateway;
+9. waits for readiness;
+10. runs two samples and one uploaded dataset through live GrapheneDB;
+11. verifies all reproduction-bundle checksums;
+12. saves deployment and admission-policy evidence as a workflow artifact.
 
-No deployment is represented as successful unless the public live validation gate passes.
+No deployment is represented as successful unless both markers are produced:
+
+```text
+EVIDENCE_LAB_WORKER_ADMISSION_POLICY=PASS
+EVIDENCE_LAB_LIVE_VALIDATION=PASS
+```
 
 ## Manual image build
 
@@ -79,12 +89,9 @@ docker build \
 docker build \
   -f apps/evidence_lab/worker/Dockerfile \
   -t ghcr.io/rastogivaibhav/graphenedb-evidence-lab-worker:0.2.0 .
-
-docker push ghcr.io/rastogivaibhav/graphenedb-evidence-lab-gateway:0.2.0
-docker push ghcr.io/rastogivaibhav/graphenedb-evidence-lab-worker:0.2.0
 ```
 
-For public launch, preserve immutable image digests in the deployment evidence.
+Push the images, resolve their immutable digests and use only `@sha256:` references for public deployment.
 
 ## Manual deployment configuration
 
@@ -97,11 +104,11 @@ Edit the copy and replace:
 
 - ChatGPT Sites origin;
 - public gateway hostname;
-- worker image tag or digest;
+- immutable worker image digest;
 - exact verified GrapheneDB commit;
 - public release version.
 
-Create the private registry secret:
+Create the namespace and private registry secret:
 
 ```bash
 kubectl create namespace graphenedb-evidence-lab --dry-run=client -o yaml | kubectl apply -f -
@@ -112,8 +119,6 @@ kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
 ```
 
 Do not commit populated secrets.
-
-The ClamAV manifest uses the official stable image tag for initial deployment. Resolve and pin its image digest before the public launch gate.
 
 ## Manual preflight and apply
 
@@ -130,9 +135,20 @@ python scripts/preflight_evidence_lab_deployment.py \
   --site-origin https://YOUR-PUBLISHED-CHATGPT-SITE \
   --expected-commit FULL_40_CHARACTER_COMMIT
 
-kubectl apply --dry-run=client -f /tmp/evidence-lab.yaml
-kubectl apply -f /tmp/evidence-lab.yaml
+kubectl apply --dry-run=client \
+  -f /tmp/evidence-lab.yaml \
+  -f deploy/evidence-lab/kubernetes/cleanup-cronjob.yaml \
+  -f deploy/evidence-lab/kubernetes/worker-admission-policy.yaml
+
+kubectl apply -f deploy/evidence-lab/kubernetes/worker-admission-policy.yaml
+kubectl apply \
+  -f /tmp/evidence-lab.yaml \
+  -f deploy/evidence-lab/kubernetes/cleanup-cronjob.yaml
 kubectl apply -f /tmp/evidence-lab-secrets.yaml
+
+bash scripts/validate_evidence_lab_admission_policy.sh \
+  'ghcr.io/rastogivaibhav/graphenedb-evidence-lab-worker@sha256:FULL_DIGEST'
+
 kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-clamav
 kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gateway
 ```
@@ -140,6 +156,7 @@ kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gatewa
 Check:
 
 ```bash
+kubectl get validatingadmissionpolicy,validatingadmissionpolicybinding
 kubectl -n graphenedb-evidence-lab get pods,job,svc,ingress,networkpolicy
 curl -fsS https://evidence.your-domain.com/v1/public/health | python -m json.tool
 ```
@@ -183,7 +200,8 @@ Before publishing, replace the operator and security-contact placeholders in:
 - provide the Kubernetes cluster, registry, DNS and TLS credentials;
 - verify the storage class is private and supports RWX;
 - pin all image digests, including ClamAV;
+- grant and audit the cluster-scoped admission-policy deployment permission;
 - configure ingress/WAF logs without recording upload content;
 - replace legal/operator placeholders in the Site policies;
 - monitor ClamAV signature freshness;
-- retain the successful validation output and deployment image digests.
+- retain the successful validation output, admission self-test and deployment image digests.
