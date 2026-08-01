@@ -156,6 +156,20 @@ class KubernetesJobBackend(Backend):
             spec=spec,
         )
 
+    @staticmethod
+    def _read_worker_output(output_file: Path, wait_seconds: float = 10.0) -> dict[str, Any]:
+        deadline = time.monotonic() + wait_seconds
+        last_error: Exception | None = None
+        while time.monotonic() < deadline:
+            try:
+                if output_file.is_file() and output_file.stat().st_size > 0:
+                    return json.loads(output_file.read_text("utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                last_error = exc
+            time.sleep(0.1)
+        detail = f": {last_error}" if last_error else ""
+        raise BackendError("isolated worker completed without a readable output contract" + detail)
+
     def run(self, dataset: Dataset, query: Query, policy: PolicyName) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         if policy == PolicyName.previous_stop_reference:
             raise BackendError("previous_stop_reference is recorded-only")
@@ -199,9 +213,7 @@ class KubernetesJobBackend(Backend):
                 time.sleep(0.5)
             else:
                 raise BackendError(f"isolated worker job timed out: {job_name}")
-            if not output_file.exists():
-                raise BackendError("isolated worker completed without an output contract")
-            raw_output = json.loads(output_file.read_text("utf-8"))
+            raw_output = self._read_worker_output(output_file)
             if raw_output.get("error"):
                 raise BackendError(str(raw_output["error"]))
             raw = dict(raw_output["raw"])
