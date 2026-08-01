@@ -86,6 +86,7 @@ data:
   EVIDENCE_LAB_KUBERNETES_PVC: evidence-lab-data
   EVIDENCE_LAB_KUBERNETES_MOUNT_PATH: /var/lib/evidence-lab
   EVIDENCE_LAB_KUBERNETES_SERVICE_ACCOUNT: evidence-lab-worker
+  EVIDENCE_LAB_KUBERNETES_IMAGE_PULL_SECRET: ghcr-pull
   EVIDENCE_LAB_KUBERNETES_DELETE_JOBS: "true"
   EVIDENCE_LAB_WORKER_CPU_REQUEST: 250m
   EVIDENCE_LAB_WORKER_CPU_LIMIT: "1"
@@ -175,6 +176,8 @@ spec:
     spec:
       serviceAccountName: evidence-lab-gateway
       enableServiceLinks: false
+      imagePullSecrets:
+        - name: ghcr-pull
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
