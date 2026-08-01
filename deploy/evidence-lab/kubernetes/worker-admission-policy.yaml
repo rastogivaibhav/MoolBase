@@ -17,7 +17,7 @@ spec:
         'system:serviceaccount:graphenedb-evidence-lab:evidence-lab-gateway'
   validations:
     - expression: >-
-        object.metadata.namespace == 'graphenedb-evidence-lab' &&
+        request.namespace == 'graphenedb-evidence-lab' &&
         object.metadata.labels['app.kubernetes.io/name'] ==
         'graphenedb-evidence-lab-worker' &&
         object.metadata.labels['app.kubernetes.io/component'] == 'worker'
