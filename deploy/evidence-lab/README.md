@@ -5,6 +5,7 @@ This deployment keeps ChatGPT Sites as the public user interface and exposes onl
 ## Security architecture
 
 - uploads are extension, signature, archive, credential and ClamAV scanned before parsing;
+- dataset archives reject traversal, symlinks, nested archives, executable-like extras, duplicate basenames and excessive expansion ratios;
 - the gateway has no GrapheneDB binary in the production profile;
 - every run creates one restricted Kubernetes Job;
 - the worker has no service-account token;
@@ -12,7 +13,8 @@ This deployment keeps ChatGPT Sites as the public user interface and exposes onl
 - the worker root filesystem is read-only and all Linux capabilities are dropped;
 - CPU, memory, ephemeral-storage and wall-clock limits are applied;
 - the job and run directory are deleted after result collection;
-- anonymous sessions expire after one hour and support immediate deletion.
+- anonymous sessions expire after one hour and support immediate deletion;
+- private registry credentials are held in a namespace-scoped image-pull secret.
 
 ## Prerequisites
 
@@ -21,11 +23,51 @@ This deployment keeps ChatGPT Sites as the public user interface and exposes onl
 - a `ReadWriteMany` storage class for the private gateway/worker exchange PVC;
 - a container registry accessible by the cluster;
 - DNS for the public gateway hostname;
-- the final ChatGPT Sites origin URL.
+- the final ChatGPT Sites origin URL;
+- a GHCR credential with `read:packages` for cluster image pulls.
 
-The committed manifest uses `evidence-lab.example.com`; replace it before applying.
+The committed manifest uses `evidence-lab.example.com`; the deployment workflow renders and rejects that placeholder before applying.
 
-## Build images
+## Recommended deployment: guarded GitHub workflow
+
+Configure a protected GitHub environment named:
+
+```text
+evidence-lab-production
+```
+
+Add these environment secrets:
+
+```text
+EVIDENCE_LAB_KUBE_CONFIG_B64
+EVIDENCE_LAB_GHCR_USERNAME
+EVIDENCE_LAB_GHCR_PAT
+```
+
+`EVIDENCE_LAB_KUBE_CONFIG_B64` is a base64-encoded kubeconfig scoped to the target cluster. The GHCR PAT requires package-read access and is used only to create the Kubernetes `ghcr-pull` secret. The workflow's short-lived `GITHUB_TOKEN` pushes the images.
+
+Run **Deploy Evidence Lab** manually and provide:
+
+- public gateway hostname;
+- published ChatGPT Sites HTTPS origin;
+- public release version;
+- exact 40-character GrapheneDB source commit.
+
+The workflow then:
+
+1. validates all inputs and required secrets;
+2. builds and pushes gateway and exact-source worker images;
+3. renders and preflights the Kubernetes manifest;
+4. creates private-registry and application secrets;
+5. deploys ClamAV and the gateway;
+6. waits for readiness;
+7. runs two samples and one uploaded dataset through live GrapheneDB;
+8. verifies all reproduction-bundle checksums;
+9. saves deployment evidence as a workflow artifact.
+
+No deployment is represented as successful unless the public live validation gate passes.
+
+## Manual image build
 
 Run from the repository root:
 
@@ -42,9 +84,9 @@ docker push ghcr.io/rastogivaibhav/graphenedb-evidence-lab-gateway:0.2.0
 docker push ghcr.io/rastogivaibhav/graphenedb-evidence-lab-worker:0.2.0
 ```
 
-For public launch, replace mutable tags with image digests in the deployment evidence.
+For public launch, preserve immutable image digests in the deployment evidence.
 
-## Create deployment configuration
+## Manual deployment configuration
 
 ```bash
 cp deploy/evidence-lab/kubernetes/evidence-lab-secrets.example.yaml \
@@ -59,14 +101,37 @@ Edit the copy and replace:
 - exact verified GrapheneDB commit;
 - public release version.
 
-Do not commit the populated secret.
+Create the private registry secret:
+
+```bash
+kubectl create namespace graphenedb-evidence-lab --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n graphenedb-evidence-lab create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io \
+  --docker-username="$GHCR_USERNAME" \
+  --docker-password="$GHCR_PAT"
+```
+
+Do not commit populated secrets.
 
 The ClamAV manifest uses the official stable image tag for initial deployment. Resolve and pin its image digest before the public launch gate.
 
-## Apply
+## Manual preflight and apply
+
+Render the hostname before applying:
 
 ```bash
-kubectl apply -f deploy/evidence-lab/kubernetes/evidence-lab.yaml
+sed 's/evidence-lab.example.com/evidence.your-domain.com/g' \
+  deploy/evidence-lab/kubernetes/evidence-lab.yaml \
+  > /tmp/evidence-lab.yaml
+
+python scripts/preflight_evidence_lab_deployment.py \
+  /tmp/evidence-lab.yaml \
+  --hostname evidence.your-domain.com \
+  --site-origin https://YOUR-PUBLISHED-CHATGPT-SITE \
+  --expected-commit FULL_40_CHARACTER_COMMIT
+
+kubectl apply --dry-run=client -f /tmp/evidence-lab.yaml
+kubectl apply -f /tmp/evidence-lab.yaml
 kubectl apply -f /tmp/evidence-lab-secrets.yaml
 kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-clamav
 kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gateway
@@ -75,8 +140,8 @@ kubectl -n graphenedb-evidence-lab rollout status deployment/evidence-lab-gatewa
 Check:
 
 ```bash
-kubectl -n graphenedb-evidence-lab get pods,job,svc,ingress
-curl -fsS https://evidence-lab.example.com/v1/public/health | python -m json.tool
+kubectl -n graphenedb-evidence-lab get pods,job,svc,ingress,networkpolicy
+curl -fsS https://evidence.your-domain.com/v1/public/health | python -m json.tool
 ```
 
 ## Run the public live gate
@@ -84,8 +149,8 @@ curl -fsS https://evidence-lab.example.com/v1/public/health | python -m json.too
 ```bash
 python -m pip install 'httpx>=0.27,<1'
 python scripts/validate_evidence_lab_public.py \
-  https://evidence-lab.example.com \
-  --expected-commit "$(git rev-parse HEAD)"
+  https://evidence.your-domain.com \
+  --expected-commit FULL_40_CHARACTER_COMMIT
 ```
 
 A release is not valid unless the command executes:
@@ -98,7 +163,7 @@ A release is not valid unless the command executes:
 
 ## Connect ChatGPT Sites
 
-Set the Site's server-side backend base URL to the gateway HTTPS origin. The browser must never receive a permanent gateway token. Add the published Site origin to `EVIDENCE_LAB_ALLOWED_ORIGINS` and the gateway hostname to `EVIDENCE_LAB_ALLOWED_HOSTS`.
+Set the Site's backend base URL to the gateway HTTPS origin. The browser must never receive a permanent gateway token. Add the published Site origin to `EVIDENCE_LAB_ALLOWED_ORIGINS` and the gateway hostname to `EVIDENCE_LAB_ALLOWED_HOSTS`.
 
 The reference static frontend reads:
 
@@ -106,14 +171,19 @@ The reference static frontend reads:
 window.GRAPHENEDB_EVIDENCE_LAB_API
 ```
 
-Use the same public API contract from ChatGPT Sites.
+Use the same public API contract from ChatGPT Sites. `apps/evidence_lab/site/config.example.js` is a deployment template.
+
+Before publishing, replace the operator and security-contact placeholders in:
+
+- `apps/evidence_lab/site/privacy.html`;
+- `apps/evidence_lab/site/security.html`.
 
 ## Remaining operator responsibilities
 
 - provide the Kubernetes cluster, registry, DNS and TLS credentials;
 - verify the storage class is private and supports RWX;
-- pin all image digests;
+- pin all image digests, including ClamAV;
 - configure ingress/WAF logs without recording upload content;
-- publish privacy, retention and prohibited-data notices;
+- replace legal/operator placeholders in the Site policies;
 - monitor ClamAV signature freshness;
 - retain the successful validation output and deployment image digests.
