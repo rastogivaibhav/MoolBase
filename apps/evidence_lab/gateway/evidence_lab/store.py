@@ -54,6 +54,11 @@ class FileStore:
             raise StoreError("session expired")
         return directory
 
+    @staticmethod
+    def _validate_dataset_id(dataset_id: str) -> None:
+        if not dataset_id.startswith("dat_") or "/" in dataset_id or ".." in dataset_id:
+            raise StoreError("invalid dataset id")
+
     def save_dataset(self, session_id: str, dataset: Dataset, source_files: dict[str, bytes]) -> str:
         with self._lock:
             session_dir = self._session_dir(session_id)
@@ -62,6 +67,8 @@ class FileStore:
             (directory / "source").mkdir(parents=True)
             for filename, data in source_files.items():
                 safe_name = Path(filename).name
+                if safe_name != filename:
+                    raise StoreError("unsafe source filename")
                 (directory / "source" / safe_name).write_bytes(data)
             (directory / "dataset.json").write_text(
                 json.dumps(dataset.model_dump(mode="json"), indent=2, sort_keys=True),
@@ -71,12 +78,25 @@ class FileStore:
 
     def load_dataset(self, session_id: str, dataset_id: str) -> Dataset:
         session_dir = self._session_dir(session_id)
-        if not dataset_id.startswith("dat_") or "/" in dataset_id or ".." in dataset_id:
-            raise StoreError("invalid dataset id")
+        self._validate_dataset_id(dataset_id)
         path = session_dir / "datasets" / dataset_id / "dataset.json"
         if not path.exists():
             raise StoreError("dataset not found")
         return Dataset.model_validate_json(path.read_text("utf-8"))
+
+    def load_dataset_source_files(self, session_id: str, dataset_id: str) -> dict[str, bytes]:
+        session_dir = self._session_dir(session_id)
+        self._validate_dataset_id(dataset_id)
+        source_dir = session_dir / "datasets" / dataset_id / "source"
+        if not source_dir.is_dir():
+            raise StoreError("dataset source files not found")
+        output: dict[str, bytes] = {}
+        for path in sorted(source_dir.iterdir()):
+            if path.is_file() and path.name == Path(path.name).name:
+                output[path.name] = path.read_bytes()
+        if not output:
+            raise StoreError("dataset source files not found")
+        return output
 
     def save_run(self, session_id: str, result: PublicRunResult, bundle: bytes) -> None:
         with self._lock:
@@ -107,6 +127,8 @@ class FileStore:
 
     def delete_session(self, session_id: str) -> None:
         with self._lock:
+            if not session_id.startswith("ses_") or "/" in session_id or ".." in session_id:
+                raise StoreError("invalid session id")
             directory = self.root / "sessions" / session_id
             shutil.rmtree(directory, ignore_errors=True)
 
