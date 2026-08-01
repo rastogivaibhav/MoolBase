@@ -2,26 +2,29 @@
 
 ## Scope
 
-This protocol reproduces the implementation and controlled evidence reported in `paper/main.tex`. It does not reproduce future external semantic baselines, production soak, enterprise security certification or global convergence claims because the paper does not make those claims.
+This protocol reproduces the implementation and controlled evidence reported in `main.tex`. It does not reproduce future semantic baselines, production soak, enterprise security certification, global convergence, million-node model-world claims, or implementation-outcome learning because the paper does not make those claims.
 
-## Frozen source
+## Frozen source identifiers
 
-Before submission, replace the placeholder below with the immutable public tag and commit:
+Before submission, replace all placeholders in `arxiv_metadata.json`, `ARTIFACT_MANIFEST.md`, and `main.tex` with:
 
 ```text
-release_tag: TO_BE_CREATED_AFTER_PUBLIC_LICENSE_AND_FINAL_GATE
-source_commit: TO_BE_RECORDED
+release_tag: PENDING IMMUTABLE PUBLIC TAG
+source_commit: PENDING EXACT COMMIT
+archive_url: PENDING PUBLIC ARCHIVAL URL
+software_doi: PENDING OR NOT AVAILABLE
 ```
 
-The arXiv version must cite an immutable tag, not a moving branch.
+The paper must cite an immutable release, not a moving branch.
 
 ## Minimum environment
 
 - Linux x86-64 is the release-blocking reference platform.
 - CMake 3.16 or newer.
-- C++20 compiler.
+- A C++20 compiler.
 - Python 3.
 - Git.
+- `pdflatex`, `bibtex`, `latexmk`, and `chktex` for the paper gate.
 - At least 4 GB free disk for build and reports.
 
 Record:
@@ -31,7 +34,10 @@ uname -a
 cmake --version
 c++ --version
 python3 --version
+pdflatex --version | head -n 1
+latexmk -v | head -n 2
 git rev-parse HEAD
+git status --short
 ```
 
 ## Full alpha gate
@@ -51,17 +57,7 @@ Expected terminal marker:
 alpha_release_gate=PASS
 ```
 
-The gate performs:
-
-1. exact-head CMake configuration;
-2. build of all configured targets;
-3. complete CTest suite;
-4. installed CMake package and unrelated consumer test;
-5. dialectic intervention benchmark;
-6. offline cross-dataset structural gate;
-7. manifest and SHA-256 generation.
-
-Preserve `reports/alpha-release-gate/` as the release evidence bundle.
+The gate is expected to perform exact-head CMake configuration, build, complete CTest, installed-package consumer verification, the intervention benchmark, the offline structural gate, and artifact manifest/checksum generation. Preserve the resulting release-evidence directory unchanged.
 
 ## Controlled intervention benchmark
 
@@ -71,10 +67,10 @@ bash scripts/run_dialectic_intervention.sh
 
 Frozen expectations:
 
-- 700 deterministic executions;
+- 700 deterministic executions: seven families, five policies, twenty signature variants;
 - frontier-aware targeted policy solves all controlled hard families;
 - previous completed-bundle stop exposes deeper-chain failures;
-- targeted recovery visits fewer states than forced broad retrieval;
+- targeted recovery visits fewer states than broad retrieval;
 - broad retrieval fails the controlled noise trap;
 - frontier-aware targeted recovery passes the noise trap.
 
@@ -88,7 +84,7 @@ Expected hard-family aggregate:
 | forced broad | 83.3% | 3.00 | 34.00 |
 | frontier-aware targeted | 100.0% | 3.00 | 16.00 |
 
-A differing value is not automatically a failure if compiler/platform floating-point behaviour explains a non-material presentation difference, but all frozen Boolean gates must pass.
+The topology-preserving variants are repeated deterministic mechanism tests, not independent natural-language samples. A differing presentation value is not automatically a failure when platform floating-point formatting explains it, but every frozen Boolean gate must pass.
 
 ## Offline structural benchmark
 
@@ -96,20 +92,20 @@ A differing value is not automatically a failure if compiler/platform floating-p
 bash scripts/run_cross_dataset_local.sh offline
 ```
 
-This validates representation and controller properties over committed evidence structures. It does **not** validate generated answers or public dataset accuracy.
+This validates representation and controller properties over committed evidence structures. It does **not** validate generated answers or public-dataset accuracy.
 
-## Optional public-data run
+## Optional public-data mode
 
-After dataset licence and network checks:
+After dataset licence, network, version, sample-manifest, and seed checks:
 
 ```bash
 GRAPHENEDB_CROSS_DATASET_MODE=public \
   bash scripts/run_alpha_release_gate.sh
 ```
 
-Report public-data results separately. Do not merge them with the offline structural claims unless the dataset versions, sample manifest, seed and preparation script are preserved.
+Report public-data results separately. Do not merge them into the offline structural claim unless preparation scripts and exact samples are frozen and independently reviewable.
 
-## Package consumer
+## Installed-package consumer
 
 ```bash
 bash scripts/verify_developer_install.sh
@@ -117,43 +113,70 @@ bash scripts/verify_developer_install.sh
 
 The test must install GrapheneDB to an isolated prefix, configure an unrelated CMake project with `find_package(GrapheneDB CONFIG REQUIRED)`, link `GrapheneDB::graphenedb`, and execute the consumer.
 
-## Paper build
-
-Required tools: `pdflatex` and `bibtex`.
+## Paper build and source validation
 
 ```bash
-cd paper
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
-bibtex main
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
-pdflatex -interaction=nonstopmode -halt-on-error main.tex
+make -C paper check
 ```
 
-The source archive submitted to arXiv should contain only the paper source and necessary figures/bibliography, not build directories or database artifacts.
+This runs metadata/citation validation, compiles the manuscript with `latexmk`, and performs a non-blocking `chktex` pass.
+
+After replacing all human/release placeholders:
+
+```bash
+python3 scripts/check_arxiv_package.py --paper-dir paper --strict
+```
+
+The strict gate fails if submission placeholders remain.
+
+## arXiv source package
+
+```bash
+make -C paper arxiv
+```
+
+Expected outputs:
+
+```text
+paper/build/arxiv/graphenedb-arxiv-source.tar.gz
+paper/build/arxiv/graphenedb-arxiv-source.sha256
+```
+
+Inspect the archive before upload:
+
+```bash
+tar -tzf paper/build/arxiv/graphenedb-arxiv-source.tar.gz
+sha256sum -c paper/build/arxiv/graphenedb-arxiv-source.sha256
+```
+
+The archive intentionally contains the `.bib` and generated `.bbl`, plus only the TeX source and a manifest required for transparent compilation. It excludes the full repository and all build residue.
 
 ## Independent reproduction report
 
 External validators should record:
 
-- release tag and commit;
-- OS, architecture, compiler and CMake versions;
+- release tag, source commit, and archive checksum;
+- OS, architecture, compiler, CMake, Python, and TeX versions;
 - clean-clone command;
 - alpha-gate result;
 - failed test names and logs, if any;
-- intervention summary;
-- package-consumer result;
+- intervention summary and machine-readable result path;
+- structural gate result;
+- installed-package consumer result;
+- paper build and package result;
 - deviations from the reference environment;
 - whether source was modified.
 
-## Integrity
+## Integrity and identity
 
 Publish alongside the release:
 
 - source archive;
-- install archive for the supported reference platform;
-- `.sha256` file;
-- `.manifest.json` file;
+- supported-platform install archive;
+- SHA-256 files;
+- machine-readable manifest;
 - alpha-gate evidence archive;
-- paper source archive.
+- paper source archive;
+- archival URL/DOI when available.
 
-Checksums provide artifact integrity and inventory, not author identity. Signing should be added when release-signing infrastructure exists.
+Checksums prove byte identity and inventory, not author identity. Signed tags or attestations should be added when release-signing infrastructure exists.
