@@ -255,33 +255,21 @@ class SubprocessGrapheneDBBackend(Backend):
         events: list[dict[str, Any]] = []
         with self._server() as (client, version):
             events.append(_event("worker_started", "Disposable GrapheneDB server became healthy.", version=version))
-            node_request = {
+            # External IDs in the pilot extraction API are resolved atomically within
+            # one extraction request. Keep the public per-edge source/family/derivation
+            # lineage in relation metadata while committing the complete canonical graph
+            # as one disposable dataset transaction.
+            extraction_request = {
                 "schema_version": 1,
-                "source_id": f"{dataset.manifest.dataset_id}:nodes",
+                "source_id": f"evidence-lab:{dataset.manifest.dataset_id}",
                 "signature": 33,
                 "nodes": [self._node_payload(node) for node in dataset.nodes],
+                "relations": [self._edge_payload(edge) for edge in dataset.edges],
             }
-            response = client.post("/v1/extractions", json=node_request)
+            response = client.post("/v1/extractions", json=extraction_request)
             if response.status_code not in {200, 201}:
-                raise BackendError(f"node ingestion failed ({response.status_code}): {response.text[:2000]}")
-            events.append(_event("nodes_ingested", f"Ingested {len(dataset.nodes)} nodes."))
-
-            edges_by_source: dict[str, list[Any]] = {}
-            for edge in dataset.edges:
-                edges_by_source.setdefault(edge.source_id, []).append(edge)
-            for source_id, edges in sorted(edges_by_source.items()):
-                relation_request = {
-                    "schema_version": 1,
-                    "source_id": f"{dataset.manifest.dataset_id}:edge-source:{source_id}",
-                    "signature": 33,
-                    "relations": [self._edge_payload(edge) for edge in edges],
-                }
-                response = client.post("/v1/extractions", json=relation_request)
-                if response.status_code not in {200, 201}:
-                    raise BackendError(
-                        f"edge ingestion failed for {source_id} ({response.status_code}): {response.text[:2000]}"
-                    )
-            events.append(_event("edges_ingested", f"Ingested {len(dataset.edges)} edges from {len(edges_by_source)} source groups."))
+                raise BackendError(f"dataset ingestion failed ({response.status_code}): {response.text[:4000]}")
+            events.append(_event("dataset_ingested", f"Atomically ingested {len(dataset.nodes)} nodes and {len(dataset.edges)} edges."))
 
             payload = {
                 "query": query.question,
