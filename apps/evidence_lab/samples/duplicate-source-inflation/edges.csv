@@ -1,0 +1,6 @@
+edge_id,from_node,to_node,relation,role,confidence,critical,source_id,evidence_id,evidence_family_id,derivation_id,evidence_text
+e-primary,primary-report,claim,supports,supports,0.94,true,report-a,report-a-1,incident-report-a,raw,Primary report identifies the timeout change
+e-summary-one,summary-one,claim,supports,supports,0.92,false,summary-1,summary-1,incident-report-a,summary-v1,Derived summary of report A
+e-summary-two,summary-two,claim,supports,supports,0.91,false,summary-2,summary-2,incident-report-a,summary-v2,Second derived summary of report A
+e-independent,independent-metric,claim,supports,supports,0.89,true,metric-b,metric-b-1,pool-metrics-b,raw,Independent pool metric corroborates the mechanism
+e-contrary,contrary-trace,claim,contradicts,contradicts,0.72,true,trace-c,trace-c-1,upstream-trace-c,raw,Trace indicates an alternative cause for part of the failures

@@ -1,0 +1,9 @@
+{
+  "purpose": "Verify that multiple derivations of one source family do not count as independent corroboration and that opposition remains visible.",
+  "required_properties": [
+    "duplicate derivations are grouped",
+    "independent metric remains separate",
+    "contradiction remains visible"
+  ],
+  "claim_boundary": "The fixture validates lineage mechanics, not the factual truth of the claim."
+}

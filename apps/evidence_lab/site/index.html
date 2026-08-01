@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Run, inspect and reproduce GrapheneDB evidence-control experiments." />
+  <title>GrapheneDB Evidence Lab</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top">GrapheneDB <span>Evidence Lab</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#lab">Lab</a>
+      <a href="#result">Result</a>
+      <a href="#about">About</a>
+    </nav>
+    <div id="backendBadge" class="badge neutral">Connecting…</div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <p class="eyebrow">PUBLIC DEVELOPER ALPHA</p>
+      <h1>Can an agent know when it has enough evidence?</h1>
+      <p class="lede">Inspect the data, run a bounded GrapheneDB experiment, challenge the result and download everything needed to reproduce it.</p>
+      <div class="hero-actions">
+        <a class="button primary" href="#lab">Run the lab</a>
+        <a class="button ghost" href="#about">Understand the boundary</a>
+      </div>
+      <div class="claim-grid">
+        <article><strong>Inspect</strong><span>Raw and normalised evidence</span></article>
+        <article><strong>Execute</strong><span>Live or explicitly recorded mode</span></article>
+        <article><strong>Verify</strong><span>Receipt, graph, hashes and bundle</span></article>
+      </div>
+    </section>
+
+    <section id="lab" class="panel lab-panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">EVIDENCE LAB</p>
+          <h2>Choose a verified sample or upload structured data</h2>
+        </div>
+        <button id="deleteSession" class="button danger small" type="button">Delete my session</button>
+      </div>
+
+      <div class="mode-tabs" role="tablist" aria-label="Dataset mode">
+        <button class="tab active" data-tab="samples" role="tab" aria-selected="true">Verified samples</button>
+        <button class="tab" data-tab="upload" role="tab" aria-selected="false">Upload your data</button>
+      </div>
+
+      <div id="samplesPanel" class="tab-panel active" role="tabpanel">
+        <div id="sampleGrid" class="sample-grid" aria-live="polite"></div>
+      </div>
+
+      <div id="uploadPanel" class="tab-panel" role="tabpanel">
+        <div class="upload-card">
+          <div>
+            <h3>Upload a canonical dataset</h3>
+            <p>Accepted: JSON, NDJSON/JSONL, GrapheneDB dataset ZIP, or a nodes + edges + queries file set.</p>
+            <p class="warning">Do not upload confidential, personal, medical, financial, credential-bearing or unauthorised third-party data.</p>
+          </div>
+          <label class="file-picker">
+            <span>Select files</span>
+            <input id="fileInput" type="file" multiple accept=".json,.ndjson,.jsonl,.zip,.csv,.tsv" />
+          </label>
+          <button id="uploadButton" class="button primary" type="button">Validate upload</button>
+          <pre id="uploadStatus" class="status-box">No upload selected.</pre>
+        </div>
+      </div>
+
+      <div id="datasetInspector" class="inspector hidden">
+        <div class="section-heading compact">
+          <div>
+            <p class="eyebrow">DATASET INSPECTOR</p>
+            <h3 id="datasetTitle">Dataset</h3>
+          </div>
+          <span id="datasetHash" class="hash-chip"></span>
+        </div>
+        <div id="datasetMetrics" class="metrics-grid"></div>
+        <div id="datasetWarnings"></div>
+        <div class="run-controls">
+          <label>Query<select id="querySelect"></select></label>
+          <label>Policy<select id="policySelect">
+            <option value="frontier_aware">Frontier-aware targeted recovery</option>
+            <option value="one_pass">One pass</option>
+            <option value="broad_expansion">Broad expansion</option>
+            <option value="previous_stop_reference">Previous stop — reference only</option>
+          </select></label>
+          <button id="runButton" class="button primary" type="button">Run GrapheneDB</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="panel result-panel hidden">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">RUN RESULT</p>
+          <h2 id="runHeadline">Execution result</h2>
+        </div>
+        <div id="runModeBadge" class="badge neutral">Not run</div>
+      </div>
+      <div class="run-meta">
+        <span id="runId"></span>
+        <span id="engineVersion"></span>
+        <span id="runDatasetHash"></span>
+      </div>
+      <div id="runMetrics" class="metrics-grid"></div>
+
+      <div class="result-layout">
+        <article class="subpanel graph-panel">
+          <div class="subpanel-header"><h3>Evidence graph</h3><span>Click nodes to inspect lineage</span></div>
+          <svg id="graph" viewBox="0 0 960 500" role="img" aria-label="Evidence graph"></svg>
+          <pre id="graphInspector" class="status-box">Select a node or edge.</pre>
+        </article>
+        <article class="subpanel receipt-panel">
+          <div class="subpanel-header"><h3>Compact receipt</h3><span>Content-addressed run record</span></div>
+          <pre id="receipt"></pre>
+        </article>
+      </div>
+
+      <article class="subpanel events-panel">
+        <div class="subpanel-header"><h3>Execution events</h3><span>Real stages, never simulated percentages</span></div>
+        <ol id="events"></ol>
+      </article>
+
+      <div class="result-actions">
+        <button id="downloadBundle" class="button primary" type="button">Download reproducibility bundle</button>
+      </div>
+    </section>
+
+    <section id="about" class="panel about-panel">
+      <p class="eyebrow">CLAIM BOUNDARY</p>
+      <h2>A technical validation instrument, not a truth machine</h2>
+      <div class="about-grid">
+        <article><h3>What it demonstrates</h3><p>Lineage-aware evidence structures, bounded recovery, governed status and reproducible receipts.</p></article>
+        <article><h3>What it does not prove</h3><p>Semantic truth, universal superiority, production security or enterprise-GA readiness.</p></article>
+        <article><h3>How to trust the demo</h3><p>Check the live/recorded banner, exact version, dataset hash, raw result and downloadable bundle.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>GrapheneDB Evidence Lab</span>
+    <span>Experimental developer alpha</span>
+  </footer>
+
+  <script>window.GRAPHENEDB_EVIDENCE_LAB_API = window.GRAPHENEDB_EVIDENCE_LAB_API || "http://127.0.0.1:8080";</script>
+  <script src="app.js"></script>
+</body>
+</html>

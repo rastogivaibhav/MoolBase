@@ -1,0 +1,6 @@
+external_id,text,role,source_id,evidence_family_id,derivation_id,observed_at
+release-change,Release changed connection pool timeout,root,release-log,release-events,raw,2026-07-20T10:00:00Z
+pool-exhausted,Connection pool exhausted,node,pool-metric,pool-capacity,raw,2026-07-20T10:03:00Z
+queue-increased,Database wait queue increased,node,db-metric,database-waits,raw,2026-07-20T10:04:00Z
+checkout-failed,Checkout failures increased,symptom,checkout-metric,checkout-errors,raw,2026-07-20T10:06:00Z
+traffic-spike,Traffic increased in the same window,root,traffic-dashboard,traffic-volume,raw,2026-07-20T10:01:00Z

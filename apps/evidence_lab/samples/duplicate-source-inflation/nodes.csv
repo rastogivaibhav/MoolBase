@@ -1,0 +1,7 @@
+external_id,text,role,source_id,evidence_family_id,derivation_id,observed_at
+claim,Service degradation was caused by a timeout configuration change,symptom,claim,claim,raw,2026-07-20T12:00:00Z
+primary-report,Primary incident report identifies timeout configuration as causal,root,report-a,incident-report-a,raw,2026-07-20T12:10:00Z
+summary-one,Summary one repeats the primary incident report,node,summary-1,incident-report-a,summary-v1,2026-07-20T12:15:00Z
+summary-two,Summary two repeats the primary incident report,node,summary-2,incident-report-a,summary-v2,2026-07-20T12:17:00Z
+independent-metric,Independent pool metric shows exhaustion after the timeout change,root,metric-b,pool-metrics-b,raw,2026-07-20T12:05:00Z
+contrary-trace,A trace attributes a subset of failures to upstream throttling,root,trace-c,upstream-trace-c,raw,2026-07-20T12:06:00Z

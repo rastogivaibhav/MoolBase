@@ -1,0 +1,6 @@
+edge_id,from_node,to_node,relation,role,confidence,critical,source_id,evidence_id,evidence_family_id,derivation_id,evidence_text
+e-release-pool,release-change,pool-exhausted,causes,mechanistic,0.97,true,release-log,release-log-1,release-events,raw,Timeout configuration changed immediately before pool exhaustion
+e-pool-checkout,pool-exhausted,checkout-failed,causes,causal,0.96,true,heap-profile,heap-profile-1,pool-capacity,raw,Pool exhaustion preceded checkout failure growth
+e-release-queue,release-change,queue-increased,causes,mechanistic,0.92,true,config-diff,config-diff-1,database-waits,raw,Database wait configuration changed in the release
+e-queue-checkout,queue-increased,checkout-failed,supports,supports,0.90,true,database-metrics,database-metrics-1,database-waits,raw,Wait queue growth aligned with checkout failures
+e-traffic-checkout,traffic-spike,checkout-failed,alternative,predictive,0.55,false,traffic-dashboard,traffic-dashboard-1,traffic-volume,raw,Traffic increased in the same period

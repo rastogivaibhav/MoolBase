@@ -1,0 +1,8 @@
+[
+  {
+    "query_id": "why-checkout",
+    "question": "Why did checkout failures increase?",
+    "target_node": "checkout-failed",
+    "mode": "empirical"
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "query_id": "is-timeout-causal",
+    "question": "Is the timeout configuration change sufficiently supported as the cause?",
+    "target_node": "claim",
+    "mode": "empirical"
+  }
+]

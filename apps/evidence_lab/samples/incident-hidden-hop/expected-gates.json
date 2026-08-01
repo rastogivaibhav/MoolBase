@@ -1,0 +1,8 @@
+{
+  "purpose": "Exercise missing-hop diagnosis and bounded frontier-aware recovery.",
+  "recorded_reference": {
+    "one_pass_status": "evidence_required",
+    "frontier_aware_status": "provisionally_resolved"
+  },
+  "claim_boundary": "Expected gates are controlled fixture expectations, not semantic-truth labels."
+}

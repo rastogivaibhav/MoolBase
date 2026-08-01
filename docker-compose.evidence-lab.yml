@@ -1,0 +1,38 @@
+services:
+  gateway:
+    build:
+      context: ./apps/evidence_lab/gateway
+    environment:
+      EVIDENCE_LAB_BACKEND: recorded
+      EVIDENCE_LAB_SAMPLES_DIR: /samples
+      EVIDENCE_LAB_DATA_DIR: /data
+      EVIDENCE_LAB_ALLOWED_ORIGINS: http://localhost:8088
+    volumes:
+      - ./apps/evidence_lab/samples:/samples:ro
+      - evidence-lab-data:/data
+    ports:
+      - "8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  site:
+    image: python:3.12-alpine
+    working_dir: /site
+    command: ["python", "-m", "http.server", "8088", "--bind", "0.0.0.0"]
+    volumes:
+      - ./apps/evidence_lab/site:/site:ro
+    ports:
+      - "8088:8088"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  evidence-lab-data:

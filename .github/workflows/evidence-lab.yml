@@ -1,0 +1,42 @@
+name: Evidence Lab MVP
+
+on:
+  pull_request:
+    paths:
+      - "apps/evidence_lab/**"
+      - "docker-compose.evidence-lab.yml"
+      - "scripts/run_evidence_lab_local.sh"
+      - ".github/workflows/evidence-lab.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gateway-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install gateway
+        working-directory: apps/evidence_lab/gateway
+        run: pip install -e '.[test]'
+      - name: Run tests
+        working-directory: apps/evidence_lab/gateway
+        env:
+          EVIDENCE_LAB_BACKEND: recorded
+          EVIDENCE_LAB_SAMPLES_DIR: ../samples
+          EVIDENCE_LAB_DATA_DIR: /tmp/graphenedb-evidence-lab-ci
+        run: pytest
+      - name: Validate sample checksums
+        run: |
+          set -euo pipefail
+          for sample in apps/evidence_lab/samples/*; do
+            (cd "$sample" && sha256sum -c SHA256SUMS)
+          done
+      - name: Validate static site syntax
+        run: |
+          python -m py_compile apps/evidence_lab/gateway/evidence_lab/*.py
+          node --check apps/evidence_lab/site/app.js
