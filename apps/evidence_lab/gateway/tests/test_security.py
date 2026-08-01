@@ -39,6 +39,25 @@ def test_nested_archive_is_rejected() -> None:
         scan_uploads({"dataset.zip": archive({"nested.zip": b"PK\x03\x04"})})
 
 
+def test_executable_archive_member_is_rejected() -> None:
+    with pytest.raises(UploadSecurityError):
+        scan_uploads({"dataset.zip": archive({"run.sh": "#!/bin/sh\necho unsafe\n"})})
+
+
+def test_duplicate_archive_basename_is_rejected() -> None:
+    with pytest.raises(UploadSecurityError):
+        scan_uploads(
+            {
+                "dataset.zip": archive(
+                    {
+                        "one/manifest.json": "{}",
+                        "two/manifest.json": "{}",
+                    }
+                )
+            }
+        )
+
+
 def test_credential_like_material_is_rejected() -> None:
     with pytest.raises(UploadSecurityError):
         scan_uploads(
