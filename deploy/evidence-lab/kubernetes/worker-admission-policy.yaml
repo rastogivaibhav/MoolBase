@@ -20,14 +20,36 @@ spec:
         request.namespace == 'graphenedb-evidence-lab' &&
         object.metadata.labels['app.kubernetes.io/name'] ==
         'graphenedb-evidence-lab-worker' &&
-        object.metadata.labels['app.kubernetes.io/component'] == 'worker'
-      message: The Evidence Lab gateway may create only labelled worker Jobs in its own namespace.
+        object.metadata.labels['app.kubernetes.io/component'] == 'worker' &&
+        object.spec.template.metadata.labels['app.kubernetes.io/name'] ==
+        'graphenedb-evidence-lab-worker' &&
+        object.spec.template.metadata.labels['app.kubernetes.io/component'] == 'worker'
+      message: The gateway may create only labelled worker Jobs whose pods remain covered by the worker NetworkPolicy.
     - expression: >-
         object.spec.template.spec.serviceAccountName == 'evidence-lab-worker' &&
         object.spec.template.spec.automountServiceAccountToken == false &&
         object.spec.template.spec.restartPolicy == 'Never' &&
-        object.spec.template.spec.enableServiceLinks == false
-      message: Worker Jobs must use the tokenless evidence-lab-worker service account.
+        object.spec.template.spec.enableServiceLinks == false &&
+        object.spec.template.spec.securityContext.runAsNonRoot == true &&
+        object.spec.template.spec.securityContext.runAsUser == 10001 &&
+        object.spec.template.spec.securityContext.runAsGroup == 10001 &&
+        object.spec.template.spec.securityContext.fsGroup == 10001 &&
+        object.spec.template.spec.securityContext.seccompProfile.type == 'RuntimeDefault'
+      message: Worker Jobs must use the tokenless worker service account and restricted pod security context.
+    - expression: >-
+        (!has(object.spec.template.spec.initContainers) ||
+          size(object.spec.template.spec.initContainers) == 0) &&
+        (!has(object.spec.template.spec.ephemeralContainers) ||
+          size(object.spec.template.spec.ephemeralContainers) == 0) &&
+        (!has(object.spec.template.spec.hostNetwork) ||
+          object.spec.template.spec.hostNetwork == false) &&
+        (!has(object.spec.template.spec.hostPID) ||
+          object.spec.template.spec.hostPID == false) &&
+        (!has(object.spec.template.spec.hostIPC) ||
+          object.spec.template.spec.hostIPC == false) &&
+        (!has(object.spec.template.spec.shareProcessNamespace) ||
+          object.spec.template.spec.shareProcessNamespace == false)
+      message: Worker Jobs may not add auxiliary containers or host/process namespace access.
     - expression: >-
         size(object.spec.template.spec.containers) == 1 &&
         object.spec.template.spec.containers[0].name == 'worker' &&
@@ -35,10 +57,51 @@ spec:
           '^ghcr\\.io/rastogivaibhav/graphenedb-evidence-lab-worker@sha256:[0-9a-f]{64}$'
         ) &&
         object.spec.template.spec.containers[0].command ==
-          ['python', '-m', 'evidence_lab.worker_entrypoint']
-      message: Worker Jobs must use the immutable GrapheneDB worker image and fixed entrypoint.
+          ['python', '-m', 'evidence_lab.worker_entrypoint'] &&
+        (!has(object.spec.template.spec.containers[0].args) ||
+          size(object.spec.template.spec.containers[0].args) == 0) &&
+        !has(object.spec.template.spec.containers[0].lifecycle) &&
+        !has(object.spec.template.spec.containers[0].livenessProbe) &&
+        !has(object.spec.template.spec.containers[0].readinessProbe) &&
+        !has(object.spec.template.spec.containers[0].startupProbe)
+      message: Worker Jobs must use the immutable image and fixed entrypoint without lifecycle or probe command hooks.
+    - expression: >-
+        size(object.spec.template.spec.containers[0].env) == 9 &&
+        object.spec.template.spec.containers[0].env.all(e,
+          has(e.value) && !has(e.valueFrom)) &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_JOB_INPUT')) == 1 &&
+        object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_JOB_INPUT')[0].value.matches(
+          '^/var/lib/evidence-lab/jobs/evidence-lab-[0-9a-f]{20}/input[.]json$') &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_JOB_OUTPUT')) == 1 &&
+        object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_JOB_OUTPUT')[0].value.matches(
+          '^/var/lib/evidence-lab/jobs/evidence-lab-[0-9a-f]{20}/output[.]json$') &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_BACKEND' && e.value == 'live')) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'GRAPHENEDB_SERVER_BINARY' &&
+          e.value == '/opt/graphenedb/bin/graphenedb_server')) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'GRAPHENEDB_SOURCE_COMMIT' &&
+          e.value.matches('^[0-9a-f]{40}$'))) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'GRAPHENEDB_PUBLIC_VERSION' &&
+          e.value.matches('^[A-Za-z0-9][A-Za-z0-9._+-]{0,79}$'))) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_RUN_TIMEOUT_SECONDS' &&
+          e.value.matches('^[1-9][0-9]{0,2}$'))) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'EVIDENCE_LAB_PUBLIC_MODE' && e.value == 'true')) == 1 &&
+        size(object.spec.template.spec.containers[0].env.filter(e,
+          e.name == 'TMPDIR' && e.value == '/tmp')) == 1
+      message: Worker Jobs may use only the fixed Evidence Lab environment contract.
     - expression: >-
         object.spec.template.spec.containers[0].securityContext.runAsNonRoot == true &&
+        object.spec.template.spec.containers[0].securityContext.runAsUser == 10001 &&
+        object.spec.template.spec.containers[0].securityContext.runAsGroup == 10001 &&
         object.spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation == false &&
         object.spec.template.spec.containers[0].securityContext.privileged == false &&
         object.spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem == true &&
@@ -46,17 +109,35 @@ spec:
         object.spec.template.spec.containers[0].securityContext.seccompProfile.type == 'RuntimeDefault'
       message: Worker containers must retain the restricted security context.
     - expression: >-
-        (!has(object.spec.template.spec.hostNetwork) || object.spec.template.spec.hostNetwork == false) &&
-        (!has(object.spec.template.spec.hostPID) || object.spec.template.spec.hostPID == false) &&
-        (!has(object.spec.template.spec.hostIPC) || object.spec.template.spec.hostIPC == false) &&
         size(object.spec.template.spec.volumes) == 2 &&
         object.spec.template.spec.volumes.exists(v,
           v.name == 'evidence-lab-data' &&
           has(v.persistentVolumeClaim) &&
-          v.persistentVolumeClaim.claimName == 'evidence-lab-data') &&
+          v.persistentVolumeClaim.claimName == 'evidence-lab-data' &&
+          (!has(v.persistentVolumeClaim.readOnly) ||
+            v.persistentVolumeClaim.readOnly == false)) &&
         object.spec.template.spec.volumes.exists(v,
-          v.name == 'tmp' && has(v.emptyDir))
-      message: Worker Jobs may mount only the private Evidence Lab PVC and bounded temporary storage.
+          v.name == 'tmp' &&
+          has(v.emptyDir) &&
+          v.emptyDir.medium == 'Memory' &&
+          has(v.emptyDir.sizeLimit)) &&
+        size(object.spec.template.spec.containers[0].volumeMounts) == 2 &&
+        object.spec.template.spec.containers[0].volumeMounts.exists(m,
+          m.name == 'evidence-lab-data' &&
+          m.mountPath == '/var/lib/evidence-lab' &&
+          (!has(m.readOnly) || m.readOnly == false)) &&
+        object.spec.template.spec.containers[0].volumeMounts.exists(m,
+          m.name == 'tmp' && m.mountPath == '/tmp')
+      message: Worker Jobs may mount only the private Evidence Lab PVC and memory-backed temporary storage at fixed paths.
+    - expression: >-
+        has(object.spec.template.spec.containers[0].resources.requests) &&
+        has(object.spec.template.spec.containers[0].resources.limits) &&
+        'cpu' in object.spec.template.spec.containers[0].resources.requests &&
+        'memory' in object.spec.template.spec.containers[0].resources.requests &&
+        'cpu' in object.spec.template.spec.containers[0].resources.limits &&
+        'memory' in object.spec.template.spec.containers[0].resources.limits &&
+        'ephemeral-storage' in object.spec.template.spec.containers[0].resources.limits
+      message: Worker Jobs must declare CPU, memory and ephemeral-storage bounds.
     - expression: >-
         object.spec.backoffLimit == 0 &&
         object.spec.activeDeadlineSeconds <= 150 &&
