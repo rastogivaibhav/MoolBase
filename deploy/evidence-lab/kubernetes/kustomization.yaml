@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - evidence-lab.yaml
   - cleanup-cronjob.yaml
+  - worker-admission-policy.yaml
 
 images:
   - name: ghcr.io/rastogivaibhav/graphenedb-evidence-lab-gateway
