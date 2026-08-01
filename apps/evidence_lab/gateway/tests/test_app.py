@@ -12,6 +12,7 @@ os.environ.setdefault(
     str(Path(__file__).resolve().parents[2] / "samples"),
 )
 os.environ.setdefault("EVIDENCE_LAB_DATA_DIR", "/tmp/graphenedb-evidence-lab-tests")
+os.environ.setdefault("EVIDENCE_LAB_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
 
 from fastapi.testclient import TestClient
 
@@ -77,6 +78,7 @@ def test_upload_run_and_bundle() -> None:
     assert response.status_code == 200, response.text
     upload = response.json()
     assert upload["node_count"] == 2
+    assert upload["security"]["passed"] is True
 
     response = client.post(
         "/v1/public/runs",
