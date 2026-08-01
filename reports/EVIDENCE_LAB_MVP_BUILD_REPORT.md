@@ -16,9 +16,23 @@ Status: deployment-ready code; public infrastructure and exact-head live evidenc
 - recorded-reference backend with explicit non-live labelling;
 - live GrapheneDB adapter using atomic `/v1/extractions` and `/v1/reason/runtime`;
 - evidence graph, governed status, metrics, compact receipt and execution events;
-- downloadable reproduction ZIP with SHA-256 inventory;
 - responsive frontend suitable as the ChatGPT Sites reference implementation;
 - public privacy and security templates.
+
+### Reproducibility
+
+Every run bundle now contains:
+
+- the exact original uploaded files or published sample files under `source/`;
+- the exact normalised GrapheneDB dataset;
+- execution configuration, events and raw engine result;
+- public result, evidence graph and compact receipt;
+- worker image reference and exact source commit;
+- executable POSIX gateway replay;
+- PowerShell replay guidance;
+- a SHA-256 inventory covering every bundled file.
+
+The public validator rejects bundles without source inputs, replay scripts, complete checksums or matching run/commit identity. A public Kubernetes run must identify a worker image by immutable `@sha256:` digest.
 
 ### Upload hardening
 
@@ -29,6 +43,7 @@ Status: deployment-ready code; public infrastructure and exact-head live evidenc
 - nested archive rejection;
 - archive member count, member size, uncompressed-size and compression-ratio limits;
 - allowlisted canonical archive filenames and duplicate-basename rejection;
+- executable-like or ambiguous archive extras rejected;
 - credential-pattern scanning for private keys and common cloud/developer tokens;
 - optional or mandatory ClamAV INSTREAM scanning before parsing;
 - duplicate upload filename rejection;
@@ -37,6 +52,7 @@ Status: deployment-ready code; public infrastructure and exact-head live evidenc
 ### Gateway hardening
 
 - public Host and CORS allowlists;
+- approved cross-origin API responses for ChatGPT Sites;
 - Kubernetes health-probe compatibility without disabling public Host validation;
 - request identifiers;
 - secure response headers and no-store caching;
@@ -51,26 +67,37 @@ Status: deployment-ready code; public infrastructure and exact-head live evidenc
 - minimal environment and private temporary workspace;
 - process group termination and workspace deletion;
 - address-space, CPU, open-file, process-count, output-file and core-dump limits;
+- self-contained worker binary build with missing-link check;
 - Kubernetes one-Job-per-run production backend;
 - no worker service-account token;
 - deny-all worker ingress and egress;
 - non-root, read-only root filesystem, RuntimeDefault seccomp and all capabilities dropped;
 - CPU, memory, ephemeral-storage and wall-clock limits;
 - private image-pull credentials;
-- automatic Job and run-directory deletion.
+- bounded retry for shared-storage output visibility;
+- automatic Job, process and workspace deletion.
+
+### Retention
+
+- anonymous sessions expire after one hour;
+- delete-now removes the session tree immediately;
+- a restricted Kubernetes CronJob independently removes expired sessions every ten minutes;
+- cleanup does not require a Kubernetes API token and uses the same private PVC.
 
 ### Deployment automation
 
 - exact-source gateway and worker Dockerfiles;
-- Kubernetes namespace, restricted Pod Security labels, RBAC, private RWX PVC, ClamAV, gateway Service and TLS Ingress;
+- Kubernetes namespace, restricted Pod Security labels, RBAC, private RWX PVC, ClamAV, gateway Service, TLS Ingress, NetworkPolicy and cleanup CronJob;
 - deployment preflight validator;
 - guarded GitHub Actions deployment workflow;
 - private GHCR pull-secret creation;
+- gateway, worker and ClamAV deployment by immutable image digest;
+- deployment source commit forced to equal the workflow checkout commit;
 - mandatory post-deployment live validation;
 - captured deployment evidence artifact;
 - ChatGPT Sites API connection guide.
 
-## Validation completed before hardening
+## Validation completed before final hardening
 
 Environment:
 
@@ -99,6 +126,8 @@ Passed:
 7. Build of `graphenedb_server` from the available local source snapshot.
 8. Focused upload-security checks for clean structured data, traversal, ZIP Slip, nested archives and credential leakage.
 
+The expanded latest-head tests, exact live integration and container builds are present in CI but have not executed because the GitHub Actions runner fails before checkout.
+
 ## Live integration findings
 
 ### Atomic extraction contract
@@ -117,9 +146,9 @@ The only full GrapheneDB source archive available in the local execution environ
 
 That result does not indicate a failure in the current GitHub implementation. It establishes that the old archive cannot be used as evidence for the exact current head.
 
-## Exact-head validation added
+## Exact-head validation and runner status
 
-The branch now contains two independent exact-head gates:
+The branch contains two independent exact-head gates:
 
 ```bash
 bash scripts/run_evidence_lab_live_gate.sh
@@ -134,11 +163,14 @@ Each gate builds `graphenedb_server` from the checked-out branch and requires:
 - `live=true` and `run_mode=live_graphenedb`;
 - receipt confirmation that GrapheneDB executed;
 - exact source-commit identity;
-- three downloadable reproduction bundles;
-- valid SHA-256 inventories;
-- immediate anonymous-session deletion.
+- immutable worker image identity in the public profile;
+- original source inputs inside all three bundles;
+- complete SHA-256 inventories and replay scripts;
+- immediate anonymous-session deletion and inaccessible artifacts afterwards.
 
-No exact-head live PASS is claimed in this report until one of those gates completes successfully.
+GitHub Actions Evidence Lab run `30692296363` failed before checkout. Gateway job `91349043063` recorded no steps; dependent live-integration and container jobs were skipped. An earlier failed run was explicitly retried and again returned zero steps and no log blob. This is a runner/account infrastructure failure, not a failing test assertion or compiler diagnostic.
+
+No exact-head live PASS is claimed until the local gate or a functioning CI runner completes successfully.
 
 ## Public deployment boundary
 
@@ -154,19 +186,20 @@ Deployment requires operator-provided values that cannot be invented or embedded
 - private RWX storage class;
 - operator legal name and security contact for the policy pages.
 
-The guarded deployment workflow refuses placeholders, builds immutable commit-tagged images, deploys the hardened profile and runs the public live gate before it can be treated as successful.
+The guarded deployment workflow refuses placeholders, builds immutable images, deploys the hardened profile and runs the public live gate before it can be treated as successful.
 
 ## Remaining release gates
 
-1. Obtain one green exact-head live integration run.
-2. Review the new security and session-isolation test results from the exact branch head.
-3. Provision the protected production GitHub environment and required secrets.
-4. Pin gateway, worker and ClamAV image digests.
-5. Confirm private RWX storage and restricted Pod Security support on the target cluster.
-6. Replace public privacy/security placeholders.
-7. Run the guarded deployment workflow with the real hostname and ChatGPT Sites origin.
-8. Preserve the successful live-validation output, image digests and deployment evidence artifact.
-9. Connect ChatGPT Sites to the validated HTTPS gateway and test from a logged-out external browser.
+1. Restore GitHub Actions execution or run the exact-head live gate on an approved Linux host.
+2. Obtain one green latest-head gateway/security test run, container build and exact live integration.
+3. Provision the protected `evidence-lab-production` GitHub environment and required secrets.
+4. Confirm private RWX storage, restricted Pod Security, ingress and TLS support on the target cluster.
+5. Replace public privacy/security operator placeholders.
+6. Run the guarded deployment workflow with the real hostname and ChatGPT Sites origin.
+7. Preserve successful live-validation output, image digests and deployment evidence.
+8. Connect ChatGPT Sites to the validated HTTPS gateway and test from a logged-out external browser.
+
+These external gates are tracked in issue #14.
 
 ## Honest claim boundary
 
