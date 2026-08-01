@@ -44,6 +44,11 @@ def test_generated_job_matches_admission_contract(monkeypatch, tmp_path: Path) -
     assert spec["backoff_limit"] == 0
     assert spec["active_deadline_seconds"] <= 150
     assert spec["ttl_seconds_after_finished"] <= 300
+    assert spec["parallelism"] in {None, 1}
+    assert spec["completions"] in {None, 1}
+    assert spec["completion_mode"] in {None, "NonIndexed"}
+    assert spec["suspend"] in {None, False}
+
     assert pod["service_account_name"] == "evidence-lab-worker"
     assert pod["automount_service_account_token"] is False
     assert pod["restart_policy"] == "Never"
@@ -54,6 +59,12 @@ def test_generated_job_matches_admission_contract(monkeypatch, tmp_path: Path) -
     assert pod["host_pid"] in {None, False}
     assert pod["host_ipc"] in {None, False}
     assert pod["share_process_namespace"] in {None, False}
+    assert not pod["node_name"]
+    assert not pod["node_selector"]
+    assert pod["affinity"] is None
+    assert not pod["tolerations"]
+    assert not pod["priority_class_name"]
+    assert not pod["runtime_class_name"]
     assert len(pod["containers"]) == 1
 
     pod_security = pod["security_context"]
@@ -67,6 +78,9 @@ def test_generated_job_matches_admission_contract(monkeypatch, tmp_path: Path) -
     assert worker["image"] == IMMUTABLE_WORKER
     assert worker["command"] == ["python", "-m", "evidence_lab.worker_entrypoint"]
     assert worker["args"] is None
+    assert not worker["env_from"]
+    assert not worker["volume_devices"]
+    assert not worker["ports"]
     assert worker["lifecycle"] is None
     assert worker["liveness_probe"] is None
     assert worker["readiness_probe"] is None
