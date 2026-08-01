@@ -96,7 +96,7 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-        response.headers["Cross-Origin-Resource-Policy"] = "same-site"
+        response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
         response.headers["Cache-Control"] = "no-store"
         return response
 
