@@ -145,6 +145,7 @@ class UploadValidation(BaseModel):
     evidence_family_count: int
     derivation_count: int
     warnings: list[str]
+    security: dict[str, Any] = Field(default_factory=dict)
     executable: bool
 
 
