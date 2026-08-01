@@ -48,8 +48,8 @@ def test_generated_job_matches_admission_contract(monkeypatch, tmp_path: Path) -
     assert pod["automount_service_account_token"] is False
     assert pod["restart_policy"] == "Never"
     assert pod["enable_service_links"] is False
-    assert pod["init_containers"] in {None, ()}
-    assert pod["ephemeral_containers"] in {None, ()}
+    assert not pod["init_containers"]
+    assert not pod["ephemeral_containers"]
     assert pod["host_network"] in {None, False}
     assert pod["host_pid"] in {None, False}
     assert pod["host_ipc"] in {None, False}
