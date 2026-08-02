@@ -49,8 +49,9 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
 
     compiler = args.compiler or shutil.which("g++") or shutil.which("clang++") or ""
-    source_commit = command_output(["git", "-C", str(repo), "rev-parse", "HEAD"])
-    dirty = command_output(["git", "-C", str(repo), "status", "--porcelain"])
+    source_override = os.getenv("GRAPHENEDB_SOURCE_COMMIT_OVERRIDE", "").strip()
+    source_commit = source_override or command_output(["git", "-C", str(repo), "rev-parse", "HEAD"])
+    dirty = "" if source_override else command_output(["git", "-C", str(repo), "status", "--porcelain"])
 
     inputs: dict[str, dict[str, object]] = {}
     for raw in args.input:
@@ -69,6 +70,7 @@ def main() -> int:
         "claim_boundary": "Evidence-structure and governed-stability diagnostic; not QA exact match or semantic truth generation.",
         "mode": args.mode,
         "source_commit": source_commit,
+        "source_commit_override_used": bool(source_override),
         "working_tree_dirty": bool(dirty),
         "working_tree_changes": dirty.splitlines(),
         "timestamp_utc": command_output([sys.executable, "-c", "import datetime; print(datetime.datetime.now(datetime.timezone.utc).isoformat())"]),
