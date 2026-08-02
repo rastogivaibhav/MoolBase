@@ -1,7 +1,10 @@
 .git
 build*
 reports
+docker-evidence
+paper/build
 *.zip
+*.tar.gz
 __pycache__
 *.pyc
 .DS_Store
