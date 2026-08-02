@@ -1,0 +1,35 @@
+SHELL := /usr/bin/env bash
+DOCKER_HELPER := bash scripts/docker/local_stack.sh
+
+.PHONY: docker-help docker-build docker-up docker-smoke docker-proof-smoke \
+        docker-proof-full docker-proof-security docker-proof-public docker-down docker-clean
+
+docker-help:
+	@$(DOCKER_HELPER) help
+
+docker-build:
+	@$(DOCKER_HELPER) build
+
+docker-up:
+	@$(DOCKER_HELPER) up
+
+docker-smoke:
+	@$(DOCKER_HELPER) smoke
+
+docker-proof-smoke:
+	@$(DOCKER_HELPER) proof-smoke
+
+docker-proof-full:
+	@$(DOCKER_HELPER) proof-full
+
+docker-proof-security:
+	@$(DOCKER_HELPER) security
+
+docker-proof-public:
+	@$(DOCKER_HELPER) public
+
+docker-down:
+	@$(DOCKER_HELPER) down
+
+docker-clean:
+	@$(DOCKER_HELPER) clean
