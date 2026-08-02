@@ -1,0 +1,66 @@
+name: Docker local proof
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "Dockerfile.proof"
+      - "docker-compose.local.yml"
+      - ".dockerignore"
+      - "scripts/docker/**"
+      - "scripts/validate_docker_local_stack.py"
+      - "scripts/run_alpha_release_gate.sh"
+      - "scripts/run_cross_dataset_local.sh"
+      - "benchmarks/docker_proof/**"
+      - "docs/DOCKER_LOCAL_PROOF.md"
+      - ".github/workflows/docker-local-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker proof structure
+        run: |
+          python3 scripts/validate_docker_security.py .
+          python3 scripts/validate_docker_local_stack.py .
+          bash -n scripts/docker/local_stack.sh
+          bash -n scripts/docker/run_proof_bundle.sh
+          python3 -m py_compile \
+            scripts/docker/create_proof_manifest.py \
+            scripts/docker/remote_runtime_smoke.py
+      - name: Render Compose configuration
+        env:
+          GRAPHENEDB_SOURCE_COMMIT: ${{ github.sha }}
+          LOCAL_UID: 1000
+          LOCAL_GID: 1000
+        run: docker compose -f docker-compose.local.yml config > /tmp/compose.yml
+
+  runtime-api-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run packaged API smoke
+        env:
+          GRAPHENEDB_SOURCE_COMMIT: ${{ github.sha }}
+          LOCAL_UID: 1000
+          LOCAL_GID: 1000
+        run: bash scripts/docker/local_stack.sh smoke
+      - name: Verify evidence checksums
+        run: |
+          find docker-evidence -name checksums.sha256 -print0 \
+            | xargs -0 -I{} sh -c 'cd "$(dirname "{}")" && sha256sum -c checksums.sha256'
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-docker-api-smoke-${{ github.sha }}
+          path: docker-evidence/
+          if-no-files-found: warn
+          retention-days: 30
