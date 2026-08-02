@@ -2,6 +2,7 @@
 # The build base is pinned. The shipped runtime is scratch plus only the
 # dynamic libraries required by the two GrapheneDB executables.
 ARG BUILD_IMAGE=debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
+ARG SOURCE_COMMIT=unknown
 
 FROM ${BUILD_IMAGE} AS build
 RUN apt-get update \
@@ -37,9 +38,11 @@ RUN cmake -S . -B build \
  && chown -R 10001:10001 /runtime/var/lib/graphenedb
 
 FROM scratch
+ARG SOURCE_COMMIT=unknown
 LABEL org.opencontainers.image.title="GrapheneDB Server" \
-      org.opencontainers.image.description="Physical hex-lattice AI memory database server" \
-      org.opencontainers.image.licenses="Apache-2.0"
+      org.opencontainers.image.description="Embedded evidence and epistemic-control database server" \
+      org.opencontainers.image.licenses="NOASSERTION" \
+      org.opencontainers.image.revision="${SOURCE_COMMIT}"
 COPY --from=build /runtime/ /
 USER 10001:10001
 WORKDIR /var/lib/graphenedb
