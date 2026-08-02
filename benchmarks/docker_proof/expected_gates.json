@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "controlled_intervention": {
+    "total_runs": 700,
+    "frontier_aware_accuracy_min": 1.0,
+    "frontier_aware_mean_visited_max": 16.0,
+    "broad_accuracy_expected": 0.8333333333333334,
+    "broad_mean_visited_min": 34.0,
+    "all_gates_pass": true
+  },
+  "critical_ctest": {
+    "failures": 0,
+    "errors": 0
+  },
+  "api_smoke": {
+    "minimum_evidence_edges": 2,
+    "deterministic_repeat": true,
+    "no_silent_promotion": true
+  },
+  "claim_boundary": "These are controlled mechanism and reproducibility gates, not semantic truth, universal reasoning accuracy, causal identification, global convergence or production readiness."
+}
