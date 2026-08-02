@@ -22,13 +22,21 @@ done
 rm -rf "${BUILD_DIR}" "${REPORT_DIR}"
 mkdir -p "${BUILD_DIR}" "${REPORT_DIR}"
 
-SOURCE_COMMIT="$(git -C "${ROOT_DIR}" rev-parse HEAD)"
+SOURCE_COMMIT="${GRAPHENEDB_SOURCE_COMMIT_OVERRIDE:-}"
+if [[ -z "${SOURCE_COMMIT}" ]]; then
+  SOURCE_COMMIT="$(git -C "${ROOT_DIR}" rev-parse HEAD)"
+fi
+if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-fA-F]{40}$ && "${SOURCE_COMMIT}" != "unknown" ]]; then
+  echo "error: source commit override must be a 40-character Git SHA or 'unknown'" >&2
+  exit 4
+fi
 printf '%s\n' "${SOURCE_COMMIT}" > "${REPORT_DIR}/source_commit.txt"
 {
   echo "cmake=$(cmake --version | head -n 1)"
   echo "compiler=$(c++ --version | head -n 1)"
   echo "python=$(python3 --version 2>&1)"
   echo "platform=$(uname -a 2>/dev/null || echo unknown)"
+  echo "source_commit_override=${GRAPHENEDB_SOURCE_COMMIT_OVERRIDE:-}"
 } > "${REPORT_DIR}/environment.txt"
 
 printf '\n[1/7] Configure exact-head release build\n'
@@ -61,7 +69,10 @@ DIALECTIC_INTERVENTION_REPORT_DIR="${REPORT_DIR}/dialectic-intervention" \
   2>&1 | tee "${REPORT_DIR}/05-dialectic-intervention.log"
 
 printf '\n[6/7] Run cross-dataset structural gate (%s)\n' "${CROSS_MODE}"
-bash "${ROOT_DIR}/scripts/run_cross_dataset_local.sh" "${CROSS_MODE}" \
+CROSS_DATASET_BUILD_DIR="${BUILD_DIR}/cross-dataset" \
+CROSS_DATASET_REPORT_DIR="${REPORT_DIR}/cross-dataset" \
+GRAPHENEDB_SOURCE_COMMIT_OVERRIDE="${SOURCE_COMMIT}" \
+  bash "${ROOT_DIR}/scripts/run_cross_dataset_local.sh" "${CROSS_MODE}" \
   2>&1 | tee "${REPORT_DIR}/06-cross-dataset.log"
 
 printf '\n[7/7] Write immutable manifest and checksums\n'
