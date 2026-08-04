@@ -41,7 +41,7 @@ FROM scratch
 ARG SOURCE_COMMIT=unknown
 LABEL org.opencontainers.image.title="GrapheneDB Server" \
       org.opencontainers.image.description="Embedded evidence and epistemic-control database server" \
-      org.opencontainers.image.licenses="NOASSERTION" \
+      org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}"
 COPY --from=build /runtime/ /
 USER 10001:10001
