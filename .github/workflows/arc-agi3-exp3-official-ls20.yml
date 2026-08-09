@@ -1,0 +1,73 @@
+name: ARC AGI3 Experiment 3 Official LS20
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/arc-agi3-epistemic-agent-v0
+    paths:
+      - '.github/workflows/arc-agi3-exp3-official-ls20.yml'
+      - 'research/arc_agi3/experiment3/**'
+
+jobs:
+  official-ls20:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      ARC_EPISTEMIC_MODE: full
+      ARC_ALLOW_EARLY_STOP: '0'
+      ARC_MAX_ACTIONS: '80'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Checkout experiment branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install official ARC toolkit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'arc-agi==0.9.9'
+          python - <<'PY'
+          import arc_agi, arcengine
+          print('arc_agi:', getattr(arc_agi, '__version__', 'installed'))
+          print('arcengine:', getattr(arcengine, '__version__', 'installed'))
+          PY
+
+      - name: Verify Experiment 3 payload
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, gzip, hashlib
+          root = Path('research/arc_agi3/experiment3')
+          parts = sorted(root.glob('agent_payload.part*'))
+          assert len(parts) == 5, f'expected 5 payload parts, got {len(parts)}'
+          src = gzip.decompress(base64.b64decode(''.join(p.read_text().strip() for p in parts)))
+          sha = hashlib.sha256(src).hexdigest()
+          print('agent sha256:', sha)
+          assert sha == '91e4d245a43245bed64ac58bc9dd542864233adc828397940d00f2bb560857e4'
+          PY
+
+      - name: Run exact Experiment 3 agent on official local LS20
+        run: python research/arc_agi3/experiment3/run_official_ls20.py
+
+      - name: Print official result
+        if: always()
+        run: |
+          echo '--- official_ls20_result.json ---'
+          cat research/arc_agi3/experiment3/official_ls20_result.json || true
+
+      - name: Upload official run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc-agi3-exp3-official-ls20
+          path: |
+            research/arc_agi3/experiment3/official_ls20_result.json
+            recordings/**
+            environment_files/ls20/**
+          if-no-files-found: warn
+          retention-days: 30
