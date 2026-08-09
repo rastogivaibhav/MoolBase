@@ -7,7 +7,11 @@ on:
       - experiment/arc-agi3-epistemic-agent-v0
     paths:
       - '.github/workflows/arc-agi3-exp3-official-ls20.yml'
-      - 'research/arc_agi3/experiment3/**'
+      - 'research/arc_agi3/experiment3/run_official_ls20.py'
+      - 'research/arc_agi3/experiment3/agent_payload.part*'
+
+permissions:
+  contents: write
 
 jobs:
   official-ls20:
@@ -28,6 +32,8 @@ jobs:
           python-version: '3.12'
 
       - name: Install official ARC toolkit
+        id: install
+        continue-on-error: true
         run: |
           python -m pip install --upgrade pip
           python -m pip install 'arc-agi==0.9.9'
@@ -38,6 +44,9 @@ jobs:
           PY
 
       - name: Verify Experiment 3 payload
+        id: verify
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -52,13 +61,48 @@ jobs:
           PY
 
       - name: Run exact Experiment 3 agent on official local LS20
-        run: python research/arc_agi3/experiment3/run_official_ls20.py
+        id: official_run
+        if: steps.install.outcome == 'success' && steps.verify.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python research/arc_agi3/experiment3/run_official_ls20.py 2>&1 | tee research/arc_agi3/experiment3/official_ls20_execution.log
+
+      - name: Write execution status
+        if: always()
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
+          RUN_OUTCOME: ${{ steps.official_run.outcome }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path('research/arc_agi3/experiment3/official_ls20_execution_status.json')
+          payload = {
+              'source_commit': os.getenv('SOURCE_SHA'),
+              'github_run_id': os.getenv('RUN_ID'),
+              'install_outcome': os.getenv('INSTALL_OUTCOME'),
+              'payload_verify_outcome': os.getenv('VERIFY_OUTCOME'),
+              'official_run_outcome': os.getenv('RUN_OUTCOME'),
+              'result_file_present': Path('research/arc_agi3/experiment3/official_ls20_result.json').exists(),
+              'agent_sha256_expected': '91e4d245a43245bed64ac58bc9dd542864233adc828397940d00f2bb560857e4',
+              'toolkit': 'arc-agi==0.9.9',
+              'game': 'ls20',
+          }
+          p.write_text(json.dumps(payload, indent=2, sort_keys=True))
+          print(p.read_text())
+          PY
 
       - name: Print official result
         if: always()
         run: |
           echo '--- official_ls20_result.json ---'
           cat research/arc_agi3/experiment3/official_ls20_result.json || true
+          echo '--- official_ls20_execution.log (tail) ---'
+          tail -n 120 research/arc_agi3/experiment3/official_ls20_execution.log || true
 
       - name: Upload official run evidence
         if: always()
@@ -67,7 +111,24 @@ jobs:
           name: arc-agi3-exp3-official-ls20
           path: |
             research/arc_agi3/experiment3/official_ls20_result.json
+            research/arc_agi3/experiment3/official_ls20_execution_status.json
+            research/arc_agi3/experiment3/official_ls20_execution.log
             recordings/**
             environment_files/ls20/**
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Commit machine-readable result to experiment branch
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add research/arc_agi3/experiment3/official_ls20_execution_status.json
+          git add -f research/arc_agi3/experiment3/official_ls20_result.json 2>/dev/null || true
+          git add -f research/arc_agi3/experiment3/official_ls20_execution.log 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo 'No result changes to commit.'
+          else
+            git commit -m 'Record official ARC-AGI-3 LS20 Experiment 3 run'
+            git push origin HEAD:experiment/arc-agi3-epistemic-agent-v0
+          fi
