@@ -4,7 +4,7 @@ Local validated artifact hashes for the 2026-08-09 Experiment-3 run:
 
 ```text
 arc_agi3_epistemic_agent_exp3_raw_ls20.zip
-57d40a60c6cbc5c999e825b9d5f81714145a0b2edb7d775787a6521583ddf9d3
+c6ad5d8fa656138c26cad763dee5957d35fa8e6d73cfa1f8cd35012aef321c79
 
 agent/my_agent.py
 91e4d245a43245bed64ac58bc9dd542864233adc828397940d00f2bb560857e4
@@ -14,6 +14,9 @@ fddea41a38292190321ab05b7a9ade6a3c3ee451522f51637181c3bca7b204b3
 
 reports/EXPERIMENT_3_RAW_LS20_PROXY_ABLATION.json
 7f24a50b71d27a135912aa8f215ceddc0a2e3d029d18104e7b031fc383e51f2e
+
+README.md
+69561431123dff348b92161c746300295f05769572604aef8289ec8b1b3f0386
 ```
 
 Validation commands:
