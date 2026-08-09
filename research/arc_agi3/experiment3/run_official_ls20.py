@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import gzip
+import hashlib
 import importlib.util
 import json
 import logging
@@ -13,8 +14,9 @@ import arc_agi
 from arcengine import FrameData, GameAction, GameState
 
 ROOT = Path(__file__).resolve().parent
-PAYLOAD = ROOT / "agent_payload.b64"
+PAYLOAD_PARTS = sorted(ROOT.glob("agent_payload.part*"))
 OUT = ROOT / "official_ls20_result.json"
+EXPECTED_AGENT_SHA256 = "91e4d245a43245bed64ac58bc9dd542864233adc828397940d00f2bb560857e4"
 
 
 def install_agent_base_stub() -> None:
@@ -41,7 +43,15 @@ def install_agent_base_stub() -> None:
 
 def load_my_agent():
     install_agent_base_stub()
-    src = gzip.decompress(base64.b64decode(PAYLOAD.read_text().strip()))
+    if not PAYLOAD_PARTS:
+        raise RuntimeError("no Experiment-3 agent payload parts found")
+    payload = "".join(part.read_text().strip() for part in PAYLOAD_PARTS)
+    src = gzip.decompress(base64.b64decode(payload))
+    observed_sha = hashlib.sha256(src).hexdigest()
+    if observed_sha != EXPECTED_AGENT_SHA256:
+        raise RuntimeError(
+            f"Experiment-3 agent SHA mismatch: expected={EXPECTED_AGENT_SHA256} observed={observed_sha}"
+        )
     agent_path = ROOT / "_materialized_my_agent.py"
     agent_path.write_bytes(src)
     spec = importlib.util.spec_from_file_location("experiment3_my_agent", agent_path)
@@ -50,7 +60,7 @@ def load_my_agent():
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
-    return mod.MyAgent
+    return mod.MyAgent, observed_sha
 
 
 def convert(raw) -> FrameData:
@@ -75,11 +85,24 @@ def action_data(action: GameAction) -> dict:
         return {}
 
 
+def available_ids(frame: FrameData) -> list[int]:
+    out = []
+    for value in list(frame.available_actions or []):
+        if isinstance(value, int):
+            out.append(value)
+        elif hasattr(value, "value") and isinstance(value.value, int):
+            out.append(int(value.value))
+        elif hasattr(value, "id"):
+            out.append(int(value.id))
+    return out
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    MyAgent = load_my_agent()
+    MyAgent, agent_sha = load_my_agent()
 
-    # NORMAL downloads the official public LS20 source, then executes it locally.
+    # NORMAL downloads the official public LS20 source and executes it through
+    # LocalEnvironmentWrapper. No LS20 semantic labels are supplied to MyAgent.
     arc = arc_agi.Arcade()
     env = arc.make("ls20", save_recording=True, include_frame_data=True)
     if env is None:
@@ -89,13 +112,13 @@ def main() -> None:
     if raw is None:
         raw = env.reset()
     latest = convert(raw)
-    game_id = latest.game_id or getattr(env.info, "game_id", "ls20")
+    game_id = latest.game_id or env.info.game_id
     agent = MyAgent(game_id=game_id)
     frames: list[FrameData] = [latest]
     trace: list[dict] = []
 
     max_actions = int(getattr(agent, "MAX_ACTIONS", 80))
-    for turn in range(max_actions + 1):
+    for turn in range(max_actions):
         latest = frames[-1]
         if agent.is_done(frames, latest):
             break
@@ -112,6 +135,7 @@ def main() -> None:
         kernel = getattr(agent, "kernel", None)
         top_goal = None
         control = None
+        critic_regime = None
         if kernel is not None:
             try:
                 goals = kernel.top_goal_hypotheses(limit=1)
@@ -132,14 +156,20 @@ def main() -> None:
                 control = status if isinstance(status, str) else getattr(status, "value", repr(status))
             except Exception:
                 pass
+            try:
+                critic = getattr(kernel, "last_critic", None)
+                critic_regime = getattr(getattr(critic, "regime", None), "value", None)
+            except Exception:
+                pass
 
         rec = {
             "turn": turn + 1,
             "action": action.name,
             "state": nxt.state.name,
             "levels_completed": nxt.levels_completed,
-            "available_actions": [int(a) for a in (nxt.available_actions or [])],
+            "available_actions": available_ids(nxt),
             "control_status": control,
+            "critic_regime": critic_regime,
             "top_goal": top_goal,
         }
         trace.append(rec)
@@ -164,6 +194,7 @@ def main() -> None:
     kernel = getattr(agent, "kernel", None)
     summary = {
         "environment": "official ARC-AGI-3 local LS20",
+        "agent_sha256": agent_sha,
         "game_id": game_id,
         "actions": len(trace),
         "levels_completed": frames[-1].levels_completed,
@@ -177,12 +208,30 @@ def main() -> None:
     if kernel is not None:
         try:
             goals = kernel.top_goal_hypotheses(limit=1000)
-            summary["no_silent_goal_promotion"] = all(getattr(g, "origin", None) == "hypothetical" for g in goals)
+            summary["no_silent_goal_promotion"] = all(
+                getattr(g, "origin", None) == "hypothetical" for g in goals
+            )
         except Exception:
             pass
 
     OUT.write_text(json.dumps(summary, indent=2, sort_keys=True, default=str))
-    print("FINAL_RESULT=" + json.dumps({k: summary[k] for k in ["actions", "levels_completed", "state", "win_levels", "no_silent_goal_promotion"]}, sort_keys=True))
+    print(
+        "FINAL_RESULT="
+        + json.dumps(
+            {
+                k: summary[k]
+                for k in [
+                    "actions",
+                    "levels_completed",
+                    "state",
+                    "win_levels",
+                    "no_silent_goal_promotion",
+                    "agent_sha256",
+                ]
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":
