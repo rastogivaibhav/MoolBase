@@ -2,33 +2,29 @@ FROM ubuntu:22.04
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    git \
     cmake \
     g++ \
     make \
     python3 \
     python3-pip \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /work
 
-# Clone GrapheneDB (use master branch)
-RUN git clone https://github.com/rastogivaibhav/graphenedb_v1.git /work && \
-    git checkout master
+# Copy entire GrapheneDB source (already on host)
+COPY . /work/
 
 # Build GrapheneDB
 RUN mkdir -p build && cd build && \
     cmake .. -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && \
-    cd ..
+    make -j$(nproc)
 
-# Install Python dependencies for benchmark
+# Install Python dependencies
 RUN pip3 install numpy
 
-# Create benchmark output directory
+# Create output directory
 RUN mkdir -p benchmarks/locomo/results
 
-# Run benchmark and save results
-ENTRYPOINT ["bash", "-c", "python3 benchmarks/locomo/run_benchmark_simulation.py | tee benchmarks/locomo/results/benchmark_report.txt"]
+# Run benchmark
+ENTRYPOINT ["bash", "-c", "cd /work && python3 benchmarks/locomo/run_benchmark_simulation.py | tee benchmarks/locomo/results/benchmark_report.txt"]
