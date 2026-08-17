@@ -1,0 +1,122 @@
+name: graphenedb-local
+
+x-proof-service: &proof-service
+  build:
+    context: .
+    dockerfile: Dockerfile.proof
+    target: proof
+    args:
+      SOURCE_COMMIT: ${GRAPHENEDB_SOURCE_COMMIT:-unknown}
+      SOURCE_REF: ${GRAPHENEDB_SOURCE_REF:-master}
+  image: graphenedb-proof:${GRAPHENEDB_IMAGE_TAG:-local}
+  user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+  read_only: true
+  tmpfs:
+    - /tmp:size=6g,mode=1777
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 1024
+  mem_limit: ${GRAPHENEDB_PROOF_MEMORY:-8g}
+  cpus: ${GRAPHENEDB_PROOF_CPUS:-4.0}
+  volumes:
+    - ./docker-evidence:/evidence
+
+services:
+  graphenedb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SOURCE_COMMIT: ${GRAPHENEDB_SOURCE_COMMIT:-unknown}
+    image: graphenedb-server:${GRAPHENEDB_IMAGE_TAG:-local}
+    platform: ${GRAPHENEDB_PLATFORM:-linux/amd64}
+    entrypoint:
+      - /usr/local/bin/graphenedb_server
+      - /var/lib/graphenedb
+      - "64"
+      - "8080"
+      - --bind-address
+      - 0.0.0.0
+      - --physical-lattice-primary
+      - --physical-lattice-radius
+      - "600"
+      - --expected-max-nodes
+      - "1000000"
+      - --wal-rotate-bytes
+      - "268435456"
+      - --workers
+      - "4"
+      - --queue-capacity
+      - "256"
+      - --rate-limit-rps
+      - "100"
+      - --rate-limit-burst
+      - "200"
+    environment:
+      GRAPHENEDB_API_KEY: ${GRAPHENEDB_API_KEY:-local-development-key}
+    ports:
+      - "127.0.0.1:${GRAPHENEDB_PORT:-8080}:8080"
+    volumes:
+      - graphenedb-local-data:/var/lib/graphenedb
+    networks:
+      - graphenedb-local
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: ${GRAPHENEDB_SERVER_MEMORY:-2g}
+    cpus: ${GRAPHENEDB_SERVER_CPUS:-2.0}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/graphenedb_healthcheck", "127.0.0.1", "8080"]
+      interval: 5s
+      timeout: 3s
+      start_period: 10s
+      retries: 12
+
+  api-smoke:
+    <<: *proof-service
+    command: ["api-smoke"]
+    environment:
+      GRAPHENEDB_SERVER_URL: http://graphenedb:8080
+      GRAPHENEDB_API_KEY: ${GRAPHENEDB_API_KEY:-local-development-key}
+      GRAPHENEDB_SOURCE_COMMIT: ${GRAPHENEDB_SOURCE_COMMIT:-unknown}
+    networks:
+      - graphenedb-local
+    depends_on:
+      graphenedb:
+        condition: service_healthy
+    profiles: ["smoke"]
+
+  proof-smoke:
+    <<: *proof-service
+    command: ["smoke"]
+    profiles: ["proof"]
+
+  proof-full:
+    <<: *proof-service
+    command: ["full"]
+    profiles: ["proof"]
+
+  proof-security:
+    <<: *proof-service
+    command: ["security"]
+    profiles: ["security"]
+
+  proof-public:
+    <<: *proof-service
+    command: ["public"]
+    profiles: ["public"]
+
+networks:
+  graphenedb-local:
+    driver: bridge
+
+volumes:
+  graphenedb-local-data:

@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.7
+# Reproducible local proof appliance for GrapheneDB.
+ARG TOOLCHAIN_IMAGE=ubuntu:24.04
+
+FROM ${TOOLCHAIN_IMAGE} AS toolchain
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential ca-certificates clang cmake curl file git jq \
+      ninja-build python3 python3-venv tar unzip xz-utils \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /workspace
+COPY . .
+RUN chmod +x \
+      scripts/docker/run_proof_bundle.sh \
+      scripts/docker/local_stack.sh \
+      scripts/run_alpha_release_gate.sh \
+      scripts/run_cross_dataset_local.sh \
+      scripts/run_dialectic_intervention.sh \
+      scripts/run_fuzz_smoke.sh \
+      scripts/run_sanitizers.sh \
+ && chmod -R a+rX /workspace \
+ && mkdir -p /evidence \
+ && chmod 0777 /evidence /tmp
+
+FROM toolchain AS proof
+ARG SOURCE_COMMIT=unknown
+ARG SOURCE_REF=master
+ENV GRAPHENEDB_SOURCE_COMMIT=${SOURCE_COMMIT} \
+    GRAPHENEDB_SOURCE_REF=${SOURCE_REF} \
+    GRAPHENEDB_EVIDENCE_DIR=/evidence \
+    GRAPHENEDB_JOBS=2 \
+    DIALECTIC_INTERVENTION_REPETITIONS=20 \
+    CROSS_DATASET_SEED=20260729 \
+    BABI_PER_TASK=200 \
+    HOTPOT=500 \
+    FEVER_PER_LABEL=200
+VOLUME ["/evidence"]
+ENTRYPOINT ["bash", "scripts/docker/run_proof_bundle.sh"]
+CMD ["smoke"]

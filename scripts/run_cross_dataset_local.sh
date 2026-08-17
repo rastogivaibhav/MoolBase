@@ -8,8 +8,8 @@ case "$MODE" in
 esac
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD="$ROOT/build/cross_dataset_portable"
-REPORTS="$ROOT/reports/cross_dataset/portable"
+BUILD="${CROSS_DATASET_BUILD_DIR:-$ROOT/build/cross_dataset_portable}"
+REPORTS="${CROSS_DATASET_REPORT_DIR:-$ROOT/reports/cross_dataset/portable}"
 EVIDENCE="$REPORTS/evidence"
 CXX="${CXX:-g++}"
 PYTHON="${PYTHON:-python3}"
@@ -70,22 +70,22 @@ else
 fi
 
 INPUTS=(
-  "bench/bench_cross_dataset_epistemic.cpp"
-  "benchmarks/cross_dataset/source_isolated_actual.tsv"
-  "benchmarks/cross_dataset/summarise_cross_dataset.py"
-  "include/graphene/fiber_bundle.hpp"
-  "include/graphene/stability_critic.hpp"
-  "src/fiber_bundle.cpp"
-  "src/stability_critic.cpp"
-  "reports/cross_dataset/portable/source_isolated_results.csv"
-  "reports/cross_dataset/portable/source_isolated_summary.json"
+  "$ROOT/bench/bench_cross_dataset_epistemic.cpp"
+  "$ROOT/benchmarks/cross_dataset/source_isolated_actual.tsv"
+  "$ROOT/benchmarks/cross_dataset/summarise_cross_dataset.py"
+  "$ROOT/include/graphene/fiber_bundle.hpp"
+  "$ROOT/include/graphene/stability_critic.hpp"
+  "$ROOT/src/fiber_bundle.cpp"
+  "$ROOT/src/stability_critic.cpp"
+  "$REPORTS/source_isolated_results.csv"
+  "$REPORTS/source_isolated_summary.json"
 )
 if [[ -f "$PUBLIC_INPUT" ]]; then
   INPUTS+=(
-    "build/cross_dataset_portable/examples.tsv"
-    "build/cross_dataset_portable/examples.manifest.json"
-    "reports/cross_dataset/portable/public_results.csv"
-    "reports/cross_dataset/portable/public_summary.json"
+    "$PUBLIC_INPUT"
+    "$PUBLIC_INPUT.manifest.json"
+    "$REPORTS/public_results.csv"
+    "$REPORTS/public_summary.json"
   )
 fi
 
@@ -100,7 +100,11 @@ echo "[5/6] Capturing environment and immutable evidence"
   --compiler "$(command -v "$CXX")" \
   "${CAPTURE_ARGS[@]}"
 
-git -C "$ROOT" rev-parse HEAD > "$EVIDENCE/source_commit.txt" 2>/dev/null || echo "unknown" > "$EVIDENCE/source_commit.txt"
+SOURCE_COMMIT="${GRAPHENEDB_SOURCE_COMMIT_OVERRIDE:-}"
+if [[ -z "$SOURCE_COMMIT" ]]; then
+  SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
+fi
+printf '%s\n' "$SOURCE_COMMIT" > "$EVIDENCE/source_commit.txt"
 cp "$REPORTS/source_isolated_results.csv" "$REPORTS/source_isolated_summary.json" "$REPORTS/source_isolated_summary.md" "$EVIDENCE/"
 if [[ -f "$REPORTS/public_results.csv" ]]; then
   cp "$REPORTS/public_results.csv" "$REPORTS/public_summary.json" "$REPORTS/public_summary.md" "$EVIDENCE/"
