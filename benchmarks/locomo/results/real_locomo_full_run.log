@@ -1,0 +1,58 @@
+﻿==============================================================================
+REAL LoCoMo Benchmark -- actual graphenedb_cli subprocess calls
+==============================================================================
+CLI binary: /work/build/graphenedb_cli
+Database:   /tmp/real_locomo.db
+Embedding:  hashed bag-of-words, dim=64 (NOT a semantic embedding model -- see caveats in report)
+
+Loaded 10 conversation(s) from /work/benchmarks/locomo-dataset/data/locomo10.json
+  [conv 1/10] messages so far: 419, elapsed: 30.2s
+  [conv 2/10] messages so far: 788, elapsed: 58.2s
+  [conv 3/10] messages so far: 1451, elapsed: 118.2s
+  [conv 4/10] messages so far: 2080, elapsed: 191.9s
+  [conv 5/10] messages so far: 2760, elapsed: 292.0s
+  [conv 6/10] messages so far: 3435, elapsed: 410.9s
+  [conv 7/10] messages so far: 4124, elapsed: 531.1s
+  [conv 8/10] messages so far: 4805, elapsed: 689.4s
+  [conv 9/10] messages so far: 5314, elapsed: 824.5s
+  [conv 10/10] messages so far: 5882, elapsed: 987.2s
+
+Ingestion complete: 5882 messages, 5872 edges, 987.2s
+  Real mean put-node latency: 83.9ms
+  Real mean put-edge latency: 83.9ms
+
+validate: rc=0 output='OK\nvalidation=ok' ''
+inspect (relevant lines):
+  dimension=64
+  nodes_visible=5882
+  edges_visible=5872
+  wal_bytes=8843131
+
+==============================================================================
+Q&A RETRIEVAL TEST (real `search` and `reason` calls against ingested graph)
+==============================================================================
+
+Scored 1977 Q&A pairs (pairs with unmatched/missing evidence were skipped, not counted as hits or misses)
+
+--- search (causal_search) ---
+Real Recall@1: 0.3%  (5/1977)
+Abstain rate:  0.5%  (9/1977)
+Abstain reasons:
+  NO_STABLE_ANCHOR         9
+Mean confidence (non-abstain): 0.747
+Latency (real, ms): mean=126.0 p50=114.3 p95=193.8
+
+--- reason (governed HypoKosh/Dialectic/Lyapunov pipeline) ---
+Real Recall@1: 0.0%  (0/1977)
+Status distribution:
+  evidence_required          1977  (100.0%)
+Latency (real, ms): mean=126.6 p50=116.0 p95=200.9
+
+Note: `reason` requires multiple independent corroborating evidence
+paths before resolving (no_silent_promotion design goal). A linear
+message chain (this ingestion's edge structure) offers only one path
+per node, so a high abstain/evidence_required rate here is an expected
+consequence of the graph topology, not a retrieval failure per se.
+
+Raw per-query records written to: /work/benchmarks/locomo/results/real_locomo_qa_records.json
+Summary written to: /work/benchmarks/locomo/results/real_locomo_summary.json

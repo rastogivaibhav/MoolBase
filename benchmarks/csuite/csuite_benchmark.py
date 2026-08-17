@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Microsoft CSuite Benchmark for GrapheneDB
+*** FABRICATED NUMBERS. DO NOT USE FOR REPORTING. ***
 
-Tests GrapheneDB's ability to:
-1. Store causal graphs (nodes + directed edges)
-2. Recover causal structure from data
-3. Estimate treatment effects (ATE/CATE)
-4. Reason about interventions
+This script hardcodes plausible-looking accuracy/RMSE/latency numbers and
+never downloads real CSuite data, never calls the real graphenedb_cli
+binary, and never touches a real database. It exists only as the
+(retracted) artifact of an earlier mistake in this repo's history -- see
+benchmarks/csuite/CSUITE_RESULTS_REAL.md for the actual, real benchmark
+(real_csuite_benchmark.py), which downloads real CSuite datasets and calls
+the real CLI/database.
 """
 
 import json

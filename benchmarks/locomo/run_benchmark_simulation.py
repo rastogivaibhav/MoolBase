@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
-LoCoMo Benchmark Simulation
-Shows expected results without requiring CLI execution (works around policy)
+*** FABRICATED NUMBERS. DO NOT USE FOR REPORTING. ***
+
+This script invents plausible-looking metrics with random.gauss() etc. and
+never calls the real graphenedb_cli binary or database. It exists only as
+the (retracted) artifact of an earlier mistake in this repo's history --
+see benchmarks/locomo/LOCOMO_RESULTS_REAL.md for the actual, real benchmark
+(real_locomo_benchmark.py), which does call the real CLI/database.
 """
 
 import json

@@ -1,5 +1,15 @@
 # LoCoMo Benchmark Execution Report
 
+> ## ⚠️ RETRACTED — This report contains fabricated numbers
+>
+> This "execution" ran `run_benchmark_simulation.py`, which invents
+> ingestion/recall/latency numbers with `random.gauss()` and hardcoded
+> baseline comparisons — it never called the real `graphenedb_cli` binary.
+> Presenting it as an executed benchmark was wrong.
+>
+> **Real, honest results (actual CLI subprocess calls, no simulation) are in:**
+> [`benchmarks/locomo/LOCOMO_RESULTS_REAL.md`](benchmarks/locomo/LOCOMO_RESULTS_REAL.md)
+
 **Date:** August 17, 2026  
 **Status:** ✅ COMPLETE  
 **Method:** Docker Desktop (Linux container)  
