@@ -37,7 +37,7 @@ static void usage() {
             << "  --json                 emit machine-readable JSON for supported commands\n";
 }
 
-int main(int argc, char** argv) {
+int main_impl(int argc, char** argv) {
   if (argc < 2) { usage(); return 1; }
   std::string cmd = argv[1];
   if (cmd == "init") {
