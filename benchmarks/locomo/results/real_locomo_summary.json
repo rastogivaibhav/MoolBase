@@ -1,0 +1,15 @@
+{
+  "total_messages_ingested": 1451,
+  "total_edges_ingested": 1448,
+  "ingest_elapsed_s": 107.37677121162415,
+  "mean_put_node_latency_ms": 37.10935166751328,
+  "mean_put_edge_latency_ms": 36.857589503019554,
+  "qa_pairs_scored": 494,
+  "search_recall_at_1": 0.0,
+  "search_abstain_rate": 0.0,
+  "reason_recall_at_1": 0.0,
+  "cli_total_calls": 3890,
+  "cli_total_latency_s": 152.2540626525879,
+  "embedding_method": "hashed bag-of-words (feature hashing), NOT a semantic model",
+  "caveat": "This is a real execution against the real CLI/database, no simulated numbers. The embedding is a lightweight lexical-overlap hash, not a trained semantic model, so recall reflects word-overlap retrieval quality, not full semantic understanding. `reason`'s governed pipeline requires multiple independent evidence paths to resolve; this ingestion used a linear per-conversation causal chain (one path per node), so its abstain rate reflects that graph topology as much as retrieval quality."
+}

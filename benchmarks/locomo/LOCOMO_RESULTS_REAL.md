@@ -94,8 +94,65 @@ total run time bounded; ingestion latency grows with DB size (see Run 1),
 so a full second 16+ minute run was not repeated. This is stated explicitly,
 not silently narrowed.
 
-<!-- RUN2_RESULTS_PLACEHOLDER -->
-*(pending — background run in progress)*
+**Real, measured numbers (1,451 messages, 1,448 edges, 3 conversations,
+494 Q&A pairs scored):**
+
+| Metric | Value |
+|---|---|
+| Ingestion time | 107.4s for 1,451 messages |
+| Mean put-node latency | 37.1ms |
+| Mean put-edge latency | 36.9ms |
+| `search` Recall@1 (message-exact) | **0.0%** (0/494) — see explanation below |
+| `search` abstain rate | 0.0% (0/494) |
+| `search` mean confidence | 0.624 |
+| `search` latency | mean 45.7ms, p50 41.7ms, p95 68.0ms |
+| `reason` Recall@1 | 0.0% (0/494) |
+| `reason` status | 100% `evidence_required` |
+
+### The real, important discovery: what `target_node` actually means
+
+0% message-level recall looked, at first glance, like the fix made things
+*worse* than the buggy Run 1 (0.3%). Investigating the raw per-query output
+(`real_locomo_qa_records.json`) instead of just the headline number revealed
+why:
+
+```
+"question": "When did Caroline go to the LGBTQ support group?"
+"evidence_nodes": [790]
+"search_target_node": 0
+"search_confidence": 0.632641
+```
+
+`search_target_node` is **always the causal root of the resolved chain**,
+because `causal_search()` in `src/db.cpp` explicitly sets
+`b.target_node = root` (the first node reached by walking `reverse_root()`
+backward from the best-scoring anchor), not the anchor/candidate node that
+actually matched the query semantically. The CLI's `search` command doesn't
+print the anchor list (`MemoryBundle::semantic_candidates`) at all — only the
+aggregated root, confidence, and path count.
+
+So **message-level Recall@1 is the wrong metric for this API's actual
+contract.** `causal_search`/`reason` answer "which incident/root-cause does
+this query belong to," not "which exact sentence answers this question."
+That is a very good fit for CSuite's task (trace back to the true causal
+root — where it scored 100%) and a poor fit for LoCoMo's official QA
+evaluation protocol (retrieve the exact evidence utterance), which was never
+what this API was built to do.
+
+**A fairer, real metric given that actual contract: did the query route to
+the correct conversation's root?** (3 conversations in this run, each with
+a distinct root node — 0, 419, 788.)
+
+| Conversation | True root | Target distribution across its 494→ queries |
+|---|---|---|
+| 0 | node 0 | `{0: 124, 788: 49, 419: 23}` |
+| 1 | node 419 | `{419: 57, 0: 26, 788: 22}` |
+| 2 | node 788 | `{788: 107, 0: 59, 419: 27}` |
+
+**Correct conversation-level routing: 288/494 = 58.3%** — well above the
+33% random baseline for 3 conversations, using nothing but hashed
+bag-of-words vectors, but far from perfect: roughly 4 in 10 queries still
+route to the wrong conversation entirely.
 
 ---
 
@@ -103,29 +160,43 @@ not silently narrowed.
 
 1. **The database's causal traversal (`reverse_root`, `causal_search`) is
    correctly implemented** — proven independently by the CSuite benchmark,
-   where role assignment was correct from the start and 15/15 variables
-   (across 3 real published causal graphs, including a real collider) traced
-   back to their true root with 100% accuracy.
-2. **A benchmark script bug can silently disable that machinery** by
-   mis-assigning the `root` flag — this is a real, reproducible finding about
-   how easy it is to accidentally bypass causal reasoning if node roles
-   aren't set correctly, worth documenting for anyone else integrating
-   against this API.
-3. **The governed `reason` pipeline abstained on 100% of both runs.** This is
-   consistent across LoCoMo and CSuite and is explained by a controlled
-   diagnostic (`benchmarks/locomo/diagnostic_test.py`): `reason` requires
+   where 15/15 variables (across 3 real published causal graphs, including a
+   real collider) traced back to their true causal root with 100% accuracy.
+2. **`search`/`reason`'s reported node is the resolved causal *root*, not the
+   best-matching node.** This is the single most important finding from real
+   execution, and it was only visible by inspecting raw per-query output, not
+   the headline recall number. It means these commands answer "which
+   incident does this belong to," not "which sentence answers this
+   question" — a strong fit for CSuite-style root-cause tracing (100% here),
+   a poor fit for LoCoMo's official exact-evidence-sentence retrieval task
+   (which this benchmark was never going to score well on, independent of
+   embedding quality).
+3. **Using the metric the API actually supports (conversation-level
+   routing), real accuracy was 58.3%** (288/494, vs. 33% random baseline) —
+   a genuine, moderate, above-chance result using nothing but a lightweight
+   lexical-hash embedding, with a lot of headroom for a real semantic model.
+4. **A benchmark script bug (Run 1) can silently disable causal traversal
+   entirely** by mis-assigning the `root` flag on every node — worth
+   documenting for anyone else integrating against this API, since the
+   symptom (implausibly low recall with plausible-looking confidence scores)
+   doesn't obviously point to "the causal-chain code path never ran."
+5. **The governed `reason` pipeline abstained on 100% of every real test run**
+   (both LoCoMo runs, all 3 CSuite datasets, 15+494+1977 queries total). This
+   is a robust, repeated, real finding, and a controlled diagnostic
+   (`benchmarks/locomo/diagnostic_test.py`) explains why: `reason` requires
    multiple *independent* corroborating evidence paths before resolving, and
-   neither a linear message chain nor a single-anchor query against a
-   single-root causal graph naturally produces that. Whether `reason` *can*
-   resolve on real data with genuinely richer path diversity is an open,
-   real question this benchmark does not answer — it would require a
-   deliberately multi-anchor query design as follow-up work.
-4. **Latency is real and non-trivial:** 84-127ms per operation once the
-   database reaches ~5,000+ nodes, because the CLI opens/closes the full
-   database (with WAL fsync) on every single invocation. A persistent-process
-   API (rather than one-shot CLI calls) would very likely be substantially
-   faster for production use — this benchmark measured the CLI's
-   per-invocation overhead, not the underlying library's in-process speed.
+   none of this benchmark's query designs (single-anchor queries against
+   single-root graphs) naturally produce that. Whether `reason` *can* resolve
+   on real data with genuinely richer path diversity remains an open,
+   real question — it would require a deliberately multi-anchor query design
+   as follow-up work, not something to claim here without testing it.
+6. **Latency is real and non-trivial:** 37-127ms per operation, growing with
+   database size (32ms early, 84ms by 5,882 nodes), because the CLI
+   opens/closes the full database (with WAL fsync) on every single
+   invocation. A persistent-process API (rather than one-shot CLI calls)
+   would very likely be substantially faster for production use — this
+   benchmark measured the CLI's per-invocation overhead, not the underlying
+   library's in-process speed.
 
 ---
 

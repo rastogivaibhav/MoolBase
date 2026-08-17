@@ -60,6 +60,21 @@ chain back to the true root variable defined in the published `adj_matrix.csv`
 — including the collider node `x8`, which merged **9 independent paths**
 (`search_paths=9`) into its bundle, and still resolved with confidence 1.0.
 
+**Important caveat, found while cross-checking against the LoCoMo results
+(below):** every dataset here has exactly **one** root variable (`x0` is the
+sole in_degree=0 node in all 3 graphs). `causal_search`'s reported
+`target_node` is always the resolved causal *root*, not the specific
+best-matching variable (confirmed by inspecting the C++ source — see
+`LOCOMO_RESULTS_REAL.md` for the full explanation). With only one possible
+root to land on, "100% correct-root retrieval" mostly demonstrates that
+`reverse_root()`'s backward graph walk terminates correctly — a real and
+useful result (it proves the traversal machinery works), but a weaker test
+of *semantic* retrieval accuracy than the headline number implies, since
+almost any anchor selection in a single-root graph reverse-roots to the same
+place. The LoCoMo benchmark's 3-conversation (3-root) setup is a fairer test
+of whether the right root is chosen among multiple candidates, and there
+real accuracy was 58.3%, not 100%.
+
 ### `reason` (governed HypoKosh/Dialectic/Lyapunov pipeline)
 
 | Dataset | Resolved (non-abstain) |
@@ -110,14 +125,19 @@ retroactively adjusted results to claim here.
 
 ## What This Real Benchmark Actually Demonstrates
 
-1. **GrapheneDB correctly stores and retrieves arbitrary causal DAGs**,
-   including genuine branching/converging structures (collider nodes),
-   verified against Microsoft's published ground-truth graphs — 100% correct
-   on 15/15 variables across 3 datasets.
+1. **GrapheneDB correctly stores and retrieves causal DAGs and its backward
+   graph traversal (`reverse_root`) terminates correctly**, including on
+   genuine branching/converging structures (collider nodes), verified
+   against Microsoft's published ground-truth graphs — 15/15 variables
+   across 3 datasets reverse-rooted without error. Because every dataset
+   here has a single root, this mainly validates traversal correctness, not
+   discriminative retrieval among multiple candidate roots — see the LoCoMo
+   benchmark (3 roots, 58.3% correct routing) for that harder test.
 2. **The governed `reason` pipeline is conservative by design** — it did not
    confidently resolve on any of these 15 queries, consistent with its
    `no_silent_promotion` philosophy, and consistent with what the same
-   diagnostic showed on LoCoMo conversational data.
+   diagnostic showed on LoCoMo conversational data (0/2,486 queries resolved
+   across every real test run in this session).
 3. **GrapheneDB is not, and was not tested as, a causal-discovery or
    statistical treatment-effect engine.** Any prior claim otherwise (ATE
    RMSE, CATE RMSE, "89.7% causal discovery accuracy") was fabricated in an
