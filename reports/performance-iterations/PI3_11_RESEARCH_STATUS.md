@@ -72,7 +72,7 @@ Real 384D `all-MiniLM-L6-v2`, official per-conversation candidate scope:
 - 1,977 queries
 - QA labels used for embedding: false
 
-MiniLM is an independent semantic signal but remains weaker standalone than GrapheneDB's deterministic text channel. A per-query semantic-assisted router supplemental was not completed and is not counted: Render hit the Hobby service-count limit and the GitHub Actions transfer fallback failed before job steps. No router-improvement claim is inferred from aggregate MiniLM metrics.
+MiniLM is an independent semantic signal but remains weaker standalone than GrapheneDB's deterministic text channel. A per-query semantic-assisted router supplemental was not completed and is not counted. No router-improvement claim is inferred from aggregate MiniLM metrics.
 
 ## Product and causal integrity
 
