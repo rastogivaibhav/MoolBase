@@ -94,6 +94,7 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_pi34_promotion_readiness_tests
                  tests/test_pi34_promotion_readiness.cpp)
   target_link_libraries(graphenedb_pi34_promotion_readiness_tests PRIVATE graphenedb)
+  target_precompile_headers(graphenedb_pi34_promotion_readiness_tests PRIVATE <cctype>)
   add_test(NAME graphenedb_pi34_promotion_readiness_tests
            COMMAND graphenedb_pi34_promotion_readiness_tests)
   set_tests_properties(graphenedb_pi34_promotion_readiness_tests
