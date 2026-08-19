@@ -4,53 +4,65 @@ Date: 2026-08-19
 
 This is a **status/evidence record only**. It does not mean the complete canonical PI3.11 source tree has been materialized into this GitHub branch. PR #20 remains a draft reconciliation PR and must not be merged as the complete implementation.
 
-## Official LoCoMo scope correction
+## Official LoCoMo benchmark boundary
 
-PI3.11 verified the original LoCoMo evaluation implementation and freezes retrieval candidate isolation to the current sample/conversation (`sample_id`). PI3.10 had corrected evidence identity but still searched all ten independent conversations as a global store; that remains a harder stress experiment, not the official benchmark protocol.
-
-Required PI3.11 benchmark invariants:
+PI3.11 verified the original LoCoMo implementation and freezes retrieval isolation to the current sample/conversation (`sample_id`). Required invariants are:
 - evidence identity: `(conversation_index, dia_id)`
 - candidate set: current conversation/sample only
 - scoreable questions: 1,977
 - no temporal adjacency relabelled as causal
 - no QA answer/category/evidence IDs as router input features
 
-## Native full-corpus multi-channel result
+## Additive multi-channel correction
 
-Actual GrapheneDB, all 1,977 questions:
-- message text ranked Hit@10: **60.04%**
-- message + observation/provenance evidence reach: **69.90%**
-- message + observation + session hierarchy evidence reach: **76.83%**
-- observation rescues of message-top10 misses: **247 / 790 = 31.27%**
-- hierarchy rescues: **413 / 790 = 52.28%**
+The first PI3.11 router treated message, observation and session channels as mutually exclusive alternatives. That is not the intended GrapheneDB architecture. The sealed experiment uses an additive cascade:
+
+`M -> M ∪ O -> M ∪ O ∪ S`
+
+A deeper retrieval stage never discards evidence already found by an earlier stage.
+
+### Full-corpus native GrapheneDB evidence
+
+Actual GrapheneDB over all 1,977 questions:
+- message text: **60.0405%**
+- observation/provenance standalone: **69.9039%**
+- session hierarchy standalone: **76.8336%**
+- additive `M ∪ O`: **72.5341%**
+- additive `M ∪ O ∪ S`: **81.6388% evidence reach**
 - temporal-as-causal edges: **0**
 
-The 69.90% and 76.83% values are evidence reachability after bounded provenance expansion from ten ranked anchors, not final answer accuracy or final ranked Hit@10.
+### Untouched held-out conversations 5-9
 
-## Held-out adaptive routing
+Train/tune conversations 0-4: 996 questions. Held-out conversations 5-9: 981 questions.
 
-Frozen split:
-- train/tune conversations 0-4: 996 questions
-- untouched test conversations 5-9: 981 questions
+- `M`: **61.6718%**
+- `M ∪ O`: **74.2100%**
+- `M ∪ O ∪ S`: **83.2824% evidence reach**
+- observation/provenance rescues **123** held-out message misses
+- session hierarchy rescues a further **89** misses after `M ∪ O`
 
-Fixed held-out test:
-- message: **61.67%**
-- observation/provenance: **71.66%**
-- always-full hierarchy: **77.06%**
+The 81.6388% and 83.2824% values are **evidence reachability**, not answer accuracy and not a claim that the final ranked top-10 contains all expanded evidence.
 
-Learned 97%-of-full training target on held-out test:
-- evidence reach: **74.72%**
-- mean structural nodes scored: **871.14** vs **917.95** always-full
-- source candidates: **33.58** vs **38.23**
+## Adaptive router decision
 
-Decision: **current learned router REJECTED for production promotion**. The quality loss is too large for the achieved cost saving.
+The router chooses an early stopping depth but does not yet predict safe early exit reliably.
 
-A non-deployable routing oracle demonstrates headroom:
-- held-out evidence reach: **83.28%**
-- mean structural nodes: **684.27**
-- mean source candidates: **13.91**
+Held-out 97%-of-full policy:
+- reach: **81.14%** vs 83.28% always-full
+- quality loss: **2.14 percentage points**
+- indexed-node saving: **2.83%**
+- source-candidate saving: **14.26%**
+- paired-query 95% CI for quality delta: **[-3.06 pp, -1.33 pp]**
 
-This is architecture headroom only, not a router claim.
+Held-out 99%-of-full policy:
+- reach: **82.57%**
+- quality loss: **0.71 pp**
+- indexed-node saving: **0.99%**
+- paired-query 95% CI: **[-1.33 pp, -0.20 pp]**
+
+At the 99.5%-of-full target, quality matches 83.28% only by activating the complete hierarchy for ~99.8% of held-out queries, producing essentially zero savings.
+
+Decision: **current learned query-adaptive router REJECTED for production promotion.**
 
 ## Neural semantic channel
 
@@ -60,40 +72,40 @@ Real 384D `all-MiniLM-L6-v2`, official per-conversation candidate scope:
 - 1,977 queries
 - QA labels used for embedding: false
 
-MiniLM remains weaker standalone than the deterministic text channel and is not a replacement candidate.
-
-A planned per-query lexical+MiniLM fusion / semantic-assisted-router supplemental is **not counted**. The completed remote per-query evidence could not be transferred into the local execution sandbox; Render then reached its Hobby service-count limit; and the temporary GitHub Actions evidence-fetch fallback failed before any job step executed. The temporary workflow was removed afterwards. No fusion result is inferred from aggregate scores.
+MiniLM is an independent semantic signal but remains weaker standalone than GrapheneDB's deterministic text channel. A per-query semantic-assisted router supplemental was not completed and is not counted: Render hit the Hobby service-count limit and the GitHub Actions transfer fallback failed before job steps. No router-improvement claim is inferred from aggregate MiniLM metrics.
 
 ## Product and causal integrity
 
-Fresh acceptance evidence:
-- permanent PI3.11 gate: **PASS**
-- router production-promotion assertion: **REJECTED**
-- product regression: **68/68 PASS**, 0 failures
+Fresh sealed acceptance:
+- permanent PI3.11 additive gate: **PASS**
+- additive multi-channel research: **ACCEPTED**
+- adaptive router production promotion: **REJECTED**
+- product regression: **68/68 PASS**, 0 failures, 26.34s
 - causal CSuite: **15/15 correct roots**
-- authoritative shadow mismatches: 0
-- shadow top-1 agreement: 100%
-- mean/worst Recall@k: 1.000 / 1.000
+- authoritative shadow mismatches: **0**
+- shadow top-1 agreement: **100%**
+- mean/worst Recall@k: **1.000 / 1.000**
 - production `src/` / `include/` changes: **none**
 
 ## Sealed local artifacts
 
 Canonical local PI3.11 commit:
-`74c5ffab60d7fcfc75d75dac9fc7db0c537f6206`
+`5423183e1cca104ee902ceb0e1ac02718982e317`
 
 SHA-256:
-- source ZIP: `f1f82030c5fb3366b31e5a40d6b19b4431e170ef0d3e5b184cd7b14c5b67e26d`
-- evidence ZIP: `6c44313a68b0b1b2d263a4f8aab00e57b3712a65ecfc876a1e597fb707aedc8a`
-- PI3.10 -> PI3.11 patch: `6f55ee11d16d9b2e6c377535065955c116e824833a08034bf5defbdb5943a00b`
+- source ZIP: `f6d2be9ac4b7d567526e3a9ec478d9f000943ef9d33138e54456d66fea064411`
+- evidence ZIP: `97db834acd81a8134ea30440792e1f623973c7ea242af043dbee5e1d3e1a4e2b`
+- PI3.10 -> PI3.11 patch: `b1281a7c655aa204737406975d1bfd1c5a48032712ffd72e8d9ae89cd7f53de6`
 
 These identify validated local artifacts; they are not GitHub tree hashes.
 
 ## Final decision
 
 - official benchmark-scope correction: **ACCEPTED**
-- native multi-channel evidence: **ACCEPTED**
+- additive multi-channel retrieval: **ACCEPTED as research evidence**
+- full-corpus native 81.64% structural evidence reach: **ACCEPTED**
+- held-out 83.28% structural evidence reach: **ACCEPTED**
 - neural semantic standalone evidence: **ACCEPTED as measurement**
-- query-adaptive routing feasibility: **DEMONSTRATED**
-- current learned router: **REJECTED for production**
+- current learned adaptive router: **REJECTED for production**
 - production retrieval policy: **UNCHANGED**
 - PI3.11 research increment overall: **ACCEPTED**
