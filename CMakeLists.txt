@@ -91,6 +91,14 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_epistemic_receipt_tests
            COMMAND graphenedb_epistemic_receipt_tests)
 
+  add_executable(graphenedb_pi34_promotion_readiness_tests
+                 tests/test_pi34_promotion_readiness.cpp)
+  target_link_libraries(graphenedb_pi34_promotion_readiness_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_pi34_promotion_readiness_tests
+           COMMAND graphenedb_pi34_promotion_readiness_tests)
+  set_tests_properties(graphenedb_pi34_promotion_readiness_tests
+                       PROPERTIES TIMEOUT 120 LABELS "pi3.4;promotion-readiness")
+
   if(TARGET graphenedb_server AND NOT WIN32)
     add_test(NAME graphenedb_server_hypokosh_runtime_contract_tests
              COMMAND ${Python3_EXECUTABLE}
