@@ -6,6 +6,11 @@ on:
       - pi3.4-promotion-readiness
     paths:
       - '.github/workflows/pi311-fetch-minilm.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/pi311-fetch-minilm.yml'
   workflow_dispatch:
 
 jobs:
