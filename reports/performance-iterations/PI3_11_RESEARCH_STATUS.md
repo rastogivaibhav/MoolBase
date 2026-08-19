@@ -94,7 +94,7 @@ Canonical local PI3.11 commit:
 
 SHA-256:
 - source ZIP: `f6d2be9ac4b7d567526e3a9ec478d9f000943ef9d33138e54456d66fea064411`
-- evidence ZIP: `97db834acd81a8134ea30440792e1f623973c7ea242af043dbee5e1d3e1a4e2b`
+- evidence ZIP: `f594696f6e4ae523ef01c57448161aeb5addf02751990b2a67eef6101141fafd`
 - PI3.10 -> PI3.11 patch: `b1281a7c655aa204737406975d1bfd1c5a48032712ffd72e8d9ae89cd7f53de6`
 
 These identify validated local artifacts; they are not GitHub tree hashes.
