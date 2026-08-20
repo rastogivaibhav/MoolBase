@@ -1,0 +1,30 @@
+name: PI4.5A.1 private ARC PR runner
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'research/pi45a1/**'
+
+permissions:
+  contents: read
+
+jobs:
+  episodic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout private experiment merge
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run frozen A1 experiment
+        shell: bash
+        run: bash research/pi45a1/run_private_a1.sh
+      - name: Upload A1 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi45a1-private-arc-graphenedb-episodic-evidence
+          path: results/pi45a1
+          if-no-files-found: error
+          retention-days: 7
