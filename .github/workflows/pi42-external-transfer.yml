@@ -1,0 +1,37 @@
+name: PI4.2 external benchmark transfer
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - '.github/workflows/pi42-external-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-external:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Fetch official public benchmark files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p external
+          curl -fL --retry 3 -o external/ruletaker-V2020.2.5.zip \
+            https://aristo-data-public.s3-us-west-2.amazonaws.com/ruletaker/rule-reasoning-dataset-V2020.2.5.zip
+          curl -fL --retry 3 -o external/folio-validation-v0.0.jsonl \
+            https://raw.githubusercontent.com/Yale-LILY/FOLIO/main/data/v0.0/folio-validation.jsonl
+          curl -fL --retry 3 -o external/strategyqa-dev.json \
+            https://raw.githubusercontent.com/eladsegal/strategyqa/main/data/strategyqa/dev.json
+          sha256sum external/* | tee external/SHA256SUMS.txt
+          ls -lh external
+      - name: Upload benchmark bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi42-external-benchmarks-${{ github.sha }}
+          path: external/
+          if-no-files-found: error
+          retention-days: 2
