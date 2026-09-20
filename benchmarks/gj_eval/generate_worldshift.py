@@ -135,39 +135,63 @@ def build_world(seed: int, index: int, split: str) -> dict[str, Any]:
 
     add(1, support(decoy, 1, 0, family="decoy-initial"))
 
+    base_decoy = support(decoy, 2, 0, family="decoy-base-family")
     if variant == "duplicate_swarm":
-        base = support(decoy, 2, 0, family="decoy-same-family")
-        observations = [base]
+        observations = [base_decoy]
         for j in range(1, 6):
             observations.append(Evidence(
                 evidence_id=f"e-2-dup-{j}",
                 source_id=f"republisher-{j}",
-                source_family="decoy-same-family",
-                claim=base.claim,
+                source_family="decoy-base-family",
+                claim=base_decoy.claim,
                 supports=decoy,
-                derived_from=base.evidence_id,
-                confidence=base.confidence,
+                derived_from=base_decoy.evidence_id,
+                confidence=base_decoy.confidence,
                 observed_at=observed_at(2),
             ))
         add(2, *observations)
     elif variant == "correlated_sources":
         add(
             2,
-            support(decoy, 2, 1, family="correlated-family", derived="shared-root-report"),
-            support(decoy, 2, 2, family="correlated-family", derived="shared-root-report"),
-            support(decoy, 2, 3, family="correlated-family", derived="shared-root-report"),
+            base_decoy,
+            Evidence(
+                evidence_id="e-2-correlated-1",
+                source_id="correlated-republisher-1",
+                source_family="decoy-base-family",
+                claim=base_decoy.claim,
+                supports=decoy,
+                derived_from=base_decoy.evidence_id,
+                confidence=base_decoy.confidence,
+                observed_at=observed_at(2),
+            ),
+            Evidence(
+                evidence_id="e-2-correlated-2",
+                source_id="correlated-republisher-2",
+                source_family="decoy-base-family",
+                claim=base_decoy.claim,
+                supports=decoy,
+                derived_from=base_decoy.evidence_id,
+                confidence=base_decoy.confidence,
+                observed_at=observed_at(2),
+            ),
         )
     elif variant == "false_majority":
-        add(2, *[support(decoy, 2, j, family=f"false-majority-{j}") for j in range(4)])
+        add(
+            2,
+            base_decoy,
+            *[
+                support(decoy, 2, j, family=f"false-majority-independent-{j}")
+                for j in range(1, 4)
+            ],
+        )
     elif variant == "minority_truth":
         add(
             2,
-            support(decoy, 2, 1),
-            support(decoy, 2, 2),
+            base_decoy,
             support(truth, 2, 9, family="truth-minority"),
         )
     else:
-        add(2, support(decoy, 2, 1))
+        add(2, base_decoy)
 
     if variant == "missing_evidence":
         add(3, contradiction(decoy, 3))
