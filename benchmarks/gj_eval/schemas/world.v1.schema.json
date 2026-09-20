@@ -7,6 +7,7 @@
   "required": [
     "schema_version",
     "world_id",
+    "scenario_id",
     "split",
     "variant",
     "domain",
@@ -125,6 +126,10 @@
           "minimum": 0
         }
       }
+    },
+    "scenario_id": {
+      "type": "string",
+      "minLength": 1
     }
   }
 }
