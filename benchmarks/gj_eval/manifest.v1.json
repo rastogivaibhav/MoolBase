@@ -1,7 +1,7 @@
 {
   "benchmark": "GJ-Eval",
   "protocol_version": "1.0",
-  "status": "SPEC_FROZEN_NO_COMPARATIVE_SCORES",
+  "status": "CANDIDATE_FROZEN_PENDING_ADAPTER_CONFORMANCE",
   "primary_comparison": [
     "graphenedb_full",
     "jev_structured"
@@ -81,5 +81,10 @@
     "paired_bootstrap_confidence": 0.95,
     "claim_measurable_advantage_only_if_ci_excludes_zero": true,
     "universal_winner_score": false
+  },
+  "failure_policy": {
+    "timeout_or_adapter_error": "retained_in_denominator_and_never_scored_as_correct_abstention",
+    "malformed_response": "retained_as_adapter_error",
+    "post_hoc_exclusion": false
   }
-}
+}\n
