@@ -53,3 +53,27 @@ The initial scorer only computes metrics supported by the common contract. It ne
 - Do not give Graphene richer evidence metadata than Jev-Structured.
 - Do not modify Graphene storage semantics for this benchmark.
 - Do not report a universal winner score.
+
+## Harness self-test
+
+This makes no provider/model calls:
+
+```bash
+python3 benchmarks/gj_eval/self_test.py
+```
+
+It verifies deterministic generation, hidden-oracle redaction, valid command-adapter plumbing, and that malformed adapter output remains a scored failure.
+
+## Run any external adapter
+
+```bash
+python3 benchmarks/gj_eval/run_command_adapter.py \
+  --worlds /tmp/gj-eval-dev.jsonl \
+  --adapter-cmd "python3 /path/to/adapter.py" \
+  --system jev_structured \
+  --state-mode structured \
+  --output /tmp/jev-structured.jsonl
+```
+
+For Jev-Raw use `--state-mode raw`. For Jev-Structured use `--state-mode structured`.
+The official TypeSafe integration should live behind the adapter command so the benchmark does not guess a private/unstable SDK contract.
