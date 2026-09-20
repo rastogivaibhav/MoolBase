@@ -116,7 +116,7 @@ def main() -> int:
                 latencies.append(float(row.get("latency_ms", 0.0)))
 
                 should_abstain = t <= insufficient_until
-                did_abstain = act in ("abstain", "review") or choice in (None, "unknown")
+                did_abstain = adapter_ok and (act in ("abstain", "review") or choice in (None, "unknown"))
                 if did_abstain and should_abstain:
                     abstention_tp += 1
                 elif did_abstain and not should_abstain:
@@ -129,7 +129,7 @@ def main() -> int:
                         had_premature = True
 
                 if t >= decisive:
-                    if choice == truth or did_abstain:
+                    if adapter_ok and (choice == truth or did_abstain):
                         if recovered_at is None:
                             recovered_at = t
                     elif choice not in (None, "unknown"):
