@@ -72,7 +72,7 @@ If an ablation cannot be cleanly expressed by the current runtime without changi
 One-shot typed decisions with clean independent evidence.
 
 ### Track B - Epistemic stress
-Paired worlds are transformed by exactly one controlled manipulation:
+Each latent scenario is emitted as a base world plus controlled stress variants sharing the same `scenario_id`. Paired worlds differ only by the declared manipulation:
 - duplicate_swarm
 - correlated_sources
 - false_majority
@@ -160,7 +160,7 @@ Fraction of scored timesteps with the correct root.
 Number of post-contradiction timesteps spent committed to a false root before correction/abstention. Lower is better.
 
 ### Recovery Latency
-Number of new evidence events after the first decisive contradiction until the system reaches the correct root or a correct abstention state.
+Number of new evidence events after the first decisive contradiction until the system identifies the correct root. A system that never recovers receives a right-censor penalty one step beyond the observed post-decisive horizon; indefinite review/abstention is not counted as recovery.
 
 ### Premature Convergence Rate
 Fraction of episodes in which the system commits above the pre-registered confidence threshold to a false root before the oracle marks evidence sufficient.
