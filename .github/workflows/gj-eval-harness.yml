@@ -1,0 +1,22 @@
+name: GJ-Eval Harness
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
+      - ".github/workflows/gj-eval-harness.yml"
+  workflow_dispatch:
+
+jobs:
+  harness-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile benchmark Python
+        run: python -m compileall -q benchmarks/gj_eval
+      - name: Run provider-free harness self-test
+        run: python benchmarks/gj_eval/self_test.py
