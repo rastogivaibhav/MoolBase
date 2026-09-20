@@ -9,6 +9,7 @@
     "world_id",
     "timestep",
     "system",
+    "adapter_status",
     "root_choice",
     "act",
     "selected_confidence",
@@ -29,6 +30,13 @@
     "system": {
       "type": "string",
       "minLength": 1
+    },
+    "adapter_status": {
+      "enum": [
+        "ok",
+        "error",
+        "timeout"
+      ]
     },
     "root_choice": {
       "type": [
@@ -91,4 +99,4 @@
       "type": "object"
     }
   }
-}
+}\n
