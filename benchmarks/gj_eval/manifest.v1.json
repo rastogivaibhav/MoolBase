@@ -9,15 +9,15 @@
   "shared_extraction_boundary": "canonical_structured_evidence",
   "splits": {
     "development": {
-      "count": 1000,
+      "count": 240,
       "seed": 1729
     },
     "validation": {
-      "count": 2000,
+      "count": 480,
       "seed": 271828
     },
     "test": {
-      "count": 7000,
+      "count": 2400,
       "seed_source": "GJ_EVAL_TEST_SEED",
       "commit_seed": false
     }
@@ -86,5 +86,10 @@
     "timeout_or_adapter_error": "retained_in_denominator_and_never_scored_as_correct_abstention",
     "malformed_response": "retained_as_adapter_error",
     "post_hoc_exclusion": false
+  },
+  "pairing": {
+    "variants_per_latent_scenario": 12,
+    "pairing_key": "scenario_id",
+    "rule": "Each latent scenario is emitted once per stress variant; paired deltas compare worlds sharing scenario_id."
   }
-}\n
+}
