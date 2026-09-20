@@ -125,21 +125,35 @@ def main() -> int:
                     abstention_fn += 1
 
                 if t <= insufficient_until:
-                    if choice not in (None, "unknown") and confidence >= 0.75 and choice != truth:
+                    if (
+                        adapter_ok
+                        and act == "act"
+                        and choice not in (None, "unknown")
+                        and confidence >= 0.75
+                        and choice != truth
+                    ):
                         had_premature = True
 
                 if t >= decisive:
-                    if adapter_ok and (choice == truth or did_abstain):
+                    if adapter_ok and choice == truth:
                         if recovered_at is None:
                             recovered_at = t
-                    elif choice not in (None, "unknown"):
+                    elif (
+                        adapter_ok
+                        and act == "act"
+                        and choice not in (None, "unknown")
+                        and choice != truth
+                    ):
                         committed_wrong_after_decisive += 1
 
             if had_premature:
                 premature_episodes += 1
             wrong_dwell_total += committed_wrong_after_decisive
+            episode_end = max(int(row["timestep"]) for row in episode_rows)
             if recovered_at is not None:
                 recovery_latencies.append(max(0, recovered_at - decisive))
+            else:
+                recovery_latencies.append(max(1, episode_end - decisive + 1))
 
         final_correct = sum(
             1 for wid, row in final_by_world.items()
