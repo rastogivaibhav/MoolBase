@@ -1,0 +1,85 @@
+{
+  "benchmark": "GJ-Eval",
+  "protocol_version": "1.0",
+  "status": "SPEC_FROZEN_NO_COMPARATIVE_SCORES",
+  "primary_comparison": [
+    "graphenedb_full",
+    "jev_structured"
+  ],
+  "shared_extraction_boundary": "canonical_structured_evidence",
+  "splits": {
+    "development": {
+      "count": 1000,
+      "seed": 1729
+    },
+    "validation": {
+      "count": 2000,
+      "seed": 271828
+    },
+    "test": {
+      "count": 7000,
+      "seed_source": "GJ_EVAL_TEST_SEED",
+      "commit_seed": false
+    }
+  },
+  "tracks": [
+    "system_one_parity",
+    "epistemic_stress",
+    "hypothesis_survival",
+    "dialectical_recovery",
+    "active_investigation",
+    "longitudinal_state"
+  ],
+  "stress_variants": [
+    "base",
+    "duplicate_swarm",
+    "correlated_sources",
+    "false_majority",
+    "late_contradiction",
+    "source_invalidation",
+    "supersession",
+    "missing_evidence",
+    "misleading_chronology",
+    "minority_truth",
+    "interaction_effect",
+    "model_reversal"
+  ],
+  "systems": [
+    "jev_raw",
+    "jev_structured",
+    "graphene_g0_deterministic",
+    "graphene_g1_causal",
+    "graphene_g2_fiber",
+    "graphene_g3_hypokosh",
+    "graphene_g4_stability",
+    "graphene_g5_dialectic",
+    "graphenedb_full"
+  ],
+  "primary_metrics": [
+    "wrong_model_dwell_time",
+    "recovery_latency",
+    "premature_convergence_rate",
+    "final_accuracy"
+  ],
+  "secondary_metrics": [
+    "trajectory_accuracy",
+    "contradiction_response_delta",
+    "duplicate_inflation_delta",
+    "true_hypothesis_survival_at_k",
+    "abstention_quality",
+    "selected_confidence_ece",
+    "experiment_efficiency",
+    "stale_belief_rate",
+    "historical_consistency",
+    "latency_p50_ms",
+    "latency_p95_ms",
+    "input_bytes",
+    "output_bytes",
+    "provider_cost"
+  ],
+  "statistical_rule": {
+    "paired_bootstrap_confidence": 0.95,
+    "claim_measurable_advantage_only_if_ci_excludes_zero": true,
+    "universal_winner_score": false
+  }
+}
