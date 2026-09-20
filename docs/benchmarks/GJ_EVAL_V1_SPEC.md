@@ -1,6 +1,6 @@
 # GJ-Eval v1: GrapheneDB vs Jev Epistemic Decision Benchmark
 
-Status: protocol specification frozen before comparative test scores.
+Status: candidate protocol frozen before comparative test scores; final Gate-0 freeze occurs after harness self-review and adapter-contract conformance.
 Scope: reasoning/evaluation only. No GrapheneDB durable-format changes.
 Primary systems: Jev-Structured and GrapheneDB Full Runtime.
 Secondary systems: Jev-Raw and GrapheneDB ablations.
@@ -146,7 +146,7 @@ Optional when supported:
 - output_bytes
 - provider_cost
 
-A system is never assigned a fabricated probability distribution. Metrics requiring a full distribution are reported only for systems that actually emit one.
+Timeouts, malformed responses, and adapter errors remain in the denominator and can never receive correct-abstention credit.\n\nA system is never assigned a fabricated probability distribution. Metrics requiring a full distribution are reported only for systems that actually emit one.
 
 ## 7. Primary metrics
 
@@ -310,7 +310,7 @@ docs/benchmarks/GJ_EVAL_V1_SPEC.md
 
 ## 15. Implementation sequence
 
-P0. Commit this frozen protocol and schemas.
+P0. Commit the candidate protocol and schemas; complete harness self-review before final Gate-0 freeze.
 P1. Implement deterministic WorldShift generator and self-tests.
 P2. Implement Graphene HTTP adapter against current runtime.
 P3. Implement Jev adapter using the official current TypeSafe early-access API through the command contract.
