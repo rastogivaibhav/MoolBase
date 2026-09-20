@@ -46,7 +46,7 @@ class Evidence:
     confidence: float = 0.8
     role: str = "supports"
     origin: str = "observed"
-    observed_at: int = 0
+    observed_at: str = "2026-01-01T00:00:00Z"
     supersedes: str | None = None
     invalidates: str | None = None
 
@@ -68,9 +68,18 @@ class Evidence:
         return out
 
 
-def world_id(seed: int, index: int, variant: str) -> str:
-    digest = hashlib.sha256(f"{seed}:{index}:{variant}".encode()).hexdigest()[:16]
+def scenario_id(seed: int, group: int) -> str:
+    digest = hashlib.sha256(f"{seed}:scenario:{group}".encode()).hexdigest()[:16]
+    return f"scenario-{digest}"
+
+
+def world_id(seed: int, group: int, variant: str) -> str:
+    digest = hashlib.sha256(f"{seed}:{group}:{variant}".encode()).hexdigest()[:16]
     return f"ws-{digest}"
+
+
+def observed_at(step: int) -> str:
+    return f"2026-01-01T00:00:{step:02d}Z"
 
 
 def support(root: str, step: int, n: int, family: str | None = None,
@@ -84,7 +93,7 @@ def support(root: str, step: int, n: int, family: str | None = None,
         supports=root,
         derived_from=derived,
         confidence=max(0.55, 0.92 - 0.04 * n),
-        observed_at=step,
+        observed_at=observed_at(step),
     )
 
 
@@ -97,16 +106,19 @@ def contradiction(root: str, step: int, n: int = 0) -> Evidence:
         contradicts=root,
         confidence=0.93,
         role="contradicts",
-        observed_at=step,
+        observed_at=observed_at(step),
     )
 
 
-def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[str, Any]:
+def build_world(seed: int, index: int, split: str) -> dict[str, Any]:
+    group = index // len(VARIANTS)
+    variant = VARIANTS[index % len(VARIANTS)]
+    rng = random.Random(f"{seed}:scenario:{group}")
     truth = rng.choice(ROOTS)
     wrongs = [r for r in ROOTS if r != truth]
     decoy = rng.choice(wrongs)
-    variant = VARIANTS[index % len(VARIANTS)]
-    wid = world_id(seed, index, variant)
+    sid = scenario_id(seed, group)
+    wid = world_id(seed, group, variant)
     timeline: list[dict[str, Any]] = []
 
     def add(step: int, *evidence: Evidence) -> None:
@@ -118,7 +130,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
         source_family="service-monitor",
         claim="Checkout failures increased.",
         confidence=0.99,
-        observed_at=0,
+        observed_at=observed_at(0),
     ))
 
     add(1, support(decoy, 1, 0, family="decoy-initial"))
@@ -135,7 +147,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
                 supports=decoy,
                 derived_from=base.evidence_id,
                 confidence=base.confidence,
-                observed_at=2,
+                observed_at=observed_at(2),
             ))
         add(2, *observations)
     elif variant == "correlated_sources":
@@ -169,7 +181,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
             contradicts=decoy,
             confidence=0.95,
             role="contradicts",
-            observed_at=3,
+            observed_at=observed_at(3),
         ))
     else:
         add(3, contradiction(decoy, 3), support(truth, 3, 0, family="truth-independent-1"))
@@ -187,7 +199,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
                 supports=truth,
                 confidence=0.88,
                 role="causal",
-                observed_at=4,
+                observed_at=observed_at(4),
             ),
         )
     else:
@@ -200,7 +212,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
         claim=f"Intervention targeted {decoy}.",
         supports=decoy,
         confidence=0.5,
-        observed_at=5,
+        observed_at=observed_at(5),
     ))
 
     add(6, Evidence(
@@ -212,7 +224,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
         contradicts=decoy,
         confidence=0.98,
         role="contradicts",
-        observed_at=6,
+        observed_at=observed_at(6),
     ))
 
     final = support(truth, 7, 2, family="truth-decisive")
@@ -227,7 +239,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
             invalidates=f"e-1-{decoy}-0",
             confidence=1.0,
             role="contradicts",
-            observed_at=7,
+            observed_at=observed_at(7),
         ))
     elif variant == "supersession":
         extras.append(Evidence(
@@ -267,6 +279,7 @@ def build_world(rng: random.Random, seed: int, index: int, split: str) -> dict[s
     return {
         "schema_version": 1,
         "world_id": wid,
+        "scenario_id": sid,
         "split": split,
         "variant": variant,
         "domain": "aiops",
@@ -295,10 +308,9 @@ def main() -> int:
     if args.count <= 0:
         raise SystemExit("--count must be positive")
 
-    rng = random.Random(args.seed)
     with open(args.output, "w", encoding="utf-8") as handle:
         for index in range(args.count):
-            handle.write(json.dumps(build_world(rng, args.seed, index, args.split), sort_keys=True))
+            handle.write(json.dumps(build_world(args.seed, index, args.split), sort_keys=True))
             handle.write("\n")
     return 0
 
