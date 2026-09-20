@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://graphenedb.local/gj-eval/prediction.v1.schema.json",
+  "title": "GJ-Eval Prediction v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "world_id",
+    "timestep",
+    "system",
+    "root_choice",
+    "act",
+    "selected_confidence",
+    "latency_ms"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "world_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestep": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "root_choice": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "act": {
+      "enum": [
+        "act",
+        "abstain",
+        "review"
+      ]
+    },
+    "selected_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "latency_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "choice_probabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "ranked_hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "epistemic_status": {
+      "type": "string"
+    },
+    "requested_test": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "input_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "output_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "provider_cost": {
+      "type": "number",
+      "minimum": 0
+    },
+    "receipt": {
+      "type": "object"
+    }
+  }
+}
