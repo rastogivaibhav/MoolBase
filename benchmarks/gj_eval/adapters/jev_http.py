@@ -182,6 +182,9 @@ def call_jev(
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                # OpenCode's documented examples use curl. Cloudflare rejects
+                # Python urllib's default client signature with Error 1010.
+                "User-Agent": "curl/8.5.0",
             },
             method="POST",
         )
