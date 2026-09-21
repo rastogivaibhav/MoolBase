@@ -6,6 +6,8 @@ on:
     branches:
       - "bench/gj-eval-v1"
     paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
       - ".github/workflows/gj-eval-development-pilot.yml"
 
 permissions:
