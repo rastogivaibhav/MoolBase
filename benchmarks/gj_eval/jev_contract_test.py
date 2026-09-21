@@ -28,11 +28,20 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("content-length", "0"))
         body = json.loads(self.rfile.read(length).decode("utf-8"))
         assert self.headers.get("Authorization") == "Bearer contract-test-key"
-        assert body["model"] == "jev-latest"
+        assert body["model"] == "jev-1.13.0"
         assert set(body["questions"]) >= {"root_cause", "evidence_sufficient"}
         assert body["questions"]["root_cause"]["type"] == "choice"
         assert body["questions"]["evidence_sufficient"]["type"] == "noul"
         self.__class__.requests.append(body)
+        if len(self.__class__.requests) == 1:
+            encoded = json.dumps({"error": "rate_limited"}).encode("utf-8")
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "0.1")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            self.wfile.write(encoded)
+            return
 
         response = {
             "model": "jev-contract-test",
@@ -158,9 +167,14 @@ def main() -> int:
         assert output["receipt"]["evidence_sufficient_noul"] == 0.88
         assert abs(output["provider_cost"] - 0.000000042) < 1e-12
 
-    assert len(Handler.requests) == 100
-    assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 50
+    assert len(Handler.requests) == 101
+    assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 51
     assert sum(isinstance(req["state"], str) for req in Handler.requests) == 50
+    assert outputs[0]["receipt"]["transport_retries"] == 1
+    assert all(
+        output["receipt"]["transport_retries"] == 0
+        for output in outputs[1:]
+    )
     for req in Handler.requests:
         if isinstance(req["state"], str):
             assert "source_family" not in req["state"]
@@ -173,7 +187,7 @@ def main() -> int:
         "official_shape": True,
         "structured_state": True,
         "raw_state": True,
-        "probability_calibration_field": True,
+        "probability_calibration_field": True,\n        "rate_limit_retry": True,
     }, sort_keys=True))
     return 0
 
