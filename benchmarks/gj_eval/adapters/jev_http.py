@@ -249,7 +249,14 @@ def main() -> int:
     payload = build_request(task)
     response, retries = call_typesafe(payload)
     output = parse_response(response)
-    output.setdefault("receipt", {})["transport_retries"] = retries
+    receipt = output.setdefault("receipt", {})
+    receipt["transport_retries"] = retries
+    receipt["state_sha256"] = hashlib.sha256(
+        json.dumps(payload["state"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    receipt["questions_sha256"] = hashlib.sha256(
+        json.dumps(payload["questions"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
     print(json.dumps(output, sort_keys=True))
     return 0
 
