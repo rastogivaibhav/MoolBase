@@ -187,7 +187,8 @@ def main() -> int:
         "official_shape": True,
         "structured_state": True,
         "raw_state": True,
-        "probability_calibration_field": True,\n        "rate_limit_retry": True,
+        "probability_calibration_field": True,
+        "rate_limit_retry": True,
     }, sort_keys=True))
     return 0
 
