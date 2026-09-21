@@ -178,7 +178,7 @@ Fraction of pre-decisive timesteps for which the hidden true hypothesis remains 
 Precision/recall of abstention/review against oracle-defined insufficient-evidence states.
 
 ### Calibration
-ECE on selected-decision confidence. Full multiclass Brier score is computed only where choice_probabilities are genuinely available.
+ECE is computed on the benchmark selected-decision confidence. For Jev Choice, this is the probability assigned to the selected option, not Jev's separate distribution-shape `confidence` statistic. Full multiclass Brier score is computed only where `choice_probabilities` are genuinely available.
 
 ### Experiment Efficiency
 Information gain divided by declared intervention/test cost.
