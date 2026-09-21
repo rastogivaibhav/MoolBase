@@ -174,7 +174,10 @@ def main() -> int:
         assert output["choice_probabilities"]["database"] == 0.84
         assert output["receipt"]["jev_native_confidence"] == 0.81
         assert output["receipt"]["evidence_sufficient_noul"] == 0.88
-        assert abs(output["provider_cost"] - 0.000000042) < 1e-12
+        if output["receipt"]["provider"] == "opencode":
+            assert output["provider_cost"] == 0.0
+        else:
+            assert abs(output["provider_cost"] - 0.000000042) < 1e-12
 
     assert len(Handler.requests) == 101
     assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 51
