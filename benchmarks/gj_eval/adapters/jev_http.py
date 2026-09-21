@@ -7,7 +7,7 @@ by run_command_adapter.py.
 Environment:
   TYPESAFE_API_KEY              required for live calls
   TYPESAFE_API_URL              default https://api.typesafe.ai/v1/systemone
-  JEV_MODEL                     default jev-latest
+  JEV_MODEL                     default jev-1.13.0
   GJ_JEV_ACTION_THRESHOLD       default 0.75 (pre-registered)
   GJ_JEV_INPUT_USD_PER_MTOK     default 0.042
 
@@ -17,9 +17,11 @@ guessing an unstable/private SDK surface.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import Any
