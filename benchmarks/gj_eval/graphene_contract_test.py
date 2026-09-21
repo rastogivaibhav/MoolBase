@@ -100,38 +100,48 @@ def main() -> int:
     try:
         port = free_port()
         process, log = start_server(port)
-        world = build_world(1729, 0, "development")
-        valid_choices = {choice["id"] for choice in world["choices"]}
-        previous_snapshot = -1
         replay_seen = False
+        contract_tasks = 0
 
-        for step in world["timeline"]:
-            timestep = int(step["timestep"])
-            task = public_task(world, timestep, "structured")
-            assert "oracle" not in task
-            result = run_adapter(port, task)
-            assert result["root_choice"] in valid_choices
-            assert result["act"] in {"act", "review", "abstain"}
-            assert 0.0 <= float(result["selected_confidence"]) <= 1.0
+        for world_index in range(13):
+            world = build_world(1729, world_index, "development")
+            valid_choices = {choice["id"] for choice in world["choices"]}
+            previous_snapshot = -1
 
-            receipt = result["receipt"]
-            runtime = receipt["runtime"]
-            runtime_receipt = runtime["receipt"]
-            assert runtime_receipt["graphene_executed"] is True
-            assert runtime_receipt["fiber_bundle_built"] is True
-            assert runtime_receipt["stability_critic_executed"] is True
-            assert runtime_receipt["lyapunov_trajectory_executed"] is True
-            assert runtime_receipt["opposition_executed"] is True
-            assert runtime_receipt["governed_projection_executed"] is True
-            assert runtime_receipt["no_silent_promotion"] is True
-            snapshot = int(runtime_receipt["snapshot_version"])
-            assert snapshot >= previous_snapshot
-            previous_snapshot = snapshot
+            for step in world["timeline"]:
+                if contract_tasks >= 100:
+                    break
+                timestep = int(step["timestep"])
+                task = public_task(world, timestep, "structured")
+                assert "oracle" not in task
+                result = run_adapter(port, task)
+                contract_tasks += 1
 
-            extraction = receipt["extraction"]
-            if extraction["existing_nodes"] > 0:
-                replay_seen = True
+                assert result["root_choice"] in valid_choices
+                assert result["act"] in {"act", "review", "abstain"}
+                assert 0.0 <= float(result["selected_confidence"]) <= 1.0
 
+                receipt = result["receipt"]
+                runtime = receipt["runtime"]
+                runtime_receipt = runtime["receipt"]
+                assert runtime_receipt["graphene_executed"] is True
+                assert runtime_receipt["fiber_bundle_built"] is True
+                assert runtime_receipt["stability_critic_executed"] is True
+                assert runtime_receipt["lyapunov_trajectory_executed"] is True
+                assert runtime_receipt["opposition_executed"] is True
+                assert runtime_receipt["governed_projection_executed"] is True
+                assert runtime_receipt["no_silent_promotion"] is True
+                snapshot = int(runtime_receipt["snapshot_version"])
+                assert snapshot >= previous_snapshot
+                previous_snapshot = snapshot
+
+                extraction = receipt["extraction"]
+                if extraction["existing_nodes"] > 0:
+                    replay_seen = True
+            if contract_tasks >= 100:
+                break
+
+        assert contract_tasks == 100
         assert replay_seen, "cumulative idempotent replay was not exercised"
         metrics = get_json(port, "/v1/metrics")
         assert metrics["node_count"] > 0
@@ -144,6 +154,7 @@ def main() -> int:
 
         print(json.dumps({
             "graphene_g6_contract_test": True,
+            "canonical_tasks": contract_tasks,
             "persistent_state": True,
             "idempotent_replay": True,
             "runtime_receipt": True,
@@ -157,6 +168,3 @@ def main() -> int:
             log.close()
         shutil.rmtree(WORK, ignore_errors=True)
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
