@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("content-length", "0"))
         body = json.loads(self.rfile.read(length).decode("utf-8"))
         assert self.headers.get("Authorization") == "Bearer contract-test-key"
-        assert body["model"] == "jev-1.13.0"
+        assert body["model"] in {"jev-1.13.0", "jev-1.13-free"}
         assert set(body["questions"]) >= {"root_cause", "evidence_sufficient"}
         assert body["questions"]["root_cause"]["type"] == "choice"
         assert body["questions"]["evidence_sufficient"]["type"] == "noul"
@@ -91,10 +91,18 @@ def free_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def run_adapter(task: dict[str, Any], port: int) -> dict[str, Any]:
+def run_adapter(
+    task: dict[str, Any], port: int, provider: str
+) -> dict[str, Any]:
     env = dict(os.environ)
-    env["TYPESAFE_API_KEY"] = "contract-test-key"
-    env["TYPESAFE_API_URL"] = f"http://127.0.0.1:{port}/v1/systemone"
+    env["GJ_JEV_PROVIDER"] = provider
+    env["GJ_JEV_API_URL"] = f"http://127.0.0.1:{port}/v1/systemone"
+    if provider == "opencode":
+        env["OPENCODE_API_KEY"] = "contract-test-key"
+        env.pop("TYPESAFE_API_KEY", None)
+    else:
+        env["TYPESAFE_API_KEY"] = "contract-test-key"
+        env.pop("OPENCODE_API_KEY", None)
     completed = subprocess.run(
         [sys.executable, str(ADAPTER)],
         input=json.dumps(task),
@@ -151,7 +159,8 @@ def main() -> int:
                 }]
             else:
                 visible = ["Database saturation preceded checkout failures."]
-            outputs.append(run_adapter(task(visible), port))
+            provider = "opencode" if index % 2 == 0 else "typesafe"
+            outputs.append(run_adapter(task(visible), port, provider))
     finally:
         server.shutdown()
         server.server_close()
@@ -170,6 +179,11 @@ def main() -> int:
     assert len(Handler.requests) == 101
     assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 51
     assert sum(isinstance(req["state"], str) for req in Handler.requests) == 50
+    requested_models = [req["model"] for req in Handler.requests]
+    assert "jev-1.13-free" in requested_models
+    assert "jev-1.13.0" in requested_models
+    assert sum(output["receipt"]["provider"] == "opencode" for output in outputs) == 50
+    assert sum(output["receipt"]["provider"] == "typesafe" for output in outputs) == 50
     assert outputs[0]["receipt"]["transport_retries"] == 1
     assert all(
         output["receipt"]["transport_retries"] == 0
@@ -189,6 +203,8 @@ def main() -> int:
         "raw_state": True,
         "probability_calibration_field": True,
         "rate_limit_retry": True,
+        "opencode_free_transport": True,
+        "typesafe_reference_transport": True,
     }, sort_keys=True))
     return 0
 
