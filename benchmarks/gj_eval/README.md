@@ -14,7 +14,7 @@ v1 deliberately separates:
 - a common prediction schema,
 - scoring.
 
-The Jev integration is wired to TypeSafe's documented HTTP endpoint (`https://api.typesafe.ai/v1/systemone`) through `adapters/jev_http.py` and scored runs are pinned to `jev-1.13.0`. The live API key remains external and must never be committed.
+The Jev HTTP adapter supports two authenticated System One transports: OpenCode Zen (`jev-1.13-free`) and direct TypeSafe (`jev-1.13.0`). The development pilot prefers OpenCode's free route when `OPENCODE_API_KEY` is present and falls back to direct TypeSafe. Credentials remain external and must never be committed.
 
 ## Generate visible development worlds
 
@@ -81,10 +81,18 @@ The official TypeSafe integration should live behind the adapter command so the 
 
 ## Official Jev arms
 
-Set the live credential outside the repository:
+Set one live credential outside the repository. OpenCode is the preferred free route:
+
+```bash
+export OPENCODE_API_KEY="..."
+export GJ_JEV_PROVIDER="opencode"
+```
+
+Direct TypeSafe remains available as a fallback:
 
 ```bash
 export TYPESAFE_API_KEY="..."
+export GJ_JEV_PROVIDER="typesafe"
 ```
 
 J1 Structured:
@@ -125,3 +133,6 @@ python3 benchmarks/gj_eval/freeze_protocol.py --output /tmp/gj-eval-freeze.json
 ```
 
 When the hidden test is eventually executed, `GJ_EVAL_TEST_SEED` is supplied only at runtime; the receipt stores its SHA-256, never the seed itself.
+
+
+Vercel AI Gateway also exposes Jev through AI SDK's `experimental_evaluate` with model `typesafe-ai/jev`. GJ-Eval keeps that as a secondary transport/cross-check because Vercel's evaluation calls are AI-SDK-specific rather than the HTTP System One interface used by the primary Python adapter.
