@@ -226,9 +226,9 @@ Once test scoring starts:
 ## 10. Adapter fairness
 
 ### Jev
-The scored Jev adapter uses TypeSafe's documented HTTP contract directly: `POST https://api.typesafe.ai/v1/systemone`.
+The scored Jev HTTP adapter uses the System One request/response contract through an authenticated transport. The preferred development transport is OpenCode Zen `POST https://opencode.ai/zen/v1/systemone` with model `jev-1.13-free`; direct TypeSafe `POST https://api.typesafe.ai/v1/systemone` with `jev-1.13.0` remains the reference fallback.
 
-The scored model is pinned to `jev-1.13.0`; moving aliases such as `jev-latest` are not used for scored runs.
+Scored runs never use moving aliases. OpenCode runs pin `jev-1.13-free`; direct TypeSafe runs pin `jev-1.13.0`. Every result receipt records the transport and requested model so cross-transport results cannot be silently mixed.
 
 J1 sends the complete canonical structured state visible at that timestep and asks bounded typed questions in parallel:
 - `root_cause`: Choice over the benchmark root candidates plus `unknown`;
@@ -239,7 +239,7 @@ J0 uses the same questions but sends only the human-readable observation claims 
 
 The pre-registered autonomous-action rule follows TypeSafe's confidence-gated routing pattern: selected root is not `unknown`, Jev's native Choice `confidence` is at least 0.75, and `evidence_sufficient.noul` is at least 0.75. For benchmark calibration, `selected_confidence` remains the probability assigned to the selected Choice option; the native Choice confidence is retained separately and is used only for Jev's action gate.
 
-The adapter records the resolved model version, Jev native Choice confidence, full root probability distribution, evidence-sufficiency probability, usage/cost, transport retry count, and SHA-256 hashes of the canonical serialized state and question map. HTTP 429 and 529 responses follow TypeSafe's documented retry guidance with bounded exponential backoff; a failure after the retry budget remains a scored adapter error.
+The adapter records the transport, requested/resolved model version, Jev native Choice confidence, full root probability distribution, evidence-sufficiency probability, usage/cost, transport retry count, endpoint, and SHA-256 hashes of the canonical serialized state and question map. HTTP 429 and 529 responses follow TypeSafe's documented retry guidance with bounded exponential backoff; a failure after the retry budget remains a scored adapter error.
 
 ### Graphene
 Preferred v1 integration:
@@ -324,7 +324,7 @@ docs/benchmarks/GJ_EVAL_V1_SPEC.md
 P0. Commit the candidate protocol and schemas; complete harness self-review before final Gate-0 freeze.
 P1. Implement deterministic WorldShift generator and self-tests.
 P2. Implement Graphene HTTP adapter against current runtime.
-P3. Implement Jev adapter using the official current TypeSafe early-access API through the command contract.
+P3. Implement Jev adapter over the System One contract with OpenCode Zen free transport preferred for development and direct TypeSafe as fallback.
 P4. Add G0-G6 native ablation runner where clean runtime switches do not already exist.
 P5. Run development conformance only.
 P6. Freeze adapter hashes.
