@@ -80,7 +80,10 @@
   "statistical_rule": {
     "paired_bootstrap_confidence": 0.95,
     "claim_measurable_advantage_only_if_ci_excludes_zero": true,
-    "universal_winner_score": false
+    "universal_winner_score": false,
+    "bootstrap_unit": "scenario_id",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 20260921
   },
   "failure_policy": {
     "timeout_or_adapter_error": "retained_in_denominator_and_never_scored_as_correct_abstention",
@@ -91,5 +94,14 @@
     "variants_per_latent_scenario": 12,
     "pairing_key": "scenario_id",
     "rule": "Each latent scenario is emitted once per stress variant; paired deltas compare worlds sharing scenario_id."
-  }
+  },
+  "jev": {
+    "official_endpoint": "https://api.typesafe.ai/v1/systemone",
+    "model_alias": "jev-latest",
+    "action_threshold": 0.75,
+    "action_rule": "act iff root_choice != unknown AND selected_option_probability >= 0.75 AND evidence_sufficient_noul >= 0.75",
+    "calibration_value": "selected_option_probability",
+    "native_choice_confidence": "retained_in_receipt_not_used_as_selected_confidence"
+  },
+  "ablation_registry": "ablation_status.v1.json"
 }
