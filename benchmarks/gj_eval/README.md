@@ -14,7 +14,7 @@ v1 deliberately separates:
 - a common prediction schema,
 - scoring.
 
-The Jev integration is wired to TypeSafe's documented HTTP endpoint (`https://api.typesafe.ai/v1/systemone`) through `adapters/jev_http.py`. The live API key remains external and must never be committed.
+The Jev integration is wired to TypeSafe's documented HTTP endpoint (`https://api.typesafe.ai/v1/systemone`) through `adapters/jev_http.py` and scored runs are pinned to `jev-1.13.0`. The live API key remains external and must never be committed.
 
 ## Generate visible development worlds
 
