@@ -76,6 +76,46 @@ jobs:
             exit 2
           fi
 
+      - name: Gate 2C - live Jev provider smoke
+        run: |
+          cat > /tmp/gj-jev-smoke.json <<'JSON'
+          {
+            "schema_version": 1,
+            "world_id": "live-provider-smoke",
+            "timestep": 0,
+            "domain": "aiops",
+            "variant": "base",
+            "visible_state": [
+              {
+                "evidence_id": "smoke-e1",
+                "source_id": "smoke-source",
+                "source_family": "smoke-family",
+                "claim": "Database saturation preceded checkout failures.",
+                "supports": "database",
+                "confidence": 0.95,
+                "observed_at": "2026-01-01T00:00:00Z"
+              }
+            ],
+            "choices": [
+              {"id": "deployment", "label": "Deployment"},
+              {"id": "database", "label": "Database"},
+              {"id": "network", "label": "Network"},
+              {"id": "certificate", "label": "Certificate"},
+              {"id": "unknown", "label": "Unknown / insufficient evidence"}
+            ],
+            "tests": []
+          }
+          JSON
+          python benchmarks/gj_eval/adapters/jev_http.py < /tmp/gj-jev-smoke.json | tee /tmp/gj-jev-smoke.out
+          python - <<'PY'
+          import json
+          row=json.load(open("/tmp/gj-jev-smoke.out"))
+          assert row["root_choice"] in {"deployment","database","network","certificate","unknown"}
+          assert 0.0 <= float(row["selected_confidence"]) <= 1.0
+          assert row["receipt"]["transport"] in {"opencode","typesafe"}
+          print({"live_jev_smoke": True, "transport": row["receipt"]["transport"], "model": row["receipt"]["requested_model"]})
+          PY
+
       - name: Generate frozen development worlds
         run: |
           mkdir -p reports/gj-eval-dev
@@ -123,11 +163,13 @@ jobs:
                   if x
               ]
               assert len(rows) == expected, (name, len(rows), expected)
-              assert all(
-                  r["adapter_status"] in {"ok", "error", "timeout"}
-                  for r in rows
+              statuses = [r["adapter_status"] for r in rows]
+              assert all(s in {"ok", "error", "timeout"} for s in statuses)
+              assert all(s == "ok" for s in statuses), (
+                  name,
+                  {s: statuses.count(s) for s in sorted(set(statuses))}
               )
-          print({"worlds": len(worlds), "predictions_per_system": expected})
+          print({"worlds": len(worlds), "predictions_per_system": expected, "all_primary_predictions_ok": True})
           PY
 
       - name: Score primary systems
