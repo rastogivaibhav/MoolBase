@@ -237,7 +237,7 @@ J1 sends the complete canonical structured state visible at that timestep and as
 
 J0 uses the same questions but sends only the human-readable observation claims as a raw string state; canonical provenance/dependency fields are intentionally removed.
 
-The pre-registered autonomous-action rule is: selected root is not `unknown`, the probability assigned to that selected root is at least 0.75, and `evidence_sufficient.noul` is at least 0.75. For benchmark calibration, `selected_confidence` is the probability assigned to the selected Choice option. Jev's separate distribution-shape `confidence` statistic is retained in the receipt but is not substituted for the selected-option probability.
+The pre-registered autonomous-action rule follows TypeSafe's confidence-gated routing pattern: selected root is not `unknown`, Jev's native Choice `confidence` is at least 0.75, and `evidence_sufficient.noul` is at least 0.75. For benchmark calibration, `selected_confidence` remains the probability assigned to the selected Choice option; the native Choice confidence is retained separately and is used only for Jev's action gate.
 
 The adapter records the resolved model version, Jev native Choice confidence, full root probability distribution, evidence-sufficiency probability, usage/cost, transport retry count, and SHA-256 hashes of the canonical serialized state and question map. HTTP 429 and 529 responses follow TypeSafe's documented retry guidance with bounded exponential backoff; a failure after the retry budget remains a scored adapter error.
 
