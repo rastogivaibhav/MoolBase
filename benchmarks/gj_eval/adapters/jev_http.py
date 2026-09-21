@@ -194,7 +194,7 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
     act = (
         "act"
         if choice != "unknown"
-        and selected_probability >= threshold
+        and native_confidence >= threshold
         and sufficient_probability >= threshold
         else "review"
     )
