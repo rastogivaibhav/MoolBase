@@ -1,6 +1,13 @@
 name: GJ-Eval Harness
 
 on:
+  push:
+    branches:
+      - "bench/gj-eval-v1"
+    paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
+      - ".github/workflows/gj-eval-harness.yml"
   pull_request:
     paths:
       - "benchmarks/gj_eval/**"
