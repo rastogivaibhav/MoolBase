@@ -5,11 +5,13 @@ Reads one GJ-Eval task from stdin and emits the provider decision JSON expected
 by run_command_adapter.py.
 
 Environment:
-  TYPESAFE_API_KEY              required for live calls
-  TYPESAFE_API_URL              default https://api.typesafe.ai/v1/systemone
-  JEV_MODEL                     default jev-1.13.0
+  GJ_JEV_PROVIDER               typesafe | opencode (default typesafe)
+  TYPESAFE_API_KEY              credential for direct TypeSafe transport
+  OPENCODE_API_KEY              credential for OpenCode Zen transport
+  GJ_JEV_API_URL                optional endpoint override for contract testing
+  JEV_MODEL                     optional pinned model override
   GJ_JEV_ACTION_THRESHOLD       default 0.75 (pre-registered)
-  GJ_JEV_INPUT_USD_PER_MTOK     default 0.042
+  GJ_JEV_INPUT_USD_PER_MTOK     optional price override
 
 The implementation intentionally uses the documented HTTP contract instead of
 guessing an unstable/private SDK surface.
@@ -27,10 +29,21 @@ import urllib.request
 from typing import Any
 
 
-DEFAULT_URL = "https://api.typesafe.ai/v1/systemone"
-DEFAULT_MODEL = "jev-1.13.0"
+PROVIDERS = {
+    "typesafe": {
+        "url": "https://api.typesafe.ai/v1/systemone",
+        "model": "jev-1.13.0",
+        "key_env": "TYPESAFE_API_KEY",
+        "input_usd_per_mtok": 0.042,
+    },
+    "opencode": {
+        "url": "https://opencode.ai/zen/v1/systemone",
+        "model": "jev-1.13-free",
+        "key_env": "OPENCODE_API_KEY",
+        "input_usd_per_mtok": 0.0,
+    },
+}
 DEFAULT_ACTION_THRESHOLD = 0.75
-DEFAULT_INPUT_USD_PER_MTOK = 0.042
 
 
 def root_criteria(task: dict[str, Any]) -> dict[str, str]:
@@ -75,7 +88,39 @@ def normalize_state(task: dict[str, Any]) -> str | list[Any] | dict[str, Any]:
     }
 
 
-def build_request(task: dict[str, Any]) -> dict[str, Any]:
+def provider_config() -> dict[str, Any]:
+    provider = os.environ.get("GJ_JEV_PROVIDER", "typesafe").strip().lower()
+    if provider not in PROVIDERS:
+        raise ValueError(
+            f"Unsupported GJ_JEV_PROVIDER={provider!r}; expected one of "
+            f"{sorted(PROVIDERS)}"
+        )
+    profile = PROVIDERS[provider]
+    key_env = str(profile["key_env"])
+    api_key = os.environ.get(key_env, "")
+    if not api_key:
+        raise RuntimeError(f"{key_env} is required for {provider} Jev calls")
+    return {
+        "provider": provider,
+        "url": os.environ.get(
+            "GJ_JEV_API_URL",
+            os.environ.get(
+                "TYPESAFE_API_URL" if provider == "typesafe" else "OPENCODE_API_URL",
+                str(profile["url"]),
+            ),
+        ),
+        "model": os.environ.get("JEV_MODEL", str(profile["model"])),
+        "api_key": api_key,
+        "input_usd_per_mtok": float(
+            os.environ.get(
+                "GJ_JEV_INPUT_USD_PER_MTOK",
+                str(profile["input_usd_per_mtok"]),
+            )
+        ),
+    }
+
+
+def build_request(task: dict[str, Any], model: str) -> dict[str, Any]:
     questions: dict[str, Any] = {
         "root_cause": {
             "type": "choice",
@@ -116,16 +161,16 @@ def build_request(task: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "state": normalize_state(task),
-        "model": os.environ.get("JEV_MODEL", DEFAULT_MODEL),
+        "model": model,
         "questions": questions,
     }
 
 
-def call_typesafe(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
-    api_key = os.environ.get("TYPESAFE_API_KEY", "")
-    if not api_key:
-        raise RuntimeError("TYPESAFE_API_KEY is required for live Jev calls")
-    url = os.environ.get("TYPESAFE_API_URL", DEFAULT_URL)
+def call_jev(
+    payload: dict[str, Any], config: dict[str, Any]
+) -> tuple[dict[str, Any], int]:
+    api_key = str(config["api_key"])
+    url = str(config["url"])
     body = json.dumps(payload, sort_keys=True).encode("utf-8")
     max_retries = 5
 
@@ -146,7 +191,7 @@ def call_typesafe(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
                 parsed = json.loads(raw) if raw else {}
                 if response.status < 200 or response.status >= 300:
                     raise RuntimeError(
-                        f"TypeSafe returned HTTP {response.status}: {parsed}"
+                        f"Jev provider returned HTTP {response.status}: {parsed}"
                     )
                 return parsed, attempt
         except urllib.error.HTTPError as exc:
@@ -160,23 +205,25 @@ def call_typesafe(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
                 time.sleep(min(8.0, max(0.1, delay)))
                 continue
             raise RuntimeError(
-                f"TypeSafe returned HTTP {exc.code}: {raw}"
+                f"Jev provider returned HTTP {exc.code}: {raw}"
             ) from exc
 
-    raise RuntimeError("TypeSafe retry loop exhausted")
+    raise RuntimeError("Jev provider retry loop exhausted")
 
 
-def parse_response(response: dict[str, Any]) -> dict[str, Any]:
+def parse_response(
+    response: dict[str, Any], provider: str, input_usd_per_mtok: float
+) -> dict[str, Any]:
     answers = response.get("answers")
     if not isinstance(answers, dict):
-        raise ValueError("TypeSafe response missing answers object")
+        raise ValueError("Jev response missing answers object")
 
     root = answers.get("root_cause")
     sufficient = answers.get("evidence_sufficient")
     if not isinstance(root, dict) or root.get("type") != "choice":
-        raise ValueError("TypeSafe response missing root_cause Choice answer")
+        raise ValueError("Jev response missing root_cause Choice answer")
     if not isinstance(sufficient, dict) or sufficient.get("type") != "noul":
-        raise ValueError("TypeSafe response missing evidence_sufficient Noul answer")
+        raise ValueError("Jev response missing evidence_sufficient Noul answer")
 
     choice = str(root.get("choice"))
     probabilities = {
@@ -216,11 +263,7 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
 
     usage = response.get("usage") if isinstance(response.get("usage"), dict) else {}
     input_tokens = int(usage.get("input_tokens", 0) or 0)
-    price = float(
-        os.environ.get(
-            "GJ_JEV_INPUT_USD_PER_MTOK", DEFAULT_INPUT_USD_PER_MTOK
-        )
-    )
+    price = input_usd_per_mtok
 
     return {
         "root_choice": choice,
@@ -236,7 +279,7 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
         ),
         "provider_cost": input_tokens * price / 1_000_000.0,
         "receipt": {
-            "provider": "typesafe",
+            "provider": provider,
             "model": response.get("model"),
             "jev_native_confidence": native_confidence,
             "evidence_sufficient_noul": sufficient_probability,
@@ -248,11 +291,19 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> int:
     task = json.load(sys.stdin)
-    payload = build_request(task)
-    response, retries = call_typesafe(payload)
-    output = parse_response(response)
+    config = provider_config()
+    payload = build_request(task, str(config["model"]))
+    response, retries = call_jev(payload, config)
+    output = parse_response(
+        response,
+        str(config["provider"]),
+        float(config["input_usd_per_mtok"]),
+    )
     receipt = output.setdefault("receipt", {})
     receipt["transport_retries"] = retries
+    receipt["transport"] = str(config["provider"])
+    receipt["requested_model"] = str(config["model"])
+    receipt["endpoint"] = str(config["url"])
     receipt["state_sha256"] = hashlib.sha256(
         json.dumps(payload["state"], sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
