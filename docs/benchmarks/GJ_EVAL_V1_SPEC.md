@@ -133,7 +133,7 @@ Required:
 - system
 - root_choice
 - act: act | abstain | review
-- selected_confidence in [0,1]
+- selected_confidence in [0,1]. For Jev Choice, this is the selected option probability; Jev's native distribution-shape `confidence` is retained separately in the receipt.
 - latency_ms
 
 Optional when supported:
@@ -200,7 +200,7 @@ Primary endpoint family:
 3. Premature Convergence Rate
 4. Final Accuracy
 
-Report paired bootstrap 95% confidence intervals over worlds.
+Report paired bootstrap 95% confidence intervals with `scenario_id` as the resampling cluster. All stress variants for a latent scenario move together in a bootstrap sample; variants are not treated as independent worlds.
 
 A measurable advantage may be claimed for an endpoint only when:
 - the pre-registered direction is satisfied,
@@ -254,7 +254,7 @@ GATE-1 Generator determinism:
 - stress transformations change only declared fields
 
 GATE-2 Adapter conformance:
-- both primary adapters pass 100 canonical contract cases
+- both primary adapters pass at least 100 canonical task-level contract cases
 - malformed/timeout responses are retained as failures
 - no oracle field is visible to adapters
 
@@ -263,7 +263,7 @@ GATE-3 Graphene non-regression:
 - benchmark adds no durable-format mutation
 
 GATE-4 Paired pilot:
-- at least 250 development episodes complete for J1 and G6
+- all 240 pre-registered development worlds complete for J1 and G6
 - no score-driven protocol changes after this gate
 
 GATE-5 Hidden test:
