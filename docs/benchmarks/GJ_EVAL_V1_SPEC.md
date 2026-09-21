@@ -226,9 +226,20 @@ Once test scoring starts:
 ## 10. Adapter fairness
 
 ### Jev
-The repository does not invent or pin a private Jev SDK surface. The Jev adapter is an external command/process conforming to Prediction v1. This permits the official current TypeSafe client to be used without changing the benchmark protocol.
+The scored Jev adapter uses TypeSafe's documented HTTP contract directly: `POST https://api.typesafe.ai/v1/systemone`.
 
-The Jev implementation must record model/version, workflow-definition hash, state serialization hash, timestamps, and provider latency/cost where exposed.
+The scored model is pinned to `jev-1.13.0`; moving aliases such as `jev-latest` are not used for scored runs.
+
+J1 sends the complete canonical structured state visible at that timestep and asks bounded typed questions in parallel:
+- `root_cause`: Choice over the benchmark root candidates plus `unknown`;
+- `evidence_sufficient`: Noul asking whether the visible evidence is sufficient for autonomous action;
+- `next_test`: Choice over the fixed test menu plus `none`, when a test menu is present.
+
+J0 uses the same questions but sends only the human-readable observation claims as a raw string state; canonical provenance/dependency fields are intentionally removed.
+
+The pre-registered autonomous-action rule is: selected root is not `unknown`, the probability assigned to that selected root is at least 0.75, and `evidence_sufficient.noul` is at least 0.75. For benchmark calibration, `selected_confidence` is the probability assigned to the selected Choice option. Jev's separate distribution-shape `confidence` statistic is retained in the receipt but is not substituted for the selected-option probability.
+
+The adapter records the resolved model version, Jev native Choice confidence, full root probability distribution, evidence-sufficiency probability, usage/cost, transport retry count, and SHA-256 hashes of the canonical serialized state and question map. HTTP 429 and 529 responses follow TypeSafe's documented retry guidance with bounded exponential backoff; a failure after the retry budget remains a scored adapter error.
 
 ### Graphene
 Preferred v1 integration:
