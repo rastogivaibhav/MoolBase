@@ -73,66 +73,86 @@ def main() -> int:
 
     report: dict[str, Any] = {"systems": {}}
     for system, rows in sorted(by_system.items()):
-        rows = sorted(rows, key=lambda r: (r["world_id"], r["timestep"]))
-        final_by_world: dict[str, dict[str, Any]] = {}
+        grouped: dict[str, dict[int, dict[str, Any]]] = defaultdict(dict)
+        for row in rows:
+            wid = row.get("world_id")
+            if wid in worlds:
+                grouped[wid][int(row["timestep"])] = row
+
+        final_correct = 0
         correct_all = 0
-        scored_all = 0
+        expected_all = 0
+        actual_all = 0
         confidences: list[tuple[float, int]] = []
         latencies: list[float] = []
         abstention_tp = abstention_fp = abstention_fn = 0
         wrong_dwell_total = 0
         recovery_latencies: list[int] = []
         premature_episodes = 0
+        worlds_with_final_prediction = 0
 
-        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for row in rows:
-            if row["world_id"] in worlds:
-                grouped[row["world_id"]].append(row)
-
-        for world_id, episode_rows in grouped.items():
-            world = worlds[world_id]
+        for world_id, world in worlds.items():
             oracle = world["oracle"]
             truth = oracle["true_root"]
             decisive = int(oracle["decisive_timestep"])
             insufficient_until = int(oracle.get("insufficient_until", -1))
-            episode_rows.sort(key=lambda r: r["timestep"])
-            if episode_rows:
-                final_by_world[world_id] = episode_rows[-1]
+            expected_timesteps = [int(step["timestep"]) for step in world["timeline"]]
+            final_t = max(expected_timesteps)
+            episode = grouped.get(world_id, {})
+
+            expected_all += len(expected_timesteps)
+            actual_all += len(episode)
+
+            final = episode.get(final_t)
+            if final is not None:
+                worlds_with_final_prediction += 1
+                if (
+                    final.get("adapter_status") == "ok"
+                    and final.get("root_choice") == truth
+                ):
+                    final_correct += 1
 
             committed_wrong_after_decisive = 0
             recovered_at = None
             had_premature = False
 
-            for row in episode_rows:
-                t = int(row["timestep"])
+            for t in expected_timesteps:
+                row = episode.get(t)
+                if row is None:
+                    if t <= insufficient_until:
+                        abstention_fn += 1
+                    continue
+
+                adapter_ok = row.get("adapter_status") == "ok"
                 choice = row.get("root_choice")
                 act = row.get("act")
-                correct = int(choice == truth)
-                scored_all += 1
+                correct = int(adapter_ok and choice == truth)
                 correct_all += correct
 
                 confidence = float(row.get("selected_confidence", 0.0))
-                confidences.append((confidence, correct))
+                if adapter_ok:
+                    confidences.append((confidence, correct))
                 latencies.append(float(row.get("latency_ms", 0.0)))
 
                 should_abstain = t <= insufficient_until
-                did_abstain = adapter_ok and (act in ("abstain", "review") or choice in (None, "unknown"))
+                did_abstain = adapter_ok and (
+                    act in ("abstain", "review") or choice in (None, "unknown")
+                )
                 if did_abstain and should_abstain:
                     abstention_tp += 1
                 elif did_abstain and not should_abstain:
                     abstention_fp += 1
-                elif (not did_abstain) and should_abstain:
+                elif should_abstain:
                     abstention_fn += 1
 
-                if t <= insufficient_until:
-                    if (
-                        adapter_ok
-                        and act == "act"
-                        and choice not in (None, "unknown")
-                        and confidence >= 0.75
-                        and choice != truth
-                    ):
-                        had_premature = True
+                if (
+                    t <= insufficient_until
+                    and adapter_ok
+                    and act == "act"
+                    and choice not in (None, "unknown", truth)
+                    and confidence >= 0.75
+                ):
+                    had_premature = True
 
                 if t >= decisive:
                     if adapter_ok and choice == truth:
@@ -141,25 +161,19 @@ def main() -> int:
                     elif (
                         adapter_ok
                         and act == "act"
-                        and choice not in (None, "unknown")
-                        and choice != truth
+                        and choice not in (None, "unknown", truth)
                     ):
                         committed_wrong_after_decisive += 1
 
             if had_premature:
                 premature_episodes += 1
             wrong_dwell_total += committed_wrong_after_decisive
-            episode_end = max(int(row["timestep"]) for row in episode_rows)
             if recovered_at is not None:
                 recovery_latencies.append(max(0, recovered_at - decisive))
             else:
-                recovery_latencies.append(max(1, episode_end - decisive + 1))
+                recovery_latencies.append(max(1, final_t - decisive + 1))
 
-        final_correct = sum(
-            1 for wid, row in final_by_world.items()
-            if row.get("root_choice") == worlds[wid]["oracle"]["true_root"]
-        )
-        final_n = len(final_by_world)
+        n_worlds = len(worlds)
         abstention_precision = (
             abstention_tp / (abstention_tp + abstention_fp)
             if (abstention_tp + abstention_fp) else None
@@ -170,17 +184,22 @@ def main() -> int:
         )
 
         report["systems"][system] = {
-            "worlds_scored": final_n,
-            "predictions_scored": scored_all,
-            "final_accuracy": final_correct / final_n if final_n else None,
-            "trajectory_accuracy": correct_all / scored_all if scored_all else None,
+            "worlds_expected": n_worlds,
+            "worlds_with_final_prediction": worlds_with_final_prediction,
+            "prediction_coverage": actual_all / expected_all if expected_all else None,
+            "predictions_expected": expected_all,
+            "predictions_received": actual_all,
+            "final_accuracy": final_correct / n_worlds if n_worlds else None,
+            "trajectory_accuracy": correct_all / expected_all if expected_all else None,
             "wrong_model_dwell_time_total": wrong_dwell_total,
-            "wrong_model_dwell_time_mean": wrong_dwell_total / final_n if final_n else None,
+            "wrong_model_dwell_time_mean": (
+                wrong_dwell_total / n_worlds if n_worlds else None
+            ),
             "recovery_latency_mean": (
                 statistics.mean(recovery_latencies) if recovery_latencies else None
             ),
             "premature_convergence_episode_rate": (
-                premature_episodes / final_n if final_n else None
+                premature_episodes / n_worlds if n_worlds else None
             ),
             "abstention_precision": abstention_precision,
             "abstention_recall": abstention_recall,
