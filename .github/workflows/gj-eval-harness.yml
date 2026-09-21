@@ -31,7 +31,10 @@ jobs:
         run: python benchmarks/gj_eval/self_test.py
 
       - name: Validate official Jev HTTP contract without provider calls
-        run: python benchmarks/gj_eval/jev_contract_test.py
+        run: |
+          python benchmarks/gj_eval/jev_contract_test.py | tee /tmp/gj-jev-contract.log
+          grep -q '"jev_contract_test": true' /tmp/gj-jev-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-jev-contract.log
 
       - name: Configure GrapheneDB for G6 conformance
         run: >
@@ -45,6 +48,7 @@ jobs:
         run: cmake --build build-gj --target graphenedb_server -j 2
 
       - name: Validate G6 against real GrapheneDB runtime
-        run: >
-          python benchmarks/gj_eval/graphene_contract_test.py
-          build-gj/graphenedb_server
+        run: |
+          python benchmarks/gj_eval/graphene_contract_test.py build-gj/graphenedb_server | tee /tmp/gj-g6-contract.log
+          grep -q '"graphene_g6_contract_test": true' /tmp/gj-g6-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-g6-contract.log
