@@ -2,6 +2,11 @@ name: GJ-Eval Development Pilot
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "bench/gj-eval-v1"
+    paths:
+      - ".github/workflows/gj-eval-development-pilot.yml"
 
 permissions:
   contents: read
@@ -14,9 +19,47 @@ jobs:
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Compile GJ-Eval Python
+        run: python -m compileall -q benchmarks/gj_eval
+
+      - name: Gate 1 - provider-free harness invariants
+        run: |
+          python benchmarks/gj_eval/self_test.py | tee /tmp/gj-self-test.log
+          grep -q '"gj_eval_self_test": true' /tmp/gj-self-test.log
+          grep -q '"oracle_redaction": true' /tmp/gj-self-test.log
+          grep -q '"adapter_failure_not_abstention": true' /tmp/gj-self-test.log
+
+      - name: Gate 2A - 100-case Jev transport contract
+        run: |
+          python benchmarks/gj_eval/jev_contract_test.py | tee /tmp/gj-jev-contract.log
+          grep -q '"jev_contract_test": true' /tmp/gj-jev-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-jev-contract.log
+          grep -q '"opencode_free_transport": true' /tmp/gj-jev-contract.log
+          grep -q '"typesafe_reference_transport": true' /tmp/gj-jev-contract.log
+
+      - name: Configure GrapheneDB
+        run: >
+          cmake -S . -B build-gj-pilot
+          -DCMAKE_BUILD_TYPE=Release
+          -DGRAPHENEDB_BUILD_TESTS=OFF
+          -DGRAPHENEDB_BUILD_BENCH=OFF
+          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build GrapheneDB server
+        run: cmake --build build-gj-pilot --target graphenedb_server -j 2
+
+      - name: Gate 2B - 100-case real Graphene G6 contract
+        run: |
+          python benchmarks/gj_eval/graphene_contract_test.py build-gj-pilot/graphenedb_server | tee /tmp/gj-g6-contract.log
+          grep -q '"graphene_g6_contract_test": true' /tmp/gj-g6-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-g6-contract.log
+          grep -q '"persistent_state": true' /tmp/gj-g6-contract.log
+          grep -q '"idempotent_replay": true' /tmp/gj-g6-contract.log
 
       - name: Select authenticated Jev transport
         run: |
@@ -31,56 +74,83 @@ jobs:
             exit 2
           fi
 
-      - name: Configure GrapheneDB
-        run: >
-          cmake -S . -B build-gj-pilot
-          -DCMAKE_BUILD_TYPE=Release
-          -DGRAPHENEDB_BUILD_TESTS=OFF
-          -DGRAPHENEDB_BUILD_BENCH=OFF
-          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
-
-      - name: Build GrapheneDB server
-        run: cmake --build build-gj-pilot --target graphenedb_server -j 2
-
       - name: Generate frozen development worlds
         run: |
           mkdir -p reports/gj-eval-dev
-          python benchmarks/gj_eval/generate_worldshift.py             --split development             --count 240             --seed 1729             --output reports/gj-eval-dev/worlds.jsonl
+          python benchmarks/gj_eval/generate_worldshift.py \
+            --split development \
+            --count 240 \
+            --seed 1729 \
+            --output reports/gj-eval-dev/worlds.jsonl
 
       - name: Run G6 Full Graphene
         run: |
-          python benchmarks/gj_eval/run_graphene_managed.py             --server-binary build-gj-pilot/graphenedb_server             --worlds reports/gj-eval-dev/worlds.jsonl             --adapter benchmarks/gj_eval/adapters/graphene_http.py             --system graphenedb_full             --output reports/gj-eval-dev/graphenedb_full.jsonl
+          python benchmarks/gj_eval/run_graphene_managed.py \
+            --server-binary build-gj-pilot/graphenedb_server \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --adapter benchmarks/gj_eval/adapters/graphene_http.py \
+            --system graphenedb_full \
+            --output reports/gj-eval-dev/graphenedb_full.jsonl
 
       - name: Run J1 Jev Structured
         run: |
-          python benchmarks/gj_eval/run_command_adapter.py             --worlds reports/gj-eval-dev/worlds.jsonl             --adapter-cmd "python benchmarks/gj_eval/adapters/jev_http.py"             --system jev_structured             --state-mode structured             --timeout-s 60             --output reports/gj-eval-dev/jev_structured.jsonl
+          python benchmarks/gj_eval/run_command_adapter.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --adapter-cmd "python benchmarks/gj_eval/adapters/jev_http.py" \
+            --system jev_structured \
+            --state-mode structured \
+            --timeout-s 60 \
+            --output reports/gj-eval-dev/jev_structured.jsonl
 
       - name: Require complete primary prediction coverage
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          worlds=[json.loads(x) for x in Path("reports/gj-eval-dev/worlds.jsonl").read_text().splitlines() if x]
-          expected=sum(len(w["timeline"]) for w in worlds)
-          for name in ("graphenedb_full","jev_structured"):
-              rows=[json.loads(x) for x in Path(f"reports/gj-eval-dev/{name}.jsonl").read_text().splitlines() if x]
-              assert len(rows)==expected, (name, len(rows), expected)
-              assert all(r["adapter_status"] in {"ok","error","timeout"} for r in rows)
-          print({"worlds":len(worlds),"predictions_per_system":expected})
+
+          worlds = [
+              json.loads(x)
+              for x in Path("reports/gj-eval-dev/worlds.jsonl").read_text().splitlines()
+              if x
+          ]
+          expected = sum(len(w["timeline"]) for w in worlds)
+          for name in ("graphenedb_full", "jev_structured"):
+              rows = [
+                  json.loads(x)
+                  for x in Path(f"reports/gj-eval-dev/{name}.jsonl").read_text().splitlines()
+                  if x
+              ]
+              assert len(rows) == expected, (name, len(rows), expected)
+              assert all(
+                  r["adapter_status"] in {"ok", "error", "timeout"}
+                  for r in rows
+              )
+          print({"worlds": len(worlds), "predictions_per_system": expected})
           PY
 
       - name: Score primary systems
         run: |
-          cat reports/gj-eval-dev/graphenedb_full.jsonl               reports/gj-eval-dev/jev_structured.jsonl               > reports/gj-eval-dev/primary_predictions.jsonl
-          python benchmarks/gj_eval/score.py             --worlds reports/gj-eval-dev/worlds.jsonl             --predictions reports/gj-eval-dev/primary_predictions.jsonl             > reports/gj-eval-dev/score.json
+          cat reports/gj-eval-dev/graphenedb_full.jsonl \
+              reports/gj-eval-dev/jev_structured.jsonl \
+              > reports/gj-eval-dev/primary_predictions.jsonl
+          python benchmarks/gj_eval/score.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --predictions reports/gj-eval-dev/primary_predictions.jsonl \
+            > reports/gj-eval-dev/score.json
 
       - name: Cluster-paired comparison
         run: |
-          python benchmarks/gj_eval/compare.py             --worlds reports/gj-eval-dev/worlds.jsonl             --predictions reports/gj-eval-dev/primary_predictions.jsonl             --system-a graphenedb_full             --system-b jev_structured             > reports/gj-eval-dev/comparison.json
+          python benchmarks/gj_eval/compare.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --predictions reports/gj-eval-dev/primary_predictions.jsonl \
+            --system-a graphenedb_full \
+            --system-b jev_structured \
+            > reports/gj-eval-dev/comparison.json
 
       - name: Write protocol receipt
         run: |
-          python benchmarks/gj_eval/freeze_protocol.py             --output reports/gj-eval-dev/protocol_receipt.json
+          python benchmarks/gj_eval/freeze_protocol.py \
+            --output reports/gj-eval-dev/protocol_receipt.json
 
       - name: Upload raw development pilot
         uses: actions/upload-artifact@v4
