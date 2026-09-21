@@ -16,7 +16,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Compile benchmark Python
         run: python -m compileall -q benchmarks/gj_eval
+
       - name: Run provider-free harness self-test
         run: python benchmarks/gj_eval/self_test.py
+
+      - name: Validate official Jev HTTP contract without provider calls
+        run: python benchmarks/gj_eval/jev_contract_test.py
+
+      - name: Configure GrapheneDB for G6 conformance
+        run: >
+          cmake -S . -B build-gj
+          -DCMAKE_BUILD_TYPE=Release
+          -DGRAPHENEDB_BUILD_TESTS=ON
+          -DGRAPHENEDB_BUILD_BENCH=OFF
+          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build GrapheneDB server
+        run: cmake --build build-gj --target graphenedb_server -j 2
+
+      - name: Validate G6 against real GrapheneDB runtime
+        run: >
+          python benchmarks/gj_eval/graphene_contract_test.py
+          build-gj/graphenedb_server
