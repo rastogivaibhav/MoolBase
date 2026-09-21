@@ -10,6 +10,7 @@ jobs:
   primary-pilot:
     runs-on: ubuntu-latest
     env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -17,10 +18,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Require live TypeSafe credential
+      - name: Select authenticated Jev transport
         run: |
-          if [ -z "$TYPESAFE_API_KEY" ]; then
-            echo "TYPESAFE_API_KEY repository secret is required for the live J1 pilot."
+          if [ -n "$OPENCODE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=opencode" >> "$GITHUB_ENV"
+            echo "Using OpenCode Zen jev-1.13-free."
+          elif [ -n "$TYPESAFE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=typesafe" >> "$GITHUB_ENV"
+            echo "Using direct TypeSafe jev-1.13.0."
+          else
+            echo "Set OPENCODE_API_KEY (preferred free route) or TYPESAFE_API_KEY."
             exit 2
           fi
 
