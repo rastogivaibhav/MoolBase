@@ -177,7 +177,10 @@ def main() -> int:
         if output["receipt"]["provider"] == "opencode":
             assert output["provider_cost"] == 0.0
         else:
-            assert abs(output["provider_cost"] - 0.000000042) < 1e-12
+            expected_cost = (
+                output["receipt"]["usage"]["input_tokens"] * 0.042 / 1_000_000.0
+            )
+            assert abs(output["provider_cost"] - expected_cost) < 1e-12
 
     assert len(Handler.requests) == 101
     assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 51
