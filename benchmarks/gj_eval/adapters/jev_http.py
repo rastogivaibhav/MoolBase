@@ -26,7 +26,7 @@ from typing import Any
 
 
 DEFAULT_URL = "https://api.typesafe.ai/v1/systemone"
-DEFAULT_MODEL = "jev-latest"
+DEFAULT_MODEL = "jev-1.13.0"
 DEFAULT_ACTION_THRESHOLD = 0.75
 DEFAULT_INPUT_USD_PER_MTOK = 0.042
 
