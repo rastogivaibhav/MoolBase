@@ -128,46 +128,48 @@ def main() -> int:
     server = HTTPServer(("127.0.0.1", port), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    outputs = []
     try:
-        structured = run_adapter(
-            task([
-                {
-                    "evidence_id": "e1",
+        for index in range(100):
+            if index % 2 == 0:
+                visible = [{
+                    "evidence_id": f"e{index}",
                     "claim": "Database saturation preceded checkout failures.",
                     "source_id": "db-monitor",
                     "source_family": "db-monitor",
                     "supports": "database",
                     "confidence": 0.9,
-                }
-            ]),
-            port,
-        )
-        raw = run_adapter(
-            task(["Database saturation preceded checkout failures."]),
-            port,
-        )
+                }]
+            else:
+                visible = ["Database saturation preceded checkout failures."]
+            outputs.append(run_adapter(task(visible), port))
     finally:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
 
-    assert structured["root_choice"] == "database"
-    assert structured["act"] == "act"
-    assert structured["selected_confidence"] == 0.84
-    assert structured["choice_probabilities"]["database"] == 0.84
-    assert structured["receipt"]["jev_native_confidence"] == 0.81
-    assert structured["receipt"]["evidence_sufficient_noul"] == 0.88
-    assert abs(structured["provider_cost"] - 0.000000042) < 1e-12
-    assert raw["root_choice"] == "database"
+    assert len(outputs) == 100
+    for output in outputs:
+        assert output["root_choice"] == "database"
+        assert output["act"] == "act"
+        assert output["selected_confidence"] == 0.84
+        assert output["choice_probabilities"]["database"] == 0.84
+        assert output["receipt"]["jev_native_confidence"] == 0.81
+        assert output["receipt"]["evidence_sufficient_noul"] == 0.88
+        assert abs(output["provider_cost"] - 0.000000042) < 1e-12
 
-    assert len(Handler.requests) == 2
-    assert isinstance(Handler.requests[0]["state"], dict)
-    assert isinstance(Handler.requests[1]["state"], str)
-    assert "observations" in Handler.requests[0]["state"]
-    assert "source_family" not in Handler.requests[1]["state"]
+    assert len(Handler.requests) == 100
+    assert sum(isinstance(req["state"], dict) for req in Handler.requests) == 50
+    assert sum(isinstance(req["state"], str) for req in Handler.requests) == 50
+    for req in Handler.requests:
+        if isinstance(req["state"], str):
+            assert "source_family" not in req["state"]
+        else:
+            assert "observations" in req["state"]
 
     print(json.dumps({
         "jev_contract_test": True,
+        "canonical_tasks": 100,
         "official_shape": True,
         "structured_state": True,
         "raw_state": True,
@@ -175,6 +177,3 @@ def main() -> int:
     }, sort_keys=True))
     return 0
 
-
-if __name__ == "__main__":
-    raise SystemExit(main())
