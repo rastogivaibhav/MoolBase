@@ -119,36 +119,49 @@ def build_request(task: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def call_typesafe(payload: dict[str, Any]) -> dict[str, Any]:
+def call_typesafe(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
     api_key = os.environ.get("TYPESAFE_API_KEY", "")
     if not api_key:
         raise RuntimeError("TYPESAFE_API_KEY is required for live Jev calls")
     url = os.environ.get("TYPESAFE_API_URL", DEFAULT_URL)
     body = json.dumps(payload, sort_keys=True).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            raw = response.read().decode("utf-8")
-            parsed = json.loads(raw) if raw else {}
-            if response.status < 200 or response.status >= 300:
-                raise RuntimeError(
-                    f"TypeSafe returned HTTP {response.status}: {parsed}"
-                )
-            return parsed
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(
-            f"TypeSafe returned HTTP {exc.code}: {raw}"
-        ) from exc
+    max_retries = 5
+
+    for attempt in range(max_retries + 1):
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                raw = response.read().decode("utf-8")
+                parsed = json.loads(raw) if raw else {}
+                if response.status < 200 or response.status >= 300:
+                    raise RuntimeError(
+                        f"TypeSafe returned HTTP {response.status}: {parsed}"
+                    )
+                return parsed, attempt
+        except urllib.error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", errors="replace")
+            if exc.code in (429, 529) and attempt < max_retries:
+                retry_after = exc.headers.get("Retry-After")
+                try:
+                    delay = float(retry_after) if retry_after else 0.5 * (2 ** attempt)
+                except ValueError:
+                    delay = 0.5 * (2 ** attempt)
+                time.sleep(min(8.0, max(0.1, delay)))
+                continue
+            raise RuntimeError(
+                f"TypeSafe returned HTTP {exc.code}: {raw}"
+            ) from exc
+
+    raise RuntimeError("TypeSafe retry loop exhausted")
 
 
 def parse_response(response: dict[str, Any]) -> dict[str, Any]:
@@ -234,8 +247,10 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
 def main() -> int:
     task = json.load(sys.stdin)
     payload = build_request(task)
-    response = call_typesafe(payload)
-    print(json.dumps(parse_response(response), sort_keys=True))
+    response, retries = call_typesafe(payload)
+    output = parse_response(response)
+    output.setdefault("receipt", {})["transport_retries"] = retries
+    print(json.dumps(output, sort_keys=True))
     return 0
 
 
