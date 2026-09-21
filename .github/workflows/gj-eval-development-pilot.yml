@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   primary-pilot:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
       TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
