@@ -1,0 +1,101 @@
+name: Distribution integrity
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "LICENSE"
+      - "NOTICE"
+      - "THIRD_PARTY_NOTICES.md"
+      - "DCO-1.1.txt"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - "CITATION.cff"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "scripts/package_release_install.sh"
+      - "scripts/write_release_manifest.sh"
+      - "scripts/validate_distribution_policy.py"
+      - "scripts/generate_distribution_sbom.py"
+      - ".github/workflows/distribution-integrity.yml"
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate repository distribution policy
+        run: python3 scripts/validate_distribution_policy.py
+
+      - name: Resolve public version
+        id: version
+        shell: bash
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib, re
+          text=pathlib.Path("CITATION.cff").read_text(encoding="utf-8")
+          match=re.search(r'^version:\s*["\'']?([^"\'\n]+)', text, re.MULTILINE)
+          if not match:
+              raise SystemExit("CITATION.cff version missing")
+          print("value=" + match.group(1).strip())
+          PY
+
+      - name: Build install distribution
+        env:
+          JOBS: 2
+        run: |
+          mkdir -p dist
+          PACKAGE_OUT="$PWD/dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip" \
+            bash scripts/package_release_install.sh "$PWD/dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip"
+
+      - name: Validate exact distribution artifact
+        run: |
+          python3 scripts/validate_distribution_policy.py \
+            "dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip" \
+            "dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip.manifest.json"
+
+      - name: Generate SPDX 2.3 SBOM
+        run: |
+          python3 scripts/generate_distribution_sbom.py \
+            "dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip.manifest.json" \
+            "dist/graphenedb-${{ steps.version.outputs.value }}.spdx.json"
+
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip"
+
+      - name: Attest SBOM
+        if: github.event_name != 'pull_request'
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip"
+          sbom-path: "dist/graphenedb-${{ steps.version.outputs.value }}.spdx.json"
+
+      - name: Upload verified distribution evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-distribution-${{ steps.version.outputs.value }}-${{ github.sha }}
+          path: |
+            dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip
+            dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip.sha256
+            dist/graphenedb-${{ steps.version.outputs.value }}-linux-x86_64.zip.manifest.json
+            dist/graphenedb-${{ steps.version.outputs.value }}.spdx.json
+          if-no-files-found: error
+          retention-days: 90
