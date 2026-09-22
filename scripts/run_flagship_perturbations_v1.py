@@ -40,6 +40,13 @@ def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def canonical_hash(value: Any) -> str:
+    encoded = json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    ).encode("utf-8")
+    return sha256_bytes(encoded)
+
+
 def convert(value: str) -> Any:
     if value == "true":
         return True
@@ -86,6 +93,16 @@ def evaluate_contract(pid: str, observed: dict[str, Any]) -> list[str]:
             "duplication_earned_independent_corroboration",
             failures,
         )
+        requirement(
+            observed.get("requires_external_verification") is True,
+            "duplicate_only_state_did_not_require_external_verification",
+            failures,
+        )
+        requirement(
+            observed.get("opposition_requests_reexpansion") is True,
+            "duplicate_only_state_did_not_request_reopen",
+            failures,
+        )
 
     elif pid == "P2":
         requirement(
@@ -106,6 +123,21 @@ def evaluate_contract(pid: str, observed: dict[str, Any]) -> list[str]:
         requirement(
             observed.get("perturbed_sufficient_independent_support") is False,
             "corroboration_survived_decisive_family_removal",
+            failures,
+        )
+        requirement(
+            observed.get("baseline_requires_external_verification") is False,
+            "corroborated_baseline_still_required_external_verification",
+            failures,
+        )
+        requirement(
+            observed.get("perturbed_requires_external_verification") is True,
+            "family_removal_did_not_restore_external_verification_requirement",
+            failures,
+        )
+        requirement(
+            observed.get("perturbed_opposition_requests_reexpansion") is True,
+            "family_removal_did_not_request_reopen",
             failures,
         )
 
@@ -292,13 +324,12 @@ def main() -> int:
         if not passed:
             failures_total += 1
 
-        receipt = {
+        mechanism_receipt = {
             "schema_version": 1,
             "protocol_id": manifest["protocol_id"],
             "perturbation_id": pid,
             "perturbation_name": spec_by_id[pid]["name"],
             "canonical_parent_commit": CANONICAL_PARENT,
-            "current_commit": head,
             "canonical_flagship_mechanism_receipt_sha256": CANONICAL_FLAGSHIP_HASH,
             "perturbation_manifest_sha256": manifest_hash,
             "expected": spec_by_id[pid]["expected"],
@@ -308,10 +339,18 @@ def main() -> int:
             "failure_priority_if_violated": spec_by_id[pid]["failure_priority"],
             "result_preserved_even_when_failed": True,
         }
-        encoded = (
-            json.dumps(receipt, indent=2, sort_keys=True) + "\n"
-        ).encode("utf-8")
-        receipt["receipt_sha256"] = sha256_bytes(encoded)
+        mechanism_hash = canonical_hash(mechanism_receipt)
+        provenance_hash = canonical_hash({
+            "current_commit": head,
+            "mechanism_receipt_sha256": mechanism_hash,
+        })
+        receipt = {
+            **mechanism_receipt,
+            "current_commit": head,
+            "mechanism_receipt_sha256": mechanism_hash,
+            "provenance_sha256": provenance_hash,
+            "mechanism_hash_excludes_current_commit": True,
+        }
         final_encoded = (
             json.dumps(receipt, indent=2, sort_keys=True) + "\n"
         ).encode("utf-8")
@@ -322,7 +361,8 @@ def main() -> int:
             "name": spec_by_id[pid]["name"],
             "passed": passed,
             "failures": contract_failures,
-            "receipt_sha256": receipt["receipt_sha256"],
+            "mechanism_receipt_sha256": mechanism_hash,
+            "provenance_sha256": provenance_hash,
         })
 
     aggregate_receipt = {
