@@ -38,19 +38,31 @@ def main() -> int:
         for step in world["timeline"]:
             canonical.append((str(world["world_id"]), int(step["timestep"])))
 
-    if len(canonical) != len(set(canonical)):
-        raise SystemExit("world file contains duplicate world/timestep primary keys")
-
     expected = set(canonical)
+    errors: list[str] = []
+    if len(canonical) != len(expected):
+        errors.append("world file contains duplicate world/timestep primary keys")
+
     merged: dict[tuple[str, int], dict[str, Any]] = {}
     shard_receipts: list[dict[str, Any]] = []
     transports: set[str] = set()
     requested_models: set[str] = set()
     resolved_models: set[str] = set()
+    adapter_failures = 0
 
     for name in args.shards:
         path = Path(name)
-        shard_rows = rows(path)
+        if not path.exists():
+            errors.append(f"missing shard file: {path}")
+            continue
+
+        try:
+            shard_rows = rows(path)
+        except Exception as exc:
+            errors.append(f"cannot parse shard {path}: {exc}")
+            continue
+
+        status_counts: dict[str, int] = {}
         shard_receipts.append(
             {
                 "path": str(path),
@@ -58,85 +70,121 @@ def main() -> int:
                 "sha256": sha256(path),
             }
         )
+
         for row in shard_rows:
+            status = str(row.get("adapter_status"))
+            status_counts[status] = status_counts.get(status, 0) + 1
+
             if row.get("system") != args.system:
-                raise SystemExit(
+                errors.append(
                     f"wrong system in {path}: {row.get('system')!r}"
                 )
+                continue
 
-            key = (str(row["world_id"]), int(row["timestep"]))
+            try:
+                key = (str(row["world_id"]), int(row["timestep"]))
+            except Exception as exc:
+                errors.append(f"invalid primary key in {path}: {exc}")
+                continue
+
             if key not in expected:
-                raise SystemExit(f"unexpected primary key: {key}")
+                errors.append(f"unexpected primary key: {key}")
+                continue
             if key in merged:
-                raise SystemExit(f"duplicate primary key: {key}")
+                errors.append(f"duplicate primary key: {key}")
+                continue
             if row.get("adapter_status") != "ok":
-                raise SystemExit(
+                adapter_failures += 1
+                errors.append(
                     f"adapter failure at {key}: {row.get('adapter_status')}"
                 )
+                merged[key] = row
+                continue
 
             receipt = row.get("receipt")
             if args.system.startswith("jev"):
                 if not isinstance(receipt, dict):
-                    raise SystemExit(f"missing Jev receipt at {key}")
+                    errors.append(f"missing Jev receipt at {key}")
+                    merged[key] = row
+                    continue
                 transport = receipt.get("transport") or receipt.get("provider")
                 requested_model = receipt.get("requested_model")
                 resolved_model = receipt.get("model")
                 if not transport or not requested_model:
-                    raise SystemExit(
+                    errors.append(
                         f"missing Jev transport/model provenance at {key}"
                     )
-                transports.add(str(transport))
-                requested_models.add(str(requested_model))
-                if resolved_model:
-                    resolved_models.add(str(resolved_model))
+                else:
+                    transports.add(str(transport))
+                    requested_models.add(str(requested_model))
+                    if resolved_model:
+                        resolved_models.add(str(resolved_model))
 
             merged[key] = row
 
+        shard_receipts[-1]["adapter_status_counts"] = status_counts
+
     missing = [key for key in canonical if key not in merged]
     if missing:
-        raise SystemExit(
+        errors.append(
             f"missing {len(missing)} primary keys; first={missing[:5]}"
         )
 
     if args.system.startswith("jev"):
         if len(transports) != 1:
-            raise SystemExit(f"mixed Jev transports in merged run: {sorted(transports)}")
+            errors.append(
+                f"mixed or missing Jev transports in merged run: {sorted(transports)}"
+            )
         if len(requested_models) != 1:
-            raise SystemExit(
-                f"mixed requested Jev models in merged run: {sorted(requested_models)}"
+            errors.append(
+                "mixed or missing requested Jev models in merged run: "
+                f"{sorted(requested_models)}"
             )
         if len(resolved_models) > 1:
-            raise SystemExit(
+            errors.append(
                 f"mixed resolved Jev models in merged run: {sorted(resolved_models)}"
             )
 
     output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", encoding="utf-8") as handle:
-        for key in canonical:
-            handle.write(json.dumps(merged[key], sort_keys=True))
-            handle.write("\n")
+    receipt_path = Path(args.receipt)
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
 
-    receipt = {
+    coverage_complete = not missing and len(merged) == len(canonical)
+    receipt: dict[str, Any] = {
         "schema_version": 1,
         "system": args.system,
         "worlds_sha256": sha256(worlds_path),
         "expected_rows": len(canonical),
         "merged_rows": len(merged),
-        "output_sha256": sha256(output),
         "shards": shard_receipts,
-        "coverage_complete": True,
-        "adapter_failures": 0,
+        "coverage_complete": coverage_complete,
+        "adapter_failures": adapter_failures,
         "transports": sorted(transports),
         "requested_models": sorted(requested_models),
         "resolved_models": sorted(resolved_models),
         "mixed_transport": len(transports) > 1,
         "mixed_requested_model": len(requested_models) > 1,
         "mixed_resolved_model": len(resolved_models) > 1,
+        "errors": errors,
+        "merge_accepted": not errors,
     }
 
-    receipt_path = Path(args.receipt)
-    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    if errors:
+        receipt["output_sha256"] = None
+        receipt_path.write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps(receipt, sort_keys=True))
+        return 1
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", encoding="utf-8") as handle:
+        for key in canonical:
+            handle.write(json.dumps(merged[key], sort_keys=True))
+            handle.write("\n")
+
+    receipt["output_sha256"] = sha256(output)
     receipt_path.write_text(
         json.dumps(receipt, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
