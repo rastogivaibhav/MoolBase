@@ -60,11 +60,11 @@ Two graph-distinct support paths cite the same evidence family. Raw path count r
 
 H1 gains a second genuinely independent source while H2 has separate admissible support. Selecting H1 must not erase H2; opposition must retain it as a challenge/reopen target.
 
-### C — correct refusal to converge
+### C — correct refusal of final resolution
 
-Material opposition is added against H1. The successful outcome is **non-convergence** at the final-resolution boundary: contradiction remains inspectable and evidence becomes inadmissible for final resolution.
+Material opposition is added against H1. GrapheneDB may retain a candidate answer for audit, but the successful outcome is that **final resolution is blocked**: contradiction remains inspectable and the evidence is inadmissible for final resolution.
 
-This is the negative control.
+This is the negative control. Candidate selection is not the same thing as epistemically earned resolution.
 
 ### D — challenge and bounded reopen
 
