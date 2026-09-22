@@ -6,6 +6,7 @@
 #include "graphene/path_verifier.hpp"
 #include "graphene/self_healing.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
