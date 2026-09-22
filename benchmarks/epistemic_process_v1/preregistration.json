@@ -1,0 +1,30 @@
+{
+  "protocol": "epistemic-process-v1",
+  "status": "preregistered-unscored",
+  "purpose": "architecture ablation for evidence use, false convergence, and explainable belief revision",
+  "configurations": [
+    {"id":"B0","graphene_core":false,"hypokosh":false,"dwm":false},
+    {"id":"G0","graphene_core":true,"hypokosh":false,"dwm":false},
+    {"id":"G1","graphene_core":true,"hypokosh":true,"dwm":false},
+    {"id":"G2","graphene_core":true,"hypokosh":true,"dwm":true}
+  ],
+  "primary_metrics": [
+    "evidence_use_rate",
+    "refutation_response_rate",
+    "revision_inertia_steps",
+    "false_convergence_rate",
+    "independent_evidence_convergence",
+    "selective_coverage",
+    "receipt_completeness"
+  ],
+  "score_bearing_runs_allowed": false,
+  "freeze_requirements": [
+    "concrete task manifest committed",
+    "evaluator committed",
+    "protocol manifest evaluator and task-input SHA-256 hashes recorded",
+    "clean-checkout unscored dry run succeeds"
+  ],
+  "external_comparators": {
+    "jev": "optional bounded comparator only where interface fits; not an optimization target"
+  }
+}
