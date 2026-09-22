@@ -137,8 +137,21 @@
         << " options_changed=" << trace.options_changed
         << " max_hops=" << trace.previous_max_hops
         << "->" << trace.next_max_hops
+        << " semantic_candidates="
+        << trace.previous_semantic_candidates
+        << "->" << trace.next_semantic_candidates
+        << " max_paths=" << trace.previous_max_paths
+        << "->" << trace.next_max_paths
+        << " max_paths_per_root="
+        << trace.previous_max_paths_per_root
+        << "->" << trace.next_max_paths_per_root
         << " visit_budget=" << trace.previous_max_visited_states
         << "->" << trace.next_max_visited_states
+        << " min_confidence="
+        << trace.previous_minimum_confidence
+        << "->" << trace.next_minimum_confidence
+        << " reopen_nodes=" << trace.previous_reopen_nodes
+        << "->" << trace.next_reopen_nodes
         << " bundle_hash=" << trace.previous_bundle_hash
         << "->" << trace.next_bundle_hash
         << " visited=" << trace.previous_visited_states
