@@ -25,7 +25,23 @@ reports/flagship-proof/scenario_manifest.json
 reports/flagship-proof/raw_output.txt
 ```
 
-The canonical receipt hash includes the repository commit and deterministic mechanism outputs. Host platform metadata is retained for debugging but excluded from the receipt hash.
+The canonical **mechanism** receipt hash is:
+
+```text
+36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef
+```
+
+The mechanism hash covers the frozen scenario and deterministic mechanism outputs, but deliberately excludes commit and host environment. The receipt stores the exact commit separately and derives a second provenance hash from `commit + mechanism receipt hash`. This avoids tying the scientific receipt to GitHub's synthetic pull-request merge commit while preserving exact source provenance.
+
+Expected status transitions include:
+
+- Phase A: 2 raw paths, 1 independent family, insufficient independent support;
+- Phase B: H1 selected, H2 retained, 2 reopen targets;
+- Phase C: contradiction blocks resolution and evidence is inadmissible for final resolution;
+- Phase D: bounded reopen, zero durable writes, 3 depth-recovery rounds with semantic candidates fixed at 1;
+- Phase E: independent support present and contradiction blocker cleared, while prior Phase C bundle identity is retained.
+
+Host platform metadata is retained for debugging but excluded from the mechanism receipt hash.
 
 ## Scenario
 
