@@ -6,6 +6,7 @@ on:
     branches:
       - "bench/gj-eval-v1"
       - "bench/gj-eval-sharded-jev"
+      - "bench/gj-eval-current-runtime"
     paths:
       - "benchmarks/gj_eval/**"
       - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
