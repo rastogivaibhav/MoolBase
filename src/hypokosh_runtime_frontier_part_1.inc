@@ -30,9 +30,17 @@ bool depth_repair_active(const EscapePlan& plan) {
 
 DialecticOptions targeted_options(DialecticOptions options,
                                   const EscapePlan& plan) {
-  if (has_action(plan, EscapeAction::GenerateMissingEvidenceQuery) ||
-      has_action(plan, EscapeAction::SearchTemporalNeighbour)) {
+  // Defect-specific precedence: when the active defect is an incomplete
+  // causal frontier, repair depth first. Do not simultaneously broaden
+  // semantic candidate discovery or path budgets; doing so changes the
+  // retrieval problem and can surface deep roots before the bounded frontier
+  // has actually traversed the missing hops.
+  if (depth_repair_active(plan)) {
     options.max_hops = std::min<uint32_t>(16, options.max_hops + 1);
+    options.max_visited_states =
+        std::min<size_t>(200000,
+                         std::max<size_t>(2, options.max_visited_states * 2));
+    return options;
   }
   if (has_action(plan, EscapeAction::SeekIndependentEvidence)) {
     options.semantic_candidates =

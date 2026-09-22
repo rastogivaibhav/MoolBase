@@ -78,22 +78,42 @@ int main() {
   assert(!stable.requires_abstention);
   assert(bundle.immutable_hash == immutable_before);
 
+  // Pattern-lock is meaningful only for a support-eligible path. Keep the
+  // >0.70 invariant, but give this fixture admissible evidence so it reaches
+  // the pattern-lock calculation instead of the no-support early return.
   BundleSet narrow_raw;
   narrow_raw.snapshot_version = 7;
   RootBundle narrow_root;
   narrow_root.root_node = 10;
-  narrow_root.paths.push_back(path(10, 40, {1, 2}, {}, 0.99));
+  narrow_root.paths.push_back(path(10, 40, {1, 2}, {"deployment", "metrics"}, 0.99));
   narrow_raw.roots.push_back(narrow_root);
   const FiberBundle narrow = builder.build(narrow_raw);
   const StabilityAssessment locked = critic.assess(narrow, QueryMode::Empirical);
   assert(locked.pattern_lock_score > 0.70);
-  assert(locked.missing_evidence_penalty > 0.0);
   assert(locked.requires_escape);
 
+  // Missing evidence is a distinct invariant. An evidence-free path must not
+  // masquerade as pattern lock: it should be rejected as unsupported and
+  // drive escape/abstention through the explicit missing-evidence branch.
+  BundleSet unsupported_raw;
+  unsupported_raw.snapshot_version = 7;
+  RootBundle unsupported_root;
+  unsupported_root.root_node = 10;
+  unsupported_root.paths.push_back(path(10, 40, {1, 2}, {}, 0.99));
+  unsupported_raw.roots.push_back(unsupported_root);
+  const FiberBundle unsupported_bundle = builder.build(unsupported_raw);
+  const StabilityAssessment unsupported_assessment =
+      critic.assess(unsupported_bundle, QueryMode::Empirical);
+  assert(unsupported_assessment.pattern_lock_score == 0.0);
+  assert(unsupported_assessment.missing_evidence_penalty > 0.0);
+  assert(unsupported_assessment.requires_escape);
+  assert(unsupported_assessment.requires_abstention);
+
   CorrectiveEscape escape;
-  const EscapePlan escape_plan = escape.plan(narrow, locked, QueryMode::Empirical);
+  const EscapePlan escape_plan =
+      escape.plan(unsupported_bundle, unsupported_assessment, QueryMode::Empirical);
   assert(!escape_plan.tasks.empty());
-  assert(escape_plan.requires_human_evidence || locked.requires_abstention == false);
+  assert(escape_plan.requires_human_evidence || unsupported_assessment.requires_abstention);
 
   ModelWorld model_world;
   ModelWorldNode unsupported;

@@ -113,13 +113,57 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   EscapePlan current_escape = result.initial_escape;
   uint32_t consecutive_unchanged_bundles = 0;
   for (uint32_t round = 0; round < options.max_recursive_cycles; ++round) {
-    const bool recovery_search_requested =
-        result.final_stability.requires_escape &&
-        has_searchable_action(current_escape);
-    const bool opposition_search_requested =
+    RecoveryRoundTrace trace;
+    trace.round_index = round;
+    trace.expansion_rounds_before = result.receipt.expansion_rounds;
+    trace.requires_escape = result.final_stability.requires_escape;
+    trace.searchable_escape = has_searchable_action(current_escape);
+    trace.recovery_search_requested =
+        trace.requires_escape && trace.searchable_escape;
+    trace.opposition_search_requested =
         options.enable_opposition_research &&
         result.final_opposition.requests_reexpansion;
+    trace.generic_expansion_allowed =
+        current_escape.generic_expansion_allowed;
+    trace.depth_repair_active = depth_repair_active(current_escape);
+    trace.previous_max_hops = current_options.max_hops;
+    trace.previous_semantic_candidates =
+        current_options.semantic_candidates;
+    trace.previous_max_paths = current_options.max_paths;
+    trace.previous_max_paths_per_root =
+        current_options.max_paths_per_root;
+    trace.previous_max_visited_states =
+        current_options.max_visited_states;
+    trace.previous_minimum_confidence =
+        current_options.minimum_confidence;
+    trace.previous_reopen_nodes =
+        current_options.reopen_nodes.size();
+    trace.previous_bundle_hash =
+        result.final_bundle.immutable_hash;
+    trace.previous_visited_states =
+        result.final_bundle.visited_states;
+    trace.previous_truncated = result.final_bundle.truncated;
+
+    const bool recovery_search_requested =
+        trace.recovery_search_requested;
+    const bool opposition_search_requested =
+        trace.opposition_search_requested;
     if (!recovery_search_requested && !opposition_search_requested) {
+      trace.next_max_hops = current_options.max_hops;
+      trace.next_semantic_candidates =
+          current_options.semantic_candidates;
+      trace.next_max_paths = current_options.max_paths;
+      trace.next_max_paths_per_root =
+          current_options.max_paths_per_root;
+      trace.next_max_visited_states =
+          current_options.max_visited_states;
+      trace.next_minimum_confidence =
+          current_options.minimum_confidence;
+      trace.next_reopen_nodes =
+          current_options.reopen_nodes.size();
+      trace.stop_reason = "no_search_requested";
+      result.receipt.recovery_stop_reason = trace.stop_reason;
+      result.receipt.recovery_trace.push_back(std::move(trace));
       break;
     }
 

@@ -43,14 +43,14 @@ Invoke-Checked cmake -S $Root -B $BuildPath `
   -DGRAPHENEDB_BUILD_BENCH=OFF `
   -DGRAPHENEDB_BUILD_EXAMPLES=OFF
 
-Invoke-Checked cmake --build $BuildPath -j $BuildJobs
-Invoke-Checked cmake --install $BuildPath
+Invoke-Checked cmake --build $BuildPath --config $Config -j $BuildJobs
+Invoke-Checked cmake --install $BuildPath --config $Config
 
 Invoke-Checked cmake -S $ConsumerSource -B $ConsumerBuildPath `
   "-DCMAKE_BUILD_TYPE=${Config}" `
   "-DCMAKE_PREFIX_PATH=${InstallPath}"
 
-Invoke-Checked cmake --build $ConsumerBuildPath -j $BuildJobs
+Invoke-Checked cmake --build $ConsumerBuildPath --config $Config -j $BuildJobs
 
 $Exe = Join-Path $ConsumerBuildPath "graphenedb_package_consumer.exe"
 if (!(Test-Path $Exe)) {

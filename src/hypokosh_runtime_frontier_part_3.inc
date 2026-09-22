@@ -6,9 +6,26 @@
       next_options =
           opposition_options(std::move(next_options), result.final_opposition);
     }
+    trace.next_max_hops = next_options.max_hops;
+    trace.next_semantic_candidates =
+        next_options.semantic_candidates;
+    trace.next_max_paths = next_options.max_paths;
+    trace.next_max_paths_per_root =
+        next_options.max_paths_per_root;
+    trace.next_max_visited_states =
+        next_options.max_visited_states;
+    trace.next_minimum_confidence =
+        next_options.minimum_confidence;
+    trace.next_reopen_nodes =
+        next_options.reopen_nodes.size();
+    trace.options_changed =
+        options_changed(current_options, next_options);
     if (!current_escape.generic_expansion_allowed &&
         !opposition_search_requested &&
-        !options_changed(current_options, next_options)) {
+        !trace.options_changed) {
+      trace.stop_reason = "options_unchanged_before_expansion";
+      result.receipt.recovery_stop_reason = trace.stop_reason;
+      result.receipt.recovery_trace.push_back(std::move(trace));
       break;
     }
     current_options = std::move(next_options);
@@ -49,10 +66,17 @@
         (reopened_bundle.truncated && !previous_truncated) ||
         (depth_repair_active(active_escape) &&
          current_options.max_hops > previous_options.max_hops);
+    trace.next_bundle_hash = reopened_bundle.immutable_hash;
+    trace.next_visited_states = reopened_bundle.visited_states;
+    trace.next_truncated = reopened_bundle.truncated;
+    trace.bundle_changed = bundle_changed;
+    trace.frontier_progress = frontier_progress;
     consecutive_unchanged_bundles =
         bundle_changed ? 0 : consecutive_unchanged_bundles + 1;
     if (frontier_progress) ++result.receipt.frontier_progress_rounds;
     result.receipt.unchanged_bundle_rounds =
+        consecutive_unchanged_bundles;
+    trace.consecutive_unchanged_bundles =
         consecutive_unchanged_bundles;
 
     result.final_bundle = std::move(reopened_bundle);
@@ -72,8 +96,17 @@
     const LyapunovTrajectory partial = critic.analyse(
         samples, current_options.mode,
         options.lyapunov_weights, options.lyapunov_targets);
-    if (partial.certificate.limit_cycle_detected ||
-        partial.certificate.oscillation_detected) {
+    trace.lyapunov_limit_cycle =
+        partial.certificate.limit_cycle_detected;
+    trace.lyapunov_oscillation =
+        partial.certificate.oscillation_detected;
+    if (trace.lyapunov_limit_cycle ||
+        trace.lyapunov_oscillation) {
+      trace.stop_reason = trace.lyapunov_limit_cycle
+                              ? "lyapunov_limit_cycle"
+                              : "lyapunov_oscillation";
+      result.receipt.recovery_stop_reason = trace.stop_reason;
+      result.receipt.recovery_trace.push_back(std::move(trace));
       break;
     }
 
@@ -84,8 +117,17 @@
     if (!bundle_changed && !frontier_progress &&
         !bounded_depth_patience) {
       result.receipt.stopped_for_no_progress = true;
+      trace.stop_reason = "no_progress_after_expansion";
+      result.receipt.recovery_stop_reason = trace.stop_reason;
+      result.receipt.recovery_trace.push_back(std::move(trace));
       break;
     }
+
+    if (round + 1 == options.max_recursive_cycles) {
+      trace.stop_reason = "max_recursive_cycles_exhausted";
+      result.receipt.recovery_stop_reason = trace.stop_reason;
+    }
+    result.receipt.recovery_trace.push_back(std::move(trace));
   }
 
   result.lyapunov = critic.analyse(
