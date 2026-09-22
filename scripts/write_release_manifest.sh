@@ -51,7 +51,18 @@ match = re.search(
 )
 if not match:
     raise SystemExit("could not derive GrapheneDB version from CMakeLists.txt")
-version = match.group(1)
+cmake_package_version = match.group(1)
+
+citation_text = (root / "CITATION.cff").read_text(encoding="utf-8")
+citation_match = re.search(r'^version:\s*["\']?([^"\'\n]+)', citation_text, re.MULTILINE)
+if not citation_match:
+    raise SystemExit("could not derive public software version from CITATION.cff")
+software_version = citation_match.group(1).strip()
+if software_version != cmake_package_version and not software_version.startswith(cmake_package_version + "-"):
+    raise SystemExit(
+        f"public version {software_version!r} is incompatible with "
+        f"CMake package version {cmake_package_version!r}"
+    )
 
 try:
     source_commit = subprocess.check_output(
@@ -83,7 +94,8 @@ package_hash = sha256(package)
 manifest = {
     "schema_version": 2,
     "name": "GrapheneDB",
-    "version": version,
+    "version": software_version,
+    "cmake_package_version": cmake_package_version,
     "license": "Apache-2.0",
     "source_commit": source_commit,
     "package": package.name,
@@ -106,6 +118,7 @@ package.with_suffix(package.suffix + ".sha256").write_text(
 )
 print(f"release_manifest={out}")
 print(f"package_sha256={package_hash}")
-print(f"version={version}")
+print(f"version={software_version}")
+print(f"cmake_package_version={cmake_package_version}")
 print(f"source_commit={source_commit}")
 PY
