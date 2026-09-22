@@ -39,6 +39,34 @@ struct RuntimeOptions {
   bool update_model_world{true};
 };
 
+struct RecoveryRoundTrace {
+  uint32_t round_index{0};
+  uint32_t expansion_rounds_before{0};
+  bool requires_escape{false};
+  bool searchable_escape{false};
+  bool recovery_search_requested{false};
+  bool opposition_search_requested{false};
+  bool generic_expansion_allowed{false};
+  bool options_changed{false};
+  bool depth_repair_active{false};
+  uint32_t previous_max_hops{0};
+  uint32_t next_max_hops{0};
+  size_t previous_max_visited_states{0};
+  size_t next_max_visited_states{0};
+  uint64_t previous_bundle_hash{0};
+  uint64_t next_bundle_hash{0};
+  size_t previous_visited_states{0};
+  size_t next_visited_states{0};
+  bool previous_truncated{false};
+  bool next_truncated{false};
+  bool bundle_changed{false};
+  bool frontier_progress{false};
+  uint32_t consecutive_unchanged_bundles{0};
+  bool lyapunov_limit_cycle{false};
+  bool lyapunov_oscillation{false};
+  std::string stop_reason;
+};
+
 struct ReasoningReceipt {
   uint64_t snapshot_version{0};
   uint64_t initial_bundle_hash{0};
@@ -48,6 +76,8 @@ struct ReasoningReceipt {
   uint32_t frontier_progress_rounds{0};
   uint32_t unchanged_bundle_rounds{0};
   bool stopped_for_no_progress{false};
+  std::string recovery_stop_reason;
+  std::vector<RecoveryRoundTrace> recovery_trace;
   bool opposition_research_enabled{false};
   bool graphene_executed{false};
   bool path_verifier_executed{false};
