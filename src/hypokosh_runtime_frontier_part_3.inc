@@ -7,7 +7,17 @@
           opposition_options(std::move(next_options), result.final_opposition);
     }
     trace.next_max_hops = next_options.max_hops;
-    trace.next_max_visited_states = next_options.max_visited_states;
+    trace.next_semantic_candidates =
+        next_options.semantic_candidates;
+    trace.next_max_paths = next_options.max_paths;
+    trace.next_max_paths_per_root =
+        next_options.max_paths_per_root;
+    trace.next_max_visited_states =
+        next_options.max_visited_states;
+    trace.next_minimum_confidence =
+        next_options.minimum_confidence;
+    trace.next_reopen_nodes =
+        next_options.reopen_nodes.size();
     trace.options_changed =
         options_changed(current_options, next_options);
     if (!current_escape.generic_expansion_allowed &&
