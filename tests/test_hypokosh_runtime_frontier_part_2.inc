@@ -170,6 +170,18 @@
         << "\n";
   }
   assert(deep_result.primary_node == deep_root);
+  assert(deep_result.receipt.recovery_trace.size() == 3);
+  assert(deep_result.receipt.recovery_trace[0].depth_repair_active);
+  assert(deep_result.receipt.recovery_trace[0].previous_max_hops == 1);
+  assert(deep_result.receipt.recovery_trace[0].next_max_hops == 2);
+  assert(deep_result.receipt.recovery_trace[0].previous_semantic_candidates == 1);
+  assert(deep_result.receipt.recovery_trace[0].next_semantic_candidates == 1);
+  assert(deep_result.receipt.recovery_trace[1].previous_max_hops == 2);
+  assert(deep_result.receipt.recovery_trace[1].next_max_hops == 3);
+  assert(deep_result.receipt.recovery_trace[1].next_semantic_candidates == 1);
+  assert(deep_result.receipt.recovery_trace[2].previous_max_hops == 3);
+  assert(deep_result.receipt.recovery_trace[2].next_max_hops == 4);
+  assert(deep_result.receipt.recovery_trace[2].next_semantic_candidates == 1);
   assert(deep_result.receipt.expansion_rounds == 3);
   assert(deep_result.receipt.frontier_progress_rounds >= 2);
   assert(!deep_result.receipt.stopped_for_no_progress);
