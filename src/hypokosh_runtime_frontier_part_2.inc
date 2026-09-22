@@ -127,8 +127,17 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
         current_escape.generic_expansion_allowed;
     trace.depth_repair_active = depth_repair_active(current_escape);
     trace.previous_max_hops = current_options.max_hops;
+    trace.previous_semantic_candidates =
+        current_options.semantic_candidates;
+    trace.previous_max_paths = current_options.max_paths;
+    trace.previous_max_paths_per_root =
+        current_options.max_paths_per_root;
     trace.previous_max_visited_states =
         current_options.max_visited_states;
+    trace.previous_minimum_confidence =
+        current_options.minimum_confidence;
+    trace.previous_reopen_nodes =
+        current_options.reopen_nodes.size();
     trace.previous_bundle_hash =
         result.final_bundle.immutable_hash;
     trace.previous_visited_states =
@@ -141,8 +150,17 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
         trace.opposition_search_requested;
     if (!recovery_search_requested && !opposition_search_requested) {
       trace.next_max_hops = current_options.max_hops;
+      trace.next_semantic_candidates =
+          current_options.semantic_candidates;
+      trace.next_max_paths = current_options.max_paths;
+      trace.next_max_paths_per_root =
+          current_options.max_paths_per_root;
       trace.next_max_visited_states =
           current_options.max_visited_states;
+      trace.next_minimum_confidence =
+          current_options.minimum_confidence;
+      trace.next_reopen_nodes =
+          current_options.reopen_nodes.size();
       trace.stop_reason = "no_search_requested";
       result.receipt.recovery_stop_reason = trace.stop_reason;
       result.receipt.recovery_trace.push_back(std::move(trace));
