@@ -25,6 +25,14 @@ FAISS distribution they use.
 
 Upstream project: https://github.com/facebookresearch/faiss
 
+## Developer Certificate of Origin 1.1
+
+`DCO-1.1.txt` is the Developer Certificate of Origin Version 1.1 published by
+The Linux Foundation and its contributors. The file is retained verbatim under
+its own notice permitting verbatim copying and distribution. It is a
+contribution-provenance certification text, not part of GrapheneDB's runtime
+code and not relicensed by the GrapheneDB Apache-2.0 grant.
+
 ## Development and CI tooling
 
 CMake, Python, compilers, GitHub Actions, benchmark provider SDK/HTTP services,
