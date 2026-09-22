@@ -1,0 +1,43 @@
+name: Flagship perturbation pack V1
+
+on:
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "include/**"
+      - "src/**"
+      - "examples/epistemic_flagship_demo.cpp"
+      - "examples/epistemic_flagship_perturbations.cpp"
+      - "benchmarks/flagship/**"
+      - "scripts/run_flagship_proof.py"
+      - "scripts/run_flagship_perturbations_v1.py"
+      - ".github/workflows/flagship-perturbations-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  perturbation-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Validate runner syntax
+        run: python3 -m py_compile scripts/run_flagship_perturbations_v1.py
+
+      - name: Run pre-registered perturbation pack
+        run: python3 scripts/run_flagship_perturbations_v1.py
+
+      - name: Publish all perturbation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-flagship-perturbations-v1
+          path: |
+            reports/flagship-perturbations-v1/
+          if-no-files-found: warn
