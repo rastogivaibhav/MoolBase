@@ -37,6 +37,15 @@ No aggregate “percent aligned” score is permitted: a single violated epistem
 
 Earlier whitepaper claims that the current claim matrix explicitly demotes to future work remain future work unless separately re-established.
 
+## Two conformance layers
+
+The gate now separates **current-paper conformance** from **broader architecture progress**.
+
+- Current-paper conformance asks whether the claims actually made in `paper/main.tex` are implemented and reproducible at their stated boundaries.
+- Broader architecture progress tracks HypoKosh/DWM directions that the current paper or v0 contracts explicitly classify as future work.
+
+A future-work item must not be used to fail the current paper, and a passing current-paper gate must not be misreported as completion of the broader architecture.
+
 ## Initial claim-to-system ledger
 
 | ID | Claim / invariant | Required observable behaviour | Current repository mapping | Initial status | Proof required |
@@ -51,7 +60,7 @@ Earlier whitepaper claims that the current claim matrix explicitly demotes to fu
 | C08 | HypoKosh reasoning is read-only | proposal/discriminating-test generation causes zero durable writes | GL-003 | IMPLEMENTED / UNPROVEN | restart-safe durable-state comparison |
 | C09 | Promotion is governed | a policy/world-state change cannot activate without explicit approval metadata | GL-012–015 | PARTIAL | distinguish implemented policy promotion from still-future durable model-world promotion |
 | C10 | Revision history is append-only | rollback/revision adds an event and does not erase prior decision | GL-014 | IMPLEMENTED / UNPROVEN | promote→rollback→restart trajectory |
-| C11 | Reopening preserves inspectability | late contradiction can reopen search without deleting prior evidence/history | dialectic opposition + immutable bundles | PARTIAL | canonical late-counterevidence trajectory |
+| C11 | Durable cross-run belief reopening/revision | a previously committed model-world belief can be reopened by later counterevidence while preserving history | explicitly outside current read-only DWM contract | FUTURE WORK | separate durable model-world design and preregistered trajectory |
 | C12 | Receipt explains governed outcome | selected target/status/evidence lineage/contradiction/residual uncertainty are reproducible | epistemic receipt | IMPLEMENTED / UNPROVEN | deterministic replay/hash test |
 | C13 | Recovery is defect-specific and bounded | graph-searchable defects can re-expand; external/human evidence gaps do not cause blind widening | escape/recovery controller | IMPLEMENTED / UNPROVEN | paired defect-type tests |
 | C14 | DWM synthesis cannot bypass epistemic gates | synthesis status follows governed evidence state and performs no durable promotion | dialectic synthesis + `durable_writes=false` | IMPLEMENTED / UNPROVEN | adversarial synthesis test |
@@ -83,16 +92,17 @@ Falsifies C01/C02 if duplicate evidence is counted as independent corroboration 
 
 Falsifies C03/C04.
 
-### T3 — Late counterevidence → reopen → revise
+### T3 — Operational opposition → bounded targeted reopen
 
-1. Reach a governed provisional/resolved H1 state under sufficient evidence.
-2. Introduce decisive late counterevidence plus a viable H2 path.
-3. Run opposition.
-4. Assert reopen targets affect subsequent bounded expansion.
-5. Assert old evidence/history remains inspectable.
-6. Assert final state revises to supported H2 or safely abstains/contests; it must not preserve H1 merely because H1 was previously selected.
+1. Produce material contradiction or a supported alternative.
+2. Run opposition.
+3. Assert reopen targets are emitted.
+4. Assert those targets influence the bounded subsequent expansion when opposition research is enabled.
+5. Assert synthesis remains governed/read-only and does not silently mutate durable state.
 
-This is the central Graphene + HypoKosh + DWM trajectory. Falsifies C03/C04/C05/C11/C14.
+This is the claim made by the current paper and bounded DWM contract. It tests C05/C14.
+
+A stronger **durable late-counterevidence revision** trajectory—previously accepted model-world belief → later evidence → durable reopen/revision—is tracked separately as C11 FUTURE WORK because the current DWM contract explicitly excludes durable model-world writes.
 
 ### T4 — Hypothesis proposal cannot become fact by generation
 
@@ -117,9 +127,21 @@ Establishes only the governed-learning/policy mechanism. It must **not** be used
 
 Replay identical evidence and configuration and require the same canonical governed receipt/hash, or an explicit documented nondeterministic field excluded from the canonical hash. Prior evidence and contradiction references must remain traceable.
 
+### T7 — Frontier-aware defect-specific recovery
+
+Run the frozen controlled intervention benchmark and require the committed diagnostic gates:
+
+1. frontier-aware targeted recovery solves every controlled hard family;
+2. the previous completed-bundle stop exposes the deeper-chain failure;
+3. targeted recovery uses less search than broad forced retrieval;
+4. broad forced retrieval fails the noise trap;
+5. frontier-aware targeted recovery passes the noise trap.
+
+T7 directly covers the current paper's bounded/frontier-aware recovery contribution (C13). It is controlled mechanism evidence, not semantic-answer or real-world generalisation evidence.
+
 ## Immediate implementation priority
 
-Do not add generic memory features. Build the conformance harness around T1–T6 using existing public APIs/tests wherever possible. Run it against the unmodified current implementation and preserve failures.
+Do not add generic memory features. Build the conformance harness around T1–T7 using existing public APIs/tests and the already-frozen intervention benchmark. Run it against the unmodified current implementation and preserve failures.
 
 The first engineering delta after that run is selected by the highest-severity failed invariant, in this order:
 
@@ -138,7 +160,7 @@ Recent 2026 work independently increases the importance of these tests: BeliefSh
 
 External head-to-head work may resume when:
 
-1. T1–T6 are executable from a clean checkout;
+1. T1–T7 are executable from a clean checkout and the current-paper subset is reported separately from broader future-work gaps;
 2. every current-paper claim is mapped to code and evidence or explicitly classified as partial/missing/future;
 3. all invariant failures are preserved in a machine-readable report;
 4. the highest-severity failures have implementation issues rather than being explained away;
