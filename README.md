@@ -6,6 +6,26 @@ GrapheneDB is an experimental embedded C++ evidence and causal-memory database f
 
 **Experimental developer alpha for research and controlled pilots. Not enterprise GA and not a semantic truth engine.**
 
+## Independent reproduction — start here for the epistemic proof
+
+If you want to test the current GrapheneDB + HypoKosh + DWM thesis rather than install the older packaged alpha first, use a clean checkout of `master`:
+
+```bash
+git clone https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+python3 scripts/run_flagship_perturbations_v1.py
+```
+
+This one command rebuilds and replays the frozen flagship proof, verifies its canonical mechanism receipt, runs five pre-registered adversarial perturbations, and writes machine-readable receipts. It requires no hosted model or API key.
+
+Canonical flagship mechanism receipt:
+
+```text
+36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef
+```
+
+See [Independent flagship reproduction](docs/INDEPENDENT_REPRODUCTION.md) for expected P1–P5 hashes, interpretation, claim boundaries and how to submit an external reproduction/critique. Public reproduction request: issue #38.
+
 ## Five-minute start
 
 Clone the consolidated release branch and run the disposable reasoning demo:
@@ -115,7 +135,7 @@ The full pre-remediation split-source baseline passed **45/45 tests** with zero 
 - a standalone strict-build compact-receipt contract;
 - a clean build, install, `find_package(GrapheneDB)` and external consumer execution for the package contract.
 
-The final release head still requires an exact-head full run on an authenticated machine because the available GitHub-hosted jobs are terminating before checkout with zero recorded steps. No green hosted result is claimed.
+Recent exact-head pull-request gates for the current flagship and perturbation work have completed successfully across the main CI, developer-experience, alpha-release, paper-system-conformance and dedicated flagship workflows. Those checks establish internal reproducibility at the stated mechanism boundaries; they do not establish independent validation or enterprise GA. See issue #25 for the current evidence and exit criteria.
 
 ## Controlled intervention result
 
