@@ -29,5 +29,5 @@ else
   OUT="${OUT%.zip}.tar.gz"
 fi
 
-"$ROOT/scripts/write_release_manifest.sh" "$OUT" "$ROOT/$INSTALL_DIR"
+bash "$ROOT/scripts/write_release_manifest.sh" "$OUT" "$ROOT/$INSTALL_DIR"
 echo "$OUT"
