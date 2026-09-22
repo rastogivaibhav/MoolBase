@@ -54,10 +54,13 @@ if not match:
 cmake_package_version = match.group(1)
 
 citation_text = (root / "CITATION.cff").read_text(encoding="utf-8")
-citation_match = re.search(r'^version:\s*["\']?([^"\'\n]+)', citation_text, re.MULTILINE)
-if not citation_match:
+software_version = None
+for line in citation_text.splitlines():
+    if line.startswith("version:"):
+        software_version = line.split(":", 1)[1].strip().strip('"').strip("'")
+        break
+if not software_version:
     raise SystemExit("could not derive public software version from CITATION.cff")
-software_version = citation_match.group(1).strip()
 if software_version != cmake_package_version and not software_version.startswith(cmake_package_version + "-"):
     raise SystemExit(
         f"public version {software_version!r} is incompatible with "
