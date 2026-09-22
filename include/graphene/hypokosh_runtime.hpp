@@ -52,8 +52,18 @@ struct RecoveryRoundTrace {
   bool depth_repair_active{false};
   uint32_t previous_max_hops{0};
   uint32_t next_max_hops{0};
+  size_t previous_semantic_candidates{0};
+  size_t next_semantic_candidates{0};
+  size_t previous_max_paths{0};
+  size_t next_max_paths{0};
+  size_t previous_max_paths_per_root{0};
+  size_t next_max_paths_per_root{0};
   size_t previous_max_visited_states{0};
   size_t next_max_visited_states{0};
+  double previous_minimum_confidence{0.0};
+  double next_minimum_confidence{0.0};
+  size_t previous_reopen_nodes{0};
+  size_t next_reopen_nodes{0};
   uint64_t previous_bundle_hash{0};
   uint64_t next_bundle_hash{0};
   size_t previous_visited_states{0};
