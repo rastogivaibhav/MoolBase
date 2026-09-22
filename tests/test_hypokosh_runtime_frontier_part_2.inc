@@ -114,6 +114,48 @@
 
   const HypoKoshRuntimeResult deep_result =
       runtime.reason({0.0f, 0.0f, 1.0f}, deep_signature, deep_options);
+  std::cerr << "deep_recovery_trace"
+            << " expansion_rounds=" << deep_result.receipt.expansion_rounds
+            << " frontier_progress_rounds="
+            << deep_result.receipt.frontier_progress_rounds
+            << " unchanged_bundle_rounds="
+            << deep_result.receipt.unchanged_bundle_rounds
+            << " stop_reason="
+            << deep_result.receipt.recovery_stop_reason << "\n";
+  for (const RecoveryRoundTrace& trace :
+       deep_result.receipt.recovery_trace) {
+    std::cerr
+        << "deep_recovery_round"
+        << " round=" << trace.round_index
+        << " expansions_before=" << trace.expansion_rounds_before
+        << " requires_escape=" << trace.requires_escape
+        << " searchable_escape=" << trace.searchable_escape
+        << " recovery_requested=" << trace.recovery_search_requested
+        << " opposition_requested=" << trace.opposition_search_requested
+        << " generic_allowed=" << trace.generic_expansion_allowed
+        << " depth_repair=" << trace.depth_repair_active
+        << " options_changed=" << trace.options_changed
+        << " max_hops=" << trace.previous_max_hops
+        << "->" << trace.next_max_hops
+        << " visit_budget=" << trace.previous_max_visited_states
+        << "->" << trace.next_max_visited_states
+        << " bundle_hash=" << trace.previous_bundle_hash
+        << "->" << trace.next_bundle_hash
+        << " visited=" << trace.previous_visited_states
+        << "->" << trace.next_visited_states
+        << " truncated=" << trace.previous_truncated
+        << "->" << trace.next_truncated
+        << " bundle_changed=" << trace.bundle_changed
+        << " frontier_progress=" << trace.frontier_progress
+        << " unchanged_rounds="
+        << trace.consecutive_unchanged_bundles
+        << " lyapunov_limit_cycle="
+        << trace.lyapunov_limit_cycle
+        << " lyapunov_oscillation="
+        << trace.lyapunov_oscillation
+        << " stop_reason=" << trace.stop_reason
+        << "\n";
+  }
   assert(deep_result.primary_node == deep_root);
   assert(deep_result.receipt.expansion_rounds == 3);
   assert(deep_result.receipt.frontier_progress_rounds >= 2);
