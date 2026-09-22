@@ -45,6 +45,9 @@ jobs:
           graphenedb_hypokosh_runtime_tests
           graphenedb_epistemic_receipt_tests
 
+      - name: Reproduce frozen frontier-aware intervention evidence
+        run: bash scripts/run_dialectic_intervention.sh
+
       - name: Run paper-system conformance
         run: >
           python3 scripts/run_paper_conformance_v1.py
@@ -56,5 +59,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paper-system-conformance-v1
-          path: reports/paper-conformance-v1/report.json
+          path: |
+            reports/paper-conformance-v1/report.json
+            reports/dialectic_intervention/summary.json
+            reports/dialectic_intervention/summary.md
+            reports/dialectic_intervention/results.csv
           if-no-files-found: error
