@@ -1,0 +1,460 @@
+name: GJ-Eval Development Pilot
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "bench/gj-eval-v1"
+      - "bench/gj-eval-sharded-jev"
+    paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
+      - ".github/workflows/gj-eval-development-pilot.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-primary:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile GJ-Eval Python
+        run: python -m compileall -q benchmarks/gj_eval
+
+      - name: Gate 1 - provider-free harness invariants
+        run: |
+          python benchmarks/gj_eval/self_test.py | tee /tmp/gj-self-test.log
+          grep -q '"gj_eval_self_test": true' /tmp/gj-self-test.log
+          grep -q '"oracle_redaction": true' /tmp/gj-self-test.log
+          grep -q '"adapter_failure_not_abstention": true' /tmp/gj-self-test.log
+
+      - name: Gate 2A - 100-case Jev transport contract
+        run: |
+          python benchmarks/gj_eval/jev_contract_test.py | tee /tmp/gj-jev-contract.log
+          grep -q '"jev_contract_test": true' /tmp/gj-jev-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-jev-contract.log
+          grep -q '"opencode_free_transport": true' /tmp/gj-jev-contract.log
+          grep -q '"typesafe_reference_transport": true' /tmp/gj-jev-contract.log
+
+      - name: Configure GrapheneDB
+        run: >
+          cmake -S . -B build-gj-pilot
+          -DCMAKE_BUILD_TYPE=Release
+          -DGRAPHENEDB_BUILD_TESTS=OFF
+          -DGRAPHENEDB_BUILD_BENCH=OFF
+          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build GrapheneDB server
+        run: cmake --build build-gj-pilot --target graphenedb_server -j 2
+
+      - name: Gate 2B - 100-case real Graphene G6 contract
+        run: |
+          python benchmarks/gj_eval/graphene_contract_test.py build-gj-pilot/graphenedb_server | tee /tmp/gj-g6-contract.log
+          grep -q '"graphene_g6_contract_test": true' /tmp/gj-g6-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-g6-contract.log
+          grep -q '"persistent_state": true' /tmp/gj-g6-contract.log
+          grep -q '"idempotent_replay": true' /tmp/gj-g6-contract.log
+
+      - name: Select authenticated Jev transport
+        run: |
+          if [ -n "$OPENCODE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=opencode" >> "$GITHUB_ENV"
+            echo "Using OpenCode Zen jev-1.13-free."
+          elif [ -n "$TYPESAFE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=typesafe" >> "$GITHUB_ENV"
+            echo "Using direct TypeSafe jev-1.13.0."
+          else
+            echo "Set OPENCODE_API_KEY (preferred free route) or TYPESAFE_API_KEY."
+            exit 2
+          fi
+
+      - name: Gate 2C - live Jev provider smoke
+        run: |
+          cat > /tmp/gj-jev-smoke.json <<'JSON'
+          {
+            "schema_version": 1,
+            "world_id": "live-provider-smoke",
+            "timestep": 0,
+            "domain": "aiops",
+            "variant": "base",
+            "visible_state": [
+              {
+                "evidence_id": "smoke-e1",
+                "source_id": "smoke-source",
+                "source_family": "smoke-family",
+                "claim": "Database saturation preceded checkout failures.",
+                "supports": "database",
+                "confidence": 0.95,
+                "observed_at": "2026-01-01T00:00:00Z"
+              }
+            ],
+            "choices": [
+              {"id": "deployment", "label": "Deployment"},
+              {"id": "database", "label": "Database"},
+              {"id": "network", "label": "Network"},
+              {"id": "certificate", "label": "Certificate"},
+              {"id": "unknown", "label": "Unknown / insufficient evidence"}
+            ],
+            "tests": []
+          }
+          JSON
+          python benchmarks/gj_eval/adapters/jev_http.py < /tmp/gj-jev-smoke.json | tee /tmp/gj-jev-smoke.out
+          python - <<'PY'
+          import json
+          row=json.load(open("/tmp/gj-jev-smoke.out"))
+          assert row["root_choice"] in {"deployment","database","network","certificate","unknown"}
+          assert 0.0 <= float(row["selected_confidence"]) <= 1.0
+          assert row["receipt"]["transport"] in {"opencode","typesafe"}
+          print({"live_jev_smoke": True, "transport": row["receipt"]["transport"], "model": row["receipt"]["requested_model"]})
+          PY
+
+      - name: Generate frozen development worlds
+        run: |
+          mkdir -p reports/gj-eval-dev
+          python benchmarks/gj_eval/generate_worldshift.py \
+            --split development \
+            --count 240 \
+            --seed 1729 \
+            --output reports/gj-eval-dev/worlds.jsonl
+
+      - name: Run G6 Full Graphene
+        run: |
+          python benchmarks/gj_eval/run_graphene_managed.py \
+            --server-binary build-gj-pilot/graphenedb_server \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --adapter benchmarks/gj_eval/adapters/graphene_http.py \
+            --system graphenedb_full \
+            --output reports/gj-eval-dev/graphenedb_full.jsonl
+
+      - name: Write preparation receipt
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          root=pathlib.Path(".")
+          def sha(path):
+              return hashlib.sha256((root/path).read_bytes()).hexdigest()
+          protocol_files=[
+              "docs/benchmarks/GJ_EVAL_V1_SPEC.md",
+              "benchmarks/gj_eval/manifest.v1.json",
+              "benchmarks/gj_eval/generate_worldshift.py",
+              "benchmarks/gj_eval/run_command_adapter.py",
+              "benchmarks/gj_eval/adapters/jev_http.py",
+              "benchmarks/gj_eval/score.py",
+              "benchmarks/gj_eval/compare.py",
+          ]
+          receipt={
+              "schema_version": 1,
+              "git_commit": subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip(),
+              "development_count": 240,
+              "development_seed": 1729,
+              "jev_shard_count": 4,
+              "worlds_sha256": sha("reports/gj-eval-dev/worlds.jsonl"),
+              "graphenedb_full_sha256": sha("reports/gj-eval-dev/graphenedb_full.jsonl"),
+              "protocol_files_sha256": {name: sha(name) for name in protocol_files},
+          }
+          pathlib.Path("reports/gj-eval-dev/preparation_receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True)+"\n", encoding="utf-8"
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Upload prepared frozen workload
+        uses: actions/upload-artifact@v4
+        with:
+          name: gj-eval-prepared
+          path: |
+            reports/gj-eval-dev/worlds.jsonl
+            reports/gj-eval-dev/graphenedb_full.jsonl
+            reports/gj-eval-dev/preparation_receipt.json
+          if-no-files-found: error
+          retention-days: 30
+
+  jev-shards:
+    needs: prepare-primary
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard_index: [0, 1, 2, 3]
+    env:
+      OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      GJ_SHARD_COUNT: 4
+      GJ_SHARD_INDEX: ${{ matrix.shard_index }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download prepared frozen workload
+        uses: actions/download-artifact@v4
+        with:
+          name: gj-eval-prepared
+          path: reports/gj-eval-dev
+
+      - name: Verify preparation identity
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          root=pathlib.Path(".")
+          receipt=json.loads(pathlib.Path("reports/gj-eval-dev/preparation_receipt.json").read_text())
+          head=subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip()
+          assert receipt["git_commit"] == head, (receipt["git_commit"], head)
+          def sha(path):
+              return hashlib.sha256((root/path).read_bytes()).hexdigest()
+          assert receipt["worlds_sha256"] == sha("reports/gj-eval-dev/worlds.jsonl")
+          for name, expected in receipt["protocol_files_sha256"].items():
+              assert expected == sha(name), (name, expected, sha(name))
+          assert receipt["jev_shard_count"] == int(__import__("os").environ["GJ_SHARD_COUNT"])
+          print({"preparation_identity_verified": True, "commit": head})
+          PY
+
+      - name: Select authenticated Jev transport
+        run: |
+          if [ -n "$OPENCODE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=opencode" >> "$GITHUB_ENV"
+            echo "Using OpenCode Zen jev-1.13-free."
+          elif [ -n "$TYPESAFE_API_KEY" ]; then
+            echo "GJ_JEV_PROVIDER=typesafe" >> "$GITHUB_ENV"
+            echo "Using direct TypeSafe jev-1.13.0."
+          else
+            echo "Set OPENCODE_API_KEY (preferred free route) or TYPESAFE_API_KEY."
+            exit 2
+          fi
+
+      - name: Run J1 Jev Structured shard
+        run: |
+          mkdir -p reports/gj-eval-dev/shards
+          python benchmarks/gj_eval/run_command_adapter.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --adapter-cmd "python benchmarks/gj_eval/adapters/jev_http.py" \
+            --system jev_structured \
+            --state-mode structured \
+            --timeout-s 60 \
+            --shard-count "$GJ_SHARD_COUNT" \
+            --shard-index "$GJ_SHARD_INDEX" \
+            --output "reports/gj-eval-dev/shards/jev_structured.shard-$GJ_SHARD_INDEX.jsonl"
+
+      - name: Write shard diagnostic receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          idx=os.environ["GJ_SHARD_INDEX"]
+          path=pathlib.Path(f"reports/gj-eval-dev/shards/jev_structured.shard-{idx}.jsonl")
+          out=pathlib.Path(f"reports/gj-eval-dev/shards/jev_structured.shard-{idx}.receipt.json")
+          rows=[]
+          if path.exists():
+              rows=[json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+          statuses={}
+          for row in rows:
+              status=str(row.get("adapter_status"))
+              statuses[status]=statuses.get(status,0)+1
+          receipt={
+              "schema_version": 1,
+              "shard_index": int(idx),
+              "shard_count": int(os.environ["GJ_SHARD_COUNT"]),
+              "rows": len(rows),
+              "sha256": hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None,
+              "adapter_status_counts": statuses,
+              "transport": os.environ.get("GJ_JEV_PROVIDER"),
+          }
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(receipt, indent=2, sort_keys=True)+"\n")
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Upload raw Jev shard immediately
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gj-jev-shard-${{ matrix.shard_index }}
+          path: |
+            reports/gj-eval-dev/shards/jev_structured.shard-${{ matrix.shard_index }}.jsonl
+            reports/gj-eval-dev/shards/jev_structured.shard-${{ matrix.shard_index }}.receipt.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  merge-score:
+    needs: [prepare-primary, jev-shards]
+    if: ${{ always() && needs.prepare-primary.result == 'success' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download prepared frozen workload
+        uses: actions/download-artifact@v4
+        with:
+          name: gj-eval-prepared
+          path: reports/gj-eval-dev
+
+      - name: Download all Jev shard artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gj-jev-shard-*
+          path: reports/gj-eval-dev/shards
+          merge-multiple: true
+
+      - name: Verify preparation identity before merge
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          root=pathlib.Path(".")
+          receipt=json.loads(pathlib.Path("reports/gj-eval-dev/preparation_receipt.json").read_text())
+          head=subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip()
+          assert receipt["git_commit"] == head, (receipt["git_commit"], head)
+          def sha(path):
+              return hashlib.sha256((root/path).read_bytes()).hexdigest()
+          assert receipt["worlds_sha256"] == sha("reports/gj-eval-dev/worlds.jsonl")
+          assert receipt["graphenedb_full_sha256"] == sha("reports/gj-eval-dev/graphenedb_full.jsonl")
+          for name, expected in receipt["protocol_files_sha256"].items():
+              assert expected == sha(name), (name, expected, sha(name))
+          print({"preparation_identity_verified": True, "commit": head})
+          PY
+
+      - name: Strict canonical Jev shard merge
+        run: |
+          python benchmarks/gj_eval/merge_shards.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --shards reports/gj-eval-dev/shards/jev_structured.shard-*.jsonl \
+            --system jev_structured \
+            --output reports/gj-eval-dev/jev_structured.jsonl \
+            --receipt reports/gj-eval-dev/jev_merge_receipt.json
+
+      - name: Require accepted clean Jev merge
+        run: |
+          python - <<'PY'
+          import json
+          receipt=json.load(open("reports/gj-eval-dev/jev_merge_receipt.json"))
+          assert receipt["merge_accepted"] is True
+          assert receipt["coverage_complete"] is True
+          assert receipt["adapter_failures"] == 0
+          assert receipt["merged_rows"] == receipt["expected_rows"] == 1920
+          assert len(receipt["transports"]) == 1
+          assert len(receipt["requested_models"]) == 1
+          assert receipt["mixed_transport"] is False
+          assert receipt["mixed_requested_model"] is False
+          assert receipt["mixed_resolved_model"] is False
+          print({
+              "clean_jev_merge": True,
+              "rows": receipt["merged_rows"],
+              "transport": receipt["transports"][0],
+              "requested_model": receipt["requested_models"][0],
+          })
+          PY
+
+      - name: Require complete primary prediction coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          worlds=[
+              json.loads(x)
+              for x in Path("reports/gj-eval-dev/worlds.jsonl").read_text().splitlines()
+              if x
+          ]
+          expected=sum(len(w["timeline"]) for w in worlds)
+          for name in ("graphenedb_full","jev_structured"):
+              rows=[
+                  json.loads(x)
+                  for x in Path(f"reports/gj-eval-dev/{name}.jsonl").read_text().splitlines()
+                  if x
+              ]
+              assert len(rows) == expected, (name,len(rows),expected)
+              statuses=[r["adapter_status"] for r in rows]
+              assert all(s in {"ok","error","timeout"} for s in statuses)
+              assert all(s == "ok" for s in statuses), (
+                  name,
+                  {s: statuses.count(s) for s in sorted(set(statuses))}
+              )
+          print({"worlds":len(worlds),"predictions_per_system":expected,"all_primary_predictions_ok":True})
+          PY
+
+      - name: Score primary systems
+        run: |
+          cat reports/gj-eval-dev/graphenedb_full.jsonl \
+              reports/gj-eval-dev/jev_structured.jsonl \
+              > reports/gj-eval-dev/primary_predictions.jsonl
+          python benchmarks/gj_eval/score.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --predictions reports/gj-eval-dev/primary_predictions.jsonl \
+            > reports/gj-eval-dev/score.json
+
+      - name: Cluster-paired comparison
+        run: |
+          python benchmarks/gj_eval/compare.py \
+            --worlds reports/gj-eval-dev/worlds.jsonl \
+            --predictions reports/gj-eval-dev/primary_predictions.jsonl \
+            --system-a graphenedb_full \
+            --system-b jev_structured \
+            > reports/gj-eval-dev/comparison.json
+
+      - name: Write protocol receipt
+        run: |
+          python benchmarks/gj_eval/freeze_protocol.py \
+            --output reports/gj-eval-dev/protocol_receipt.json
+
+      - name: Write execution receipt
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          root=pathlib.Path("reports/gj-eval-dev")
+          def sha(name):
+              return hashlib.sha256((root/name).read_bytes()).hexdigest()
+          preparation=json.loads((root/"preparation_receipt.json").read_text())
+          merge=json.loads((root/"jev_merge_receipt.json").read_text())
+          receipt={
+              "schema_version": 1,
+              "git_commit": subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip(),
+              "development_count": 240,
+              "development_seed": 1729,
+              "jev_shard_count": 4,
+              "worlds_sha256": sha("worlds.jsonl"),
+              "graphenedb_full_sha256": sha("graphenedb_full.jsonl"),
+              "jev_structured_sha256": sha("jev_structured.jsonl"),
+              "primary_predictions_sha256": sha("primary_predictions.jsonl"),
+              "score_sha256": sha("score.json"),
+              "comparison_sha256": sha("comparison.json"),
+              "protocol_receipt_sha256": sha("protocol_receipt.json"),
+              "preparation_receipt_sha256": sha("preparation_receipt.json"),
+              "jev_merge_receipt_sha256": sha("jev_merge_receipt.json"),
+              "jev_transport": merge["transports"][0],
+              "jev_requested_model": merge["requested_models"][0],
+              "jev_resolved_models": merge["resolved_models"],
+              "coverage_complete": merge["coverage_complete"],
+              "adapter_failures": merge["adapter_failures"],
+              "protocol_files_sha256": preparation["protocol_files_sha256"],
+          }
+          (root/"execution_receipt.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True)+"\n", encoding="utf-8"
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Upload canonical development comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gj-eval-development-pilot
+          path: reports/gj-eval-dev/
+          if-no-files-found: error
+          retention-days: 30

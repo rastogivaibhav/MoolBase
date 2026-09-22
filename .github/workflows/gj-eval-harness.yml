@@ -1,0 +1,54 @@
+name: GJ-Eval Harness
+
+on:
+  push:
+    branches:
+      - "bench/gj-eval-v1"
+    paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
+      - ".github/workflows/gj-eval-harness.yml"
+  pull_request:
+    paths:
+      - "benchmarks/gj_eval/**"
+      - "docs/benchmarks/GJ_EVAL_V1_SPEC.md"
+      - ".github/workflows/gj-eval-harness.yml"
+  workflow_dispatch:
+
+jobs:
+  harness-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile benchmark Python
+        run: python -m compileall -q benchmarks/gj_eval
+
+      - name: Run provider-free harness self-test
+        run: python benchmarks/gj_eval/self_test.py
+
+      - name: Validate official Jev HTTP contract without provider calls
+        run: |
+          python benchmarks/gj_eval/jev_contract_test.py | tee /tmp/gj-jev-contract.log
+          grep -q '"jev_contract_test": true' /tmp/gj-jev-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-jev-contract.log
+
+      - name: Configure GrapheneDB for G6 conformance
+        run: >
+          cmake -S . -B build-gj
+          -DCMAKE_BUILD_TYPE=Release
+          -DGRAPHENEDB_BUILD_TESTS=ON
+          -DGRAPHENEDB_BUILD_BENCH=OFF
+          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build GrapheneDB server
+        run: cmake --build build-gj --target graphenedb_server -j 2
+
+      - name: Validate G6 against real GrapheneDB runtime
+        run: |
+          python benchmarks/gj_eval/graphene_contract_test.py build-gj/graphenedb_server | tee /tmp/gj-g6-contract.log
+          grep -q '"graphene_g6_contract_test": true' /tmp/gj-g6-contract.log
+          grep -q '"canonical_tasks": 100' /tmp/gj-g6-contract.log

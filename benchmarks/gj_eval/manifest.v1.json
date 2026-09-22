@@ -1,0 +1,134 @@
+{
+  "benchmark": "GJ-Eval",
+  "protocol_version": "1.0",
+  "status": "CANDIDATE_FROZEN_PENDING_ADAPTER_CONFORMANCE",
+  "primary_comparison": [
+    "graphenedb_full",
+    "jev_structured"
+  ],
+  "shared_extraction_boundary": "canonical_structured_evidence",
+  "splits": {
+    "development": {
+      "count": 240,
+      "seed": 1729
+    },
+    "validation": {
+      "count": 480,
+      "seed": 271828
+    },
+    "test": {
+      "count": 2400,
+      "seed_source": "GJ_EVAL_TEST_SEED",
+      "commit_seed": false
+    }
+  },
+  "tracks": [
+    "system_one_parity",
+    "epistemic_stress",
+    "hypothesis_survival",
+    "dialectical_recovery",
+    "active_investigation",
+    "longitudinal_state"
+  ],
+  "stress_variants": [
+    "base",
+    "duplicate_swarm",
+    "correlated_sources",
+    "false_majority",
+    "late_contradiction",
+    "source_invalidation",
+    "supersession",
+    "missing_evidence",
+    "misleading_chronology",
+    "minority_truth",
+    "interaction_effect",
+    "model_reversal"
+  ],
+  "systems": [
+    "jev_raw",
+    "jev_structured",
+    "graphene_g0_deterministic",
+    "graphene_g1_causal",
+    "graphene_g2_fiber",
+    "graphene_g3_hypokosh",
+    "graphene_g4_stability",
+    "graphene_g5_dialectic",
+    "graphenedb_full"
+  ],
+  "primary_metrics": [
+    "wrong_model_dwell_time",
+    "recovery_latency",
+    "premature_convergence_rate",
+    "final_accuracy"
+  ],
+  "secondary_metrics": [
+    "trajectory_accuracy",
+    "contradiction_response_delta",
+    "duplicate_inflation_delta",
+    "true_hypothesis_survival_at_k",
+    "abstention_quality",
+    "selected_confidence_ece",
+    "experiment_efficiency",
+    "stale_belief_rate",
+    "historical_consistency",
+    "latency_p50_ms",
+    "latency_p95_ms",
+    "input_bytes",
+    "output_bytes",
+    "provider_cost"
+  ],
+  "statistical_rule": {
+    "paired_bootstrap_confidence": 0.95,
+    "claim_measurable_advantage_only_if_ci_excludes_zero": true,
+    "universal_winner_score": false,
+    "bootstrap_unit": "scenario_id",
+    "bootstrap_samples": 10000,
+    "bootstrap_seed": 20260921
+  },
+  "failure_policy": {
+    "timeout_or_adapter_error": "retained_in_denominator_and_never_scored_as_correct_abstention",
+    "malformed_response": "retained_as_adapter_error",
+    "post_hoc_exclusion": false
+  },
+  "pairing": {
+    "variants_per_latent_scenario": 12,
+    "pairing_key": "scenario_id",
+    "rule": "Each latent scenario is emitted once per stress variant; paired deltas compare worlds sharing scenario_id."
+  },
+  "jev": {
+    "official_endpoint": "https://api.typesafe.ai/v1/systemone",
+    "action_threshold": 0.75,
+    "action_rule": "act iff root_choice != unknown AND Jev native Choice confidence >= 0.75 AND evidence_sufficient_noul >= 0.75",
+    "calibration_value": "selected_option_probability",
+    "native_choice_confidence": "retained_in_receipt_not_used_as_selected_confidence",
+    "model_policy": "pinned_version; do not use moving aliases for scored runs",
+    "model": "jev-1.13.0",
+    "transport_retry_policy": "retry HTTP 429/529 with exponential backoff, max 5 retries",
+    "receipt_hashes": [
+      "state_sha256",
+      "questions_sha256"
+    ],
+    "action_gate_value": "jev_native_choice_confidence",
+    "scored_transport_policy": "prefer OpenCode Zen jev-1.13-free when authenticated; direct TypeSafe jev-1.13.0 is fallback",
+    "transports": {
+      "opencode_zen": {
+        "endpoint": "https://opencode.ai/zen/v1/systemone",
+        "model": "jev-1.13-free",
+        "input_usd_per_mtok": 0,
+        "status": "preferred development transport; limited-time free model"
+      },
+      "typesafe_direct": {
+        "endpoint": "https://api.typesafe.ai/v1/systemone",
+        "model": "jev-1.13.0",
+        "input_usd_per_mtok": 0.042,
+        "status": "reference/fallback transport"
+      },
+      "vercel_ai_gateway": {
+        "interface": "AI SDK experimental_evaluate",
+        "model": "typesafe-ai/jev",
+        "status": "secondary cross-check transport; not primary v1 HTTP adapter"
+      }
+    }
+  },
+  "ablation_registry": "ablation_status.v1.json"
+}

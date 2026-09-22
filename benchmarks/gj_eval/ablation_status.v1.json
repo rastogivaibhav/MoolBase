@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "arms": {
+    "graphene_g0_deterministic": {
+      "status": "SCORED",
+      "adapter": "adapters/graphene_deterministic.py",
+      "scope": [
+        "final_accuracy",
+        "trajectory_accuracy",
+        "premature_convergence",
+        "calibration",
+        "duplicate_inflation"
+      ]
+    },
+    "graphene_g1_causal": {
+      "status": "SCORED",
+      "adapter": "adapters/graphene_dialectic.py",
+      "implementation": "POST /v1/reason/dialectic with max_opposition_rounds=0",
+      "scope": [
+        "final_accuracy",
+        "trajectory_accuracy",
+        "wrong_model_dwell_time",
+        "recovery_latency",
+        "premature_convergence"
+      ]
+    },
+    "graphene_g2_fiber": {
+      "status": "NOT_SCORED",
+      "reason": "Current public/runtime contract does not expose a clean causal-traversal-plus-FiberBundle decision surface isolated from downstream HypoKosh/stability semantics."
+    },
+    "graphene_g3_hypokosh": {
+      "status": "SCORED_RESTRICTED",
+      "adapter": "adapters/graphene_hypokosh.py",
+      "scope": [
+        "true_hypothesis_survival_at_k",
+        "hypothesis_rank"
+      ],
+      "note": "HypoKosh proposals remain hypothetical; act is always review."
+    },
+    "graphene_g4_stability": {
+      "status": "NOT_SCORED",
+      "reason": "Current runtime does not expose a clean switch that adds stability/Lyapunov while disabling downstream opposition/reopening and governed projection."
+    },
+    "graphene_g5_dialectic": {
+      "status": "NOT_SCORED",
+      "reason": "Current runtime does not expose a clean pre-projection full-dialectic decision surface."
+    },
+    "graphenedb_full": {
+      "status": "SCORED_PRIMARY",
+      "adapter": "adapters/graphene_http.py",
+      "implementation": "POST /v1/reason/runtime plus read-only /v1/reason/hypokosh"
+    }
+  }
+}
