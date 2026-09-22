@@ -137,6 +137,10 @@ def main() -> int:
         {test for trajectory in TRAJECTORIES.values() for test in trajectory["tests"]}
     )
     test_results = {name: run_test(build_dir, name) for name in unique_tests}
+    test_use_count = {
+        name: sum(name in trajectory["tests"] for trajectory in TRAJECTORIES.values())
+        for name in unique_tests
+    }
 
     intervention_path = ROOT / "reports/dialectic_intervention/summary.json"
     intervention = None
@@ -150,8 +154,14 @@ def main() -> int:
     any_failure = False
     for tid, spec in TRAJECTORIES.items():
         mapped = [test_results[name] for name in spec["tests"]]
-        if any(not result["passed"] for result in mapped):
-            status = "CONTRADICTED_OR_BROKEN"
+        failed_tests = [
+            result["name"] for result in mapped if not result["passed"]
+        ]
+        if failed_tests:
+            if all(test_use_count[name] > 1 for name in failed_tests):
+                status = "BLOCKED_BY_SHARED_TEST"
+            else:
+                status = "CONTRADICTED_OR_BROKEN"
             any_failure = True
         else:
             status = spec["success_status"]
@@ -165,10 +175,16 @@ def main() -> int:
             "status": status,
             "boundary": spec["boundary"],
             "tests": spec["tests"],
+            "blocking_tests": failed_tests,
         }
 
     current_paper_ids = {"T1", "T2", "T3", "T6", "T7"}
-    failing_statuses = {"PARTIAL", "CONTRADICTED_OR_BROKEN", "EVIDENCE_MISSING_OR_FAILED"}
+    failing_statuses = {
+        "PARTIAL",
+        "CONTRADICTED_OR_BROKEN",
+        "BLOCKED_BY_SHARED_TEST",
+        "EVIDENCE_MISSING_OR_FAILED",
+    }
     current_paper_incomplete = any(
         trajectories[tid]["status"] in failing_statuses for tid in current_paper_ids
     )
