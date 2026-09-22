@@ -117,6 +117,10 @@ if(GRAPHENEDB_BUILD_EXAMPLES AND NOT GRAPHENEDB_BUILD_FUZZERS)
   add_executable(graphenedb_epistemic_flagship_demo
                  examples/epistemic_flagship_demo.cpp)
   target_link_libraries(graphenedb_epistemic_flagship_demo PRIVATE graphenedb)
+
+  add_executable(graphenedb_epistemic_flagship_perturbations
+                 examples/epistemic_flagship_perturbations.cpp)
+  target_link_libraries(graphenedb_epistemic_flagship_perturbations PRIVATE graphenedb)
 endif()
 
 if(GRAPHENEDB_BUILD_BENCH)
