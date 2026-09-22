@@ -265,7 +265,7 @@ Scenario: **{manifest['title']}**
 
 - **Phase A — correlated evidence:** {phases['A']['raw_paths']} raw paths remained only {phases['A']['independent_families']} independent evidence family; independent corroboration was not fabricated.
 - **Phase B — competing hypothesis:** H2 remained visible after H1 was selected; opposition requested bounded re-expansion with {phases['B']['reopen_count']} reopen targets.
-- **Phase C — negative control:** material contradiction blocked resolution and made the evidence inadmissible for final resolution. Success here means GrapheneDB **refused to converge**.
+- **Phase C — negative control:** material contradiction made the evidence inadmissible for final resolution. The candidate answer remains visible for audit, but it is **not eligible for final resolution** while the contradiction remains.
 - **Phase D — DWM/recovery:** bounded dialectic produced a reopened bundle with no durable writes. Missing-hop recovery executed {recovery['expansion_rounds']} depth expansions without widening semantic candidates.
 - **Phase E — discriminating evidence:** independent support increased and the contradiction blocker cleared while the earlier Phase C receipt hash remained recorded.
 
