@@ -137,6 +137,10 @@ int main() {
       << "|sufficient_independent_support="
       << boolean(p1.admissibility.sufficient_independent_support)
       << "|admissible=" << boolean(p1.admissibility.evidence_admissible)
+      << "|requires_external_verification="
+      << boolean(p1.admissibility.requires_external_verification)
+      << "|opposition_requests_reexpansion="
+      << boolean(p1.opposition.requests_reexpansion)
       << "|answer=" << boolean(p1.answer.has_answer)
       << "\n";
 
@@ -176,6 +180,12 @@ int main() {
       << boolean(p2_baseline.admissibility.evidence_admissible)
       << "|perturbed_admissible="
       << boolean(p2_removed.admissibility.evidence_admissible)
+      << "|baseline_requires_external_verification="
+      << boolean(p2_baseline.admissibility.requires_external_verification)
+      << "|perturbed_requires_external_verification="
+      << boolean(p2_removed.admissibility.requires_external_verification)
+      << "|perturbed_opposition_requests_reexpansion="
+      << boolean(p2_removed.opposition.requests_reexpansion)
       << "\n";
 
   // P3: inject material contradiction into an otherwise independently
