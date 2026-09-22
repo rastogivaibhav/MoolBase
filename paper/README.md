@@ -69,6 +69,8 @@ The paper does not claim AGI, causal identification, semantic truth, global conv
 
 ## Relationship to earlier papers
 
+The authoritative implementation-lineage note is [`docs/lab/IMPLEMENTATION_LINEAGE.md`](../docs/lab/IMPLEMENTATION_LINEAGE.md). It records which earlier Rust/Python descriptions are historical prototype lineage, which C++20 paths are current, and which architectural ambitions remain future work.
+
 The earlier documents remain architectural history and future research direction. They introduced premature convergence, temporal-causal memory, FiberBundles, opposition, model-world feedback, a small-model role, and a route toward model-world learning. The submission paper changes several points to match the actual code and evidence:
 
 - C++20 GrapheneDB replaces the earlier Rust-first implementation description.
