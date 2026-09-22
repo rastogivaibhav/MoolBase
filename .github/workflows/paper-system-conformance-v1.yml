@@ -1,0 +1,60 @@
+name: Paper-System Conformance V1
+
+on:
+  pull_request:
+    paths:
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/run_paper_conformance_v1.py'
+      - 'paper/**'
+      - 'docs/DIALECTIC_REASONING_V0.md'
+      - 'docs/GOVERNED_LEARNING_V0_SPEC.md'
+      - 'docs/lab/PAPER_SYSTEM_CONFORMANCE_V1.md'
+      - '.github/workflows/paper-system-conformance-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure focused conformance build
+        run: >
+          cmake -S . -B build-paper-conformance
+          -DCMAKE_BUILD_TYPE=Release
+          -DGRAPHENEDB_BUILD_TESTS=ON
+          -DGRAPHENEDB_BUILD_BENCH=OFF
+          -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+          -DGRAPHENEDB_BUILD_SERVER=OFF
+
+      - name: Build mapped conformance targets
+        run: >
+          cmake --build build-paper-conformance --parallel 2 --target
+          graphenedb_fiber_bundle_v2_tests
+          graphenedb_epistemic_control_tests
+          graphenedb_dialectic_tests
+          graphenedb_governed_learning_tests
+          graphenedb_hypokosh_runtime_tests
+          graphenedb_epistemic_receipt_tests
+
+      - name: Run paper-system conformance
+        run: >
+          python3 scripts/run_paper_conformance_v1.py
+          --build-dir build-paper-conformance
+          --output reports/paper-conformance-v1/report.json
+
+      - name: Publish machine-readable conformance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-system-conformance-v1
+          path: reports/paper-conformance-v1/report.json
+          if-no-files-found: error
