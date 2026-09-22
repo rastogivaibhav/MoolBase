@@ -19,7 +19,7 @@ cmake --install "$ROOT/$BUILD_DIR"
 BUILD_DIR=build-release-package-verify \
 INSTALL_DIR="$INSTALL_DIR" \
 CONSUMER_BUILD_DIR=build-release-package-consumer \
-  "$ROOT/scripts/verify_package_install.sh"
+  bash "$ROOT/scripts/verify_package_install.sh"
 
 rm -f "$OUT"
 if command -v zip >/dev/null 2>&1; then
