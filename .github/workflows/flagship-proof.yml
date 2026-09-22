@@ -1,0 +1,40 @@
+name: Flagship epistemic proof
+
+on:
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "include/**"
+      - "src/**"
+      - "examples/epistemic_flagship_demo.cpp"
+      - "benchmarks/flagship/**"
+      - "scripts/run_flagship_proof.py"
+      - ".github/workflows/flagship-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flagship-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Run deterministic flagship proof
+        run: python3 scripts/run_flagship_proof.py
+
+      - name: Publish receipt-first evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphenedb-flagship-proof
+          path: |
+            reports/flagship-proof/receipt.json
+            reports/flagship-proof/summary.md
+            reports/flagship-proof/scenario_manifest.json
+            reports/flagship-proof/raw_output.txt
+          if-no-files-found: error

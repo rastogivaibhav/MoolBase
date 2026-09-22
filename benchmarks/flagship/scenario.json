@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "scenario_id": "graphenedb-flagship-epistemic-adversarial-v1",
+  "title": "More evidence is not necessarily more independent evidence",
+  "hypotheses": {
+    "H1": {
+      "id": 101,
+      "statement": "A deployment-induced connection-pool change caused checkout timeouts."
+    },
+    "H2": {
+      "id": 202,
+      "statement": "A traffic spike caused checkout timeouts."
+    }
+  },
+  "phases": [
+    {
+      "id": "A",
+      "purpose": "Correlated evidence must not inflate independent support.",
+      "evidence": [
+        {"source": "deployment-report", "family": "release-family", "role": "support"},
+        {"source": "deployment-report", "family": "release-family", "role": "support"}
+      ]
+    },
+    {
+      "id": "B",
+      "purpose": "A separately supported competing hypothesis must survive convergence.",
+      "evidence": [
+        {"source": "deployment-report", "family": "release-family", "role": "support"},
+        {"source": "heap-profile", "family": "runtime-family", "role": "support"},
+        {"source": "traffic-dashboard", "family": "traffic-family", "role": "alternative"}
+      ]
+    },
+    {
+      "id": "C",
+      "purpose": "Material contradiction must block final resolution.",
+      "evidence": [
+        {"source": "rollback-observation", "family": "rollback-family", "role": "opposition"}
+      ]
+    },
+    {
+      "id": "D",
+      "purpose": "Opposition must cause bounded operational reopen and missing-hop recovery must advance the frontier without blind semantic widening."
+    },
+    {
+      "id": "E",
+      "purpose": "Discriminating evidence changes the governed evidence state while preserving earlier receipt identity.",
+      "evidence": [
+        {"source": "controlled-reproduction", "family": "experiment-family", "role": "support"}
+      ]
+    }
+  ],
+  "claim_boundary": {
+    "supports": [
+      "known-lineage de-correlation",
+      "preservation of competing alternatives",
+      "contradiction-aware non-convergence",
+      "bounded operational reopen",
+      "defect-specific frontier recovery",
+      "deterministic inspectable receipts"
+    ],
+    "does_not_support": [
+      "semantic truth",
+      "automatic hidden-dependence discovery",
+      "autonomous scientific discovery",
+      "durable cross-run DWM belief promotion or revision",
+      "general external-system superiority",
+      "enterprise readiness"
+    ]
+  }
+}
