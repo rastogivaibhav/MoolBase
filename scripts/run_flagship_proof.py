@@ -18,6 +18,7 @@ import sys
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+EXPECTED_MECHANISM_RECEIPT_SHA256 = "36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef"
 
 
 def checked(cmd: list[str], *, cwd: pathlib.Path = ROOT) -> subprocess.CompletedProcess[str]:
@@ -202,7 +203,6 @@ def main() -> int:
     canonical = {
         "schema_version": 1,
         "scenario_id": manifest["scenario_id"],
-        "commit": commit,
         "scenario_manifest_sha256": manifest_hash,
         "phases": phases,
         "dwm": dwm,
@@ -213,10 +213,22 @@ def main() -> int:
         "claim_boundary": manifest["claim_boundary"],
     }
     receipt_hash = canonical_hash(canonical)
+    require(
+        receipt_hash == EXPECTED_MECHANISM_RECEIPT_SHA256,
+        "mechanism receipt changed: "
+        f"expected {EXPECTED_MECHANISM_RECEIPT_SHA256}, got {receipt_hash}",
+    )
+    provenance_hash = canonical_hash({
+        "commit": commit,
+        "mechanism_receipt_hash_sha256": receipt_hash,
+    })
 
     receipt = {
         **canonical,
+        "commit": commit,
         "receipt_hash_sha256": receipt_hash,
+        "provenance_hash_sha256": provenance_hash,
+        "receipt_hash_excludes_commit_and_environment": True,
         "environment": {
             "platform": platform.system(),
             "machine": platform.machine(),
@@ -243,7 +255,9 @@ def main() -> int:
 
 Commit: `{commit}`
 
-Receipt SHA-256: `{receipt_hash}`
+Mechanism receipt SHA-256: `{receipt_hash}`
+
+Commit provenance SHA-256: `{provenance_hash}`
 
 Scenario: **{manifest['title']}**
 
@@ -295,6 +309,7 @@ It does **not** establish semantic truth, hidden-dependence discovery, autonomou
         "flagship_proof": "PASS",
         "commit": commit,
         "receipt_hash_sha256": receipt_hash,
+        "provenance_hash_sha256": provenance_hash,
         "receipt": str((output_dir / "receipt.json").relative_to(ROOT)),
         "summary": str((output_dir / "summary.md").relative_to(ROOT)),
     }, sort_keys=True))
