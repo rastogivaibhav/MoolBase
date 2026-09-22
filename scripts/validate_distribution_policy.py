@@ -9,6 +9,7 @@ import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+APACHE_2_0_CANONICAL_SHA256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
 
 def fail(message: str) -> None:
     raise SystemExit(f"distribution_policy_failure: {message}")
@@ -34,6 +35,13 @@ def validate_repository() -> dict[str, object]:
     ]:
         if not path.is_file():
             fail(f"missing required file: {path.name}")
+
+    license_digest = sha256(license_path)
+    if license_digest != APACHE_2_0_CANONICAL_SHA256:
+        fail(
+            "LICENSE does not match the canonical Apache-2.0 text: "
+            f"{license_digest}"
+        )
 
     license_text = license_path.read_text(encoding="utf-8")
     required_license_markers = [
@@ -68,7 +76,7 @@ def validate_repository() -> dict[str, object]:
 
     return {
         "license": "Apache-2.0",
-        "license_sha256": sha256(license_path),
+        "license_sha256": license_digest,
         "notice_sha256": sha256(notice_path),
         "third_party_notices_sha256": sha256(third_party_path),
         "dco_sha256": sha256(dco_path),
