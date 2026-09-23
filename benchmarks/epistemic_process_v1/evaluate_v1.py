@@ -20,6 +20,14 @@ def score_episode(task, receipt):
     missing = sorted(REQUIRED_RECEIPT_FIELDS - set(receipt))
     if missing:
         return {"episode_id": task["id"], "malformed": True, "missing": missing}
+    if receipt.get("adapter_failure"):
+        return {
+            "episode_id": task["id"],
+            "malformed": False,
+            "adapter_failure": True,
+            "adapter_failure_detail": receipt.get("adapter_failure_detail", []),
+            "excluded_from_primary_metrics": True,
+        }
     events = {e["id"]: e for e in task["events"]}
     decisive = [e for e in task["events"] if e.get("decisive")]
     decisions = receipt.get("decisions", [])
@@ -58,6 +66,8 @@ def score_episode(task, receipt):
     complete = all(receipt.get(k) not in (None, [], {}) for k in ["evidence_refs","hypotheses"]) and "transitions" in receipt
     return {
         "episode_id": task["id"], "malformed": False,
+        "adapter_failure": False,
+        "excluded_from_primary_metrics": False,
         "evidence_use_rate": evidence_use,
         "refutation_response": refutation_response,
         "revision_inertia_steps": inertia,
