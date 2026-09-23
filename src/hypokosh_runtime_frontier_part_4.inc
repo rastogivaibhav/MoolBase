@@ -42,7 +42,7 @@
       result.final_admissibility.requires_external_verification;
   result.receipt.escape_considered = true;
   result.receipt.convergence_executed = true;
-  result.receipt.opposition_executed = true;
+  result.receipt.opposition_executed = options.enable_dwm;
   result.receipt.governed_projection_executed = true;
   result.receipt.no_silent_promotion = true;
 
@@ -96,7 +96,8 @@
     model_world_->add(std::move(hypothesis),
                       "record governed reasoning result");
 
-    if (!result.final_opposition.challenged_claims.empty()) {
+    if (options.enable_dwm &&
+        !result.final_opposition.challenged_claims.empty()) {
       ModelWorldNode opposition_node;
       opposition_node.type = ModelWorldNodeType::Opposition;
       opposition_node.status = ModelWorldStatus::Active;
