@@ -22,6 +22,39 @@ enum class GovernedEpistemicStatus : uint8_t {
   Speculative
 };
 
+enum class EpistemicEventSource : uint8_t {
+  GrapheneCore,
+  HypoKosh,
+  DialecticalModelWorlds
+};
+
+enum class EpistemicEventType : uint8_t {
+  HypothesisSet,
+  Decision,
+  Challenge,
+  Reopen,
+  Revision,
+  Terminal
+};
+
+// Native runtime event used to explain how a reasoning state changed.
+// Events are emitted only at runtime-observable transitions; adapters may
+// serialize them but must not reconstruct missing semantic events.
+struct NativeEpistemicEvent {
+  uint32_t sequence{0};
+  uint32_t round_index{0};
+  EpistemicEventSource source{EpistemicEventSource::GrapheneCore};
+  EpistemicEventType type{EpistemicEventType::Decision};
+  uint32_t previous_hypothesis_node{0};
+  uint32_t hypothesis_node{0};
+  std::vector<uint32_t> competing_hypotheses;
+  std::vector<uint32_t> reopen_nodes;
+  std::vector<uint32_t> evidence_edges;
+  std::vector<std::string> evidence_family_ids;
+  std::string epistemic_state;
+  std::string reason;
+};
+
 struct RuntimeOptions {
   DialecticOptions dialectic;
   StabilityWeights stability_weights;
@@ -89,6 +122,7 @@ struct ReasoningReceipt {
   bool stopped_for_no_progress{false};
   std::string recovery_stop_reason;
   std::vector<RecoveryRoundTrace> recovery_trace;
+  std::vector<NativeEpistemicEvent> epistemic_events;
   bool opposition_research_enabled{false};
   bool graphene_executed{false};
   bool path_verifier_executed{false};
@@ -148,5 +182,7 @@ class CompleteHypoKoshRuntime {
 };
 
 const char* governed_status_name(GovernedEpistemicStatus status);
+const char* epistemic_event_source_name(EpistemicEventSource source);
+const char* epistemic_event_type_name(EpistemicEventType type);
 
 }  // namespace graphene
