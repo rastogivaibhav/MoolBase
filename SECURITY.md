@@ -38,14 +38,31 @@ controls before being represented as enterprise GA.
 
 ## Reporting issues
 
-For now, report security issues privately to the project owner before public disclosure.
+Please do not disclose an unpatched vulnerability in a public issue. Use the
+repository's private security-reporting channel when available; otherwise
+contact the project owner privately and include affected versions, impact,
+reproduction steps and any proposed mitigation.
 
-## Required security checks before public release
+## Distribution and supply-chain policy
+
+- Source and binary distributions are licensed under Apache-2.0 and must include
+  the repository `LICENSE` and `NOTICE` files.
+- Third-party redistribution obligations must be recorded in
+  `THIRD_PARTY_NOTICES.md`.
+- Public release artifacts must include a source-commit-bound manifest and
+  SHA-256 checksum.
+- Release artifacts produced by GitHub Actions should carry a GitHub/Sigstore
+  build-provenance attestation when the platform supports it.
+- A release is not represented as enterprise GA merely because it has a signed
+  or attested artifact.
+
+## Required security checks before a GA claim
 
 - Multi-hour coverage-guided fuzzing.
 - ASAN/UBSAN/TSAN clean runs.
 - Disk-pressure crash tests.
 - Path traversal review.
 - Dependency/license review.
-- Final public license selection.
-- Release artifact checksum manifest review.
+- Release artifact checksum/manifest verification.
+- SBOM and dependency-vulnerability review for the exact release configuration.
+- Signed/attested release provenance verification.
