@@ -82,6 +82,22 @@
   assert(reloaded_world.event_log_hash() == runtime_world.event_log_hash());
   assert(reloaded_world.audit().empty());
 
+  // Production capability boundary: disabling DWM must prevent opposition
+  // execution even when opposition research is explicitly requested.
+  RuntimeOptions g1_options = runtime_options;
+  g1_options.enable_dwm = false;
+  g1_options.enable_opposition_research = true;
+  g1_options.update_model_world = false;
+  const HypoKoshRuntimeResult g1_result =
+      runtime.reason({0.0f, 1.0f, 0.0f}, signature, g1_options);
+  assert(!g1_result.receipt.dwm_capability_enabled);
+  assert(!g1_result.receipt.opposition_research_enabled);
+  assert(!g1_result.receipt.opposition_executed);
+  for (const NativeEpistemicEvent& event :
+       g1_result.receipt.epistemic_events) {
+    assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
+  }
+
   const HypoKoshRuntimeResult repeated =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, runtime_options);
   assert(repeated.primary_node == result.primary_node);
