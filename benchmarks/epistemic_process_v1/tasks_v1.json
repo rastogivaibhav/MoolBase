@@ -1,0 +1,65 @@
+{
+  "protocol": "epistemic-process-v1",
+  "status": "PREREGISTERED_UNSCORED",
+  "semantics": "Deterministic synthetic episodes for architecture ablation. This file must be frozen before score-bearing execution.",
+  "episodes": [
+    {
+      "id": "EP01_DUPLICATE_SUPPORT_THEN_REFUTE",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1","independent":true,"decisive":false},
+        {"step":2,"id":"e2","family":"F_A","kind":"support","bears_on":"H1","independent":false,"depends_on":["e1"],"decisive":false},
+        {"step":3,"id":"e3","family":"F_B","kind":"support","bears_on":"H2","independent":true,"decisive":false},
+        {"step":4,"id":"e4","family":"F_C","kind":"refute","bears_on":"H1","independent":true,"decisive":true},
+        {"step":5,"id":"e5","family":"F_D","kind":"support","bears_on":"H2","independent":true,"decisive":false}
+      ]
+    },
+    {
+      "id": "EP02_LATE_REVOCATION",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1","independent":true,"decisive":false},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H1","independent":true,"decisive":false},
+        {"step":3,"id":"e3","family":"F_C","kind":"support","bears_on":"H2","independent":true,"decisive":false},
+        {"step":4,"id":"e4","family":"F_REV","kind":"revoke","bears_on":"H1","revokes":["e1","e2"],"independent":true,"decisive":true},
+        {"step":5,"id":"e5","family":"F_D","kind":"support","bears_on":"H2","independent":true,"decisive":false}
+      ]
+    },
+    {
+      "id": "EP03_CORRELATED_MAJORITY_MINORITY_WINS",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1","independent":true,"decisive":false},
+        {"step":2,"id":"e2","family":"F_A","kind":"support","bears_on":"H1","independent":false,"depends_on":["e1"],"decisive":false},
+        {"step":3,"id":"e3","family":"F_A","kind":"support","bears_on":"H1","independent":false,"depends_on":["e1"],"decisive":false},
+        {"step":4,"id":"e4","family":"F_B","kind":"support","bears_on":"H2","independent":true,"decisive":false},
+        {"step":5,"id":"e5","family":"F_C","kind":"refute","bears_on":"H1","independent":true,"decisive":true},
+        {"step":6,"id":"e6","family":"F_D","kind":"support","bears_on":"H2","independent":true,"decisive":false}
+      ]
+    },
+    {
+      "id": "EP04_REFUTE_WITHOUT_ENOUGH_REPLACEMENT_EVIDENCE",
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1","independent":true,"decisive":false},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H2","independent":true,"decisive":false},
+        {"step":3,"id":"e3","family":"F_C","kind":"refute","bears_on":"H1","independent":true,"decisive":true},
+        {"step":4,"id":"e4","family":"F_B","kind":"support","bears_on":"H2","independent":false,"depends_on":["e2"],"decisive":false}
+      ]
+    }
+  ],
+  "reporting": {
+    "preserve_all_episodes": true,
+    "process_metrics_separate_from_terminal_accuracy": true,
+    "adapter_failures_are_not_losses": true,
+    "score_bearing_allowed": false
+  }
+}
