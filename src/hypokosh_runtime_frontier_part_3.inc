@@ -78,10 +78,13 @@
     ConvergedAnswer reopened_convergence = controller.converge(
         reopened_bundle, reopened_admissibility,
         reopened_stability, current_options);
-    OppositionReport reopened_opposition = controller.oppose(
-        reopened_bundle, reopened_convergence,
-        reopened_admissibility, reopened_stability,
-        current_options);
+    OppositionReport reopened_opposition =
+        options.enable_dwm
+            ? controller.oppose(
+                  reopened_bundle, reopened_convergence,
+                  reopened_admissibility, reopened_stability,
+                  current_options)
+            : OppositionReport{};
     EscapePlan reopened_escape = escape.plan(
         reopened_bundle, reopened_stability, current_options.mode);
 
