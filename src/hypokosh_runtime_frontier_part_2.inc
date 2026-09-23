@@ -52,6 +52,17 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     const RuntimeOptions& requested_options,
     uint64_t snapshot_version) const {
   RuntimeOptions options = requested_options;
+  if (!options.enable_hypokosh) {
+    if (options.enable_dwm) {
+      throw std::invalid_argument(
+          "DWM requires HypoKosh; disable enable_dwm before requesting G0");
+    }
+    // Do not silently execute the full HypoKosh stack and relabel it G0.
+    // Until the Graphene-only path lands, a requested G0 run is an explicit
+    // runtime/adapter failure and must remain visible to the benchmark.
+    throw std::logic_error(
+        "Graphene-only G0 execution is not implemented yet");
+  }
   options.max_recursive_cycles =
       std::min<uint32_t>(options.max_recursive_cycles, 3);
   options.unchanged_recovery_patience =
@@ -60,6 +71,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       snapshot_version == kInfVersion ? db_.snapshot() : snapshot_version;
 
   HypoKoshRuntimeResult result;
+  result.receipt.hypokosh_capability_enabled = options.enable_hypokosh;
   result.receipt.dwm_capability_enabled = options.enable_dwm;
   result.receipt.opposition_research_enabled =
       options.enable_dwm && options.enable_opposition_research;
