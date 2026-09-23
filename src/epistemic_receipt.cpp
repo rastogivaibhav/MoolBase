@@ -42,9 +42,16 @@ CompactEpistemicReceipt build_compact_epistemic_receipt(
   receipt.semantic_verification =
       result.final_admissibility.semantic_verification;
   receipt.evidence_edges = result.evidence_edges;
+  receipt.epistemic_events = result.receipt.epistemic_events;
   receipt.residual_uncertainty = result.residual_uncertainty;
   sort_unique(&receipt.evidence_edges);
   sort_unique(&receipt.residual_uncertainty);
+  for (auto& event : receipt.epistemic_events) {
+    sort_unique(&event.competing_hypotheses);
+    sort_unique(&event.reopen_nodes);
+    sort_unique(&event.evidence_edges);
+    sort_unique(&event.evidence_family_ids);
+  }
 
   const auto fiber_it = std::find_if(
       result.final_bundle.fibers.begin(), result.final_bundle.fibers.end(),
@@ -118,6 +125,28 @@ CompactEpistemicReceipt build_compact_epistemic_receipt(
   }
   for (const auto& value : receipt.selected_evidence.verifier_versions) {
     append_text(&hash, value);
+  }
+  for (const auto& event : receipt.epistemic_events) {
+    hash = append_hash(hash, event.sequence);
+    hash = append_hash(hash, event.round_index);
+    hash = append_hash(hash, static_cast<uint64_t>(event.source));
+    hash = append_hash(hash, static_cast<uint64_t>(event.type));
+    hash = append_hash(hash, event.previous_hypothesis_node);
+    hash = append_hash(hash, event.hypothesis_node);
+    for (uint32_t node : event.competing_hypotheses) {
+      hash = append_hash(hash, node);
+    }
+    for (uint32_t node : event.reopen_nodes) {
+      hash = append_hash(hash, node);
+    }
+    for (uint32_t edge : event.evidence_edges) {
+      hash = append_hash(hash, edge);
+    }
+    for (const auto& family : event.evidence_family_ids) {
+      append_text(&hash, family);
+    }
+    append_text(&hash, event.epistemic_state);
+    append_text(&hash, event.reason);
   }
   for (const auto& value : receipt.residual_uncertainty) {
     append_text(&hash, value);
