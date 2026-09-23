@@ -131,3 +131,85 @@ std::vector<uint32_t> all_evidence_edges(
   values.erase(std::unique(values.begin(), values.end()), values.end());
   return values;
 }
+
+template <typename T>
+void sort_unique_values(std::vector<T>* values) {
+  std::sort(values->begin(), values->end());
+  values->erase(std::unique(values->begin(), values->end()), values->end());
+}
+
+std::vector<uint32_t> hypothesis_nodes(const FiberBundle& bundle) {
+  std::vector<uint32_t> nodes;
+  nodes.reserve(bundle.fibers.size());
+  for (const auto& fiber : bundle.fibers) nodes.push_back(fiber.target_node);
+  sort_unique_values(&nodes);
+  return nodes;
+}
+
+std::vector<std::string> selected_evidence_families(
+    const FiberBundle& bundle,
+    const ConvergedAnswer& convergence) {
+  std::vector<std::string> families;
+  for (const auto& reference : convergence.selected_paths) {
+    const auto fiber_it = std::find_if(
+        bundle.fibers.begin(), bundle.fibers.end(),
+        [&](const TargetFiber& fiber) {
+          return fiber.target_node == reference.root_node;
+        });
+    if (fiber_it == bundle.fibers.end() ||
+        reference.path_index >= fiber_it->paths.size()) {
+      continue;
+    }
+    const auto& path = fiber_it->paths[reference.path_index];
+    families.insert(families.end(), path.evidence_family_lineage.begin(),
+                    path.evidence_family_lineage.end());
+  }
+  sort_unique_values(&families);
+  return families;
+}
+
+std::vector<uint32_t> evidence_edges_for_nodes(
+    const FiberBundle& bundle,
+    const std::vector<uint32_t>& nodes) {
+  std::vector<uint32_t> edges;
+  for (const auto& fiber : bundle.fibers) {
+    if (std::find(nodes.begin(), nodes.end(), fiber.target_node) ==
+        nodes.end()) {
+      continue;
+    }
+    for (const auto& path : fiber.paths) {
+      edges.insert(edges.end(), path.edges.begin(), path.edges.end());
+    }
+  }
+  sort_unique_values(&edges);
+  return edges;
+}
+
+std::vector<std::string> evidence_families_for_nodes(
+    const FiberBundle& bundle,
+    const std::vector<uint32_t>& nodes) {
+  std::vector<std::string> families;
+  for (const auto& fiber : bundle.fibers) {
+    if (std::find(nodes.begin(), nodes.end(), fiber.target_node) ==
+        nodes.end()) {
+      continue;
+    }
+    for (const auto& path : fiber.paths) {
+      families.insert(families.end(), path.evidence_family_lineage.begin(),
+                      path.evidence_family_lineage.end());
+    }
+  }
+  sort_unique_values(&families);
+  return families;
+}
+
+void append_epistemic_event(ReasoningReceipt* receipt,
+                            NativeEpistemicEvent event) {
+  event.sequence =
+      static_cast<uint32_t>(receipt->epistemic_events.size() + 1);
+  sort_unique_values(&event.competing_hypotheses);
+  sort_unique_values(&event.reopen_nodes);
+  sort_unique_values(&event.evidence_edges);
+  sort_unique_values(&event.evidence_family_ids);
+  receipt->epistemic_events.push_back(std::move(event));
+}
