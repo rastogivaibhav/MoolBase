@@ -5,6 +5,21 @@
                   result.residual_uncertainty.end()),
       result.residual_uncertainty.end());
 
+  NativeEpistemicEvent terminal;
+  terminal.source = EpistemicEventSource::GrapheneCore;
+  terminal.type = EpistemicEventType::Terminal;
+  terminal.hypothesis_node =
+      result.final_convergence.has_answer ? result.primary_node : 0;
+  terminal.competing_hypotheses =
+      hypothesis_nodes(result.final_bundle);
+  terminal.evidence_edges = result.evidence_edges;
+  terminal.evidence_family_ids = selected_evidence_families(
+      result.final_bundle, result.final_convergence);
+  terminal.epistemic_state = governed_status_name(result.status);
+  terminal.reason =
+      "governed projection emitted the terminal epistemic state";
+  append_epistemic_event(&result.receipt, std::move(terminal));
+
   result.receipt.snapshot_version = resolved_snapshot;
   result.receipt.initial_bundle_hash =
       result.initial_bundle.immutable_hash;
@@ -120,6 +135,27 @@ const char* governed_status_name(GovernedEpistemicStatus status) {
     case GovernedEpistemicStatus::Speculative: return "speculative";
   }
   return "abstain";
+}
+
+const char* epistemic_event_source_name(EpistemicEventSource source) {
+  switch (source) {
+    case EpistemicEventSource::GrapheneCore: return "graphene_core";
+    case EpistemicEventSource::HypoKosh: return "hypokosh";
+    case EpistemicEventSource::DialecticalModelWorlds: return "dwm";
+  }
+  return "graphene_core";
+}
+
+const char* epistemic_event_type_name(EpistemicEventType type) {
+  switch (type) {
+    case EpistemicEventType::HypothesisSet: return "hypothesis_set";
+    case EpistemicEventType::Decision: return "decision";
+    case EpistemicEventType::Challenge: return "challenge";
+    case EpistemicEventType::Reopen: return "reopen";
+    case EpistemicEventType::Revision: return "revision";
+    case EpistemicEventType::Terminal: return "terminal";
+  }
+  return "decision";
 }
 
 }  // namespace graphene

@@ -97,6 +97,41 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       result.initial_stability, result.initial_opposition,
       result.initial_escape);
 
+  NativeEpistemicEvent hypothesis_set;
+  hypothesis_set.source = EpistemicEventSource::HypoKosh;
+  hypothesis_set.type = EpistemicEventType::HypothesisSet;
+  hypothesis_set.competing_hypotheses =
+      hypothesis_nodes(result.initial_bundle);
+  hypothesis_set.evidence_edges = evidence_edges_for_nodes(
+      result.initial_bundle, hypothesis_set.competing_hypotheses);
+  hypothesis_set.evidence_family_ids = evidence_families_for_nodes(
+      result.initial_bundle, hypothesis_set.competing_hypotheses);
+  hypothesis_set.epistemic_state = "competing";
+  hypothesis_set.reason =
+      "runtime-observed target fibers available for governed competition";
+  append_epistemic_event(&result.receipt, std::move(hypothesis_set));
+
+  NativeEpistemicEvent initial_decision;
+  initial_decision.source = EpistemicEventSource::HypoKosh;
+  initial_decision.type = EpistemicEventType::Decision;
+  initial_decision.hypothesis_node =
+      result.initial_convergence.has_answer
+          ? result.initial_convergence.primary_node
+          : 0;
+  initial_decision.competing_hypotheses =
+      hypothesis_nodes(result.initial_bundle);
+  initial_decision.evidence_edges =
+      all_evidence_edges(result.initial_convergence);
+  initial_decision.evidence_family_ids = selected_evidence_families(
+      result.initial_bundle, result.initial_convergence);
+  initial_decision.epistemic_state =
+      result.initial_convergence.has_answer ? "selected" : "abstain";
+  initial_decision.reason =
+      result.initial_convergence.has_answer
+          ? "initial governed convergence selected a hypothesis"
+          : "initial governed convergence emitted no answer";
+  append_epistemic_event(&result.receipt, std::move(initial_decision));
+
   result.final_bundle = result.initial_bundle;
   result.final_stability = result.initial_stability;
   result.final_admissibility = result.initial_admissibility;
@@ -148,6 +183,30 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
         trace.recovery_search_requested;
     const bool opposition_search_requested =
         trace.opposition_search_requested;
+    if (opposition_search_requested) {
+      NativeEpistemicEvent challenge;
+      challenge.round_index = round;
+      challenge.source = EpistemicEventSource::DialecticalModelWorlds;
+      challenge.type = EpistemicEventType::Challenge;
+      challenge.hypothesis_node =
+          result.final_convergence.has_answer
+              ? result.final_convergence.primary_node
+              : 0;
+      challenge.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      challenge.reopen_nodes =
+          result.final_opposition.reopen_nodes;
+      challenge.evidence_edges = evidence_edges_for_nodes(
+          result.final_bundle, challenge.reopen_nodes);
+      challenge.evidence_family_ids = evidence_families_for_nodes(
+          result.final_bundle, challenge.reopen_nodes);
+      challenge.epistemic_state = "challenged";
+      challenge.reason =
+          result.final_opposition.challenged_claims.empty()
+              ? "opposition requested bounded re-expansion"
+              : result.final_opposition.challenged_claims.front();
+      append_epistemic_event(&result.receipt, std::move(challenge));
+    }
     if (!recovery_search_requested && !opposition_search_requested) {
       trace.next_max_hops = current_options.max_hops;
       trace.next_semantic_candidates =

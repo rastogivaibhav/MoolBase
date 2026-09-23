@@ -30,6 +30,32 @@
     }
     current_options = std::move(next_options);
 
+    const bool previous_has_answer =
+        result.final_convergence.has_answer;
+    const uint32_t previous_primary_node =
+        previous_has_answer ? result.final_convergence.primary_node : 0;
+
+    if (opposition_search_requested &&
+        !current_options.reopen_nodes.empty()) {
+      NativeEpistemicEvent reopen;
+      reopen.round_index = round;
+      reopen.source = EpistemicEventSource::DialecticalModelWorlds;
+      reopen.type = EpistemicEventType::Reopen;
+      reopen.previous_hypothesis_node = previous_primary_node;
+      reopen.hypothesis_node = previous_primary_node;
+      reopen.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      reopen.reopen_nodes = current_options.reopen_nodes;
+      reopen.evidence_edges = evidence_edges_for_nodes(
+          result.final_bundle, reopen.reopen_nodes);
+      reopen.evidence_family_ids = evidence_families_for_nodes(
+          result.final_bundle, reopen.reopen_nodes);
+      reopen.epistemic_state = "reopened";
+      reopen.reason =
+          "DWM opposition request activated bounded re-expansion";
+      append_epistemic_event(&result.receipt, std::move(reopen));
+    }
+
     const uint64_t previous_bundle_hash =
         result.final_bundle.immutable_hash;
     const size_t previous_visited_states =
@@ -58,6 +84,37 @@
         current_options);
     EscapePlan reopened_escape = escape.plan(
         reopened_bundle, reopened_stability, current_options.mode);
+
+    const bool revised_answer =
+        previous_has_answer != reopened_convergence.has_answer ||
+        (previous_has_answer && reopened_convergence.has_answer &&
+         previous_primary_node != reopened_convergence.primary_node);
+    if (revised_answer) {
+      NativeEpistemicEvent revision;
+      revision.round_index = round;
+      revision.source = opposition_search_requested
+                            ? EpistemicEventSource::DialecticalModelWorlds
+                            : EpistemicEventSource::HypoKosh;
+      revision.type = EpistemicEventType::Revision;
+      revision.previous_hypothesis_node = previous_primary_node;
+      revision.hypothesis_node =
+          reopened_convergence.has_answer
+              ? reopened_convergence.primary_node
+              : 0;
+      revision.competing_hypotheses =
+          hypothesis_nodes(reopened_bundle);
+      revision.evidence_edges =
+          all_evidence_edges(reopened_convergence);
+      revision.evidence_family_ids = selected_evidence_families(
+          reopened_bundle, reopened_convergence);
+      revision.epistemic_state =
+          reopened_convergence.has_answer ? "revised" : "abstain";
+      revision.reason =
+          opposition_search_requested
+              ? "post-reopen governed convergence changed the operative hypothesis"
+              : "bounded recovery changed the operative hypothesis";
+      append_epistemic_event(&result.receipt, std::move(revision));
+    }
 
     const bool bundle_changed =
         reopened_bundle.immutable_hash != previous_bundle_hash;
