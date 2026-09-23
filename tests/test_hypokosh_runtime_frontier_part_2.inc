@@ -45,6 +45,24 @@
   assert(result.receipt.convergence_executed);
   assert(result.receipt.opposition_executed);
   assert(result.receipt.governed_projection_executed);
+  assert(!result.receipt.epistemic_events.empty());
+  assert(result.receipt.epistemic_events.front().sequence == 1);
+  assert(result.receipt.epistemic_events.front().type ==
+         EpistemicEventType::HypothesisSet);
+  assert(result.receipt.epistemic_events.front().source ==
+         EpistemicEventSource::HypoKosh);
+  assert(result.receipt.epistemic_events.back().type ==
+         EpistemicEventType::Terminal);
+  assert(result.receipt.epistemic_events.back().source ==
+         EpistemicEventSource::GrapheneCore);
+  for (size_t index = 0;
+       index < result.receipt.epistemic_events.size(); ++index) {
+    const NativeEpistemicEvent& event =
+        result.receipt.epistemic_events[index];
+    assert(event.sequence == index + 1);
+    // DWM events are impossible when opposition research is disabled.
+    assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
+  }
   assert(result.receipt.initial_bundle_hash != 0);
   assert(result.receipt.final_bundle_hash != 0);
   assert(result.primary_node == root_node);
