@@ -1,0 +1,36 @@
+name: Epistemic process freeze guard
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - ".github/workflows/epistemic-process-freeze-guard.yml"
+  push:
+    branches: [master]
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - ".github/workflows/epistemic-process-freeze-guard.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify score lock and oracle boundary
+        run: python benchmarks/epistemic_process_v1/freeze_guard_v1.py
+      - name: Prove freeze-ready mode is still blocked
+        shell: bash
+        run: |
+          set +e
+          output=$(python benchmarks/epistemic_process_v1/freeze_guard_v1.py --require-freeze-ready 2>&1)
+          rc=$?
+          set -e
+          test "$rc" -ne 0
+          echo "$output" | grep -q "freeze blocked: production-runtime execution is not ready"
+          echo "$output" | grep -q '"production_runner_present": false'
