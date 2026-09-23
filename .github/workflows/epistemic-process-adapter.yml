@@ -22,9 +22,36 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Run adapter contract tests
+      - name: Run adapter and runner contract tests
         working-directory: benchmarks/epistemic_process_v1
-        run: python test_adapt_v1.py
+        run: |
+          python test_adapt_v1.py
+          python test_run_v1.py
+      - name: Execute complete UNSCORED plumbing path per configuration
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          for config in B0 G0 G1 G2; do
+            python run_v1.py --tasks tasks_v1.json --configuration "$config" --out "artifacts/raw-$config.json"
+            python adapt_v1.py --raw "artifacts/raw-$config.json" --out "artifacts/receipts-$config.json" --mode unscored-dry-run
+            python evaluate_v1.py --tasks tasks_v1.json --receipts "artifacts/receipts-$config.json" --out "artifacts/evaluation-$config.json" --mode unscored-dry-run
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for config in ("B0", "G0", "G1", "G2"):
+              raw = json.loads(Path(f"artifacts/raw-{config}.json").read_text())
+              receipts = json.loads(Path(f"artifacts/receipts-{config}.json").read_text())
+              evaluation = json.loads(Path(f"artifacts/evaluation-{config}.json").read_text())
+              assert raw["score_bearing"] is False
+              assert len(raw["episodes"]) == 4
+              assert len(receipts) == 4
+              assert {r["configuration"] for r in receipts} == {config}
+              assert not any(r.get("adapter_failure") for r in receipts)
+              assert evaluation["score_bearing"] is False
+              assert len(evaluation["episodes"]) == 4
+          PY
       - name: Prove score mode remains blocked
         working-directory: benchmarks/epistemic_process_v1
         run: |
@@ -38,18 +65,9 @@ jobs:
               out = Path(td) / "out.json"
               receipts.write_text("[]\n", encoding="utf-8")
               proc = subprocess.run(
-                  [
-                      sys.executable, "evaluate_v1.py",
-                      "--tasks", "tasks_v1.json",
-                      "--receipts", str(receipts),
-                      "--out", str(out),
-                      "--mode", "score",
-                  ],
-                  capture_output=True,
-                  text=True,
+                  [sys.executable, "evaluate_v1.py", "--tasks", "tasks_v1.json", "--receipts", str(receipts), "--out", str(out), "--mode", "score"],
+                  capture_output=True, text=True,
               )
               assert proc.returncode != 0
-              assert "score-bearing execution blocked" in (
-                  proc.stdout + proc.stderr
-              )
+              assert "score-bearing execution blocked" in (proc.stdout + proc.stderr)
           PY
