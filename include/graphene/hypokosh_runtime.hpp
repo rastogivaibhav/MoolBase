@@ -70,6 +70,11 @@ struct RuntimeOptions {
   // A completed FiberBundle can remain unchanged while the search frontier
   // advances through intermediate nodes. Permit bounded patience for that case.
   uint32_t unchanged_recovery_patience{2};
+  // Production-owned capability boundary for the DWM
+  // challenge/reopen/synthesis loop. This is distinct from
+  // enable_opposition_research, which controls bounded re-expansion only.
+  // Default true preserves the pre-ablation production behaviour.
+  bool enable_dwm{true};
   bool update_model_world{true};
 };
 
@@ -124,6 +129,9 @@ struct ReasoningReceipt {
   std::vector<RecoveryRoundTrace> recovery_trace;
   std::vector<NativeEpistemicEvent> epistemic_events;
   bool opposition_research_enabled{false};
+  // Declared capability and observed execution are recorded separately so
+  // benchmark adapters do not infer a disabled layer from absent events.
+  bool dwm_capability_enabled{true};
   bool graphene_executed{false};
   bool path_verifier_executed{false};
   bool fiber_bundle_built{false};
