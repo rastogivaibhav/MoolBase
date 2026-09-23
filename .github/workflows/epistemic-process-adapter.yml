@@ -27,26 +27,30 @@ jobs:
         run: |
           python test_adapt_v1.py
           python test_run_v1.py
-      - name: Execute complete UNSCORED plumbing path
+      - name: Execute complete UNSCORED plumbing path per configuration
         working-directory: benchmarks/epistemic_process_v1
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          python run_v1.py --tasks tasks_v1.json --out artifacts/raw.json
-          python adapt_v1.py --raw artifacts/raw.json --out artifacts/receipts.json --mode unscored-dry-run
-          python evaluate_v1.py --tasks tasks_v1.json --receipts artifacts/receipts.json --out artifacts/evaluation.json --mode unscored-dry-run
+          for config in B0 G0 G1 G2; do
+            python run_v1.py --tasks tasks_v1.json --configuration "$config" --out "artifacts/raw-$config.json"
+            python adapt_v1.py --raw "artifacts/raw-$config.json" --out "artifacts/receipts-$config.json" --mode unscored-dry-run
+            python evaluate_v1.py --tasks tasks_v1.json --receipts "artifacts/receipts-$config.json" --out "artifacts/evaluation-$config.json" --mode unscored-dry-run
+          done
           python - <<'PY'
           import json
           from pathlib import Path
-          raw = json.loads(Path("artifacts/raw.json").read_text())
-          receipts = json.loads(Path("artifacts/receipts.json").read_text())
-          evaluation = json.loads(Path("artifacts/evaluation.json").read_text())
-          assert raw["score_bearing"] is False
-          assert len(raw["episodes"]) == 16
-          assert len(receipts) == 16
-          assert not any(r.get("adapter_failure") for r in receipts)
-          assert evaluation["score_bearing"] is False
-          assert len(evaluation["episodes"]) == 4
+          for config in ("B0", "G0", "G1", "G2"):
+              raw = json.loads(Path(f"artifacts/raw-{config}.json").read_text())
+              receipts = json.loads(Path(f"artifacts/receipts-{config}.json").read_text())
+              evaluation = json.loads(Path(f"artifacts/evaluation-{config}.json").read_text())
+              assert raw["score_bearing"] is False
+              assert len(raw["episodes"]) == 4
+              assert len(receipts) == 4
+              assert {r["configuration"] for r in receipts} == {config}
+              assert not any(r.get("adapter_failure") for r in receipts)
+              assert evaluation["score_bearing"] is False
+              assert len(evaluation["episodes"]) == 4
           PY
       - name: Prove score mode remains blocked
         working-directory: benchmarks/epistemic_process_v1
