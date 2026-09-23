@@ -1,0 +1,55 @@
+name: Epistemic process adapter contract
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - ".github/workflows/epistemic-process-adapter.yml"
+  push:
+    branches: [master]
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - ".github/workflows/epistemic-process-adapter.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  adapter-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run adapter contract tests
+        working-directory: benchmarks/epistemic_process_v1
+        run: python test_adapt_v1.py
+      - name: Prove score mode remains blocked
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys, tempfile
+          from pathlib import Path
+          tasks = json.loads(Path("tasks_v1.json").read_text())
+          assert tasks["reporting"]["score_bearing_allowed"] is False
+          with tempfile.TemporaryDirectory() as td:
+              receipts = Path(td) / "receipts.json"
+              out = Path(td) / "out.json"
+              receipts.write_text("[]\n", encoding="utf-8")
+              proc = subprocess.run(
+                  [
+                      sys.executable, "evaluate_v1.py",
+                      "--tasks", "tasks_v1.json",
+                      "--receipts", str(receipts),
+                      "--out", str(out),
+                      "--mode", "score",
+                  ],
+                  capture_output=True,
+                  text=True,
+              )
+              assert proc.returncode != 0
+              assert "score-bearing execution blocked" in (
+                  proc.stdout + proc.stderr
+              )
+          PY
