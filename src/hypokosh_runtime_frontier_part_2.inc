@@ -60,8 +60,9 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       snapshot_version == kInfVersion ? db_.snapshot() : snapshot_version;
 
   HypoKoshRuntimeResult result;
+  result.receipt.dwm_capability_enabled = options.enable_dwm;
   result.receipt.opposition_research_enabled =
-      options.enable_opposition_research;
+      options.enable_dwm && options.enable_opposition_research;
   DialecticEngine dialectic(db_);
   FiberBundleBuilder bundle_builder;
   LyapunovCritic critic;
@@ -89,10 +90,13 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   result.initial_convergence = controller.converge(
       result.initial_bundle, result.initial_admissibility,
       result.initial_stability, options.dialectic);
-  result.initial_opposition = controller.oppose(
-      result.initial_bundle, result.initial_convergence,
-      result.initial_admissibility, result.initial_stability,
-      options.dialectic);
+  result.initial_opposition =
+      options.enable_dwm
+          ? controller.oppose(
+                result.initial_bundle, result.initial_convergence,
+                result.initial_admissibility, result.initial_stability,
+                options.dialectic)
+          : OppositionReport{};
   result.initial_self_healing = self_healing.plan(
       result.initial_stability, result.initial_opposition,
       result.initial_escape);
@@ -156,6 +160,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     trace.recovery_search_requested =
         trace.requires_escape && trace.searchable_escape;
     trace.opposition_search_requested =
+        options.enable_dwm &&
         options.enable_opposition_research &&
         result.final_opposition.requests_reexpansion;
     trace.generic_expansion_allowed =
