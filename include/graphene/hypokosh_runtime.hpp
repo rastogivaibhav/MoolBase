@@ -37,9 +37,6 @@ enum class EpistemicEventType : uint8_t {
   Terminal
 };
 
-// Native runtime event used to explain how a reasoning state changed.
-// Events are emitted only at runtime-observable transitions; adapters may
-// serialize them but must not reconstruct missing semantic events.
 struct NativeEpistemicEvent {
   uint32_t sequence{0};
   uint32_t round_index{0};
@@ -63,17 +60,13 @@ struct RuntimeOptions {
   LyapunovTargets lyapunov_targets;
   const PathVerifier* path_verifier{nullptr};
   uint32_t max_recursive_cycles{2};
-  // Recovery recursion remains available for incomplete evidence. Opposition-
-  // only secondary research is opt-in so an adequate first answer is not
-  // automatically expanded again.
   bool enable_opposition_research{false};
-  // A completed FiberBundle can remain unchanged while the search frontier
-  // advances through intermediate nodes. Permit bounded patience for that case.
   uint32_t unchanged_recovery_patience{2};
-  // Production-owned capability boundary for the DWM
-  // challenge/reopen/synthesis loop. This is distinct from
-  // enable_opposition_research, which controls bounded re-expansion only.
-  // Default true preserves the pre-ablation production behaviour.
+  // Production-owned capability boundary for competing-hypothesis reasoning.
+  // G0 sets this false and must also disable DWM. Default true preserves the
+  // pre-ablation production behaviour.
+  bool enable_hypokosh{true};
+  // Production-owned capability boundary for the DWM challenge/reopen loop.
   bool enable_dwm{true};
   bool update_model_world{true};
 };
@@ -129,8 +122,8 @@ struct ReasoningReceipt {
   std::vector<RecoveryRoundTrace> recovery_trace;
   std::vector<NativeEpistemicEvent> epistemic_events;
   bool opposition_research_enabled{false};
-  // Declared capability and observed execution are recorded separately so
-  // benchmark adapters do not infer a disabled layer from absent events.
+  // Declared capabilities and observed execution are separate evidence.
+  bool hypokosh_capability_enabled{true};
   bool dwm_capability_enabled{true};
   bool graphene_executed{false};
   bool path_verifier_executed{false};
