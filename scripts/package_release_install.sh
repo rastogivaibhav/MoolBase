@@ -12,14 +12,14 @@ cmake -S "$ROOT" -B "$ROOT/$BUILD_DIR" \
   -DCMAKE_INSTALL_PREFIX="$ROOT/$INSTALL_DIR" \
   -DGRAPHENEDB_BUILD_TESTS=ON \
   -DGRAPHENEDB_BUILD_BENCH=ON \
-  -DGRAPHENEDB_BUILD_EXAMPLES=ON
+  -DGRAPHENEDB_BUILD_EXAMPLES=OFF
 cmake --build "$ROOT/$BUILD_DIR" -j "${JOBS:-2}"
 cmake --install "$ROOT/$BUILD_DIR"
 
 BUILD_DIR=build-release-package-verify \
 INSTALL_DIR="$INSTALL_DIR" \
 CONSUMER_BUILD_DIR=build-release-package-consumer \
-  "$ROOT/scripts/verify_package_install.sh"
+  bash "$ROOT/scripts/verify_package_install.sh"
 
 rm -f "$OUT"
 if command -v zip >/dev/null 2>&1; then
@@ -29,5 +29,5 @@ else
   OUT="${OUT%.zip}.tar.gz"
 fi
 
-"$ROOT/scripts/write_release_manifest.sh" "$OUT" "$ROOT/$INSTALL_DIR"
+bash "$ROOT/scripts/write_release_manifest.sh" "$OUT" "$ROOT/$INSTALL_DIR"
 echo "$OUT"
