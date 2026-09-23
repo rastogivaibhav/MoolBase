@@ -1,6 +1,6 @@
 # GrapheneDB v0.6.0-alpha.1
 
-GrapheneDB is an experimental embedded C++ evidence and causal-memory database for agentic systems. It combines typed graph retrieval with lineage-aware FiberBundles, a Lyapunov-inspired stability critic and governed decisions such as answer, deepen, contest or abstain.
+GrapheneDB is an experimental persistent epistemic reasoning substrate for agentic systems. It preserves evidence lineage, competing hypotheses, contradiction and bounded reopening so a system can show not only what it believes, but why the evidence process has or has not earned convergence. HypoKosh is the competing-hypothesis runtime; DWM is the challenge/reopen/synthesis loop.
 
 ## Maturity
 
@@ -110,6 +110,20 @@ CompactEpistemicReceipt receipt =
 The receipt retains selected path IDs, evidence/source/derivation lineage, bundle and evidence references, governed status, energy, semantic-verification state and residual uncertainty without copying source documents, indexes or every recursive-cycle state.
 
 See [`docs/REASONING_MODES_AND_RECEIPTS.md`](docs/REASONING_MODES_AND_RECEIPTS.md).
+
+
+## License and verified distribution
+
+GrapheneDB is distributed under the **Apache License 2.0**. The repository
+includes the canonical license text in `LICENSE`, project attribution in
+`NOTICE`, third-party distribution boundaries in
+`THIRD_PARTY_NOTICES.md`, and DCO 1.1 contribution provenance.
+
+Official distribution tooling rejects packages missing required legal files,
+binds the release manifest to the exact source commit, emits SHA-256 checksums
+and an SPDX 2.3 SBOM, and can generate GitHub/Sigstore provenance attestations.
+
+See [Distribution security and license verification](docs/DISTRIBUTION_SECURITY.md).
 
 ## Build and test
 
