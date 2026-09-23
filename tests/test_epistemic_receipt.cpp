@@ -23,6 +23,29 @@ int main() {
   result.final_convergence.selected_paths = {
       {42, 1, "selected"}, {42, 0, "selected"}};
 
+  NativeEpistemicEvent decision;
+  decision.sequence = 1;
+  decision.source = EpistemicEventSource::HypoKosh;
+  decision.type = EpistemicEventType::Decision;
+  decision.hypothesis_node = 42;
+  decision.competing_hypotheses = {43, 42, 43};
+  decision.evidence_edges = {9, 4, 9};
+  decision.evidence_family_ids = {"family-b", "family-a", "family-a"};
+  decision.epistemic_state = "selected";
+  decision.reason = "test decision";
+  result.receipt.epistemic_events.push_back(decision);
+
+  NativeEpistemicEvent terminal;
+  terminal.sequence = 2;
+  terminal.source = EpistemicEventSource::GrapheneCore;
+  terminal.type = EpistemicEventType::Terminal;
+  terminal.hypothesis_node = 42;
+  terminal.evidence_edges = {4, 9};
+  terminal.evidence_family_ids = {"family-a", "family-b"};
+  terminal.epistemic_state = "provisionally_resolved";
+  terminal.reason = "test terminal";
+  result.receipt.epistemic_events.push_back(terminal);
+
   TargetFiber fiber;
   fiber.target_node = 42;
   fiber.independent_evidence_family_count = 2;
@@ -53,7 +76,7 @@ int main() {
   const CompactEpistemicReceipt repeated =
       build_compact_epistemic_receipt(result);
 
-  assert(receipt.schema_version == 1);
+  assert(receipt.schema_version == 2);
   assert(receipt.snapshot_version == 77);
   assert(receipt.bundle_hash == 99123);
   assert(receipt.content_hash != 0);
@@ -65,6 +88,21 @@ int main() {
   assert(receipt.selected_evidence.source_lineage ==
          std::vector<std::string>({"source-a", "source-b", "source-c"}));
   assert(receipt.selected_evidence.independent_evidence_family_count == 2);
+  assert(receipt.epistemic_events.size() == 2);
+  assert(receipt.epistemic_events.front().sequence == 1);
+  assert(receipt.epistemic_events.front().hypothesis_node == 42);
+  assert(receipt.epistemic_events.front().competing_hypotheses ==
+         std::vector<uint32_t>({42, 43}));
+  assert(receipt.epistemic_events.front().evidence_edges ==
+         std::vector<uint32_t>({4, 9}));
+  assert(receipt.epistemic_events.front().evidence_family_ids ==
+         std::vector<std::string>({"family-a", "family-b"}));
+
+  HypoKoshRuntimeResult revised = result;
+  revised.receipt.epistemic_events.front().epistemic_state = "challenged";
+  const CompactEpistemicReceipt revised_receipt =
+      build_compact_epistemic_receipt(revised);
+  assert(revised_receipt.content_hash != receipt.content_hash);
 
   result.residual_uncertainty.push_back("new contradiction");
   const CompactEpistemicReceipt changed =
