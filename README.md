@@ -31,38 +31,61 @@ A useful reasoning substrate has to cope with cases such as:
 
 MoolBase treats these as data-system concerns rather than prompt-only concerns.
 
-### The core idea
+### The core idea — and where developers can interact
 
 ```mermaid
 flowchart LR
-    E[Evidence + provenance] --> M[MoolBase]
-    M --> H{Hypothesis Engine}
-    H -->|H1 supported| D[Dialectic Engine]
-    H -->|H2 still plausible| D
-    D -->|challenge / reopen| M
-    D --> R[Decision or revision]
-    R --> P[Inspectable epistemic receipt]
-    N[New contradictory evidence] --> M
+    subgraph DEV["Developer interaction layers"]
+      L1["1. Data layer<br/>C++ GrapheneDB API<br/>C API<br/>HTTP / Python ingest + search"]
+      L2["2. Reasoning layer<br/>Complete runtime<br/>Hypothesis API<br/>Dialectic API<br/>CLI / HTTP / Python reasoning"]
+      L3["3. Control layer<br/>RuntimeOptions<br/>DialecticOptions<br/>Path verifier<br/>capability switches"]
+      L4["4. Audit + state layer<br/>Epistemic receipts<br/>ModelWorld<br/>audit / validate / backup"]
+    end
+
+    subgraph LOOP["MoolBase epistemic loop"]
+      E["Evidence + provenance"] --> M["MoolBase persistent state"]
+      M --> B["Evidence bundle<br/>verification + admissibility"]
+      B --> H["Hypothesis Engine<br/>preserve + compete alternatives"]
+      H --> C["Initial governed convergence<br/>or abstention"]
+      C --> D["Dialectic Engine<br/>challenge / oppose"]
+      D --> Q{"Reopen needed?"}
+      Q -->|No| T["Governed terminal state"]
+      Q -->|Yes| X["Targeted evidence expansion"]
+      X --> M
+      N["New / contradictory evidence"] --> M
+      T --> R["Inspectable epistemic receipt"]
+      T --> W["Optional persistent world-state update"]
+    end
+
+    L1 --> M
+    L2 --> H
+    L2 --> D
+    L3 --> B
+    L3 --> D
+    L4 --> R
+    L4 --> W
 ```
 
-- **MoolBase** maintains persistent evidence, lineage and epistemic state.
-- **Hypothesis Engine** preserves and competes alternative explanations.
-- **Dialectic Engine** challenges the current belief, reopens evidence when warranted, and drives governed revision.
-- **Epistemic receipts** preserve the path from evidence to decision without requiring the whole reasoning workspace to remain live.
+This is deliberately a **loop**, not a pipeline. MoolBase can be revisited after a dialectical challenge, targeted recovery or late contradictory evidence. The current runtime first builds and assesses evidence, forms an initial governed convergence (or abstains), then applies opposition. If the challenge requests reopening, the runtime expands evidence again, rebuilds the bundle, reassesses and may emit a revision before reaching a terminal governed state.
 
-A typical failure mode MoolBase is designed to expose is simple:
+#### Developer interaction levels
 
-```text
-Initial evidence → H1 appears strongest → tentative decision
-                       ↓
-              H2 remains plausible
-                       ↓
-         contradictory evidence arrives
-                       ↓
-          decision is reopened, not erased
-                       ↓
-       revised belief + receipt explaining why
-```
+| Level | What a developer can do today | Main surfaces |
+|---|---|---|
+| **1. Data layer** | Open the database, ingest nodes/edges/extractions, query vectors/metadata/lattice/causal memory, inspect and validate storage | C++ `GrapheneDB`; limited C API; HTTP + Python client for ingest/search |
+| **2. Reasoning layer** | Generate competing hypotheses, run governed reasoning, invoke dialectic reasoning, obtain status/confidence/evidence and revision events | C++ `HypoKoshEngine`; C++ `CompleteHypoKoshRuntime`; CLI; HTTP/Python hypothesis and dialectic endpoints |
+| **3. Control layer** | Configure retrieval/reasoning bounds, enable or disable Hypothesis/Dialectic capabilities, supply a path verifier, tune bounded reopening/recovery behaviour | C++ `RuntimeOptions`, `DialecticOptions`, `PathVerifier` |
+| **4. Audit + state layer** | Build durable epistemic receipts, inspect event sequences, persist/audit world-state updates, validate provenance, checkpoint or back up the store | `CompactEpistemicReceipt`; `ModelWorld`; HTTP/Python admin and validation surfaces |
+
+A developer therefore does **not** need to use the entire stack. They can use MoolBase as:
+
+- a persistent evidence/provenance database;
+- a hypothesis-generation layer;
+- a full governed reasoning runtime;
+- a dialectical challenge/reopen mechanism;
+- an audit/receipt layer around another agent system.
+
+The receipt records the observable epistemic event sequence — for example `HypothesisSet → Decision → Challenge → Reopen → Revision → Terminal` — rather than persisting private model chain-of-thought.
 
 The historical implementation names are **GrapheneDB**, **HypoKosh** and **Dialectical Model Worlds (DWM)** respectively.
 
