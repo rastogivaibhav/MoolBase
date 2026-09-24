@@ -33,18 +33,16 @@ MoolBase treats these as data-system concerns rather than prompt-only concerns.
 
 ### The core idea
 
-```text
-Evidence
-   ↓
-MoolBase
-   ↓
-Hypothesis Engine
-   ↓
-Dialectic Engine
-   ↓
-Decision / Revision
-   ↓
-Inspectable epistemic receipt
+```mermaid
+flowchart LR
+    E[Evidence + provenance] --> M[MoolBase]
+    M --> H{Hypothesis Engine}
+    H -->|H1 supported| D[Dialectic Engine]
+    H -->|H2 still plausible| D
+    D -->|challenge / reopen| M
+    D --> R[Decision or revision]
+    R --> P[Inspectable epistemic receipt]
+    N[New contradictory evidence] --> M
 ```
 
 - **MoolBase** maintains persistent evidence, lineage and epistemic state.
@@ -52,7 +50,23 @@ Inspectable epistemic receipt
 - **Dialectic Engine** challenges the current belief, reopens evidence when warranted, and drives governed revision.
 - **Epistemic receipts** preserve the path from evidence to decision without requiring the whole reasoning workspace to remain live.
 
+A typical failure mode MoolBase is designed to expose is simple:
+
+```text
+Initial evidence → H1 appears strongest → tentative decision
+                       ↓
+              H2 remains plausible
+                       ↓
+         contradictory evidence arrives
+                       ↓
+          decision is reopened, not erased
+                       ↓
+       revised belief + receipt explaining why
+```
+
 The historical implementation names are **GrapheneDB**, **HypoKosh** and **Dialectical Model Worlds (DWM)** respectively.
+
+For the longer technical argument, read [Agent memory is not enough](docs/articles/agent-memory-is-not-enough.md).
 
 ---
 
