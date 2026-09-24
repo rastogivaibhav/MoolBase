@@ -10,7 +10,7 @@ Build examples:
 ./scripts/build_release.sh
 ```
 
-Run all examples:
+Run the database-core examples:
 
 ```bash
 ./scripts/run_examples.sh
