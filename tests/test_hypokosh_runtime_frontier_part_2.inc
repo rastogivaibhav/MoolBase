@@ -29,6 +29,7 @@
   const HypoKoshRuntimeResult result =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, runtime_options);
 
+  assert(result.receipt.hypokosh_capability_enabled);
   assert(result.receipt.graphene_executed);
   assert(result.receipt.fiber_bundle_built);
   assert(result.receipt.stability_critic_executed);
@@ -60,7 +61,6 @@
     const NativeEpistemicEvent& event =
         result.receipt.epistemic_events[index];
     assert(event.sequence == index + 1);
-    // DWM events are impossible when opposition research is disabled.
     assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
   }
   assert(result.receipt.initial_bundle_hash != 0);
@@ -90,6 +90,7 @@
   g1_options.update_model_world = false;
   const HypoKoshRuntimeResult g1_result =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, g1_options);
+  assert(g1_result.receipt.hypokosh_capability_enabled);
   assert(!g1_result.receipt.dwm_capability_enabled);
   assert(!g1_result.receipt.opposition_research_enabled);
   assert(!g1_result.receipt.opposition_executed);
@@ -97,6 +98,30 @@
        g1_result.receipt.epistemic_events) {
     assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
   }
+
+  // G0 is not allowed to masquerade as the full runtime. Until the
+  // Graphene-only path is implemented, both an invalid DWM-without-HypoKosh
+  // request and a valid-shaped G0 request must fail explicitly.
+  RuntimeOptions invalid_g0 = runtime_options;
+  invalid_g0.enable_hypokosh = false;
+  bool invalid_dependency_rejected = false;
+  try {
+    (void)runtime.reason({0.0f, 1.0f, 0.0f}, signature, invalid_g0);
+  } catch (const std::invalid_argument&) {
+    invalid_dependency_rejected = true;
+  }
+  assert(invalid_dependency_rejected);
+
+  RuntimeOptions unsupported_g0 = runtime_options;
+  unsupported_g0.enable_hypokosh = false;
+  unsupported_g0.enable_dwm = false;
+  bool unsupported_g0_rejected = false;
+  try {
+    (void)runtime.reason({0.0f, 1.0f, 0.0f}, signature, unsupported_g0);
+  } catch (const std::logic_error&) {
+    unsupported_g0_rejected = true;
+  }
+  assert(unsupported_g0_rejected);
 
   const HypoKoshRuntimeResult repeated =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, runtime_options);
