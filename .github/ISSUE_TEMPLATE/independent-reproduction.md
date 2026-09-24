@@ -1,6 +1,6 @@
 ---
 name: Independent reproduction report
-about: Report a clean external reproduction or falsification attempt for the GrapheneDB flagship
+about: Report a clean external reproduction or falsification attempt for the MoolBase flagship
 title: "Independent reproduction: "
 labels: ""
 assignees: ""
@@ -16,7 +16,7 @@ assignees: ""
 
 ## Receipts
 
-- Canonical flagship mechanism hash:
+- Canonical MoolBase/GrapheneDB flagship mechanism hash:
 - P1:
 - P2:
 - P3:
