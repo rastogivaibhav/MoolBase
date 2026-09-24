@@ -82,158 +82,73 @@ The current implementation API still uses the historical C++ name `GrapheneDB`.
 
 ## What can you build with MoolBase Core?
 
-These examples already exist in the repository and use the database directly.
+These examples use the database directly — no Hypothesis Engine or Dialectic Engine required.
 
-### 1. Incident memory with root-cause provenance
+### Incident memory
 
-Store an incident symptom and the observed root cause that explains it:
-
-```cpp
-db.put_node(NodeInput{
-    "Root cause: ingress timeout dropped from 30s to 3s.",
-    {0.9f, 0.1f, 0.0f},
-    sig,
-    1182,
-    true,
-    false,
-    false,
-    {{"type", "root_cause"}, {"service", "gateway"}}
-}, &root);
-
-db.put_node(NodeInput{
-    "Symptom: API timeout spike after release 2.3.",
-    {0.1f, 0.9f, 0.0f},
-    sig,
-    1182,
-    false,
-    true,
-    false,
-    {{"type", "incident"}, {"service", "gateway"}}
-}, &symptom);
-
-db.put_edge(EdgeInput{
-    root,
-    symptom,
-    EdgeOrigin::Observed,
-    EdgeRole::Causal,
-    0.94,
-    {{"source", "postmortem"}}
-});
-
-auto result = db.causal_search(
-    {0.1f, 0.92f, 0.0f},
-    sig,
-    QueryMode::Empirical);
-```
-
-This lets an operations agent retrieve **not only a similar incident**, but the causal path and provenance that connected the symptom to the root cause.
-
-See [`api_incident_memory.cpp`](examples/api_incident_memory.cpp).
-
----
-
-### 2. Keep contradictions instead of overwriting history
-
-A current explanation can contradict an older hypothesis without deleting it:
-
-```cpp
-db.put_edge(EdgeInput{
-    root,
-    stale_hypothesis,
-    EdgeOrigin::Observed,
-    EdgeRole::Contradicts,
-    0.90,
-    {{"source", "postmortem"}}
-});
-
-db.put_edge(EdgeInput{
-    current_action,
-    stale_hypothesis,
-    EdgeOrigin::Observed,
-    EdgeRole::Supersedes,
-    0.92,
-    {{"source", "decision-log"}}
-});
-
-auto current = db.metadata_search("status", "current");
-auto old     = db.metadata_search("status", "superseded");
-```
-
-The old state remains inspectable, but the database records that it was contradicted and superseded.
-
-See [`api_contradiction_supersession.cpp`](examples/api_contradiction_supersession.cpp).
-
----
-
-### 3. Give a coding agent architectural memory
-
-Store an ADR and connect it to the production failure that motivated it:
+Store a symptom, its root cause and the source that linked them:
 
 ```text
-ADR-007
-"split checkout pricing module"
-        │
-        │ caused by / explains
-        ▼
-BUG-331
-"retry storm when pricing call exceeded 600 ms"
+"API timeout spike after release 2.3"
+           ▲
+           │ causal · source=postmortem
+           │
+"ingress timeout dropped from 30s to 3s"
 ```
 
-The coding agent can later retrieve **why the architecture changed**, rather than only remembering the latest code structure.
+Then use `causal_search(...)` to retrieve the incident together with the causal path and provenance.
 
-See [`api_coding_memory.cpp`](examples/api_coding_memory.cpp).
+→ [Incident memory example](examples/api_incident_memory.cpp)
 
----
+### Contradiction and supersession
 
-### 4. Build a persistent team decision brain
+Keep a stale hypothesis in history instead of overwriting it:
 
-Store customer context, a current decision and the decision it replaced:
+```text
+Current root cause ── contradicts ──► Old hypothesis
+Current action     ── supersedes ──► Old action/state
+```
+
+Query `status=current` or `status=superseded` while retaining both states for audit.
+
+→ [Contradiction + supersession example](examples/api_contradiction_supersession.cpp)
+
+### Coding-agent memory
+
+Connect an architecture decision to the failure that motivated it:
+
+```text
+ADR-007: split checkout pricing
+        │
+        └── evidence / causal context ──► BUG-331: retry storm
+```
+
+A coding agent can retrieve **why** the architecture changed, not only the latest code state.
+
+→ [Coding memory example](examples/api_coding_memory.cpp)
+
+### Team decision memory
+
+Persist customer context, the current decision and what it replaced:
 
 ```text
 Customer context
-"parents need controlled AI tutor mode"
-        │
-        ▼
-Current decision
-"ship parent-led practice first"
-        │
-        └── supersedes ──►
-              Old decision
-              "allow unrestricted chat in v1"
+      ↓
+Current decision ── supersedes ──► Old decision
 ```
 
-Then query only the current decisions:
+This gives team agents a queryable decision history without flattening old and new states into one summary.
 
-```cpp
-auto current_decisions =
-    db.metadata_search("status", "current");
-```
+→ [Team brain example](examples/api_team_brain.cpp)
 
-This gives an agent or team tool a decision history without flattening old and new decisions into one summary.
-
-See [`api_team_brain.cpp`](examples/api_team_brain.cpp).
-
----
-
-### More database examples
-
-The [`examples/`](examples/) directory also covers:
-
-- vector + graph causal retrieval;
-- lattice-backed memory;
-- contradiction and supersession;
-- incident memory;
-- coding-agent memory;
-- team/shared memory.
-
-Run the full example set with:
+### Run the examples
 
 ```bash
 ./scripts/build_release.sh
 ./scripts/run_examples.sh
 ```
 
-See [`examples/README.md`](examples/README.md).
+See [`examples/README.md`](examples/README.md) for the full example catalogue and walkthroughs.
 
 ---
 
