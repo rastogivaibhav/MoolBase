@@ -286,6 +286,8 @@ See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/graphenedb
 - [Naming ADR — MoolBase public product identity](docs/adr/0001-moolbase-public-product-identity.md)
 - [Agent Memory Is Not Enough](docs/articles/agent-memory-is-not-enough.md)
 - [Changelog](CHANGELOG.md)
+- [Support](SUPPORT.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ---
 
@@ -293,7 +295,8 @@ See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/graphenedb
 
 The most valuable contribution right now is an **independent reproduction, failure case, adversarial scenario or credible criticism**.
 
-- Read [CONTRIBUTING.md](CONTRIBUTING.md).
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- For setup or usage help, see [SUPPORT.md](SUPPORT.md).
 - Reproduce the [flagship proof](docs/INDEPENDENT_REPRODUCTION.md).
 - Submit a failure case or technical critique through [GitHub Issues](https://github.com/rastogivaibhav/graphenedb_v1/issues).
 - See the [public reproduction request](https://github.com/rastogivaibhav/graphenedb_v1/issues/38).
