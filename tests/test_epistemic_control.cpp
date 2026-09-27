@@ -170,6 +170,10 @@ int main() {
       controller.converge(r1_bundle, r1_admissibility, r1_stability);
   assert(r1_answer.has_answer);
   assert(r1_answer.primary_node == 2);
+  assert(!r1_admissibility.contradiction_blocks_resolution);
+  assert(r1_admissibility.unresolved_contradiction == 0.0);
+  assert(r1_admissibility.sufficient_independent_support);
+  assert(r1_admissibility.evidence_admissible);
 
   // R2: weak opposition attenuates but does not automatically dethrone H1.
   BundleSet r2_raw;
