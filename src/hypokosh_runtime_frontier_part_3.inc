@@ -74,7 +74,8 @@
         options.stability_weights, options.stability_thresholds,
         options.lyapunov_weights, options.lyapunov_targets);
     EpistemicAdmissibility reopened_admissibility = controller.assess(
-        reopened_bundle, reopened_stability, current_options.mode);
+        reopened_bundle, reopened_stability, current_options.mode,
+        options.stability_thresholds);
     ConvergedAnswer reopened_convergence = controller.converge(
         reopened_bundle, reopened_admissibility,
         reopened_stability, current_options);
