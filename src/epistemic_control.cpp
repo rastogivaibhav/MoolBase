@@ -192,17 +192,14 @@ std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
 EpistemicAdmissibility EpistemicController::assess(
     const FiberBundle& bundle,
     const StabilityAssessment& stability,
-    QueryMode mode) const {
+    QueryMode mode,
+    const StabilityThresholds& thresholds) const {
   EpistemicAdmissibility output;
   output.relevance = stability.relevance_score;
   output.target_consistency = stability.target_consistency_score;
   output.completeness = stability.completeness_score;
   output.provenance = stability.provenance_score;
   output.retrieval_noise = stability.retrieval_noise_penalty;
-  output.unresolved_contradiction = stability.material_contradiction;
-  output.contradiction_blocks_resolution =
-      stability.contradiction_blocks_resolution;
-
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
   const uint32_t selected_target =
@@ -211,6 +208,14 @@ EpistemicAdmissibility EpistemicController::assess(
       candidates_for_target(candidates, selected_target);
   const TargetFiber* selected_fiber =
       targets.empty() ? nullptr : find_target_fiber(bundle, selected_target);
+
+  // Contradiction is a property of the selected hypothesis, not the retrieval
+  // set as a whole. Opposition against a discarded alternative must not block
+  // an independently supported primary target.
+  output.unresolved_contradiction =
+      selected_fiber ? selected_fiber->contradiction_mass : 0.0;
+  output.contradiction_blocks_resolution =
+      output.unresolved_contradiction >= thresholds.material_contradiction;
 
   // Verification and corroboration are properties of the selected hypothesis,
   // not of the retrieval set as a whole. A verified secondary target must never
