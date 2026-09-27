@@ -142,6 +142,23 @@ struct DialecticResult {
   bool durable_writes{false};
 };
 
+// Graphene-owned evidence/provenance expansion primitive. This is the
+// production G0 boundary: it reads persistent GrapheneDB state and materialises
+// a bounded evidence projection without executing HypoKosh convergence or DWM
+// opposition/reopen semantics.
+class GrapheneEvidenceExpander {
+ public:
+  explicit GrapheneEvidenceExpander(const GrapheneDB& db);
+
+  BundleSet expand(const std::vector<float>& query,
+                   uint64_t query_signature,
+                   const DialecticOptions& options = {},
+                   uint64_t snapshot_version = kInfVersion) const;
+
+ private:
+  const GrapheneDB& db_;
+};
+
 class DialecticEngine {
  public:
   explicit DialecticEngine(const GrapheneDB& db);
