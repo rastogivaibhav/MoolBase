@@ -196,7 +196,7 @@
   const GovernedProjection projection = project_status(
       result.final_convergence, result.final_opposition,
       result.final_stability, result.final_admissibility,
-      options.dialectic.mode);
+      options.dialectic.mode, options.stability_thresholds);
   result.status = projection.status;
   result.receipt.terminal_cause = projection.cause;
   if (result.lyapunov.certificate.limit_cycle_detected ||
