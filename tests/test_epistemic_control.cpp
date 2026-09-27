@@ -1,6 +1,7 @@
 #include "graphene/epistemic_control.hpp"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 
 using namespace graphene;
