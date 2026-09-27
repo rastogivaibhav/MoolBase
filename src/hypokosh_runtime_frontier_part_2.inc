@@ -52,16 +52,9 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     const RuntimeOptions& requested_options,
     uint64_t snapshot_version) const {
   RuntimeOptions options = requested_options;
-  if (!options.enable_hypokosh) {
-    if (options.enable_dwm) {
-      throw std::invalid_argument(
-          "DWM requires HypoKosh; disable enable_dwm before requesting G0");
-    }
-    // Do not silently execute the full HypoKosh stack and relabel it G0.
-    // Until the Graphene-only path lands, a requested G0 run is an explicit
-    // runtime/adapter failure and must remain visible to the benchmark.
-    throw std::logic_error(
-        "Graphene-only G0 execution is not implemented yet");
+  if (!options.enable_hypokosh && options.enable_dwm) {
+    throw std::invalid_argument(
+        "DWM requires HypoKosh; disable enable_dwm before requesting G0");
   }
   options.max_recursive_cycles =
       std::min<uint32_t>(options.max_recursive_cycles, 3);
@@ -75,6 +68,65 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   result.receipt.dwm_capability_enabled = options.enable_dwm;
   result.receipt.opposition_research_enabled =
       options.enable_dwm && options.enable_opposition_research;
+
+  // Genuine G0: execute only the Graphene-owned evidence/provenance path.
+  // HypoKosh convergence, stability/admissibility control, DWM opposition,
+  // recovery and model-world promotion are intentionally not constructed.
+  if (!options.enable_hypokosh) {
+    GrapheneEvidenceExpander evidence_expander(db_);
+    FiberBundleBuilder bundle_builder;
+    BundleSet expansion = evidence_expander.expand(
+        query, query_signature, options.dialectic, resolved_snapshot);
+    if (options.path_verifier) {
+      apply_path_verifier(&expansion, *options.path_verifier, query,
+                          query_signature, options.dialectic.mode);
+    }
+
+    result.initial_bundle = bundle_builder.build(expansion);
+    result.final_bundle = result.initial_bundle;
+    result.status = GovernedEpistemicStatus::Abstain;
+    result.primary_node = 0;
+    result.confidence = 0.0;
+
+    const std::vector<uint32_t> evidence_targets =
+        hypothesis_nodes(result.final_bundle);
+    result.evidence_edges = evidence_edges_for_nodes(
+        result.final_bundle, evidence_targets);
+    result.residual_uncertainty.push_back(
+        "G0 exposes persistent evidence/provenance state without hypothesis selection");
+
+    NativeEpistemicEvent terminal;
+    terminal.source = EpistemicEventSource::GrapheneCore;
+    terminal.type = EpistemicEventType::Terminal;
+    terminal.hypothesis_node = 0;
+    terminal.evidence_edges = result.evidence_edges;
+    terminal.evidence_family_ids = evidence_families_for_nodes(
+        result.final_bundle, evidence_targets);
+    terminal.epistemic_state = "abstain";
+    terminal.reason =
+        "G0 evidence-state projection completed without HypoKosh or DWM execution";
+    append_epistemic_event(&result.receipt, std::move(terminal));
+
+    result.receipt.snapshot_version = resolved_snapshot;
+    result.receipt.initial_bundle_hash = result.initial_bundle.immutable_hash;
+    result.receipt.final_bundle_hash = result.final_bundle.immutable_hash;
+    result.receipt.graphene_executed = true;
+    result.receipt.path_verifier_executed = options.path_verifier != nullptr;
+    result.receipt.fiber_bundle_built = true;
+    result.receipt.fiber_bundle_authoritative = true;
+    result.receipt.stability_critic_executed = false;
+    result.receipt.epistemic_admissibility_executed = false;
+    result.receipt.lyapunov_trajectory_executed = false;
+    result.receipt.lyapunov_certificate_valid = false;
+    result.receipt.lyapunov_goal_reached = false;
+    result.receipt.escape_considered = false;
+    result.receipt.convergence_executed = false;
+    result.receipt.opposition_executed = false;
+    result.receipt.governed_projection_executed = true;
+    result.receipt.no_silent_promotion = true;
+    return result;
+  }
+
   DialecticEngine dialectic(db_);
   FiberBundleBuilder bundle_builder;
   LyapunovCritic critic;
