@@ -1,0 +1,36 @@
+{
+  "schema": "moolbase-monkey-v1-spec",
+  "status": "FROZEN_CANDIDATE",
+  "seed": 20260927,
+  "deterministic_episodes": 500,
+  "mutation_episodes": 100,
+  "production_code_may_change_after_campaign_starts": false,
+  "families": {
+    "A": "provenance and correlation grouping",
+    "B": "hypothesis competition and duplicate resistance",
+    "C": "contradiction and falsification",
+    "D": "supersession storage and history",
+    "E": "bounded recovery/frontier",
+    "F": "dialectic competition/opposition",
+    "G": "receipt determinism and provenance",
+    "H": "snapshot history",
+    "I": "backup/reopen/validation durability",
+    "J": "parameter boundaries",
+    "K": "metamorphic invariance"
+  },
+  "invariants": [
+    "correct supplied lineage determines correlation groups deterministically",
+    "same-family duplicates do not increase independent support",
+    "decisive independent opposition can demote a falsified primary when an alternative earns stronger target-level belief",
+    "weak opposition does not automatically dethrone strong support",
+    "insertion/path order does not change immutable bundle or governed selection",
+    "recovery rounds remain bounded by configured recursion",
+    "compact receipt hash is deterministic and causally relevant provenance changes the hash",
+    "late writes never appear in earlier snapshots",
+    "backup copies can be reopened and validated",
+    "noise/low relevance paths cannot become support-eligible",
+    "identical mutated input produces identical output"
+  ],
+  "pass_definition": "zero invariant failures and zero crashes across committed deterministic and mutation episodes",
+  "failure_preservation": "any failure terminates the campaign as failed; production changes require a new manifest/run"
+}
