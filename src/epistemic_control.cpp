@@ -192,6 +192,13 @@ std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
 EpistemicAdmissibility EpistemicController::assess(
     const FiberBundle& bundle,
     const StabilityAssessment& stability,
+    QueryMode mode) const {
+  return assess(bundle, stability, mode, StabilityThresholds{});
+}
+
+EpistemicAdmissibility EpistemicController::assess(
+    const FiberBundle& bundle,
+    const StabilityAssessment& stability,
     QueryMode mode,
     const StabilityThresholds& thresholds) const {
   EpistemicAdmissibility output;
