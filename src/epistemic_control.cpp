@@ -195,11 +195,6 @@ EpistemicAdmissibility EpistemicController::assess(
     QueryMode mode,
     const StabilityThresholds& thresholds) const {
   EpistemicAdmissibility output;
-  output.relevance = stability.relevance_score;
-  output.target_consistency = stability.target_consistency_score;
-  output.completeness = stability.completeness_score;
-  output.provenance = stability.provenance_score;
-  output.retrieval_noise = stability.retrieval_noise_penalty;
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
   const uint32_t selected_target =
@@ -217,6 +212,26 @@ EpistemicAdmissibility EpistemicController::assess(
   output.contradiction_blocks_resolution =
       output.unresolved_contradiction >= thresholds.material_contradiction;
 
+  if (!selected_candidates.empty()) {
+    const double count = static_cast<double>(selected_candidates.size());
+    double relevance = 0.0;
+    double target_consistency = 0.0;
+    double completeness = 0.0;
+    double provenance = 0.0;
+    for (const Candidate& candidate : selected_candidates) {
+      relevance += candidate.path->query_relevance;
+      target_consistency += candidate.path->target_consistency;
+      completeness += candidate.path->completeness;
+      provenance += candidate.path->provenance_quality;
+    }
+    output.relevance = relevance / count;
+    output.target_consistency = target_consistency / count;
+    output.completeness = completeness / count;
+    output.provenance = provenance / count;
+  }
+  output.retrieval_noise =
+      selected_fiber ? selected_fiber->retrieval_noise_ratio : 0.0;
+
   // Verification and corroboration are properties of the selected hypothesis,
   // not of the retrieval set as a whole. A verified secondary target must never
   // promote an unverified primary target.
@@ -229,8 +244,14 @@ EpistemicAdmissibility EpistemicController::assess(
       selected_fiber &&
       selected_fiber->independent_evidence_family_count >= 2;
 
-  output.evidence_admissible = stability.evidence_admissible &&
-                               !selected_candidates.empty();
+  output.evidence_admissible =
+      !selected_candidates.empty() &&
+      output.relevance >= thresholds.minimum_relevance &&
+      output.target_consistency >= thresholds.minimum_target_consistency &&
+      output.completeness >= thresholds.minimum_completeness &&
+      output.provenance >= 0.25 &&
+      output.retrieval_noise <= thresholds.maximum_noise &&
+      !output.contradiction_blocks_resolution;
   output.requires_external_verification =
       output.semantic_verification ==
           SemanticVerificationStatus::Unverified ||
