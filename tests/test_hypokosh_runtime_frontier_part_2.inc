@@ -99,9 +99,9 @@
     assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
   }
 
-  // G0 is not allowed to masquerade as the full runtime. Until the
-  // Graphene-only path is implemented, both an invalid DWM-without-HypoKosh
-  // request and a valid-shaped G0 request must fail explicitly.
+  // Genuine G0 must execute Graphene evidence/provenance only. Invalid
+  // DWM-without-HypoKosh remains rejected, while valid G0 must not construct
+  // or execute convergence/opposition semantics.
   RuntimeOptions invalid_g0 = runtime_options;
   invalid_g0.enable_hypokosh = false;
   bool invalid_dependency_rejected = false;
@@ -112,16 +112,36 @@
   }
   assert(invalid_dependency_rejected);
 
-  RuntimeOptions unsupported_g0 = runtime_options;
-  unsupported_g0.enable_hypokosh = false;
-  unsupported_g0.enable_dwm = false;
-  bool unsupported_g0_rejected = false;
-  try {
-    (void)runtime.reason({0.0f, 1.0f, 0.0f}, signature, unsupported_g0);
-  } catch (const std::logic_error&) {
-    unsupported_g0_rejected = true;
+  RuntimeOptions g0_options = runtime_options;
+  g0_options.enable_hypokosh = false;
+  g0_options.enable_dwm = false;
+  g0_options.enable_opposition_research = false;
+  g0_options.update_model_world = false;
+  ModelWorld g0_world;
+  CompleteHypoKoshRuntime g0_runtime(db, &g0_world);
+  const HypoKoshRuntimeResult g0_result =
+      g0_runtime.reason({0.0f, 1.0f, 0.0f}, signature, g0_options);
+  assert(g0_result.receipt.graphene_executed);
+  assert(!g0_result.receipt.hypokosh_capability_enabled);
+  assert(!g0_result.receipt.dwm_capability_enabled);
+  assert(!g0_result.receipt.stability_critic_executed);
+  assert(!g0_result.receipt.epistemic_admissibility_executed);
+  assert(!g0_result.receipt.convergence_executed);
+  assert(!g0_result.receipt.opposition_executed);
+  assert(!g0_result.receipt.bounded_recovery_executed);
+  assert(g0_result.receipt.governed_projection_executed);
+  assert(g0_result.receipt.terminal_cause ==
+         "g0_evidence_projection_no_hypothesis_selection");
+  assert(!g0_result.final_bundle.fibers.empty());
+  assert(!g0_result.evidence_edges.empty());
+  assert(g0_world.nodes().empty());
+  for (const NativeEpistemicEvent& event :
+       g0_result.receipt.epistemic_events) {
+    assert(event.source == EpistemicEventSource::GrapheneCore);
+    assert(event.type != EpistemicEventType::Challenge);
+    assert(event.type != EpistemicEventType::Reopen);
+    assert(event.type != EpistemicEventType::Revision);
   }
-  assert(unsupported_g0_rejected);
 
   const HypoKoshRuntimeResult repeated =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, runtime_options);
