@@ -12,12 +12,16 @@
 
 } // namespace
 
+GrapheneEvidenceExpander::GrapheneEvidenceExpander(const GrapheneDB& db)
+    : db_(db) {}
+
 DialecticEngine::DialecticEngine(const GrapheneDB& db) : db_(db) {}
 
-BundleSet DialecticEngine::expand(const std::vector<float>& query,
-                                  uint64_t query_signature,
-                                  const DialecticOptions& requested_options,
-                                  uint64_t snapshot_version) const {
+BundleSet GrapheneEvidenceExpander::expand(
+    const std::vector<float>& query,
+    uint64_t query_signature,
+    const DialecticOptions& requested_options,
+    uint64_t snapshot_version) const {
   const DialecticOptions options = bounded_options(requested_options);
   BundleSet output;
   output.snapshot_version =
