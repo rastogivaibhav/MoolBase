@@ -13,6 +13,17 @@ struct Candidate {
   double score{0.0};
 };
 
+struct TargetCandidate {
+  const TargetFiber* fiber{nullptr};
+  double support_strength{0.0};
+  double opposition_strength{0.0};
+  double belief_strength{0.0};
+  SemanticVerificationStatus semantic_verification{
+      SemanticVerificationStatus::Unverified};
+  size_t independent_support_count{0};
+  double best_support_score{0.0};
+};
+
 double candidate_score(const FiberPath& path) {
   return std::clamp(path.confidence * path.query_relevance *
                         path.target_consistency * path.completeness *
@@ -91,6 +102,91 @@ SemanticVerificationStatus strongest_semantic_status(
   return SemanticVerificationStatus::Unverified;
 }
 
+int verification_rank(SemanticVerificationStatus status) {
+  switch (status) {
+    case SemanticVerificationStatus::Verified: return 3;
+    case SemanticVerificationStatus::NotApplicable: return 2;
+    case SemanticVerificationStatus::Unverified: return 1;
+    case SemanticVerificationStatus::Contradicted: return 0;
+  }
+  return 0;
+}
+
+double independent_union_strength(const std::vector<double>& scores) {
+  double residual = 1.0;
+  for (double score : scores) {
+    residual *= 1.0 - std::clamp(score, 0.0, 1.0);
+  }
+  return std::clamp(1.0 - residual, 0.0, 1.0);
+}
+
+std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
+  const auto supports = support_candidates(bundle);
+  std::vector<TargetCandidate> output;
+  for (const auto& fiber : bundle.fibers) {
+    const auto selected = candidates_for_target(supports, fiber.target_node);
+    if (selected.empty()) continue;
+
+    std::vector<double> support_scores;
+    support_scores.reserve(selected.size());
+    double best_support = 0.0;
+    for (const Candidate& candidate : selected) {
+      support_scores.push_back(candidate.score);
+      best_support = std::max(best_support, candidate.score);
+    }
+
+    std::vector<double> opposition_scores;
+    for (const auto& group : fiber.correlation_groups) {
+      if (group.role != FiberPathRole::Opposition) continue;
+      const auto path_it = std::find_if(
+          fiber.paths.begin(), fiber.paths.end(),
+          [&](const FiberPath& path) {
+            return path.id == group.representative_path_id;
+          });
+      if (path_it == fiber.paths.end() || !path_it->eligible_for_opposition) {
+        continue;
+      }
+      opposition_scores.push_back(candidate_score(*path_it));
+    }
+
+    TargetCandidate target;
+    target.fiber = &fiber;
+    target.support_strength = independent_union_strength(support_scores);
+    target.opposition_strength =
+        independent_union_strength(opposition_scores);
+    // Independent support is combined as a probability-union style strength.
+    // Independent opposition then attenuates that support multiplicatively.
+    // This makes duplicated/correlated paths neutral because only correlation
+    // group representatives enter either side of the calculation.
+    target.belief_strength = std::clamp(
+        target.support_strength * (1.0 - target.opposition_strength),
+        0.0, 1.0);
+    target.semantic_verification = strongest_semantic_status(selected);
+    target.independent_support_count =
+        fiber.independent_evidence_family_count;
+    target.best_support_score = best_support;
+    output.push_back(target);
+  }
+
+  std::sort(output.begin(), output.end(),
+            [](const TargetCandidate& left, const TargetCandidate& right) {
+    if (left.belief_strength != right.belief_strength)
+      return left.belief_strength > right.belief_strength;
+    const int left_verification =
+        verification_rank(left.semantic_verification);
+    const int right_verification =
+        verification_rank(right.semantic_verification);
+    if (left_verification != right_verification)
+      return left_verification > right_verification;
+    if (left.independent_support_count != right.independent_support_count)
+      return left.independent_support_count > right.independent_support_count;
+    if (left.best_support_score != right.best_support_score)
+      return left.best_support_score > right.best_support_score;
+    return left.fiber->target_node < right.fiber->target_node;
+  });
+  return output;
+}
+
 }  // namespace
 
 EpistemicAdmissibility EpistemicController::assess(
@@ -108,12 +204,13 @@ EpistemicAdmissibility EpistemicController::assess(
       stability.contradiction_blocks_resolution;
 
   const auto candidates = support_candidates(bundle);
+  const auto targets = target_candidates(bundle);
   const uint32_t selected_target =
-      candidates.empty() ? 0 : candidates.front().fiber->target_node;
+      targets.empty() ? 0 : targets.front().fiber->target_node;
   const auto selected_candidates =
       candidates_for_target(candidates, selected_target);
   const TargetFiber* selected_fiber =
-      candidates.empty() ? nullptr : find_target_fiber(bundle, selected_target);
+      targets.empty() ? nullptr : find_target_fiber(bundle, selected_target);
 
   // Verification and corroboration are properties of the selected hypothesis,
   // not of the retrieval set as a whole. A verified secondary target must never
@@ -165,19 +262,29 @@ ConvergedAnswer EpistemicController::converge(
     const DialecticOptions& options) const {
   ConvergedAnswer output;
   const auto candidates = support_candidates(bundle);
-  if (candidates.empty()) {
+  const auto targets = target_candidates(bundle);
+  if (candidates.empty() || targets.empty()) {
     output.residual_uncertainty.push_back(
         "no support-eligible FiberBundle path exists");
     return output;
   }
 
-  const Candidate& primary = candidates.front();
+  const TargetCandidate& primary_target = targets.front();
+  const uint32_t primary_node = primary_target.fiber->target_node;
+  const auto primary_candidates =
+      candidates_for_target(candidates, primary_node);
+  const Candidate& primary = primary_candidates.front();
   output.has_answer =
-      primary.score >= std::max(0.05, options.minimum_confidence * 0.50);
-  output.primary_node = primary.fiber->target_node;
-  output.confidence = primary.score;
+      primary_target.belief_strength >=
+      std::max(0.05, options.minimum_confidence * 0.50);
+  output.primary_node = primary_node;
+  output.confidence = primary_target.belief_strength;
   output.false_promotion_risk =
       primary.path->contains_hypothetical ? 1.0 : 0.0;
+  if (primary_target.opposition_strength > 0.0) {
+    output.residual_uncertainty.push_back(
+        "target-level belief strength is attenuated by independent opposition");
+  }
 
   size_t selected = 0;
   std::set<uint32_t> evidence_edges;
@@ -261,16 +368,14 @@ OppositionReport EpistemicController::oppose(
   }
 
   // A separately supported target is not discarded noise. It is a competing
-  // hypothesis and must remain visible to opposition and falsification.
+  // hypothesis and must remain visible to opposition and falsification. Use
+  // the same target-level aggregate used by convergence rather than the best
+  // individual support path.
   if (answer.has_answer) {
-    const auto candidates = support_candidates(bundle);
-    std::set<uint32_t> alternative_targets;
-    for (const Candidate& candidate : candidates) {
-      if (candidate.fiber->target_node == answer.primary_node ||
-          !alternative_targets.insert(candidate.fiber->target_node).second) {
-        continue;
-      }
-      strongest = std::max(strongest, candidate.score);
+    const auto ranked_targets = target_candidates(bundle);
+    for (const TargetCandidate& candidate : ranked_targets) {
+      if (candidate.fiber->target_node == answer.primary_node) continue;
+      strongest = std::max(strongest, candidate.belief_strength);
       output.challenged_claims.push_back(
           "independently supported alternative target " +
           std::to_string(candidate.fiber->target_node) +
