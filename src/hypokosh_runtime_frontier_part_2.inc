@@ -172,7 +172,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       options.dialectic.mode, options.stability_thresholds);
   result.initial_escape = escape.plan(
       result.initial_bundle, result.initial_stability,
-      options.dialectic.mode, options.stability_thresholds);
+      options.dialectic.mode);
   result.initial_convergence = controller.converge(
       result.initial_bundle, result.initial_admissibility,
       result.initial_stability, options.dialectic);
