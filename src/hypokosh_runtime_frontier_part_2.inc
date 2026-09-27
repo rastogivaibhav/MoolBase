@@ -1,42 +1,63 @@
 
-GovernedEpistemicStatus project_status(
+struct GovernedProjection {
+  GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
+  std::string cause;
+};
+
+GovernedProjection project_status(
     const ConvergedAnswer& convergence,
     const OppositionReport& opposition,
     const StabilityAssessment& stability,
     const EpistemicAdmissibility& admissibility,
     QueryMode mode) {
   if (!convergence.has_answer) {
-    return stability.missing_evidence_penalty > 0.0
-               ? GovernedEpistemicStatus::EvidenceRequired
-               : GovernedEpistemicStatus::Abstain;
+    return {
+        stability.missing_evidence_penalty > 0.0
+            ? GovernedEpistemicStatus::EvidenceRequired
+            : GovernedEpistemicStatus::Abstain,
+        stability.missing_evidence_penalty > 0.0
+            ? "no_answer_missing_evidence"
+            : "no_answer_abstain"};
   }
   if (admissibility.semantic_verification ==
       SemanticVerificationStatus::Contradicted) {
-    return GovernedEpistemicStatus::Contested;
+    return {GovernedEpistemicStatus::Contested,
+            "semantic_verification_contradicted"};
   }
-  if (admissibility.contradiction_blocks_resolution ||
-      opposition.opposition_score >= 0.50) {
-    return GovernedEpistemicStatus::Contested;
+  if (admissibility.contradiction_blocks_resolution) {
+    return {GovernedEpistemicStatus::Contested,
+            "material_contradiction_blocks_resolution"};
+  }
+  if (opposition.opposition_score >= 0.50) {
+    return {GovernedEpistemicStatus::Contested,
+            "dialectic_opposition_blocks_resolution"};
   }
   if (!admissibility.evidence_admissible) {
-    return stability.completeness_score < 0.50 ||
-                   stability.provenance_score < 0.25
-               ? GovernedEpistemicStatus::EvidenceRequired
-               : GovernedEpistemicStatus::Abstain;
+    return {
+        stability.completeness_score < 0.50 ||
+                stability.provenance_score < 0.25
+            ? GovernedEpistemicStatus::EvidenceRequired
+            : GovernedEpistemicStatus::Abstain,
+        stability.completeness_score < 0.50 ||
+                stability.provenance_score < 0.25
+            ? "evidence_incomplete_or_low_provenance"
+            : "evidence_not_admissible"};
   }
   if (mode == QueryMode::Theoretical &&
       admissibility.semantic_verification ==
           SemanticVerificationStatus::Unverified) {
-    return GovernedEpistemicStatus::Speculative;
+    return {GovernedEpistemicStatus::Speculative,
+            "theoretical_claim_unverified"};
   }
   if (stability.stable &&
       admissibility.sufficient_independent_support &&
       admissibility.semantic_verification ==
           SemanticVerificationStatus::Verified &&
       opposition.opposition_score == 0.0) {
-    return GovernedEpistemicStatus::Resolved;
+    return {GovernedEpistemicStatus::Resolved, "earned_resolution"};
   }
-  return GovernedEpistemicStatus::ProvisionallyResolved;
+  return {GovernedEpistemicStatus::ProvisionallyResolved,
+          "resolution_conditions_not_fully_earned"};
 }
 
 }  // namespace
@@ -124,6 +145,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     result.receipt.opposition_executed = false;
     result.receipt.governed_projection_executed = true;
     result.receipt.no_silent_promotion = true;
+    result.receipt.terminal_cause = "g0_evidence_projection_no_hypothesis_selection";
     return result;
   }
 
