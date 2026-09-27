@@ -31,6 +31,10 @@ if(MSVC AND TARGET graphenedb_rc_stress_tests)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(graphenedb_epistemic_process_runtime_runner
+                 tools/epistemic_process_runtime_runner.cpp)
+  target_link_libraries(graphenedb_epistemic_process_runtime_runner PRIVATE graphenedb)
+
   add_executable(graphenedb_cli_reason_tests tests/test_cli_reason.cpp)
   target_link_libraries(graphenedb_cli_reason_tests PRIVATE graphenedb)
   if(TARGET graphenedb_cli)
