@@ -1,4 +1,5 @@
 #include "graphene/hypokosh_runtime.hpp"
+#include "graphene/epistemic_receipt.hpp"
 
 #include <cassert>
 #include <cmath>
