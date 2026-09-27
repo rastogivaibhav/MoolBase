@@ -24,7 +24,7 @@ struct CompactEvidenceSummary {
 // Durable, content-addressed answer receipt. The full FiberBundle remains an
 // ephemeral query workspace unless an explicit audit policy retains it.
 struct CompactEpistemicReceipt {
-  uint32_t schema_version{2};
+  uint32_t schema_version{3};
   uint64_t snapshot_version{0};
   uint64_t bundle_hash{0};
   uint64_t content_hash{0};
@@ -35,6 +35,23 @@ struct CompactEpistemicReceipt {
   SemanticVerificationStatus semantic_verification{
       SemanticVerificationStatus::Unverified};
   std::vector<uint32_t> evidence_edges;
+
+  // Durable capability/execution provenance. These fields distinguish a
+  // disabled layer from an enabled layer that simply emitted no transition.
+  bool hypokosh_capability_enabled{true};
+  bool dwm_capability_enabled{true};
+  bool opposition_research_enabled{false};
+  bool graphene_executed{false};
+  bool path_verifier_executed{false};
+  bool stability_critic_executed{false};
+  bool epistemic_admissibility_executed{false};
+  bool convergence_executed{false};
+  bool opposition_executed{false};
+  bool bounded_recovery_executed{false};
+  bool governed_projection_executed{false};
+  bool model_world_updated{false};
+  std::string terminal_cause;
+
   CompactEvidenceSummary selected_evidence;
   std::vector<NativeEpistemicEvent> epistemic_events;
   std::vector<std::string> residual_uncertainty;
