@@ -30,7 +30,8 @@ class EpistemicController {
   EpistemicAdmissibility assess(
       const FiberBundle& bundle,
       const StabilityAssessment& stability,
-      QueryMode mode = QueryMode::Balanced) const;
+      QueryMode mode = QueryMode::Balanced,
+      const StabilityThresholds& thresholds = {}) const;
 
   ConvergedAnswer converge(
       const FiberBundle& bundle,
