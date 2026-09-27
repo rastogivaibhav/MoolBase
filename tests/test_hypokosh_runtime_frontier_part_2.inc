@@ -342,6 +342,102 @@
   assert(!deep_result.receipt.stopped_for_no_progress);
   assert(!deep_result.lyapunov.certificate.limit_cycle_detected);
 
+  // RC5 / belief-revision execution: begin with one high-scoring H1 evidence
+  // family. Bounded independent-evidence recovery then exposes two H2 families
+  // whose target-level aggregate earns the operative revision.
+  const fs::path revision_directory =
+      fs::temp_directory_path() / "graphenedb_hypothesis_revision_runtime";
+  fs::remove_all(revision_directory);
+  GrapheneDB revision_db;
+  require(revision_db.open(revision_directory, options), "open revision db");
+  const uint64_t revision_signature = signature_for(55, 56);
+  uint32_t revision_h1 = 0;
+  uint32_t revision_h2 = 0;
+  uint32_t revision_h1_anchor = 0;
+  uint32_t revision_h2_anchor_a = 0;
+  uint32_t revision_h2_anchor_b = 0;
+  require(revision_db.put_node(
+      node("revision H1", {-1.0f, 0.0f, 0.0f}, revision_signature, true),
+      &revision_h1), "put revision H1");
+  require(revision_db.put_node(
+      node("revision H2", {-1.0f, 0.0f, 0.0f}, revision_signature, true),
+      &revision_h2), "put revision H2");
+  require(revision_db.put_node(
+      node("H1 initial evidence", {1.0f, 0.0f, 0.0f}, revision_signature),
+      &revision_h1_anchor), "put revision H1 anchor");
+  require(revision_db.put_node(
+      node("H2 independent evidence A", {0.995f, 0.05f, 0.0f},
+           revision_signature),
+      &revision_h2_anchor_a), "put revision H2 anchor A");
+  require(revision_db.put_node(
+      node("H2 independent evidence B", {0.99f, 0.10f, 0.0f},
+           revision_signature),
+      &revision_h2_anchor_b), "put revision H2 anchor B");
+  require(revision_db.put_edge(
+      {revision_h1, revision_h1_anchor, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.95,
+       {{"source_id", "revision-h1-source"},
+        {"evidence_family_id", "revision-h1-family"}}}),
+      "put revision H1 support");
+  require(revision_db.put_edge(
+      {revision_h2, revision_h2_anchor_a, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.90,
+       {{"source_id", "revision-h2-a"},
+        {"evidence_family_id", "revision-h2-family-a"}}}),
+      "put revision H2 support A");
+  require(revision_db.put_edge(
+      {revision_h2, revision_h2_anchor_b, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.90,
+       {{"source_id", "revision-h2-b"},
+        {"evidence_family_id", "revision-h2-family-b"}}}),
+      "put revision H2 support B");
+
+  RuntimeOptions revision_options;
+  revision_options.enable_dwm = false;
+  revision_options.enable_opposition_research = false;
+  revision_options.update_model_world = false;
+  revision_options.dialectic.mode = QueryMode::Empirical;
+  revision_options.dialectic.semantic_candidates = 1;
+  revision_options.dialectic.max_hops = 1;
+  revision_options.dialectic.max_paths = 8;
+  revision_options.dialectic.max_paths_per_root = 4;
+  revision_options.dialectic.max_visited_states = 64;
+  revision_options.dialectic.minimum_confidence = 0.20;
+  revision_options.max_recursive_cycles = 1;
+
+  CompleteHypoKoshRuntime revision_runtime(revision_db);
+  const HypoKoshRuntimeResult revision_result =
+      revision_runtime.reason(
+          {1.0f, 0.0f, 0.0f}, revision_signature, revision_options);
+  assert(revision_result.primary_node == revision_h2);
+  bool saw_revision = false;
+  for (const NativeEpistemicEvent& event :
+       revision_result.receipt.epistemic_events) {
+    if (event.type != EpistemicEventType::Revision) continue;
+    saw_revision = true;
+    assert(event.source == EpistemicEventSource::HypoKosh);
+    assert(event.previous_hypothesis_node == revision_h1);
+    assert(event.hypothesis_node == revision_h2);
+    assert(!event.evidence_family_ids.empty());
+    assert(event.reason ==
+           "bounded recovery changed the operative hypothesis");
+  }
+  assert(saw_revision);
+  const CompactEpistemicReceipt revision_compact =
+      build_compact_epistemic_receipt(revision_result);
+  bool compact_saw_revision = false;
+  for (const NativeEpistemicEvent& event :
+       revision_compact.epistemic_events) {
+    if (event.type == EpistemicEventType::Revision) {
+      compact_saw_revision = true;
+      assert(event.previous_hypothesis_node == revision_h1);
+      assert(event.hypothesis_node == revision_h2);
+    }
+  }
+  assert(compact_saw_revision);
+  require(revision_db.close(), "close revision db");
+  fs::remove_all(revision_directory);
+
   require(db.close(), "close runtime database");
   fs::remove_all(directory);
   std::cout << "complete_hypokosh_runtime_contract_passed=true\n";
