@@ -71,6 +71,37 @@
   assert(!result.evidence_edges.empty());
   assert(!result.final_self_healing.repairs.empty());
   assert(result.final_self_healing.rerun_required || !result.final_stability.requires_escape);
+  const CompactEpistemicReceipt compact_result =
+      build_compact_epistemic_receipt(result);
+  assert(compact_result.hypokosh_capability_enabled);
+  assert(compact_result.dwm_capability_enabled);
+  assert(compact_result.graphene_executed);
+  assert(compact_result.convergence_executed);
+  assert(compact_result.opposition_executed);
+  assert(!compact_result.opposition_research_enabled);
+  assert(compact_result.governed_projection_executed);
+  assert(!compact_result.terminal_cause.empty());
+
+  // RC3: DWM may affect terminal governance even when opposition research is
+  // disabled and therefore no Challenge/Reopen event is emitted. The compact
+  // receipt must still preserve that DWM/opposition executed.
+  if (result.status == GovernedEpistemicStatus::Contested &&
+      result.receipt.terminal_cause ==
+          "dialectic_opposition_blocks_resolution") {
+    bool saw_dwm_transition = false;
+    for (const NativeEpistemicEvent& event :
+         compact_result.epistemic_events) {
+      saw_dwm_transition =
+          saw_dwm_transition ||
+          event.source == EpistemicEventSource::DialecticalModelWorlds;
+    }
+    assert(!saw_dwm_transition);
+    assert(compact_result.dwm_capability_enabled);
+    assert(compact_result.opposition_executed);
+    assert(compact_result.terminal_cause ==
+           "dialectic_opposition_blocks_resolution");
+  }
+
   assert(!runtime_world.nodes().empty());
   assert(runtime_world.audit().empty());
   const fs::path model_world_path = directory / "model-world.snapshot";
@@ -98,6 +129,13 @@
        g1_result.receipt.epistemic_events) {
     assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
   }
+  const CompactEpistemicReceipt g1_compact =
+      build_compact_epistemic_receipt(g1_result);
+  assert(g1_compact.hypokosh_capability_enabled);
+  assert(!g1_compact.dwm_capability_enabled);
+  assert(!g1_compact.opposition_executed);
+  assert(g1_compact.graphene_executed);
+  assert(g1_compact.convergence_executed);
 
   // Genuine G0 must execute Graphene evidence/provenance only. Invalid
   // DWM-without-HypoKosh remains rejected, while valid G0 must not construct
@@ -134,6 +172,15 @@
          "g0_evidence_projection_no_hypothesis_selection");
   assert(!g0_result.final_bundle.fibers.empty());
   assert(!g0_result.evidence_edges.empty());
+  const CompactEpistemicReceipt g0_compact =
+      build_compact_epistemic_receipt(g0_result);
+  assert(!g0_compact.hypokosh_capability_enabled);
+  assert(!g0_compact.dwm_capability_enabled);
+  assert(g0_compact.graphene_executed);
+  assert(!g0_compact.convergence_executed);
+  assert(!g0_compact.opposition_executed);
+  assert(g0_compact.terminal_cause ==
+         "g0_evidence_projection_no_hypothesis_selection");
   assert(g0_world.nodes().empty());
   for (const NativeEpistemicEvent& event :
        g0_result.receipt.epistemic_events) {
