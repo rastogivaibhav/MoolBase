@@ -42,6 +42,27 @@ CompactEpistemicReceipt build_compact_epistemic_receipt(
   receipt.semantic_verification =
       result.final_admissibility.semantic_verification;
   receipt.evidence_edges = result.evidence_edges;
+  receipt.hypokosh_capability_enabled =
+      result.receipt.hypokosh_capability_enabled;
+  receipt.dwm_capability_enabled =
+      result.receipt.dwm_capability_enabled;
+  receipt.opposition_research_enabled =
+      result.receipt.opposition_research_enabled;
+  receipt.graphene_executed = result.receipt.graphene_executed;
+  receipt.path_verifier_executed =
+      result.receipt.path_verifier_executed;
+  receipt.stability_critic_executed =
+      result.receipt.stability_critic_executed;
+  receipt.epistemic_admissibility_executed =
+      result.receipt.epistemic_admissibility_executed;
+  receipt.convergence_executed = result.receipt.convergence_executed;
+  receipt.opposition_executed = result.receipt.opposition_executed;
+  receipt.bounded_recovery_executed =
+      result.receipt.bounded_recovery_executed;
+  receipt.governed_projection_executed =
+      result.receipt.governed_projection_executed;
+  receipt.model_world_updated = result.receipt.model_world_updated;
+  receipt.terminal_cause = result.receipt.terminal_cause;
   receipt.epistemic_events = result.receipt.epistemic_events;
   receipt.residual_uncertainty = result.residual_uncertainty;
   sort_unique(&receipt.evidence_edges);
@@ -109,6 +130,21 @@ CompactEpistemicReceipt build_compact_epistemic_receipt(
   hash = append_hash(
       hash, static_cast<uint64_t>(receipt.semantic_verification));
   for (uint32_t edge : receipt.evidence_edges) hash = append_hash(hash, edge);
+  hash = append_hash(hash, receipt.hypokosh_capability_enabled ? 1U : 0U);
+  hash = append_hash(hash, receipt.dwm_capability_enabled ? 1U : 0U);
+  hash = append_hash(hash, receipt.opposition_research_enabled ? 1U : 0U);
+  hash = append_hash(hash, receipt.graphene_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.path_verifier_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.stability_critic_executed ? 1U : 0U);
+  hash = append_hash(
+      hash, receipt.epistemic_admissibility_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.convergence_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.opposition_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.bounded_recovery_executed ? 1U : 0U);
+  hash = append_hash(
+      hash, receipt.governed_projection_executed ? 1U : 0U);
+  hash = append_hash(hash, receipt.model_world_updated ? 1U : 0U);
+  append_text(&hash, receipt.terminal_cause);
   for (uint64_t path_id : receipt.selected_evidence.selected_path_ids) {
     hash = append_hash(hash, path_id);
   }
