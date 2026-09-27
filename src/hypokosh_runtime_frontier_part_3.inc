@@ -193,18 +193,24 @@
   result.lyapunov = critic.analyse(
       samples, options.dialectic.mode,
       options.lyapunov_weights, options.lyapunov_targets);
-  result.status = project_status(
+  const GovernedProjection projection = project_status(
       result.final_convergence, result.final_opposition,
       result.final_stability, result.final_admissibility,
       options.dialectic.mode);
+  result.status = projection.status;
+  result.receipt.terminal_cause = projection.cause;
   if (result.lyapunov.certificate.limit_cycle_detected ||
       result.lyapunov.certificate.oscillation_detected) {
     result.status = result.final_convergence.has_answer
                         ? GovernedEpistemicStatus::Contested
                         : GovernedEpistemicStatus::Abstain;
+    result.receipt.terminal_cause =
+        "lyapunov_limit_cycle_or_oscillation";
   } else if (result.status == GovernedEpistemicStatus::Resolved &&
              !result.lyapunov.certificate.practical_stability_observed) {
     result.status = GovernedEpistemicStatus::ProvisionallyResolved;
+    result.receipt.terminal_cause =
+        "practical_stability_not_observed";
   }
 
   result.primary_node = result.final_convergence.primary_node;
