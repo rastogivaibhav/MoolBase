@@ -16,8 +16,9 @@
   terminal.evidence_family_ids = selected_evidence_families(
       result.final_bundle, result.final_convergence);
   terminal.epistemic_state = governed_status_name(result.status);
-  terminal.reason =
-      "governed projection emitted the terminal epistemic state";
+  terminal.reason = result.receipt.terminal_cause.empty()
+      ? "governed projection emitted the terminal epistemic state"
+      : result.receipt.terminal_cause;
   append_epistemic_event(&result.receipt, std::move(terminal));
 
   result.receipt.snapshot_version = resolved_snapshot;
@@ -43,6 +44,8 @@
   result.receipt.escape_considered = true;
   result.receipt.convergence_executed = true;
   result.receipt.opposition_executed = options.enable_dwm;
+  result.receipt.bounded_recovery_executed =
+      result.receipt.expansion_rounds > 0;
   result.receipt.governed_projection_executed = true;
   result.receipt.no_silent_promotion = true;
 
@@ -58,6 +61,8 @@
       result.receipt.no_silent_promotion = false;
       result.status =
           GovernedEpistemicStatus::ProvisionallyResolved;
+      result.receipt.terminal_cause =
+          "non_observed_evidence_prevented_silent_resolution";
       result.residual_uncertainty.push_back(
           "selected evidence contains a non-observed edge and cannot be silently resolved");
       break;
@@ -120,6 +125,7 @@
     }
     result.receipt.model_world_event_hash =
         model_world_->event_log_hash();
+    result.receipt.model_world_updated = true;
   }
   return result;
 }
