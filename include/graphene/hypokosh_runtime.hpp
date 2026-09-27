@@ -138,8 +138,11 @@ struct ReasoningReceipt {
   bool escape_considered{false};
   bool convergence_executed{false};
   bool opposition_executed{false};
+  bool bounded_recovery_executed{false};
   bool governed_projection_executed{false};
+  bool model_world_updated{false};
   bool no_silent_promotion{true};
+  std::string terminal_cause;
 };
 
 struct HypoKoshRuntimeResult {
