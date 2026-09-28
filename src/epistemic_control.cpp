@@ -211,11 +211,33 @@ EpistemicAdmissibility EpistemicController::assess(
   const TargetFiber* selected_fiber =
       targets.empty() ? nullptr : find_target_fiber(bundle, selected_target);
 
-  // Contradiction is a property of the selected hypothesis, not the retrieval
-  // set as a whole. Opposition against a discarded alternative must not block
-  // an independently supported primary target.
+  // Contradiction is normally scoped to the selected hypothesis. However, if
+  // material opposition displaces a previously stronger supported target, the
+  // replacement must itself earn independent corroboration before that
+  // contestation can be cleared. This prevents "H1 was falsified, therefore
+  // weak H2 wins" while still allowing a well-corroborated H2 to replace H1.
   output.unresolved_contradiction =
       selected_fiber ? selected_fiber->contradiction_mass : 0.0;
+  double displaced_material_contradiction = 0.0;
+  if (selected_fiber &&
+      selected_fiber->independent_evidence_family_count < 2 &&
+      !targets.empty()) {
+    const TargetCandidate& selected_target = targets.front();
+    for (const TargetCandidate& candidate : targets) {
+      if (candidate.fiber->target_node == selected_target.fiber->target_node)
+        continue;
+      if (candidate.support_strength <= selected_target.support_strength)
+        continue;
+      if (candidate.opposition_strength < thresholds.material_contradiction)
+        continue;
+      displaced_material_contradiction =
+          std::max(displaced_material_contradiction,
+                   candidate.opposition_strength);
+    }
+  }
+  output.unresolved_contradiction =
+      std::max(output.unresolved_contradiction,
+               displaced_material_contradiction);
   output.contradiction_blocks_resolution =
       output.unresolved_contradiction >= thresholds.material_contradiction;
 
