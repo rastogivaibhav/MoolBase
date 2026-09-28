@@ -9,7 +9,8 @@ GovernedProjection project_status(
     const OppositionReport& opposition,
     const StabilityAssessment& stability,
     const EpistemicAdmissibility& admissibility,
-    QueryMode mode) {
+    QueryMode mode,
+    const StabilityThresholds& thresholds) {
   if (!convergence.has_answer) {
     return {
         stability.missing_evidence_penalty > 0.0
@@ -24,7 +25,8 @@ GovernedProjection project_status(
     return {GovernedEpistemicStatus::Contested,
             "semantic_verification_contradicted"};
   }
-  if (admissibility.contradiction_blocks_resolution) {
+  if (admissibility.contradiction_blocks_resolution ||
+      stability.contradiction_score >= thresholds.contradiction_block_threshold) {
     return {GovernedEpistemicStatus::Contested,
             "material_contradiction_blocks_resolution"};
   }
