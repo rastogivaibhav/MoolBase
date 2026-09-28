@@ -307,6 +307,8 @@ int main() {
   assert(r6_answer.primary_node == 2);
   assert(!r6_admissibility.sufficient_independent_support);
   assert(r6_admissibility.requires_external_verification);
+  assert(r6_admissibility.contradiction_blocks_resolution);
+  assert(!r6_admissibility.evidence_admissible);
 
   // R7: target ranking must be insertion-order invariant.
   BundleSet r7_reordered = r1_raw;
