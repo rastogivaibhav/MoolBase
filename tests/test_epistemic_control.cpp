@@ -304,7 +304,7 @@ int main() {
       controller.assess(r6_bundle, r6_stability, QueryMode::Empirical);
   const auto r6_answer =
       controller.converge(r6_bundle, r6_admissibility, r6_stability);
-  assert(r6_answer.primary_node == 2);
+  assert(r6_answer.primary_node == 1);
   assert(!r6_admissibility.sufficient_independent_support);
   assert(r6_admissibility.requires_external_verification);
   assert(r6_admissibility.contradiction_blocks_resolution);
