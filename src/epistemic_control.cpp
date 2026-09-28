@@ -365,8 +365,12 @@ ConvergedAnswer EpistemicController::converge(
   const auto primary_candidates =
       candidates_for_target(candidates, primary_node);
   const Candidate& primary = primary_candidates.front();
+  // has_answer means an operative candidate remains inspectable; it is not
+  // equivalent to governed resolution. Opposition attenuates confidence and
+  // admissibility/status can still block promotion, but a materially
+  // challenged candidate must remain visible for audit and dialectic repair.
   output.has_answer =
-      primary_target->belief_strength >=
+      primary_target->support_strength >=
       std::max(0.05, options.minimum_confidence * 0.50);
   output.primary_node = primary_node;
   output.confidence = primary_target->belief_strength;
