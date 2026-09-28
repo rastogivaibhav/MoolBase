@@ -25,8 +25,11 @@ GovernedProjection project_status(
     return {GovernedEpistemicStatus::Contested,
             "semantic_verification_contradicted"};
   }
-  if (admissibility.contradiction_blocks_resolution ||
-      stability.contradiction_score >= thresholds.contradiction_block_threshold) {
+  // The admissibility object is already scoped to the selected target and
+  // computed with the configured contradiction threshold. Do not reintroduce
+  // bundle-global contradiction here.
+  (void)thresholds;
+  if (admissibility.contradiction_blocks_resolution) {
     return {GovernedEpistemicStatus::Contested,
             "material_contradiction_blocks_resolution"};
   }
