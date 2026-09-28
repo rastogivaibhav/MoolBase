@@ -67,8 +67,8 @@ std::vector<Observation> load_observations(const fs::path& path) {
   while (std::getline(input, line)) {
     if (line.empty()) continue;
     auto fields = split(line, '\t');
-    // std::getline does not preserve a final empty field. Most independent
-    // observations legitimately have no depends_on value, so restore that
+    // std::getline does not preserve a final empty field. Most observations
+    // legitimately have no depends_on value, so restore that
     // empty sixth column rather than rejecting the sanitized runtime input.
     if (fields.size() == 5 && !line.empty() && line.back() == '\t') {
       fields.emplace_back();
