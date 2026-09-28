@@ -187,6 +187,35 @@ std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
   return output;
 }
 
+const TargetCandidate* select_primary_target(
+    const std::vector<TargetCandidate>& ranked_targets) {
+  if (ranked_targets.empty()) return nullptr;
+  const TargetCandidate* belief_leader = &ranked_targets.front();
+  const TargetCandidate* support_leader = belief_leader;
+  for (const TargetCandidate& candidate : ranked_targets) {
+    if (candidate.support_strength > support_leader->support_strength ||
+        (candidate.support_strength == support_leader->support_strength &&
+         candidate.fiber->target_node < support_leader->fiber->target_node)) {
+      support_leader = &candidate;
+    }
+  }
+
+  if (belief_leader->fiber->target_node ==
+      support_leader->fiber->target_node) {
+    return belief_leader;
+  }
+
+  // Opposition may demote the previously strongest support target, but a
+  // replacement is only allowed to become operative after it has earned
+  // independent corroboration. Otherwise retain the challenged hypothesis as
+  // the operative candidate and let admissibility mark it contested rather
+  // than silently promoting a weak alternative.
+  if (belief_leader->independent_support_count >= 2) {
+    return belief_leader;
+  }
+  return support_leader;
+}
+
 }  // namespace
 
 EpistemicAdmissibility EpistemicController::assess(
@@ -204,12 +233,14 @@ EpistemicAdmissibility EpistemicController::assess(
   EpistemicAdmissibility output;
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
+  const TargetCandidate* selected =
+      select_primary_target(targets);
   const uint32_t selected_target =
-      targets.empty() ? 0 : targets.front().fiber->target_node;
+      selected ? selected->fiber->target_node : 0;
   const auto selected_candidates =
       candidates_for_target(candidates, selected_target);
   const TargetFiber* selected_fiber =
-      targets.empty() ? nullptr : find_target_fiber(bundle, selected_target);
+      selected ? find_target_fiber(bundle, selected_target) : nullptr;
 
   // Contradiction is normally scoped to the selected hypothesis. However, if
   // material opposition displaces a previously stronger supported target, the
@@ -221,12 +252,11 @@ EpistemicAdmissibility EpistemicController::assess(
   double displaced_material_contradiction = 0.0;
   if (selected_fiber &&
       selected_fiber->independent_evidence_family_count < 2 &&
-      !targets.empty()) {
-    const TargetCandidate& selected_target = targets.front();
+      selected) {
     for (const TargetCandidate& candidate : targets) {
-      if (candidate.fiber->target_node == selected_target.fiber->target_node)
+      if (candidate.fiber->target_node == selected->fiber->target_node)
         continue;
-      if (candidate.support_strength <= selected_target.support_strength)
+      if (candidate.support_strength <= selected->support_strength)
         continue;
       if (candidate.opposition_strength < thresholds.material_contradiction)
         continue;
@@ -324,19 +354,25 @@ ConvergedAnswer EpistemicController::converge(
     return output;
   }
 
-  const TargetCandidate& primary_target = targets.front();
-  const uint32_t primary_node = primary_target.fiber->target_node;
+  const TargetCandidate* primary_target =
+      select_primary_target(targets);
+  if (!primary_target) {
+    output.residual_uncertainty.push_back(
+        "no target earned an operative selection");
+    return output;
+  }
+  const uint32_t primary_node = primary_target->fiber->target_node;
   const auto primary_candidates =
       candidates_for_target(candidates, primary_node);
   const Candidate& primary = primary_candidates.front();
   output.has_answer =
-      primary_target.belief_strength >=
+      primary_target->belief_strength >=
       std::max(0.05, options.minimum_confidence * 0.50);
   output.primary_node = primary_node;
-  output.confidence = primary_target.belief_strength;
+  output.confidence = primary_target->belief_strength;
   output.false_promotion_risk =
       primary.path->contains_hypothetical ? 1.0 : 0.0;
-  if (primary_target.opposition_strength > 0.0) {
+  if (primary_target->opposition_strength > 0.0) {
     output.residual_uncertainty.push_back(
         "target-level belief strength is attenuated by independent opposition");
   }
