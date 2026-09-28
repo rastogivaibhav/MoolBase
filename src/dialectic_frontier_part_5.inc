@@ -49,6 +49,15 @@
   return output;
 }
 
+BundleSet DialecticEngine::expand(
+    const std::vector<float>& query,
+    uint64_t query_signature,
+    const DialecticOptions& requested_options,
+    uint64_t snapshot_version) const {
+  return GrapheneEvidenceExpander(db_).expand(
+      query, query_signature, requested_options, snapshot_version);
+}
+
 ConvergedAnswer DialecticEngine::converge(
     const BundleSet& bundles,
     const DialecticOptions& requested_options) const {

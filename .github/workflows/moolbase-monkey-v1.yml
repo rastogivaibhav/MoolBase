@@ -1,0 +1,105 @@
+name: MoolBase adversarial monkey v1
+
+on:
+  pull_request:
+    paths:
+      - "include/graphene/**"
+      - "src/**"
+      - "tests/test_moolbase_monkey_v1.cpp"
+      - "tests/moolbase_monkey_v1_manifest.json"
+      - "CMakeLists.txt"
+      - ".github/workflows/moolbase-monkey-v1.yml"
+  push:
+    branches: [master]
+    paths:
+      - "include/graphene/**"
+      - "src/**"
+      - "tests/test_moolbase_monkey_v1.cpp"
+      - "tests/moolbase_monkey_v1_manifest.json"
+      - "CMakeLists.txt"
+      - ".github/workflows/moolbase-monkey-v1.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  adversarial-monkey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Freeze execution manifest before campaign
+        run: |
+          set -euo pipefail
+          mkdir -p reports/moolbase-monkey-v1
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          spec_path = Path("tests/moolbase_monkey_v1_manifest.json")
+          generator_path = Path("tests/test_moolbase_monkey_v1.cpp")
+          spec = json.loads(spec_path.read_text())
+          manifest = {
+              "schema": "moolbase-monkey-v1-run",
+              "commit": os.environ["GITHUB_SHA"],
+              "seed": spec["seed"],
+              "deterministic_episodes": spec["deterministic_episodes"],
+              "mutation_episodes": spec["mutation_episodes"],
+              "invariants": spec["invariants"],
+              "pass_definition": spec["pass_definition"],
+              "spec_sha256": hashlib.sha256(spec_path.read_bytes()).hexdigest(),
+              "generator_sha256": hashlib.sha256(generator_path.read_bytes()).hexdigest(),
+          }
+          Path("reports/moolbase-monkey-v1/run-manifest.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+          cat reports/moolbase-monkey-v1/run-manifest.json
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-monkey \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build monkey harness
+        run: |
+          cmake --build build-monkey --target graphenedb_moolbase_monkey_v1 -j2
+
+      - name: Execute frozen campaign
+        run: |
+          set -o pipefail
+          ./build-monkey/graphenedb_moolbase_monkey_v1 \
+            reports/moolbase-monkey-v1/results.json \
+            2>&1 | tee reports/moolbase-monkey-v1/console.log
+
+      - name: Verify declared counts
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("reports/moolbase-monkey-v1/run-manifest.json").read_text())
+          results_path = Path("reports/moolbase-monkey-v1/results.json")
+          if not results_path.exists():
+              raise SystemExit("monkey results missing")
+          result = json.loads(results_path.read_text())
+          assert result["seed"] == manifest["seed"]
+          assert result["deterministic_episodes"] == manifest["deterministic_episodes"]
+          assert result["mutation_episodes"] == manifest["mutation_episodes"]
+          if result["failures"]:
+              raise SystemExit(f"monkey invariant failures: {len(result['failures'])}")
+          print("moolbase_monkey_v1_gate=PASS")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-monkey-v1-${{ github.sha }}
+          path: reports/moolbase-monkey-v1/
+          if-no-files-found: warn
+          retention-days: 30

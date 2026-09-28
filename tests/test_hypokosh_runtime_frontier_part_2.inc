@@ -71,6 +71,37 @@
   assert(!result.evidence_edges.empty());
   assert(!result.final_self_healing.repairs.empty());
   assert(result.final_self_healing.rerun_required || !result.final_stability.requires_escape);
+  const CompactEpistemicReceipt compact_result =
+      build_compact_epistemic_receipt(result);
+  assert(compact_result.hypokosh_capability_enabled);
+  assert(compact_result.dwm_capability_enabled);
+  assert(compact_result.graphene_executed);
+  assert(compact_result.convergence_executed);
+  assert(compact_result.opposition_executed);
+  assert(!compact_result.opposition_research_enabled);
+  assert(compact_result.governed_projection_executed);
+  assert(!compact_result.terminal_cause.empty());
+
+  // RC3: DWM may affect terminal governance even when opposition research is
+  // disabled and therefore no Challenge/Reopen event is emitted. The compact
+  // receipt must still preserve that DWM/opposition executed.
+  if (result.status == GovernedEpistemicStatus::Contested &&
+      result.receipt.terminal_cause ==
+          "dialectic_opposition_blocks_resolution") {
+    bool saw_dwm_transition = false;
+    for (const NativeEpistemicEvent& event :
+         compact_result.epistemic_events) {
+      saw_dwm_transition =
+          saw_dwm_transition ||
+          event.source == EpistemicEventSource::DialecticalModelWorlds;
+    }
+    assert(!saw_dwm_transition);
+    assert(compact_result.dwm_capability_enabled);
+    assert(compact_result.opposition_executed);
+    assert(compact_result.terminal_cause ==
+           "dialectic_opposition_blocks_resolution");
+  }
+
   assert(!runtime_world.nodes().empty());
   assert(runtime_world.audit().empty());
   const fs::path model_world_path = directory / "model-world.snapshot";
@@ -81,6 +112,35 @@
   assert(reloaded_world.events().size() == runtime_world.events().size());
   assert(reloaded_world.event_log_hash() == runtime_world.event_log_hash());
   assert(reloaded_world.audit().empty());
+
+  // RC4: when opposition research is enabled, an actual DWM challenge must
+  // be visible as Challenge/Reopen events as well as durable capability flags.
+  RuntimeOptions g2_research_options = runtime_options;
+  g2_research_options.enable_dwm = true;
+  g2_research_options.enable_opposition_research = true;
+  g2_research_options.update_model_world = false;
+  const HypoKoshRuntimeResult g2_research_result =
+      runtime.reason({0.0f, 1.0f, 0.0f}, signature, g2_research_options);
+  assert(g2_research_result.receipt.dwm_capability_enabled);
+  assert(g2_research_result.receipt.opposition_research_enabled);
+  assert(g2_research_result.receipt.opposition_executed);
+  bool saw_challenge = false;
+  bool saw_reopen = false;
+  for (const NativeEpistemicEvent& event :
+       g2_research_result.receipt.epistemic_events) {
+    saw_challenge =
+        saw_challenge || event.type == EpistemicEventType::Challenge;
+    saw_reopen =
+        saw_reopen || event.type == EpistemicEventType::Reopen;
+  }
+  assert(saw_challenge);
+  assert(saw_reopen);
+  const CompactEpistemicReceipt g2_research_compact =
+      build_compact_epistemic_receipt(g2_research_result);
+  assert(g2_research_compact.dwm_capability_enabled);
+  assert(g2_research_compact.opposition_research_enabled);
+  assert(g2_research_compact.opposition_executed);
+  assert(g2_research_compact.bounded_recovery_executed);
 
   // Production capability boundary: disabling DWM must prevent opposition
   // execution even when opposition research is explicitly requested.
@@ -98,10 +158,17 @@
        g1_result.receipt.epistemic_events) {
     assert(event.source != EpistemicEventSource::DialecticalModelWorlds);
   }
+  const CompactEpistemicReceipt g1_compact =
+      build_compact_epistemic_receipt(g1_result);
+  assert(g1_compact.hypokosh_capability_enabled);
+  assert(!g1_compact.dwm_capability_enabled);
+  assert(!g1_compact.opposition_executed);
+  assert(g1_compact.graphene_executed);
+  assert(g1_compact.convergence_executed);
 
-  // G0 is not allowed to masquerade as the full runtime. Until the
-  // Graphene-only path is implemented, both an invalid DWM-without-HypoKosh
-  // request and a valid-shaped G0 request must fail explicitly.
+  // Genuine G0 must execute Graphene evidence/provenance only. Invalid
+  // DWM-without-HypoKosh remains rejected, while valid G0 must not construct
+  // or execute convergence/opposition semantics.
   RuntimeOptions invalid_g0 = runtime_options;
   invalid_g0.enable_hypokosh = false;
   bool invalid_dependency_rejected = false;
@@ -112,16 +179,45 @@
   }
   assert(invalid_dependency_rejected);
 
-  RuntimeOptions unsupported_g0 = runtime_options;
-  unsupported_g0.enable_hypokosh = false;
-  unsupported_g0.enable_dwm = false;
-  bool unsupported_g0_rejected = false;
-  try {
-    (void)runtime.reason({0.0f, 1.0f, 0.0f}, signature, unsupported_g0);
-  } catch (const std::logic_error&) {
-    unsupported_g0_rejected = true;
+  RuntimeOptions g0_options = runtime_options;
+  g0_options.enable_hypokosh = false;
+  g0_options.enable_dwm = false;
+  g0_options.enable_opposition_research = false;
+  g0_options.update_model_world = false;
+  ModelWorld g0_world;
+  CompleteHypoKoshRuntime g0_runtime(db, &g0_world);
+  const HypoKoshRuntimeResult g0_result =
+      g0_runtime.reason({0.0f, 1.0f, 0.0f}, signature, g0_options);
+  assert(g0_result.receipt.graphene_executed);
+  assert(!g0_result.receipt.hypokosh_capability_enabled);
+  assert(!g0_result.receipt.dwm_capability_enabled);
+  assert(!g0_result.receipt.stability_critic_executed);
+  assert(!g0_result.receipt.epistemic_admissibility_executed);
+  assert(!g0_result.receipt.convergence_executed);
+  assert(!g0_result.receipt.opposition_executed);
+  assert(!g0_result.receipt.bounded_recovery_executed);
+  assert(g0_result.receipt.governed_projection_executed);
+  assert(g0_result.receipt.terminal_cause ==
+         "g0_evidence_projection_no_hypothesis_selection");
+  assert(!g0_result.final_bundle.fibers.empty());
+  assert(!g0_result.evidence_edges.empty());
+  const CompactEpistemicReceipt g0_compact =
+      build_compact_epistemic_receipt(g0_result);
+  assert(!g0_compact.hypokosh_capability_enabled);
+  assert(!g0_compact.dwm_capability_enabled);
+  assert(g0_compact.graphene_executed);
+  assert(!g0_compact.convergence_executed);
+  assert(!g0_compact.opposition_executed);
+  assert(g0_compact.terminal_cause ==
+         "g0_evidence_projection_no_hypothesis_selection");
+  assert(g0_world.nodes().empty());
+  for (const NativeEpistemicEvent& event :
+       g0_result.receipt.epistemic_events) {
+    assert(event.source == EpistemicEventSource::GrapheneCore);
+    assert(event.type != EpistemicEventType::Challenge);
+    assert(event.type != EpistemicEventType::Reopen);
+    assert(event.type != EpistemicEventType::Revision);
   }
-  assert(unsupported_g0_rejected);
 
   const HypoKoshRuntimeResult repeated =
       runtime.reason({0.0f, 1.0f, 0.0f}, signature, runtime_options);
@@ -245,6 +341,102 @@
   assert(deep_result.receipt.frontier_progress_rounds >= 2);
   assert(!deep_result.receipt.stopped_for_no_progress);
   assert(!deep_result.lyapunov.certificate.limit_cycle_detected);
+
+  // RC5 / belief-revision execution: begin with one high-scoring H1 evidence
+  // family. Bounded independent-evidence recovery then exposes two H2 families
+  // whose target-level aggregate earns the operative revision.
+  const fs::path revision_directory =
+      fs::temp_directory_path() / "graphenedb_hypothesis_revision_runtime";
+  fs::remove_all(revision_directory);
+  GrapheneDB revision_db;
+  require(revision_db.open(revision_directory, options), "open revision db");
+  const uint64_t revision_signature = signature_for(55, 56);
+  uint32_t revision_h1 = 0;
+  uint32_t revision_h2 = 0;
+  uint32_t revision_h1_anchor = 0;
+  uint32_t revision_h2_anchor_a = 0;
+  uint32_t revision_h2_anchor_b = 0;
+  require(revision_db.put_node(
+      node("revision H1", {-1.0f, 0.0f, 0.0f}, revision_signature, true),
+      &revision_h1), "put revision H1");
+  require(revision_db.put_node(
+      node("revision H2", {-1.0f, 0.0f, 0.0f}, revision_signature, true),
+      &revision_h2), "put revision H2");
+  require(revision_db.put_node(
+      node("H1 initial evidence", {1.0f, 0.0f, 0.0f}, revision_signature),
+      &revision_h1_anchor), "put revision H1 anchor");
+  require(revision_db.put_node(
+      node("H2 independent evidence A", {0.995f, 0.05f, 0.0f},
+           revision_signature),
+      &revision_h2_anchor_a), "put revision H2 anchor A");
+  require(revision_db.put_node(
+      node("H2 independent evidence B", {0.99f, 0.10f, 0.0f},
+           revision_signature),
+      &revision_h2_anchor_b), "put revision H2 anchor B");
+  require(revision_db.put_edge(
+      {revision_h1, revision_h1_anchor, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.95,
+       {{"source_id", "revision-h1-source"},
+        {"evidence_family_id", "revision-h1-family"}}}),
+      "put revision H1 support");
+  require(revision_db.put_edge(
+      {revision_h2, revision_h2_anchor_a, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.90,
+       {{"source_id", "revision-h2-a"},
+        {"evidence_family_id", "revision-h2-family-a"}}}),
+      "put revision H2 support A");
+  require(revision_db.put_edge(
+      {revision_h2, revision_h2_anchor_b, EdgeOrigin::Observed,
+       EdgeRole::Supports, 0.90,
+       {{"source_id", "revision-h2-b"},
+        {"evidence_family_id", "revision-h2-family-b"}}}),
+      "put revision H2 support B");
+
+  RuntimeOptions revision_options;
+  revision_options.enable_dwm = false;
+  revision_options.enable_opposition_research = false;
+  revision_options.update_model_world = false;
+  revision_options.dialectic.mode = QueryMode::Empirical;
+  revision_options.dialectic.semantic_candidates = 1;
+  revision_options.dialectic.max_hops = 1;
+  revision_options.dialectic.max_paths = 8;
+  revision_options.dialectic.max_paths_per_root = 4;
+  revision_options.dialectic.max_visited_states = 64;
+  revision_options.dialectic.minimum_confidence = 0.20;
+  revision_options.max_recursive_cycles = 1;
+
+  CompleteHypoKoshRuntime revision_runtime(revision_db);
+  const HypoKoshRuntimeResult revision_result =
+      revision_runtime.reason(
+          {1.0f, 0.0f, 0.0f}, revision_signature, revision_options);
+  assert(revision_result.primary_node == revision_h2);
+  bool saw_revision = false;
+  for (const NativeEpistemicEvent& event :
+       revision_result.receipt.epistemic_events) {
+    if (event.type != EpistemicEventType::Revision) continue;
+    saw_revision = true;
+    assert(event.source == EpistemicEventSource::HypoKosh);
+    assert(event.previous_hypothesis_node == revision_h1);
+    assert(event.hypothesis_node == revision_h2);
+    assert(!event.evidence_family_ids.empty());
+    assert(event.reason ==
+           "bounded recovery changed the operative hypothesis");
+  }
+  assert(saw_revision);
+  const CompactEpistemicReceipt revision_compact =
+      build_compact_epistemic_receipt(revision_result);
+  bool compact_saw_revision = false;
+  for (const NativeEpistemicEvent& event :
+       revision_compact.epistemic_events) {
+    if (event.type == EpistemicEventType::Revision) {
+      compact_saw_revision = true;
+      assert(event.previous_hypothesis_node == revision_h1);
+      assert(event.hypothesis_node == revision_h2);
+    }
+  }
+  assert(compact_saw_revision);
+  require(revision_db.close(), "close revision db");
+  fs::remove_all(revision_directory);
 
   require(db.close(), "close runtime database");
   fs::remove_all(directory);

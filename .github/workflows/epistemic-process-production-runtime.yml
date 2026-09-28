@@ -1,0 +1,119 @@
+name: Epistemic process production runtime
+
+on:
+  pull_request:
+    paths:
+      - "include/graphene/**"
+      - "src/**"
+      - "tools/epistemic_process_runtime_runner.cpp"
+      - "benchmarks/epistemic_process_v1/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-production-runtime.yml"
+  push:
+    branches: [master]
+    paths:
+      - "include/graphene/**"
+      - "src/**"
+      - "tools/epistemic_process_runtime_runner.cpp"
+      - "benchmarks/epistemic_process_v1/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-production-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  production-runtime-unscored:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Configure production runtime runner
+        run: |
+          cmake -S . -B build-epistemic-process \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build production runtime runner
+        run: |
+          cmake --build build-epistemic-process \
+            --target graphenedb_epistemic_process_runtime_runner -j2
+
+      - name: Run anti-oracle contract
+        working-directory: benchmarks/epistemic_process_v1
+        run: python test_run_production_v1.py
+
+      - name: Execute B0 G0 G1 G2 through production boundary
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          runner="../../build-epistemic-process/graphenedb_epistemic_process_runtime_runner"
+          for config in B0 G0 G1 G2; do
+            python run_production_v1.py \
+              --tasks tasks_v1.json \
+              --runtime-runner "$runner" \
+              --configuration "$config" \
+              --out "artifacts/raw-$config.json" \
+              --mode unscored-dry-run
+            python adapt_v1.py \
+              --raw "artifacts/raw-$config.json" \
+              --out "artifacts/receipts-$config.json" \
+              --mode unscored-dry-run
+            python evaluate_v1.py \
+              --tasks tasks_v1.json \
+              --receipts "artifacts/receipts-$config.json" \
+              --out "artifacts/evaluation-$config.json" \
+              --mode unscored-dry-run
+          done
+
+      - name: Verify mechanical capability boundaries
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for config in ("B0", "G0", "G1", "G2"):
+              raw = json.loads(Path(f"artifacts/raw-{config}.json").read_text())
+              assert raw["score_bearing"] is False
+              assert raw["runner"] == "production-runtime-v1"
+              assert len(raw["episodes"]) == 4
+              assert not any(ep.get("failures") for ep in raw["episodes"])
+              if config == "B0":
+                  continue
+              for ep in raw["episodes"]:
+                  assert ep["runtime_receipts"]
+                  for receipt in ep["runtime_receipts"]:
+                      assert receipt["graphene_executed"] is True
+                      if config == "G0":
+                          assert receipt["hypokosh_capability_enabled"] is False
+                          assert receipt["dwm_capability_enabled"] is False
+                          assert receipt["convergence_executed"] is False
+                          assert receipt["opposition_executed"] is False
+                      elif config == "G1":
+                          assert receipt["hypokosh_capability_enabled"] is True
+                          assert receipt["dwm_capability_enabled"] is False
+                          assert receipt["convergence_executed"] is True
+                          assert receipt["opposition_executed"] is False
+                      else:
+                          assert receipt["hypokosh_capability_enabled"] is True
+                          assert receipt["dwm_capability_enabled"] is True
+                          assert receipt["convergence_executed"] is True
+                          assert receipt["opposition_executed"] is True
+          print("production_capability_boundaries_passed=true")
+          PY
+
+      - name: Upload UNSCORED evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-process-production-unscored-${{ github.sha }}
+          path: benchmarks/epistemic_process_v1/artifacts/
+          retention-days: 30

@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""UNSCORED production-runtime runner for Epistemic Process v1.
+
+B0 is an intentionally stateless local baseline. G0/G1/G2 are executed by the
+compiled production C++ runtime runner. Only observation fields needed to
+materialise evidence are passed to production; scoring-only task metadata is
+never serialized into the system-under-test input.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Sequence
+
+CONFIGS = ("B0", "G0", "G1", "G2")
+RUNTIME_FIELDS = ("step", "id", "family", "kind", "bears_on", "depends_on")
+
+
+def load(path: str | Path) -> Any:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def dump(path: str | Path, value: Any) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
+    """Bounded/stateless baseline: only the current observation is visible."""
+    steps: List[Dict[str, Any]] = []
+    for event in task["events"]:
+        kind = str(event["kind"])
+        if kind == "support":
+            decision = {
+                "status": "provisional",
+                "hypothesis": str(event["bears_on"]),
+                "evidence_refs": [str(event["id"])],
+            }
+        else:
+            decision = {
+                "status": "abstain",
+                "hypothesis": None,
+                "evidence_refs": [str(event["id"])],
+            }
+        steps.append({"step": int(event["step"]), "decision": decision})
+    return {
+        "episode_id": task["id"],
+        "configuration": "B0",
+        "hypothesis_nodes": {"H1": 101, "H2": 102},
+        "edge_to_evidence_ref": {},
+        "steps": steps,
+        "failures": [],
+        "runtime_receipts": [],
+    }
+
+
+def _sanitized_row(event: Mapping[str, Any]) -> str:
+    depends = ",".join(str(value) for value in (event.get("depends_on") or []))
+    values = [
+        str(event["step"]),
+        str(event["id"]),
+        str(event["family"]),
+        str(event["kind"]),
+        str(event["bears_on"]),
+        depends,
+    ]
+    if any("\t" in value or "\n" in value for value in values):
+        raise ValueError("observation field contains unsupported TSV delimiter")
+    return "\t".join(values)
+
+
+def _runtime_episode(
+    task: Mapping[str, Any],
+    configuration: str,
+    runtime_runner: Path,
+    seed: int,
+    work_root: Path,
+) -> Dict[str, Any]:
+    episode_id = str(task["id"])
+    safe_id = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in episode_id)
+    sanitized = work_root / f"{configuration}-{safe_id}.tsv"
+    sanitized.write_text(
+        "\n".join(_sanitized_row(event) for event in task["events"]) + "\n",
+        encoding="utf-8",
+    )
+    db_dir = work_root / f"db-{configuration}-{safe_id}"
+    proc = subprocess.run(
+        [
+            str(runtime_runner),
+            configuration,
+            episode_id,
+            str(sanitized),
+            str(db_dir),
+            str(seed),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return {
+            "episode_id": episode_id,
+            "configuration": configuration,
+            "hypothesis_nodes": {},
+            "edge_to_evidence_ref": {},
+            "steps": [],
+            "failures": [
+                f"production runtime exit={proc.returncode}",
+                proc.stderr.strip(),
+            ],
+            "runtime_receipts": [],
+        }
+    try:
+        value = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        return {
+            "episode_id": episode_id,
+            "configuration": configuration,
+            "hypothesis_nodes": {},
+            "edge_to_evidence_ref": {},
+            "steps": [],
+            "failures": [
+                f"production runtime emitted malformed JSON: {exc}",
+                proc.stdout[-2000:],
+            ],
+            "runtime_receipts": [],
+        }
+    return value
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tasks", required=True)
+    parser.add_argument("--runtime-runner", required=True)
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--configuration", choices=CONFIGS, action="append")
+    parser.add_argument("--seed", type=int, default=20260927)
+    parser.add_argument(
+        "--mode",
+        choices=["unscored-dry-run"],
+        default="unscored-dry-run",
+    )
+    args = parser.parse_args()
+
+    tasks = load(args.tasks)
+    if tasks.get("reporting", {}).get("score_bearing_allowed"):
+        raise SystemExit("production runner is UNSCORED until a dedicated freeze change")
+    configs: Sequence[str] = tuple(args.configuration or CONFIGS)
+    runtime_runner = Path(args.runtime_runner).resolve()
+    if not runtime_runner.exists():
+        raise SystemExit(f"runtime runner does not exist: {runtime_runner}")
+
+    episodes: List[Dict[str, Any]] = []
+    with tempfile.TemporaryDirectory(prefix="moolbase-epistemic-process-") as td:
+        work_root = Path(td)
+        for config in configs:
+            for task in tasks["episodes"]:
+                if config == "B0":
+                    episodes.append(_b0_episode(task))
+                else:
+                    episodes.append(
+                        _runtime_episode(
+                            task, config, runtime_runner, args.seed, work_root
+                        )
+                    )
+
+    result = {
+        "protocol": tasks["protocol"],
+        "mode": args.mode,
+        "runner": "production-runtime-v1",
+        "score_bearing": False,
+        "seed": args.seed,
+        "runtime_input_fields": list(RUNTIME_FIELDS),
+        "episodes": episodes,
+    }
+    dump(args.out, result)
+    print(
+        json.dumps(
+            {
+                "episodes": len(episodes),
+                "configurations": list(configs),
+                "runtime_failures": sum(bool(ep["failures"]) for ep in episodes),
+                "score_bearing": False,
+            },
+            sort_keys=True,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()
