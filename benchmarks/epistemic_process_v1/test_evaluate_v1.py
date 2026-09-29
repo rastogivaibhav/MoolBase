@@ -158,6 +158,8 @@ def full_receipt(include_duplicate=False):
                 "dwm_capability_enabled": True,
                 "convergence_executed": True,
                 "opposition_executed": True,
+                "bounded_recovery_executed": True,
+                "terminal_cause": "earned_resolution",
             }
         ],
         "adapter_failure": False,
@@ -214,6 +216,18 @@ class EvaluatorMetricTests(unittest.TestCase):
             "evidence_family_identity", completeness["missing_fields"]
         )
         self.assertIn("refutation_evidence", completeness["missing_fields"])
+
+    def test_receipt_completeness_fails_when_visible_revision_lacks_transition(self):
+        receipt = full_receipt()
+        receipt["transitions"] = [
+            transition
+            for transition in receipt["transitions"]
+            if transition["type"] != "revise"
+        ]
+        row = evaluate_v1.score_episode(TASK, receipt)
+        completeness = row["receipt_completeness"]
+        self.assertFalse(completeness["complete"])
+        self.assertIn("revision_transition", completeness["missing_fields"])
 
     def test_revision_inertia_counts_only_later_operative_steps(self):
         receipt = full_receipt()
