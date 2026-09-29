@@ -1,0 +1,181 @@
+name: Epistemic Process v1 score-bearing execution
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "benchmarks/epistemic_process_v1/score_freeze_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - name: Checkout exact frozen commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify immutable score authorization
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          python score_gate_v1.py --manifest score_freeze_v1.json
+          python freeze_guard_v1.py \
+            --freeze-manifest score_freeze_v1.json \
+            --require-freeze-ready \
+            --require-score-gate
+
+      - name: Re-run measurement contract before scores
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          python test_adapt_v1.py
+          python test_evaluate_v1.py
+          python test_score_gate_v1.py
+          python test_analyse_v1.py
+          python test_run_production_v1.py
+
+      - name: Run exact-source alpha gate before score visibility
+        env:
+          GRAPHENEDB_CROSS_DATASET_MODE: offline
+          GRAPHENEDB_JOBS: "2"
+        run: bash scripts/run_alpha_release_gate.sh
+
+      - name: Reproduce frozen flagship before score visibility
+        run: python3 scripts/run_flagship_proof.py
+
+      - name: Run flagship perturbation pack before score visibility
+        run: python3 scripts/run_flagship_perturbations_v1.py
+
+      - name: Configure frozen runtime and adversarial runners
+        run: |
+          cmake -S . -B build-score-v1 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build frozen execution targets
+        run: |
+          cmake --build build-score-v1 --parallel 2 --target \
+            graphenedb_epistemic_process_runtime_runner \
+            graphenedb_moolbase_monkey_v1 \
+            graphenedb_moolbase_multiseed_v1 \
+            graphenedb_moolbase_metamorphic_v1
+
+      - name: Run final claim-killing adversarial checks
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-score-v1/prescore
+          ./build-score-v1/graphenedb_moolbase_metamorphic_v1 \
+            | tee reports/epistemic-process-score-v1/prescore/metamorphic.log
+          ./build-score-v1/graphenedb_moolbase_monkey_v1 \
+            reports/epistemic-process-score-v1/prescore/monkey.json \
+            | tee reports/epistemic-process-score-v1/prescore/monkey.log
+          mkdir -p reports/epistemic-process-score-v1/prescore/multiseed
+          for seed in 20260927 20260928 20260929; do
+            ./build-score-v1/graphenedb_moolbase_multiseed_v1 \
+              "$seed" 100 \
+              "reports/epistemic-process-score-v1/prescore/multiseed/$seed.json" \
+              | tee "reports/epistemic-process-score-v1/prescore/multiseed/$seed.log"
+          done
+
+      - name: Execute first frozen score-bearing B0 G0 G1 G2 ablation
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          out="../../reports/epistemic-process-score-v1/scored"
+          mkdir -p "$out"
+          runner="../../build-score-v1/graphenedb_epistemic_process_runtime_runner"
+          manifest="score_freeze_v1.json"
+          for config in B0 G0 G1 G2; do
+            python run_production_v1.py \
+              --tasks tasks_v1.json \
+              --runtime-runner "$runner" \
+              --configuration "$config" \
+              --seed 20260927 \
+              --out "$out/raw-$config.json" \
+              --mode score \
+              --freeze-manifest "$manifest"
+            python adapt_v1.py \
+              --raw "$out/raw-$config.json" \
+              --out "$out/receipts-$config.json" \
+              --mode score \
+              --freeze-manifest "$manifest"
+            python evaluate_v1.py \
+              --tasks tasks_v1.json \
+              --receipts "$out/receipts-$config.json" \
+              --out "$out/scores-$config.json" \
+              --mode score \
+              --freeze-manifest "$manifest"
+          done
+          python analyse_v1.py \
+            --artifacts-dir "$out" \
+            --out "$out/aggregate-report.json"
+
+      - name: Verify score artifacts are complete without rewriting failures
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("reports/epistemic-process-score-v1/scored")
+          for config in ("B0", "G0", "G1", "G2"):
+              raw = json.loads((root / f"raw-{config}.json").read_text())
+              scores = json.loads((root / f"scores-{config}.json").read_text())
+              assert raw["score_bearing"] is True
+              assert scores["score_bearing"] is True
+              assert len(raw["episodes"]) == 4
+              assert len(scores["episodes"]) == 4
+              # Failures remain in their artifacts and aggregate failure_classes.
+              assert "failure_classes" in scores["aggregate"]
+          analysis = json.loads((root / "aggregate-report.json").read_text())
+          assert set(analysis["configurations"]) == {"B0", "G0", "G1", "G2"}
+          assert analysis["claim_interpretation"] == "not_performed_by_script"
+          print("score_artifact_integrity=PASS")
+          PY
+
+      - name: Write immutable environment and checksums
+        run: |
+          set -euo pipefail
+          root="reports/epistemic-process-score-v1"
+          mkdir -p "$root"
+          {
+            echo "experiment_id=$(python -c 'import json; print(json.load(open("benchmarks/epistemic_process_v1/score_freeze_v1.json"))["experiment_id"])')"
+            echo "commit=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+            echo "platform=$(uname -a)"
+            echo "cmake=$(cmake --version | head -n 1)"
+            echo "compiler=$(c++ --version | head -n 1)"
+            echo "python=$(python3 --version 2>&1)"
+            echo "seed=20260927"
+          } > "$root/environment-receipt.txt"
+          cp benchmarks/epistemic_process_v1/score_freeze_v1.json \
+             "$root/score_freeze_v1.json"
+          find "$root" -type f -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > "$root/SHA256SUMS"
+
+      - name: Upload immutable score-bearing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-process-v1-score-${{ github.sha }}
+          path: |
+            reports/epistemic-process-score-v1/
+            reports/alpha-release-gate/
+            reports/flagship-proof/
+            reports/flagship-perturbations-v1/
+          if-no-files-found: error
+          retention-days: 90
