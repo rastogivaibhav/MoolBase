@@ -303,14 +303,26 @@ int main(int argc, char** argv) {
           << (receipt.hypokosh_capability_enabled ? "true" : "false")
           << ",\"dwm_capability_enabled\":"
           << (receipt.dwm_capability_enabled ? "true" : "false")
+          << ",\"opposition_research_enabled\":"
+          << (receipt.opposition_research_enabled ? "true" : "false")
           << ",\"graphene_executed\":"
           << (receipt.graphene_executed ? "true" : "false")
+          << ",\"path_verifier_executed\":"
+          << (receipt.path_verifier_executed ? "true" : "false")
+          << ",\"stability_critic_executed\":"
+          << (receipt.stability_critic_executed ? "true" : "false")
+          << ",\"epistemic_admissibility_executed\":"
+          << (receipt.epistemic_admissibility_executed ? "true" : "false")
           << ",\"convergence_executed\":"
           << (receipt.convergence_executed ? "true" : "false")
           << ",\"opposition_executed\":"
           << (receipt.opposition_executed ? "true" : "false")
           << ",\"bounded_recovery_executed\":"
           << (receipt.bounded_recovery_executed ? "true" : "false")
+          << ",\"governed_projection_executed\":"
+          << (receipt.governed_projection_executed ? "true" : "false")
+          << ",\"model_world_updated\":"
+          << (receipt.model_world_updated ? "true" : "false")
           << ",\"expansion_rounds\":" << receipt.expansion_rounds
           << ",\"visited_states\":" << steps[index].result.final_bundle.visited_states
           << ",\"evidence_edge_count\":" << steps[index].result.evidence_edges.size()
