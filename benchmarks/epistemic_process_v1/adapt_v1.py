@@ -488,17 +488,32 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     parser.add_argument(
         "--mode",
-        choices=["unscored-dry-run"],
+        choices=["unscored-dry-run", "score"],
         default="unscored-dry-run",
-        help="Adapters cannot enable score-bearing execution.",
+    )
+    parser.add_argument(
+        "--freeze-manifest",
+        help="required in score mode; verified by score_gate_v1.py",
     )
     args = parser.parse_args()
 
     raw = load(args.raw)
     if raw.get("protocol") != "epistemic-process-v1":
         raise SystemExit("unexpected protocol")
-    if raw.get("mode") not in (None, "unscored-dry-run"):
-        raise SystemExit("adapter accepts UNSCORED input only")
+    if raw.get("mode") not in (None, args.mode):
+        raise SystemExit("adapter mode does not match raw runtime mode")
+    if args.mode == "score":
+        if not args.freeze_manifest:
+            raise SystemExit(
+                "score-bearing execution blocked: freeze manifest is required"
+            )
+        from score_gate_v1 import verify_score_gate
+
+        gate = verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit(
+                "score-bearing execution blocked: " + "; ".join(gate["errors"])
+            )
 
     receipts = [adapt_episode(ep) for ep in raw.get("episodes", [])]
     dump(args.out, receipts)
