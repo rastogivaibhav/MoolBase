@@ -253,20 +253,18 @@ int main() {
           m9_after.confidence < m9_before.confidence,
       "M9_decisive_contradiction");
 
-  // M10: verification breaks an otherwise equal evidence tie.
+  // M10: semantic verification breaks an otherwise equal target tie.
+  // Keep support strength, independent-family count and best-path score equal
+  // so verification is the only ranking coordinate that changes.
   RootBundle m10_h1;
   m10_h1.root_node = 1;
   m10_h1.paths.push_back(path(1, 501, "m10-a", "m10-fa", 0.75));
   RootBundle m10_h2;
   m10_h2.root_node = 2;
-  // Two 0.50 independent supports combine to exactly 0.75 in binary
-  // arithmetic, matching H1 without a floating-point near-tie.
-  m10_h2.paths.push_back(path(2, 502, "m10-b", "m10-fb", 0.50));
-  m10_h2.paths.push_back(path(2, 503, "m10-c", "m10-fc", 0.50));
+  m10_h2.paths.push_back(path(2, 502, "m10-b", "m10-fb", 0.75));
   const auto m10_before = converge(bundle({m10_h2, m10_h1}, 103));
-  for (auto& candidate : m10_h2.paths) {
-    candidate.semantic_verification = SemanticVerificationStatus::Verified;
-  }
+  m10_h2.paths.front().semantic_verification =
+      SemanticVerificationStatus::Verified;
   const auto m10_after = converge(bundle({m10_h2, m10_h1}, 103));
   require(m10_before.primary_node == 1 && m10_after.primary_node == 2,
           "M10_semantic_verification");
