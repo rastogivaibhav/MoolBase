@@ -290,6 +290,30 @@ int main() {
   assert(controller.converge(r5_bundle, r5_admissibility, r5_stability)
              .primary_node == 1);
 
+  // R5b: verification must remain the tie-break even when the verified target
+  // has the higher deterministic target id. This prevents the corroboration
+  // handoff safeguard from erasing the declared verification ordering.
+  BundleSet r5b_raw;
+  r5b_raw.snapshot_version = 351;
+  RootBundle r5b_h1;
+  r5b_h1.root_node = 1;
+  r5b_h1.paths.push_back(
+      path(1, {611}, "unverified-low-id", 1.0, false, 0.90,
+           SemanticVerificationStatus::Unverified, "r5b-a"));
+  RootBundle r5b_h2;
+  r5b_h2.root_node = 2;
+  r5b_h2.paths.push_back(
+      path(2, {612}, "verified-high-id", 1.0, false, 0.90,
+           SemanticVerificationStatus::Verified, "r5b-b"));
+  r5b_raw.roots = {r5b_h1, r5b_h2};
+  const FiberBundle r5b_bundle = FiberBundleBuilder().build(r5b_raw);
+  const auto r5b_stability = critic.assess(r5b_bundle, QueryMode::Empirical);
+  const auto r5b_admissibility =
+      controller.assess(r5b_bundle, r5b_stability, QueryMode::Empirical);
+  assert(controller.converge(
+             r5b_bundle, r5b_admissibility, r5b_stability)
+             .primary_node == 2);
+
   // R6: a better alternative can become operative without being silently
   // promoted to independently corroborated evidence.
   BundleSet r6_raw = r1_raw;
