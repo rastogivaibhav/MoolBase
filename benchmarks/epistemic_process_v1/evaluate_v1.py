@@ -329,8 +329,21 @@ def _receipt_completeness(
         required.add("active_or_competing_hypotheses")
     if receipt.get("challenges"):
         required.add("challenge_event")
+        if any(challenge.get("reopen_nodes") for challenge in receipt["challenges"]):
+            required.add("reopen_transition")
     if any(t.get("type") == "reopen" for t in receipt.get("transitions", [])):
         required.add("reopen_transition")
+
+    # A visible operative-hypothesis change makes an explicit revision
+    # transition applicable. The adapter must not let a changed terminal answer
+    # substitute for the runtime-observable causal transition.
+    operative = [
+        decision.get("hypothesis")
+        for decision in receipt.get("decisions", [])
+        if decision.get("hypothesis") is not None
+    ]
+    if any(left != right for left, right in zip(operative, operative[1:])):
+        required.add("revision_transition")
     if any(t.get("type") == "revise" for t in receipt.get("transitions", [])):
         required.add("revision_transition")
 
@@ -365,7 +378,21 @@ def _receipt_completeness(
         present.add("dependency_identity")
     if receipt.get("adapter_receipt"):
         present.add("adapter_provenance")
-    if receipt.get("execution_receipts"):
+    execution_receipts = receipt.get("execution_receipts") or []
+    execution_required = {
+        "hypokosh_capability_enabled",
+        "dwm_capability_enabled",
+        "graphene_executed",
+        "convergence_executed",
+        "opposition_executed",
+        "bounded_recovery_executed",
+        "terminal_cause",
+    }
+    if execution_receipts and all(
+        execution_required.issubset(set(item))
+        for item in execution_receipts
+        if isinstance(item, Mapping)
+    ):
         present.add("execution_provenance")
     if receipt.get("hypotheses"):
         present.add("active_or_competing_hypotheses")
