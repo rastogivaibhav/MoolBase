@@ -42,6 +42,28 @@ def git_head(root: Path = ROOT) -> str | None:
     return proc.stdout.strip() or None
 
 
+def is_ancestor(
+    candidate: str,
+    *,
+    root: Path = ROOT,
+) -> bool | None:
+    try:
+        proc = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", candidate, "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if proc.returncode == 0:
+        return True
+    if proc.returncode == 1:
+        return False
+    return None
+
+
 def changes_since_candidate(
     candidate: str,
     *,
@@ -118,7 +140,14 @@ def verify_score_gate(
     candidate = str(manifest.get("benchmark_candidate_commit") or "")
     allowed_changes = set(manifest.get("allowed_changes_after_candidate") or [])
     observed_changes = None
+    if not candidate:
+        errors.append("freeze manifest has no benchmark_candidate_commit")
     if candidate and git_head(root):
+        ancestor = is_ancestor(candidate, root=root)
+        if ancestor is False:
+            errors.append("benchmark candidate commit is not an ancestor of HEAD")
+        elif ancestor is None:
+            errors.append("cannot verify benchmark candidate ancestry")
         observed_changes = changes_since_candidate(candidate, root=root)
         if observed_changes is None:
             errors.append(
