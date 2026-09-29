@@ -111,7 +111,7 @@ def run_episode(task: Mapping[str, Any], configuration: str) -> Dict[str, Any]:
         native: List[Dict[str, Any]] = [{
             "source": "hypokosh",
             "type": "hypothesis_set",
-            "hypothesis_node": hypothesis_nodes.get(active or previous, 0),
+            "hypothesis_node": hypothesis_nodes.get(active or previous),
             "competing_hypotheses": [101, 102],
             "evidence_edges": evidence_edges,
             "epistemic_state": "contested" if not resolved else "resolved",
@@ -154,7 +154,7 @@ def run_episode(task: Mapping[str, Any], configuration: str) -> Dict[str, Any]:
         native.append({
             "source": "graphene_core",
             "type": "terminal",
-            "hypothesis_node": hypothesis_nodes.get(active, 0),
+            "hypothesis_node": hypothesis_nodes.get(active),
             "competing_hypotheses": [101, 102],
             "evidence_edges": evidence_edges,
             "epistemic_state": status,
