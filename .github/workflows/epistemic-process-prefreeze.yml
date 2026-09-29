@@ -41,6 +41,7 @@ jobs:
           python test_adapt_v1.py
           python test_evaluate_v1.py
           python test_score_gate_v1.py
+          python test_analyse_v1.py
           python test_run_production_v1.py
           python freeze_guard_v1.py --require-freeze-ready
 
