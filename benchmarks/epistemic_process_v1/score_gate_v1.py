@@ -42,6 +42,26 @@ def git_head(root: Path = ROOT) -> str | None:
     return proc.stdout.strip() or None
 
 
+def changes_since_candidate(
+    candidate: str,
+    *,
+    root: Path = ROOT,
+) -> list[str] | None:
+    try:
+        proc = subprocess.run(
+            ["git", "diff", "--name-only", f"{candidate}..HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
 def verify_score_gate(
     manifest_path: Path,
     *,
@@ -95,6 +115,23 @@ def verify_score_gate(
     if not isinstance(profiles, Mapping) or set(profiles) != required_profiles:
         errors.append("freeze manifest must define exactly B0/G0/G1/G2 profiles")
 
+    candidate = str(manifest.get("benchmark_candidate_commit") or "")
+    allowed_changes = set(manifest.get("allowed_changes_after_candidate") or [])
+    observed_changes = None
+    if candidate and git_head(root):
+        observed_changes = changes_since_candidate(candidate, root=root)
+        if observed_changes is None:
+            errors.append(
+                "cannot verify repository changes since benchmark candidate commit"
+            )
+        else:
+            unexpected = sorted(set(observed_changes) - allowed_changes)
+            if unexpected:
+                errors.append(
+                    "unexpected changes after benchmark candidate: "
+                    + ", ".join(unexpected)
+                )
+
     policies = manifest.get("policies")
     required_policies = {
         "seed_policy",
@@ -124,6 +161,7 @@ def verify_score_gate(
         ),
         "head": git_head(root),
         "observed_hashes": observed,
+        "observed_changes_after_candidate": observed_changes,
         "manifest": manifest,
     }
 
