@@ -469,18 +469,21 @@ def score_episode(
     task: Mapping[str, Any],
     receipt: Mapping[str, Any],
 ) -> Dict[str, Any]:
+    # An explicit adapter failure is already a preserved measurement failure.
+    # Do not reclassify it as malformed merely because normal-success fields
+    # are absent from the failure receipt.
+    if receipt.get("adapter_failure"):
+        return _failure_row(
+            task,
+            adapter_failure=True,
+            details=receipt.get("adapter_failure_detail", []),
+        )
     missing = sorted(REQUIRED_RECEIPT_FIELDS - set(receipt))
     if missing:
         return _failure_row(
             task,
             malformed=True,
             details=["missing receipt fields: " + ", ".join(missing)],
-        )
-    if receipt.get("adapter_failure"):
-        return _failure_row(
-            task,
-            adapter_failure=True,
-            details=receipt.get("adapter_failure_detail", []),
         )
 
     events = _event_map(task)
