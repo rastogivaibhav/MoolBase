@@ -221,7 +221,8 @@ class EvaluatorMetricTests(unittest.TestCase):
         self.assertIn(
             "evidence_family_identity", completeness["missing_fields"]
         )
-        self.assertIn("refutation_evidence", completeness["missing_fields"])
+        self.assertIn("dependency_identity", completeness["missing_fields"])
+        self.assertNotIn("refutation_evidence", completeness["missing_fields"])
 
     def test_receipt_completeness_fails_when_visible_revision_lacks_transition(self):
         receipt = full_receipt()
