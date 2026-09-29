@@ -22,13 +22,34 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Verify score lock and oracle boundary
+      - name: Verify production/oracle boundary and score gate
         run: python benchmarks/epistemic_process_v1/freeze_guard_v1.py
-      - name: Prove production runtime is ready while score lock remains closed
-        shell: bash
+      - name: Prove pre-freeze or frozen state is mechanically valid
         run: |
-          output=$(python benchmarks/epistemic_process_v1/freeze_guard_v1.py --require-freeze-ready 2>&1)
-          echo "$output" | grep -q '"freeze_ready": true'
-          echo "$output" | grep -q '"production_runner_present": true'
-          echo "$output" | grep -q '"score_bearing_locked": true'
-          echo "$output" | grep -q '"production_runner_errors": \[\]'
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          proc = subprocess.run(
+              [
+                  sys.executable,
+                  "benchmarks/epistemic_process_v1/freeze_guard_v1.py",
+                  "--require-freeze-ready",
+              ],
+              capture_output=True,
+              text=True,
+              check=True,
+          )
+          report = json.loads(proc.stdout)
+          assert report["freeze_ready"] is True
+          assert report["production_runner_present"] is True
+          assert report["production_runner_errors"] == []
+          if report["freeze_manifest_present"]:
+              assert report["score_gate_valid"] is True
+              assert report["score_bearing_locked"] is False
+          else:
+              assert report["score_gate_valid"] is False
+              assert report["score_bearing_locked"] is True
+          print("freeze_guard_state_valid=true")
+          PY
