@@ -90,11 +90,11 @@ def _int_key_map(mapping: Mapping[str, Any]) -> Dict[int, Any]:
 def _node_to_hypothesis(
     node_id: Any,
     node_to_hypothesis: Mapping[int, str],
-    *,
-    allow_zero: bool = True,
 ) -> Optional[str]:
-    if node_id in (None, 0, "0"):
-        return None if allow_zero else _unknown_node(node_id)
+    # Graphene node id 0 is valid. Only an explicit JSON/Python null means
+    # "no hypothesis"; never reserve an integer node id as a sentinel.
+    if node_id is None:
+        return None
     try:
         parsed = int(node_id)
     except (TypeError, ValueError) as exc:
@@ -102,10 +102,6 @@ def _node_to_hypothesis(
     if parsed not in node_to_hypothesis:
         raise AdapterError(f"unknown hypothesis node id: {parsed}")
     return node_to_hypothesis[parsed]
-
-
-def _unknown_node(node_id: Any) -> None:
-    raise AdapterError(f"missing hypothesis node id: {node_id!r}")
 
 
 def _edge_refs(
@@ -254,6 +250,47 @@ def _transitions_from_native_events(
     return transitions
 
 
+def _challenges_from_native_events(
+    step: Mapping[str, Any],
+    configuration: str,
+    node_to_hypothesis: Mapping[int, str],
+    edge_to_ref: Mapping[int, str],
+) -> List[Dict[str, Any]]:
+    challenges: List[Dict[str, Any]] = []
+    for event in step.get("native_events") or []:
+        _validate_capability_boundary(configuration, event)
+        if _event_type(event) != "challenge":
+            continue
+        challenges.append(
+            {
+                "step": int(step["step"]),
+                "hypothesis": _node_to_hypothesis(
+                    event.get("hypothesis_node"), node_to_hypothesis
+                ),
+                "competing_hypotheses": [
+                    hypothesis
+                    for hypothesis in (
+                        _node_to_hypothesis(raw, node_to_hypothesis)
+                        for raw in event.get("competing_hypotheses") or []
+                    )
+                    if hypothesis is not None
+                ],
+                "reopen_nodes": [
+                    hypothesis
+                    for hypothesis in (
+                        _node_to_hypothesis(raw, node_to_hypothesis)
+                        for raw in event.get("reopen_nodes") or []
+                    )
+                    if hypothesis is not None
+                ],
+                "evidence_refs": _edge_refs(
+                    event.get("evidence_edges") or [], edge_to_ref
+                ),
+            }
+        )
+    return challenges
+
+
 def _native_hypotheses(
     steps: Sequence[Mapping[str, Any]],
     configuration: str,
@@ -308,6 +345,9 @@ def _failure_receipt(
         "evidence_refs": [],
         "hypotheses": [],
         "transitions": [],
+        "challenges": [],
+        "evidence_metadata": {},
+        "execution_receipts": [],
         "adapter_failure": True,
         "adapter_failure_detail": list(errors),
         "adapter_receipt": {
@@ -350,9 +390,25 @@ def adapt_episode(episode: Mapping[str, Any]) -> Dict[str, Any]:
             int(node): hypothesis for hypothesis, node in hypothesis_nodes.items()
         }
         edge_to_ref = _int_key_map(episode.get("edge_to_evidence_ref") or {})
+        raw_evidence_metadata = episode.get("evidence_metadata") or {}
+        if not isinstance(raw_evidence_metadata, Mapping):
+            raise AdapterError("evidence_metadata is not an object")
+        evidence_metadata = {
+            str(ref): {
+                "family": str(metadata.get("family") or ""),
+                "kind": str(metadata.get("kind") or ""),
+                "bears_on": str(metadata.get("bears_on") or ""),
+                "depends_on": sorted(
+                    str(value) for value in (metadata.get("depends_on") or [])
+                ),
+            }
+            for ref, metadata in raw_evidence_metadata.items()
+            if isinstance(metadata, Mapping)
+        }
 
         decisions: List[Dict[str, Any]] = []
         transitions: List[Dict[str, Any]] = []
+        challenges: List[Dict[str, Any]] = []
         evidence_refs: List[str] = []
 
         previous_step = 0
@@ -381,6 +437,14 @@ def adapt_episode(episode: Mapping[str, Any]) -> Dict[str, Any]:
                         edge_to_ref,
                     )
                 )
+                challenges.extend(
+                    _challenges_from_native_events(
+                        step,
+                        configuration,
+                        node_to_hypothesis,
+                        edge_to_ref,
+                    )
+                )
             decisions.append(decision)
             evidence_refs.extend(decision["evidence_refs"])
 
@@ -402,6 +466,9 @@ def adapt_episode(episode: Mapping[str, Any]) -> Dict[str, Any]:
             "evidence_refs": sorted(set(evidence_refs)),
             "hypotheses": hypotheses,
             "transitions": transitions,
+            "challenges": challenges,
+            "evidence_metadata": evidence_metadata,
+            "execution_receipts": list(episode.get("runtime_receipts") or []),
             "adapter_failure": False,
             "adapter_failure_detail": [],
             "adapter_receipt": {
