@@ -42,6 +42,26 @@ def git_head(root: Path = ROOT) -> str | None:
     return proc.stdout.strip() or None
 
 
+def git_tree(
+    commit: str,
+    *,
+    root: Path = ROOT,
+) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", f"{commit}^{{tree}}"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip() or None
+
+
 def is_ancestor(
     candidate: str,
     *,
@@ -138,11 +158,39 @@ def verify_score_gate(
         errors.append("freeze manifest must define exactly B0/G0/G1/G2 profiles")
 
     candidate = str(manifest.get("benchmark_candidate_commit") or "")
+    expected_tree = str(manifest.get("benchmark_candidate_tree") or "")
+    production_architecture = str(
+        manifest.get("production_architecture_commit") or ""
+    )
     allowed_changes = set(manifest.get("allowed_changes_after_candidate") or [])
     observed_changes = None
     if not candidate:
         errors.append("freeze manifest has no benchmark_candidate_commit")
+    if not expected_tree:
+        errors.append("freeze manifest has no benchmark_candidate_tree")
+    if not production_architecture:
+        errors.append("freeze manifest has no production_architecture_commit")
     if candidate and git_head(root):
+        actual_tree = git_tree(candidate, root=root)
+        if actual_tree is None:
+            errors.append("cannot resolve benchmark candidate tree")
+        elif expected_tree and actual_tree != expected_tree:
+            errors.append(
+                "benchmark candidate tree mismatch: "
+                f"expected {expected_tree}, observed {actual_tree}"
+            )
+        if production_architecture:
+            architecture_ancestor = is_ancestor(
+                production_architecture, root=root
+            )
+            if architecture_ancestor is False:
+                errors.append(
+                    "production architecture commit is not an ancestor of HEAD"
+                )
+            elif architecture_ancestor is None:
+                errors.append(
+                    "cannot verify production architecture ancestry"
+                )
         ancestor = is_ancestor(candidate, root=root)
         if ancestor is False:
             errors.append("benchmark candidate commit is not an ancestor of HEAD")
