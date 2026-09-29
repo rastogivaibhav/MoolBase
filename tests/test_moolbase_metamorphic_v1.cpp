@@ -259,10 +259,15 @@ int main() {
   m10_h1.paths.push_back(path(1, 501, "m10-a", "m10-fa", 0.90));
   RootBundle m10_h2;
   m10_h2.root_node = 2;
-  m10_h2.paths.push_back(path(2, 502, "m10-b", "m10-fb", 0.90));
+  // 0.50 and 0.80 independent support combine to exactly 0.90, matching H1.
+  // This keeps evidence strength equal while giving H2 enough independent
+  // corroboration to be eligible for replacement when verification changes.
+  m10_h2.paths.push_back(path(2, 502, "m10-b", "m10-fb", 0.50));
+  m10_h2.paths.push_back(path(2, 503, "m10-c", "m10-fc", 0.80));
   const auto m10_before = converge(bundle({m10_h2, m10_h1}, 103));
-  m10_h2.paths.front().semantic_verification =
-      SemanticVerificationStatus::Verified;
+  for (auto& candidate : m10_h2.paths) {
+    candidate.semantic_verification = SemanticVerificationStatus::Verified;
+  }
   const auto m10_after = converge(bundle({m10_h2, m10_h1}, 103));
   require(m10_before.primary_node == 1 && m10_after.primary_node == 2,
           "M10_semantic_verification");
