@@ -1,9 +1,13 @@
+#include "graphene/db.hpp"
 #include "graphene/epistemic_control.hpp"
+#include "graphene/epistemic_receipt.hpp"
 #include "graphene/fiber_bundle.hpp"
+#include "graphene/hypokosh_runtime.hpp"
 #include "graphene/stability_critic.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -66,6 +70,30 @@ void require(bool value, const char* label) {
   }
 }
 
+NodeInput node(std::string content,
+               std::vector<float> vector,
+               uint64_t signature,
+               bool root = false,
+               bool symptom = false) {
+  NodeInput input;
+  input.content = std::move(content);
+  input.vector = std::move(vector);
+  input.signature = signature;
+  input.incident = 9911;
+  input.root = root;
+  input.symptom = symptom;
+  input.metadata["source"] = "metamorphic-v1";
+  return input;
+}
+
+void require_status(Status status, const char* label) {
+  if (!status) {
+    std::cerr << "metamorphic_failure=" << label
+              << " detail=" << status.message << "\n";
+    std::exit(1);
+  }
+}
+
 }  // namespace
 
 int main() {
@@ -112,6 +140,83 @@ int main() {
   std::swap(m5_h1.paths[0], m5_h1.paths[1]);
   const auto m5 = converge(bundle({m5_h1, h2}, 100));
   require(same_answer(base_answer, m5), "M5_path_order");
+
+  // M6: serialize/close/reopen preserves the governed result and durable
+  // compact receipt identity.
+  namespace fs = std::filesystem;
+  const fs::path m6_dir =
+      fs::temp_directory_path() / "moolbase-metamorphic-m6";
+  fs::remove_all(m6_dir);
+  GrapheneDB db;
+  DBOptions db_options;
+  db_options.dimension = 2;
+  db_options.fsync_on_commit = false;
+  require_status(db.open(m6_dir, db_options), "M6_open_initial");
+  const uint64_t signature = signature_for(77, 88);
+  uint32_t m6_h1 = 0, m6_h2 = 0, m6_symptom = 0;
+  require_status(
+      db.put_node(node("M6 H1", {1.0f, 0.0f}, signature, true), &m6_h1),
+      "M6_put_h1");
+  require_status(
+      db.put_node(node("M6 H2", {-1.0f, 0.0f}, signature, true), &m6_h2),
+      "M6_put_h2");
+  require_status(
+      db.put_node(node("M6 symptom", {0.0f, 1.0f}, signature, false, true),
+                  &m6_symptom),
+      "M6_put_symptom");
+  EdgeInput m6_edge1;
+  m6_edge1.from = m6_h1;
+  m6_edge1.to = m6_symptom;
+  m6_edge1.origin = EdgeOrigin::Observed;
+  m6_edge1.role = EdgeRole::Supports;
+  m6_edge1.confidence = 0.90;
+  m6_edge1.metadata["source_id"] = "m6-source-a";
+  m6_edge1.metadata["evidence_family_id"] = "m6-family-a";
+  require_status(db.put_edge(m6_edge1), "M6_put_edge1");
+
+  EdgeInput m6_edge2 = m6_edge1;
+  m6_edge2.from = m6_h2;
+  m6_edge2.confidence = 0.55;
+  m6_edge2.metadata["source_id"] = "m6-source-b";
+  m6_edge2.metadata["evidence_family_id"] = "m6-family-b";
+  require_status(db.put_edge(m6_edge2), "M6_put_edge2");
+
+  RuntimeOptions m6_options;
+  m6_options.enable_hypokosh = true;
+  m6_options.enable_dwm = false;
+  m6_options.enable_opposition_research = false;
+  m6_options.update_model_world = false;
+  m6_options.dialectic.mode = QueryMode::Empirical;
+  m6_options.dialectic.semantic_candidates = 4;
+  m6_options.dialectic.max_hops = 2;
+  m6_options.dialectic.max_paths = 16;
+  m6_options.dialectic.max_paths_per_root = 8;
+  m6_options.dialectic.minimum_confidence = 0.10;
+
+  CompleteHypoKoshRuntime m6_runtime_before(db);
+  const auto m6_before = m6_runtime_before.reason(
+      {0.0f, 1.0f}, signature, m6_options);
+  const auto m6_receipt_before =
+      build_compact_epistemic_receipt(m6_before);
+  require_status(db.close(), "M6_close");
+
+  GrapheneDB reopened;
+  require_status(reopened.open(m6_dir, db_options), "M6_reopen");
+  CompleteHypoKoshRuntime m6_runtime_after(reopened);
+  const auto m6_after = m6_runtime_after.reason(
+      {0.0f, 1.0f}, signature, m6_options);
+  const auto m6_receipt_after =
+      build_compact_epistemic_receipt(m6_after);
+  require(
+      m6_before.status == m6_after.status &&
+          m6_before.primary_node == m6_after.primary_node &&
+          std::abs(m6_before.confidence - m6_after.confidence) < 1e-12 &&
+          m6_before.final_bundle.immutable_hash ==
+              m6_after.final_bundle.immutable_hash &&
+          m6_receipt_before.content_hash == m6_receipt_after.content_hash,
+      "M6_close_reopen");
+  require_status(reopened.close(), "M6_close_reopened");
+  fs::remove_all(m6_dir);
 
   // M7: identical query/evidence evaluation twice.
   const auto m7a = converge(base);
@@ -178,6 +283,7 @@ int main() {
             << "metamorphic_M3=PASS\n"
             << "metamorphic_M4=PASS\n"
             << "metamorphic_M5=PASS\n"
+            << "metamorphic_M6=PASS\n"
             << "metamorphic_M7=PASS\n"
             << "metamorphic_M8=PASS\n"
             << "metamorphic_M9=PASS\n"
