@@ -311,6 +311,9 @@ int main(int argc, char** argv) {
           << (receipt.opposition_executed ? "true" : "false")
           << ",\"bounded_recovery_executed\":"
           << (receipt.bounded_recovery_executed ? "true" : "false")
+          << ",\"expansion_rounds\":" << receipt.expansion_rounds
+          << ",\"visited_states\":" << steps[index].result.final_bundle.visited_states
+          << ",\"evidence_edge_count\":" << steps[index].result.evidence_edges.size()
           << ",\"terminal_cause\":\""
           << json_escape(receipt.terminal_cause) << "\"}";
     }
