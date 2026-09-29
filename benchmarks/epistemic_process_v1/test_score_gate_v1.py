@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,13 +25,38 @@ class ScoreGateTests(unittest.TestCase):
         }
         for name, payload in files.items():
             (root / name).write_bytes(payload)
+        subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.email", "score-gate@example.invalid"],
+            cwd=root, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Score Gate Test"],
+            cwd=root, check=True,
+        )
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "freeze candidate"],
+            cwd=root, check=True, capture_output=True,
+        )
+        candidate = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        candidate_tree = subprocess.run(
+            ["git", "rev-parse", "HEAD^{tree}"],
+            cwd=root, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
         manifest = {
             "schema": "epistemic-process-score-freeze-v1",
             "status": "FROZEN",
             "score_bearing_authorized": True,
             "experiment_id": "TEST-SCORE-001",
-            "production_architecture_commit": "arch",
-            "benchmark_candidate_commit": "bench",
+            "production_architecture_commit": candidate,
+            "benchmark_candidate_commit": candidate,
+            "benchmark_candidate_tree": candidate_tree,
+            "allowed_changes_after_candidate": [],
             "frozen_files": {
                 name: sha256(root / name) for name in sorted(files)
             },
