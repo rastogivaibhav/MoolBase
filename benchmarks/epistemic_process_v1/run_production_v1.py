@@ -19,6 +19,21 @@ CONFIGS = ("B0", "G0", "G1", "G2")
 RUNTIME_FIELDS = ("step", "id", "family", "kind", "bears_on", "depends_on")
 
 
+def _evidence_metadata(task: Mapping[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Return only observation metadata that is legitimate SUT input."""
+    return {
+        str(event["id"]): {
+            "family": str(event["family"]),
+            "kind": str(event["kind"]),
+            "bears_on": str(event["bears_on"]),
+            "depends_on": [
+                str(value) for value in (event.get("depends_on") or [])
+            ],
+        }
+        for event in task["events"]
+    }
+
+
 def load(path: str | Path) -> Any:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
@@ -52,6 +67,7 @@ def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
         "configuration": "B0",
         "hypothesis_nodes": {"H1": 101, "H2": 102},
         "edge_to_evidence_ref": {},
+        "evidence_metadata": _evidence_metadata(task),
         "steps": steps,
         "failures": [],
         "runtime_receipts": [],
@@ -115,6 +131,10 @@ def _runtime_episode(
         }
     try:
         value = json.loads(proc.stdout)
+        # Preserve the exact non-oracle observation metadata supplied to the
+        # production runner. The adapter may use it only when a runtime edge
+        # maps back to the corresponding evidence id.
+        value["evidence_metadata"] = _evidence_metadata(task)
     except json.JSONDecodeError as exc:
         return {
             "episode_id": episode_id,
