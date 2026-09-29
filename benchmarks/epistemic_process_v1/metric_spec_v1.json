@@ -1,0 +1,92 @@
+{
+  "schema": "epistemic-process-metric-spec-v1",
+  "status": "PREFREEZE_CANDIDATE",
+  "protocol": "epistemic-process-v1",
+  "primary_metrics": {
+    "evidence_use_rate": {
+      "numerator": "applicable decision/revision events citing at least one referenced evidence item that bears on the selected/new hypothesis",
+      "denominator": "applicable decision/revision events with a non-null selected/new hypothesis",
+      "adapter_failure": "exclude episode from primary denominator and report separately",
+      "runtime_failure": "exclude episode from primary denominator and report separately",
+      "timeout": "exclude episode from primary denominator and report separately",
+      "abstention": "null-hypothesis abstention decisions are not applicable evidence-use events",
+      "missing_data": "exclude failed episode, never impute",
+      "direction": "higher_is_better"
+    },
+    "refutation_response_rate": {
+      "numerator": "eligible episodes where every preregistered decisive refutation is followed by an explicit downgrade, reopen, or revision from the contradicted hypothesis",
+      "denominator": "eligible non-failed episodes containing preregistered decisive refutation",
+      "adapter_failure": "exclude and report separately",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "does not count as response unless an explicit qualifying transition was emitted",
+      "missing_data": "exclude failed episode, never infer transition",
+      "direction": "higher_is_better"
+    },
+    "revision_inertia_steps": {
+      "numerator": "count of subsequent eligible decision steps where the decisively contradicted hypothesis remains operative before explicit response",
+      "denominator": "one observation per eligible decisive-refutation episode; aggregate mean reports total/count",
+      "adapter_failure": "exclude and report separately",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "does not erase prior operative steps",
+      "missing_data": "exclude failed episode",
+      "direction": "lower_is_better"
+    },
+    "false_convergence_rate": {
+      "numerator": "eligible episodes containing any resolved decision before the independent-family threshold is earned or after material preregistered refutation of that hypothesis",
+      "denominator": "all valid episodes with a preregistered independent-family resolution threshold",
+      "adapter_failure": "exclude and report separately",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "not a definitive resolution and therefore not false convergence",
+      "missing_data": "exclude failed episode",
+      "direction": "lower_is_better"
+    },
+    "independent_evidence_convergence": {
+      "numerator": "report raw terminal supporting items, distinct preregistered independent families, correlated/non-independent items, and earned resolutions",
+      "denominator": "earned-resolution rate denominator is terminal resolved episodes; raw/family counts are totals over valid episodes",
+      "adapter_failure": "exclude and report separately",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "contributes zero terminal resolved episodes",
+      "missing_data": "exclude failed episode",
+      "direction": "more independent corroboration without duplicate inflation is better; earned_resolution_rate higher_is_better"
+    },
+    "selective_coverage": {
+      "numerator": "covered episodes, abstentions, covered-correct episodes, and overall terminal-correct episodes are reported separately",
+      "denominator": "all valid episodes; covered accuracy denominator is covered episodes",
+      "adapter_failure": "exclude and report separately",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "reported explicitly and never counted as coverage",
+      "missing_data": "exclude failed episode",
+      "direction": "joint_metric_no_single_direction"
+    },
+    "receipt_completeness": {
+      "numerator": "present applicable audit fields across valid episode receipts",
+      "denominator": "all applicable audit fields across valid episode receipts",
+      "adapter_failure": "exclude from completeness denominator and report as failure",
+      "runtime_failure": "exclude and report separately",
+      "timeout": "exclude and report separately",
+      "abstention": "terminal status remains required; non-applicable hypothesis transitions are not fabricated",
+      "missing_data": "missing applicable field lowers completeness",
+      "direction": "higher_is_better"
+    }
+  },
+  "failure_policy": {
+    "adapter_failures_are_losses": false,
+    "adapter_failures_are_excluded_from_primary_metrics": true,
+    "runtime_failures_are_excluded_from_primary_metrics": true,
+    "timeouts_are_excluded_from_primary_metrics": true,
+    "all_failures_reported_separately": true,
+    "no_imputation": true
+  },
+  "aggregation_policy": {
+    "preserve_per_episode_rows": true,
+    "aggregate_from_raw_numerators_and_denominators": true,
+    "do_not_average_episode_rates_when_raw_counts_exist": true,
+    "process_metrics_separate_from_terminal_accuracy": true,
+    "coverage_and_accuracy_reported_together": true
+  }
+}
