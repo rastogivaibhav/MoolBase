@@ -12,6 +12,7 @@ import argparse
 import json
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence
 
@@ -46,6 +47,7 @@ def dump(path: str | Path, value: Any) -> None:
 
 def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
     """Bounded/stateless baseline: only the current observation is visible."""
+    started = time.perf_counter()
     steps: List[Dict[str, Any]] = []
     for event in task["events"]:
         kind = str(event["kind"])
@@ -71,6 +73,7 @@ def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
         "steps": steps,
         "failures": [],
         "runtime_receipts": [],
+        "execution_seconds": time.perf_counter() - started,
     }
 
 
@@ -104,6 +107,7 @@ def _runtime_episode(
         encoding="utf-8",
     )
     db_dir = work_root / f"db-{configuration}-{safe_id}"
+    started = time.perf_counter()
     proc = subprocess.run(
         [
             str(runtime_runner),
@@ -116,6 +120,7 @@ def _runtime_episode(
         capture_output=True,
         text=True,
     )
+    elapsed = time.perf_counter() - started
     if proc.returncode != 0:
         return {
             "episode_id": episode_id,
@@ -128,6 +133,7 @@ def _runtime_episode(
                 proc.stderr.strip(),
             ],
             "runtime_receipts": [],
+            "execution_seconds": elapsed,
         }
     try:
         value = json.loads(proc.stdout)
@@ -135,6 +141,7 @@ def _runtime_episode(
         # production runner. The adapter may use it only when a runtime edge
         # maps back to the corresponding evidence id.
         value["evidence_metadata"] = _evidence_metadata(task)
+        value["execution_seconds"] = elapsed
     except json.JSONDecodeError as exc:
         return {
             "episode_id": episode_id,
@@ -147,6 +154,7 @@ def _runtime_episode(
                 proc.stdout[-2000:],
             ],
             "runtime_receipts": [],
+            "execution_seconds": elapsed,
         }
     return value
 
