@@ -382,10 +382,16 @@ def _receipt_completeness(
     execution_required = {
         "hypokosh_capability_enabled",
         "dwm_capability_enabled",
+        "opposition_research_enabled",
         "graphene_executed",
+        "path_verifier_executed",
+        "stability_critic_executed",
+        "epistemic_admissibility_executed",
         "convergence_executed",
         "opposition_executed",
         "bounded_recovery_executed",
+        "governed_projection_executed",
+        "model_world_updated",
         "terminal_cause",
     }
     if execution_receipts and all(
