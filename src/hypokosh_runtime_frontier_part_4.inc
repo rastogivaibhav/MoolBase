@@ -160,8 +160,13 @@ const char* epistemic_event_type_name(EpistemicEventType type) {
     case EpistemicEventType::HypothesisSet: return "hypothesis_set";
     case EpistemicEventType::Decision: return "decision";
     case EpistemicEventType::Challenge: return "challenge";
+    case EpistemicEventType::CorroborationSearch:
+      return "corroboration_search";
     case EpistemicEventType::Reopen: return "reopen";
     case EpistemicEventType::Revision: return "revision";
+    case EpistemicEventType::Decommitment: return "decommitment";
+    case EpistemicEventType::Recommitment: return "recommitment";
+    case EpistemicEventType::Resolution: return "resolution";
     case EpistemicEventType::Terminal: return "terminal";
   }
   return "decision";
