@@ -1,0 +1,128 @@
+name: EP Process V3 Cycle 1 forensic diagnostics
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v3/**"
+      - "tools/epistemic_process_v3_cycle1_probe.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-v3-cycle1-forensics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v3-cycle1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle1-forensics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce diagnostics-only production boundary
+        run: |
+          set -euo pipefail
+          git fetch origin master
+          changed="$(git diff --name-only origin/master...HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(src/|include/)'; then
+            echo "Cycle 1 may not modify production behavior" >&2
+            exit 1
+          fi
+          echo "cycle1_production_behavior_changes=none"
+
+      - name: Validate derived V2 evidence identity
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("benchmarks/epistemic_process_v3/v2_forensic_evidence_v1.json")
+          e=json.loads(p.read_text())
+          assert e["source"]["experiment_id"] == "EP-PROCESS-V2-SCORE-001"
+          assert e["source"]["score_run_id"] == 36744340611
+          assert e["source"]["artifact_id"] == 11111687583
+          assert e["source"]["artifact_sha256"] == "5fb274690294acf83760c86c621bdc3bd8f6150d4c42db01a8be557dde4eb9cc"
+          assert e["production_behavior_modified"] is False
+          assert e["tie_g1"]["episodes"] == 30
+          assert e["tie_g1"]["selected_h1"] == 30
+          assert e["dwm"]["reopen_rounds"] == 1020
+          assert e["dwm"]["no_progress_after_expansion"] == 1020
+          assert e["g0e_family_namespace"]["prefixed_family_ids"] == 2640
+          print("cycle1_v2_evidence_identity=passed")
+          PY
+
+      - name: Run common-head persistence forensic contracts
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v3/test_cycle1_forensic_contracts.py
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-v3-cycle1             -DCMAKE_BUILD_TYPE=Release             -DGRAPHENEDB_BUILD_TESTS=ON             -DGRAPHENEDB_BUILD_SERVER=OFF             -DGRAPHENEDB_BUILD_BENCH=OFF             -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build forensic probe and inherited epistemic tests
+        run: |
+          cmake --build build-v3-cycle1 --parallel 2 --target             graphenedb_epistemic_process_v3_cycle1_probe             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests
+
+      - name: Run inherited production behavior tests
+        run: |
+          set -euo pipefail
+          ./build-v3-cycle1/graphenedb_epistemic_control_tests
+          ./build-v3-cycle1/graphenedb_hypokosh_runtime_tests
+
+      - name: Run V3 Cycle 1 forensic runtime probe
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v3-cycle1
+          ./build-v3-cycle1/graphenedb_epistemic_process_v3_cycle1_probe             | tee reports/epistemic-process-v3-cycle1/probe.json
+
+      - name: Validate probe conclusions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("reports/epistemic-process-v3-cycle1/probe.json").read_text())
+          assert p["production_behavior_modified"] is False
+          t=p["tie_bias"]
+          assert t["baseline_h1_node"] < t["baseline_h2_node"]
+          assert t["baseline_selected"] == "H1"
+          assert t["root_swap_h2_node"] < t["root_swap_h1_node"]
+          assert t["root_swap_selected"] == "H2"
+          assert t["evidence_swap_selected"] == "H1"
+          assert t["family_rename_selected"] == "H1"
+          assert t["repeat_count"] == 8
+          d=p["dwm_noop_reopen"]
+          assert d["opposition_search_requested"] is True
+          assert d["reopen_nodes_after"] > 0
+          assert d["bundle_unchanged"] is True
+          assert d["visited_states_unchanged"] is True
+          assert d["stop_reason"] == "no_progress_after_expansion"
+          assert "family:PLAIN_FAMILY" in p["g0_family_namespace"]
+          print("cycle1_probe_validation=passed")
+          PY
+
+      - name: Record exact diagnostic evidence
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > reports/epistemic-process-v3-cycle1/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle1/tree.txt
+          sha256sum             tools/epistemic_process_v3_cycle1_probe.cpp             benchmarks/epistemic_process_v3/test_cycle1_forensic_contracts.py             benchmarks/epistemic_process_v3/v2_forensic_evidence_v1.json             reports/epistemic-process-v3-cycle1/probe.json             > reports/epistemic-process-v3-cycle1/checksums.sha256
+
+      - name: Upload Cycle 1 forensic evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v3-cycle1-forensics-${{ github.sha }}
+          path: reports/epistemic-process-v3-cycle1/
+          retention-days: 90
