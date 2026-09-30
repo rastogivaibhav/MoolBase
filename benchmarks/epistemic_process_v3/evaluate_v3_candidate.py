@@ -232,10 +232,11 @@ def _episode_record(task,ep,cfg):
     if expected_revision:
         for step_no,event in revision_events:
             complete=("previous_hypothesis" in event and "hypothesis" in event)
-            if complete and event.get("previous_hypothesis")==expected_revision["from"] and event.get("hypothesis")==expected_revision["to"]:
+            earned_step=int(expected_revision["replacement_earned_step"])
+            if (complete and step_no>=earned_step and event.get("previous_hypothesis")==expected_revision["from"] and event.get("hypothesis")==expected_revision["to"]:
                 rec["native_revision"]=True
                 rec["revision_receipt_complete"]=True
-                rec["revision_latency"]=step_no-int(expected_revision["replacement_earned_step"])
+                rec["revision_latency"]=step_no-earned_step
                 break
     rec["false_revision"]=(not rec["revision_required"]) and bool(revision_events)
 
