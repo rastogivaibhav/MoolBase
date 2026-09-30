@@ -1,0 +1,155 @@
+{
+  "protocol": "epistemic-process-v2",
+  "status": "PREREGISTERED_UNSCORED",
+  "lineage": {
+    "v1_experiment": "EP-PROCESS-V1-SCORE-001",
+    "v1_score_commit": "3c008577739b83a94defc47c73275bf8ba76e76c"
+  },
+  "purpose": "mechanism-level causal evaluation of Graphene evidence state, HypoKosh hypothesis selection/temporal change, and DWM challenge/reopen effectiveness",
+  "configurations": [
+    {
+      "id": "B0",
+      "graphene_core": false,
+      "hypokosh": false,
+      "dwm": false,
+      "primary_role": "stateless decision baseline"
+    },
+    {
+      "id": "G0",
+      "graphene_core": true,
+      "hypokosh": false,
+      "dwm": false,
+      "primary_role": "persistent evidence/provenance capability; no hypothesis-selection claim"
+    },
+    {
+      "id": "G1",
+      "graphene_core": true,
+      "hypokosh": true,
+      "dwm": false,
+      "primary_role": "governed competing-hypothesis selection"
+    },
+    {
+      "id": "G2",
+      "graphene_core": true,
+      "hypokosh": true,
+      "dwm": true,
+      "primary_role": "dialectical challenge/reopen plus G1"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H-G0-1",
+      "statement": "G0 preserves and exposes evidence/provenance state deterministically across sequential observations.",
+      "primary_metrics": [
+        "evidence_reference_recall",
+        "evidence_family_integrity",
+        "deterministic_replay"
+      ]
+    },
+    {
+      "id": "H-G1-1",
+      "statement": "G1 adds governed hypothesis selection relative to G0 without silently upgrading insufficient evidence to resolved.",
+      "primary_metrics": [
+        "selection_coverage",
+        "false_resolution_rate",
+        "appropriate_abstention_rate"
+      ]
+    },
+    {
+      "id": "H-G1-2",
+      "statement": "After decisive new evidence, G1 changes the operative hypothesis when the oracle requires change and does not change it in negative controls.",
+      "primary_metrics": [
+        "temporal_revision_sensitivity",
+        "temporal_revision_specificity",
+        "revision_inertia_steps"
+      ]
+    },
+    {
+      "id": "H-G2-1",
+      "statement": "G2 challenge/reopen activity produces useful search or corrected decisions beyond G1 on tasks requiring dialectical re-evaluation.",
+      "primary_metrics": [
+        "reopen_effectiveness_rate",
+        "post_challenge_answer_change_rate",
+        "refutation_response_rate"
+      ]
+    },
+    {
+      "id": "H-G2-2",
+      "statement": "G2 does not introduce unnecessary churn on negative-control tasks.",
+      "primary_metrics": [
+        "unnecessary_reopen_rate",
+        "unnecessary_temporal_change_rate"
+      ]
+    },
+    {
+      "id": "H-ABS-1",
+      "statement": "G1/G2 explicitly abstain when evidence is insufficient for an earned selection under the preregistered task semantics.",
+      "primary_metrics": [
+        "appropriate_abstention_rate",
+        "overselection_rate"
+      ]
+    }
+  ],
+  "semantic_states": [
+    "open",
+    "abstain",
+    "provisional",
+    "resolved"
+  ],
+  "measurement_rules": {
+    "g0_terminal_accuracy_primary": false,
+    "temporal_hypothesis_change": "compare consecutive production decisions after each newly ingested observation",
+    "native_revision_receipt": "reported separately; never inferred from changed outputs",
+    "reopen_effectiveness": "a reopen is effective only if it changes bundle/frontier or changes the operative answer",
+    "failures": "reported by class and excluded from primary behavioural denominators; never imputed",
+    "cost_metrics": [
+      "execution_seconds",
+      "visited_states",
+      "expansion_rounds",
+      "evidence_edge_count",
+      "challenge_events",
+      "reopen_events"
+    ]
+  },
+  "task_bank": {
+    "minimum_episodes": 64,
+    "required_strata": [
+      "duplicate_correlation",
+      "independent_corroboration",
+      "decisive_refutation",
+      "late_revocation",
+      "insufficient_replacement",
+      "abstention",
+      "temporary_contradiction",
+      "misleading_majority",
+      "irrelevant_noise",
+      "order_permutation",
+      "negative_control_no_change"
+    ],
+    "deterministic": true,
+    "hidden_oracle_fields_not_sent_to_sut": true
+  },
+  "controls": {
+    "positive_and_negative_control_per_primary_hypothesis": true
+  },
+  "seeds": {
+    "generator": [
+      20260930,
+      20261001,
+      20261002
+    ],
+    "score_seed": 20261003
+  },
+  "repetitions": {
+    "unscored_diagnostics": "as needed before freeze",
+    "score_bearing": "one untouched frozen campaign per configuration"
+  },
+  "score_bearing_runs_allowed": false,
+  "post_freeze_tuning_forbidden": true,
+  "decision_labels": [
+    "SUPPORTED",
+    "SUPPORTED_WITH_SCOPE",
+    "INCONCLUSIVE",
+    "CONTRADICTED"
+  ]
+}
