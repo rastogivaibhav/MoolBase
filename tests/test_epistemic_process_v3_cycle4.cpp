@@ -43,7 +43,8 @@ uint32_t add_node(GrapheneDB& db, const std::string& name,
 void add_edge(GrapheneDB& db, uint32_t from, uint32_t to,
               EdgeRole role, double confidence,
               const std::string& source,
-              const std::string& family) {
+              const std::string& family,
+              const std::string& evidence_state = "active") {
   EdgeInput edge;
   edge.from = from;
   edge.to = to;
@@ -52,6 +53,7 @@ void add_edge(GrapheneDB& db, uint32_t from, uint32_t to,
   edge.confidence = confidence;
   edge.metadata["source_id"] = source;
   edge.metadata["evidence_family_id"] = family;
+  edge.metadata["evidence_state"] = evidence_state;
   uint32_t id = 0;
   require(db.put_edge(edge, &id), "put edge " + source);
 }
@@ -207,6 +209,54 @@ int main() {
     assert(trace.opposition_search_requested);
     assert(trace.next_reopen_nodes > 0);
     require(db.close(), "close latent db");
+  }
+
+  // Contract 5: superseded evidence remains auditable in FiberBundle
+  // lineage but cannot contribute active independent support.
+  {
+    GrapheneDB db;
+    open_db(&db, base / "lifecycle");
+    const uint32_t root =
+        add_node(db, "lifecycle hypothesis", {-1.0f, 0.0f, 0.0f}, true);
+    const uint32_t active =
+        add_node(db, "active evidence", {1.0f, 0.0f, 0.0f});
+    const uint32_t superseded =
+        add_node(db, "superseded evidence", {0.99f, 0.01f, 0.0f});
+    add_edge(db, root, active, EdgeRole::Supports, 0.95,
+             "life-active", "life-active-family", "active");
+    add_edge(db, root, superseded, EdgeRole::Supports, 0.94,
+             "life-old", "life-old-family", "superseded");
+
+    GrapheneEvidenceExpander expander(db);
+    DialecticOptions expansion_options;
+    expansion_options.mode = QueryMode::Empirical;
+    expansion_options.semantic_candidates = 2;
+    expansion_options.max_hops = 2;
+    expansion_options.max_paths = 16;
+    expansion_options.max_paths_per_root = 8;
+    expansion_options.max_visited_states = 128;
+    const BundleSet raw =
+        expander.expand({1.0f, 0.0f, 0.0f}, 0, expansion_options);
+    const FiberBundle bundle = FiberBundleBuilder().build(raw);
+    assert(bundle.fibers.size() == 1);
+    const TargetFiber& fiber = bundle.fibers.front();
+    assert(fiber.independent_evidence_family_count == 1);
+
+    bool saw_superseded_audit = false;
+    bool superseded_was_active = false;
+    for (const FiberPath& path : fiber.paths) {
+      for (const EvidenceRef& evidence : path.evidence) {
+        if (evidence.lifecycle_state != "superseded") continue;
+        saw_superseded_audit = true;
+        superseded_was_active =
+            superseded_was_active || path.eligible_for_support ||
+            path.eligible_for_opposition;
+      }
+    }
+    assert(saw_superseded_audit);
+    assert(!superseded_was_active);
+
+    require(db.close(), "close lifecycle db");
   }
 
   fs::remove_all(base);
