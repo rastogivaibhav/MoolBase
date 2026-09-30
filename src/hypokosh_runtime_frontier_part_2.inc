@@ -298,6 +298,9 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
 
     // Default the next snapshot to the current one so early-stop rounds have a
     // complete before/after record without implying unobserved change.
+    trace.next_bundle_hash = trace.previous_bundle_hash;
+    trace.next_visited_states = trace.previous_visited_states;
+    trace.next_truncated = trace.previous_truncated;
     trace.next_has_answer = trace.previous_has_answer;
     trace.next_primary_node = trace.previous_primary_node;
     trace.next_status = trace.previous_status;
