@@ -65,6 +65,11 @@ GovernedProjection project_status(
           "resolution_conditions_not_fully_earned"};
 }
 
+bool trace_status_commits(GovernedEpistemicStatus status) {
+  return status == GovernedEpistemicStatus::Resolved ||
+         status == GovernedEpistemicStatus::ProvisionallyResolved;
+}
+
 }  // namespace
 
 CompleteHypoKoshRuntime::CompleteHypoKoshRuntime(
@@ -274,6 +279,30 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     trace.previous_visited_states =
         result.final_bundle.visited_states;
     trace.previous_truncated = result.final_bundle.truncated;
+
+    const GovernedProjection previous_projection = project_status(
+        result.final_convergence, result.final_opposition,
+        result.final_stability, result.final_admissibility,
+        current_options.mode, options.stability_thresholds);
+    trace.previous_has_answer = result.final_convergence.has_answer;
+    trace.previous_primary_node =
+        trace.previous_has_answer ? result.final_convergence.primary_node : 0;
+    trace.previous_status = previous_projection.status;
+    trace.previous_committed_node =
+        trace.previous_has_answer &&
+                trace_status_commits(trace.previous_status)
+            ? trace.previous_primary_node
+            : 0;
+    trace.previous_target_ranking =
+        controller.inspect_targets(result.final_bundle);
+
+    // Default the next snapshot to the current one so early-stop rounds have a
+    // complete before/after record without implying unobserved change.
+    trace.next_has_answer = trace.previous_has_answer;
+    trace.next_primary_node = trace.previous_primary_node;
+    trace.next_status = trace.previous_status;
+    trace.next_committed_node = trace.previous_committed_node;
+    trace.next_target_ranking = trace.previous_target_ranking;
 
     const bool recovery_search_requested =
         trace.recovery_search_requested;
