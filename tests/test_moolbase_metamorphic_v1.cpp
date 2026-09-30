@@ -253,9 +253,8 @@ int main() {
           m9_after.confidence < m9_before.confidence,
       "M9_decisive_contradiction");
 
-  // M10: semantic verification breaks an otherwise equal target tie.
-  // Keep support strength, independent-family count and best-path score equal
-  // so verification is the only ranking coordinate that changes.
+  // M10: an exact semantic tie must remain unresolved until a genuine
+  // semantic coordinate changes. Verification may then earn a unique target.
   RootBundle m10_h1;
   m10_h1.root_node = 1;
   m10_h1.paths.push_back(path(1, 501, "m10-a", "m10-fa", 0.75));
@@ -266,7 +265,8 @@ int main() {
   m10_h2.paths.front().semantic_verification =
       SemanticVerificationStatus::Verified;
   const auto m10_after = converge(bundle({m10_h2, m10_h1}, 103));
-  require(m10_before.primary_node == 1 && m10_after.primary_node == 2,
+  require(!m10_before.has_answer && m10_before.primary_node == 0 &&
+              m10_after.has_answer && m10_after.primary_node == 2,
           "M10_semantic_verification");
 
   // M11: stronger independently corroborated competitor must become operative.
