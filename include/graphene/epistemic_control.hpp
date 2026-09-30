@@ -25,8 +25,25 @@ struct EpistemicAdmissibility {
   std::vector<std::string> reasons;
 };
 
+// Read-only target-level coordinates used by diagnostic receipts and benchmark
+// telemetry. These values are projected from the exact same ranking inputs used
+// by production convergence; exposing them must not influence selection.
+struct TargetEpistemicTrace {
+  uint32_t target_node{0};
+  double support_strength{0.0};
+  double opposition_strength{0.0};
+  double belief_strength{0.0};
+  SemanticVerificationStatus semantic_verification{
+      SemanticVerificationStatus::Unverified};
+  size_t independent_support_family_count{0};
+  double best_support_score{0.0};
+};
+
 class EpistemicController {
  public:
+  std::vector<TargetEpistemicTrace> inspect_targets(
+      const FiberBundle& bundle) const;
+
   EpistemicAdmissibility assess(
       const FiberBundle& bundle,
       const StabilityAssessment& stability,
