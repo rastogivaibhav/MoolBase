@@ -86,7 +86,7 @@ jobs:
               --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
               --runtime-runner ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
               --configuration "$cfg" \
-              --seed 20261002 \
+              --seed 20261001 \
               --out "$out/raw-$cfg.json"
             python benchmarks/epistemic_process_v2/compare_determinism_v2.py \
               "$base/raw-$cfg.json" "$out/raw-$cfg.json"
