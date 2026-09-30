@@ -4,9 +4,9 @@
   "experiment_id_candidate": "EP-PROCESS-V2-SCORE-001",
   "generator_seed": 20261005,
   "score_bearing_allowed": false,
-  "family_count": 8,
+  "family_count": 9,
   "episodes_per_family": 30,
-  "episode_count": 240,
+  "episode_count": 270,
   "runtime_fields": [
     "step",
     "id",
@@ -31,7 +31,8 @@
     "genuine_ambiguity_tie",
     "evidence_accumulation",
     "correlated_majority_independent_minority",
-    "stale_belief_recovery"
+    "stale_belief_recovery",
+    "single_step_control"
   ],
   "episodes": [
     {
@@ -16049,6 +16050,726 @@
           "family": "STALE_BELIEF_RECOVERY_30_E",
           "kind": "support",
           "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_01",
+      "task_family": "single_step_control",
+      "variant": 1,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_01_e1",
+          "family": "SINGLE_STEP_CONTROL_01_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_02",
+      "task_family": "single_step_control",
+      "variant": 2,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_02_e1",
+          "family": "SINGLE_STEP_CONTROL_02_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_03",
+      "task_family": "single_step_control",
+      "variant": 3,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_03_e1",
+          "family": "SINGLE_STEP_CONTROL_03_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_04",
+      "task_family": "single_step_control",
+      "variant": 4,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_04_e1",
+          "family": "SINGLE_STEP_CONTROL_04_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_05",
+      "task_family": "single_step_control",
+      "variant": 5,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_05_e1",
+          "family": "SINGLE_STEP_CONTROL_05_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_06",
+      "task_family": "single_step_control",
+      "variant": 6,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_06_e1",
+          "family": "SINGLE_STEP_CONTROL_06_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_07",
+      "task_family": "single_step_control",
+      "variant": 7,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_07_e1",
+          "family": "SINGLE_STEP_CONTROL_07_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_08",
+      "task_family": "single_step_control",
+      "variant": 8,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_08_e1",
+          "family": "SINGLE_STEP_CONTROL_08_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_09",
+      "task_family": "single_step_control",
+      "variant": 9,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_09_e1",
+          "family": "SINGLE_STEP_CONTROL_09_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_10",
+      "task_family": "single_step_control",
+      "variant": 10,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_10_e1",
+          "family": "SINGLE_STEP_CONTROL_10_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_11",
+      "task_family": "single_step_control",
+      "variant": 11,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_11_e1",
+          "family": "SINGLE_STEP_CONTROL_11_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_12",
+      "task_family": "single_step_control",
+      "variant": 12,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_12_e1",
+          "family": "SINGLE_STEP_CONTROL_12_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_13",
+      "task_family": "single_step_control",
+      "variant": 13,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_13_e1",
+          "family": "SINGLE_STEP_CONTROL_13_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_14",
+      "task_family": "single_step_control",
+      "variant": 14,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_14_e1",
+          "family": "SINGLE_STEP_CONTROL_14_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_15",
+      "task_family": "single_step_control",
+      "variant": 15,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_15_e1",
+          "family": "SINGLE_STEP_CONTROL_15_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_16",
+      "task_family": "single_step_control",
+      "variant": 16,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_16_e1",
+          "family": "SINGLE_STEP_CONTROL_16_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_17",
+      "task_family": "single_step_control",
+      "variant": 17,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_17_e1",
+          "family": "SINGLE_STEP_CONTROL_17_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_18",
+      "task_family": "single_step_control",
+      "variant": 18,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_18_e1",
+          "family": "SINGLE_STEP_CONTROL_18_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_19",
+      "task_family": "single_step_control",
+      "variant": 19,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_19_e1",
+          "family": "SINGLE_STEP_CONTROL_19_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_20",
+      "task_family": "single_step_control",
+      "variant": 20,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_20_e1",
+          "family": "SINGLE_STEP_CONTROL_20_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_21",
+      "task_family": "single_step_control",
+      "variant": 21,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_21_e1",
+          "family": "SINGLE_STEP_CONTROL_21_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_22",
+      "task_family": "single_step_control",
+      "variant": 22,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_22_e1",
+          "family": "SINGLE_STEP_CONTROL_22_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_23",
+      "task_family": "single_step_control",
+      "variant": 23,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_23_e1",
+          "family": "SINGLE_STEP_CONTROL_23_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_24",
+      "task_family": "single_step_control",
+      "variant": 24,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_24_e1",
+          "family": "SINGLE_STEP_CONTROL_24_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_25",
+      "task_family": "single_step_control",
+      "variant": 25,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_25_e1",
+          "family": "SINGLE_STEP_CONTROL_25_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_26",
+      "task_family": "single_step_control",
+      "variant": 26,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_26_e1",
+          "family": "SINGLE_STEP_CONTROL_26_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_27",
+      "task_family": "single_step_control",
+      "variant": 27,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_27_e1",
+          "family": "SINGLE_STEP_CONTROL_27_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_28",
+      "task_family": "single_step_control",
+      "variant": 28,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_28_e1",
+          "family": "SINGLE_STEP_CONTROL_28_A",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_29",
+      "task_family": "single_step_control",
+      "variant": 29,
+      "mirror_primary": "H1",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H1",
+        "terminal_committed": "H1",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_29_e1",
+          "family": "SINGLE_STEP_CONTROL_29_A",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_SINGLE_STEP_CONTROL_30",
+      "task_family": "single_step_control",
+      "variant": 30,
+      "mirror_primary": "H2",
+      "minimum_independent_families_for_resolution": 1,
+      "challenge_warranted_steps": [],
+      "oracle": {
+        "terminal_operative": "H2",
+        "terminal_committed": "H2",
+        "response_window": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "SINGLE_STEP_CONTROL_30_e1",
+          "family": "SINGLE_STEP_CONTROL_30_A",
+          "kind": "support",
+          "bears_on": "H2",
           "independent": true,
           "decisive": false
         }
