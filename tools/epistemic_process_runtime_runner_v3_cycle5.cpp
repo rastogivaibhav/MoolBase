@@ -407,13 +407,14 @@ int main(int argc, char** argv) {
       target_nodes[name] = node;
     }
 
-    size_t visible_candidates = 0;
-    for (const auto& event : visible) {
-      if (creates_evidence_edge(event)) ++visible_candidates;
-    }
+    // Harness-only neutral decoys reserve the initial semantic-candidate
+    // budget so latent evidence cannot leak into an early step simply because
+    // later visible observations have not arrived yet. Visible evidence scores
+    // above decoys; latent evidence scores below them and becomes reachable
+    // only after production expands the candidate budget.
     const size_t decoys =
-        semantic_candidates > visible_candidates
-            ? semantic_candidates - visible_candidates
+        !latent.empty() && semantic_candidates > 0
+            ? semantic_candidates - 1
             : 0;
     for (size_t i = 0; i < decoys; ++i) {
       uint32_t ignored = 0;
