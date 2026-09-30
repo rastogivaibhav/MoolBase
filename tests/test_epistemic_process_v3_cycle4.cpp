@@ -200,12 +200,17 @@ int main() {
         add_node(db, "visible support B", {0.99f, 0.01f, 0.0f});
     const uint32_t opp =
         add_node(db, "visible opposition", {0.98f, 0.02f, 0.0f});
+    const uint32_t replacement =
+        add_node(db, "replacement hypothesis", {0.0f, -1.0f, 0.0f}, true);
     const uint32_t latent =
-        add_node(db, "latent support C", {-0.95f, 0.0f, 0.0f});
+        add_node(db, "latent support C", {0.0f, -1.0f, 0.0f});
     add_edge(db, root, s1, EdgeRole::Supports, 0.95, "lat-s1", "lat-fa");
     add_edge(db, root, s2, EdgeRole::Supports, 0.94, "lat-s2", "lat-fb");
     add_edge(db, root, opp, EdgeRole::Contradicts, 0.90, "lat-opp", "lat-fo");
-    add_edge(db, root, latent, EdgeRole::Supports, 0.92, "lat-hidden", "lat-fc");
+    add_edge(db, replacement, latent, EdgeRole::Supports, 0.92,
+             "lat-hidden", "lat-fc");
+    add_edge(db, opp, latent, EdgeRole::Mechanistic, 0.90,
+             "lat-bridge", "lat-bridge-family");
 
     CompleteHypoKoshRuntime runtime(db);
     const auto result =
