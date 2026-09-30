@@ -328,7 +328,8 @@ int main() {
       controller.assess(r6_bundle, r6_stability, QueryMode::Empirical);
   const auto r6_answer =
       controller.converge(r6_bundle, r6_admissibility, r6_stability);
-  assert(r6_answer.primary_node == 1);
+  assert(!r6_answer.has_answer);
+  assert(r6_answer.primary_node == 0);
   assert(!r6_admissibility.sufficient_independent_support);
   assert(r6_admissibility.requires_external_verification);
   assert(r6_admissibility.contradiction_blocks_resolution);
@@ -349,7 +350,8 @@ int main() {
   assert(r7_answer.primary_node == r1_answer.primary_node);
   assert(std::abs(r7_answer.confidence - r1_answer.confidence) < 1e-12);
 
-  // R8: exact evidence ties are deterministic by target id.
+  // R8: exact evidence ties are semantically unresolved. Numeric target id
+  // must not manufacture an operative answer.
   BundleSet r8_raw;
   r8_raw.snapshot_version = 37;
   RootBundle r8_h2;
@@ -367,8 +369,31 @@ int main() {
   const auto r8_stability = critic.assess(r8_bundle, QueryMode::Empirical);
   const auto r8_admissibility =
       controller.assess(r8_bundle, r8_stability, QueryMode::Empirical);
-  assert(controller.converge(r8_bundle, r8_admissibility, r8_stability)
-             .primary_node == 1);
+  const auto r8_answer =
+      controller.converge(r8_bundle, r8_admissibility, r8_stability);
+  assert(!r8_answer.has_answer);
+  assert(r8_answer.primary_node == 0);
+
+  // Swapping numeric target ids under otherwise identical evidence must still
+  // produce no operative hypothesis.
+  BundleSet r8_swapped = r8_raw;
+  r8_swapped.snapshot_version = 371;
+  r8_swapped.roots[0].root_node = 1;
+  r8_swapped.roots[0].paths[0].root_node = 1;
+  r8_swapped.roots[1].root_node = 2;
+  r8_swapped.roots[1].paths[0].root_node = 2;
+  const FiberBundle r8_swapped_bundle =
+      FiberBundleBuilder().build(r8_swapped);
+  const auto r8_swapped_stability =
+      critic.assess(r8_swapped_bundle, QueryMode::Empirical);
+  const auto r8_swapped_admissibility =
+      controller.assess(r8_swapped_bundle, r8_swapped_stability,
+                        QueryMode::Empirical);
+  const auto r8_swapped_answer =
+      controller.converge(r8_swapped_bundle, r8_swapped_admissibility,
+                          r8_swapped_stability);
+  assert(!r8_swapped_answer.has_answer);
+  assert(r8_swapped_answer.primary_node == 0);
 
   std::cout << "epistemic_control_contract_passed=true\n";
   return 0;
