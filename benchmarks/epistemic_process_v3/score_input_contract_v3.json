@@ -1,0 +1,112 @@
+{
+  "schema": "epistemic-process-v3-score-input-contract-v1",
+  "status": "FROZEN_PRE_SCORE",
+  "score_bearing_authorized": false,
+  "score_workflow_exists": false,
+  "score_runs_allowed": 0,
+  "production_source": {
+    "commit": "65b12489764a0f4cd181549f53642d23d19264f5",
+    "correction": "Cycle 4.1 latent opposition-anchor reopen",
+    "cycle4_mechanical_run": 36779755010
+  },
+  "mechanical_validation": {
+    "cycle5_head": "6760332c6d38122ae7f266209697e4883b88512a",
+    "cycle5_run": 36780063690,
+    "cycle5_artifact_id": 11127094635,
+    "cycle5_artifact_digest": "sha256:88e625c0fab90174665d0667fb5fd1099ab209320c480b21daa7efa3ade52979",
+    "production_executions_per_pass": 1152,
+    "passes": 2,
+    "runtime_failures": 0,
+    "telemetry_gaps": 0,
+    "g2_challenges": 288,
+    "g2_corroboration_searches": 513,
+    "g2_reopens": 16,
+    "g2_latent_discovery_episodes": 48
+  },
+  "frozen_task": {
+    "path": "benchmarks/epistemic_process_v3/tasks_v3_candidate.json",
+    "sha256": "575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829",
+    "episodes": 384,
+    "families": 24,
+    "episodes_per_family": 16
+  },
+  "score_matrix": {
+    "configurations": [
+      "C0",
+      "G0E",
+      "C1",
+      "G1",
+      "G2"
+    ],
+    "expected_pairs": 1920,
+    "exact_one_record_per_task_configuration": true
+  },
+  "required_episode_fields": [
+    "episode_id",
+    "configuration",
+    "steps",
+    "failures"
+  ],
+  "required_step_fields": [
+    "step",
+    "ingested_evidence_ids",
+    "final_state",
+    "active_evidence_refs",
+    "native_events",
+    "recovery_rounds",
+    "telemetry_gaps"
+  ],
+  "required_final_state_fields": [
+    "has_answer",
+    "operative_hypothesis",
+    "committed_answer",
+    "epistemic_status",
+    "evidence_family_ids",
+    "dependency_lineage_ids"
+  ],
+  "required_native_event_semantics": [
+    "challenge",
+    "corroboration_search",
+    "reopen",
+    "revision",
+    "decommitment",
+    "recommitment",
+    "resolution"
+  ],
+  "required_recovery_fields": [
+    "trigger",
+    "expansion_opportunity_available",
+    "expansion_opportunity_class",
+    "frontier_changed",
+    "rank_changed",
+    "operative_hypothesis_changed",
+    "status_changed",
+    "committed_answer_changed"
+  ],
+  "forbidden_raw_fields": [
+    "oracle",
+    "expected_terminal_operative",
+    "expected_terminal_committed",
+    "expected_status",
+    "expected_abstention",
+    "correctness",
+    "accuracy",
+    "claim_status",
+    "score_results"
+  ],
+  "evaluator_join_policy": {
+    "raw_generated_without_oracle": true,
+    "oracle_join_only_inside_frozen_evaluator": true,
+    "no_imputation": true,
+    "runtime_failure_makes_pair_unscorable": true,
+    "cross_episode_reference_invalidates_run": true
+  },
+  "statistics": {
+    "independent_unit": "episode",
+    "paired_binary_test": "two-sided exact McNemar",
+    "interval": "paired percentile bootstrap 95% CI",
+    "bootstrap_seed": 20261002,
+    "bootstrap_resamples": 20000,
+    "multiplicity": "Holm within preregistered claim family"
+  }
+}
