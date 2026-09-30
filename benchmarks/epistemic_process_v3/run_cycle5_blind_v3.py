@@ -109,8 +109,14 @@ def normalise_runtime(episode):
         state=step["final_state"]
         raw=int(state.pop("operative_hypothesis_node",0) or 0)
         committed=int(state.pop("committed_answer_node",0) or 0)
-        state["operative_hypothesis"]=nodes.get(raw)
-        state["committed_answer"]=nodes.get(committed)
+        has_answer=bool(state.get("has_answer"))
+        status=str(state.get("epistemic_status") or "")
+        state["operative_hypothesis"]=nodes.get(raw) if has_answer else None
+        state["committed_answer"]=(
+            nodes.get(committed)
+            if has_answer and status in {"resolved","provisionally_resolved"}
+            else None
+        )
         for ev in step.get("native_events",[]):
             ev["previous_hypothesis"]=nodes.get(int(ev.pop("previous_hypothesis_node",0) or 0))
             ev["hypothesis"]=nodes.get(int(ev.pop("hypothesis_node",0) or 0))
