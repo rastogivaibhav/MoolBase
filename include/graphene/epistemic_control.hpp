@@ -61,7 +61,8 @@ class EpistemicController {
       const FiberBundle& bundle,
       const EpistemicAdmissibility& admissibility,
       const StabilityAssessment& stability,
-      const DialecticOptions& options = {}) const;
+      const DialecticOptions& options = {},
+      const StabilityThresholds& thresholds = {}) const;
 
   OppositionReport oppose(
       const FiberBundle& bundle,
