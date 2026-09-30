@@ -292,12 +292,14 @@ def validate_inputs(
     raw: Mapping[str, Any],
     *,
     expected_configs: Sequence[str] = CONFIGS,
+    allow_score_bearing: bool = False,
 ) -> None:
-    if raw.get("score_bearing") is not False:
+    score_bearing = bool(raw.get("score_bearing"))
+    if score_bearing and not allow_score_bearing:
         raise EvaluationInputError(
-            "Cycle-6 evaluator validation accepts only unscored fixture input"
+            "score-bearing evidence requires an external immutable authorization gate"
         )
-    if raw.get("score_bearing_authorized") not in (False, None):
+    if not score_bearing and raw.get("score_bearing_authorized") not in (False, None):
         raise EvaluationInputError("unexpected score authorization in fixture")
 
     forbidden_present = set(_iter_nested_keys(raw)) & FORBIDDEN_RUNTIME_KEYS
@@ -589,8 +591,14 @@ def evaluate(
     raw: Mapping[str, Any],
     *,
     expected_configs: Sequence[str] = CONFIGS,
+    allow_score_bearing: bool = False,
 ) -> dict[str, Any]:
-    validate_inputs(tasks, raw, expected_configs=expected_configs)
+    validate_inputs(
+        tasks,
+        raw,
+        expected_configs=expected_configs,
+        allow_score_bearing=allow_score_bearing,
+    )
     tasks_by_id = {str(task["id"]): task for task in tasks["episodes"]}
     episodes_by_pair = {
         (str(ep["episode_id"]), str(ep["configuration"])): ep
