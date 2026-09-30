@@ -44,6 +44,11 @@ struct HarnessContract {
   size_t max_paths{128};
   size_t max_visited_states{4096};
 };
+struct TopologyEdge {
+  std::string from_ref;
+  std::string to_ref;
+  std::string opportunity_class;
+};
 
 struct TargetTelemetry {
   uint32_t target_node{0};
@@ -179,6 +184,22 @@ HarnessContract load_contract(const fs::path& path) {
   contract.max_paths = static_cast<size_t>(std::stoull(fields[3]));
   contract.max_visited_states = static_cast<size_t>(std::stoull(fields[4]));
   return contract;
+}
+
+std::vector<TopologyEdge> load_topology(const fs::path& path) {
+  std::ifstream input(path);
+  if (!input) throw std::runtime_error("cannot open V3 topology file");
+  std::vector<TopologyEdge> out;
+  std::string line;
+  while (std::getline(input, line)) {
+    if (line.empty()) continue;
+    const auto fields = split(line, '\t');
+    if (fields.size() != 3) {
+      throw std::runtime_error("V3 topology row must contain 3 fields");
+    }
+    out.push_back({fields[0], fields[1], fields[2]});
+  }
+  return out;
 }
 
 void require(Status status, const std::string& operation) {
@@ -628,11 +649,11 @@ uint32_t final_committed(const HypoKoshRuntimeResult& result, bool evidence_only
 }  // namespace
 
 int main(int argc, char** argv) {
-  if (argc != 8) {
+  if (argc != 9) {
     std::cerr
         << "usage: epistemic_process_runtime_runner_v3_cycle5 "
         << "<G0E|G1|G2> <episode-id> <visible-tsv> <latent-tsv> "
-        << "<contract-tsv> <db-dir> <seed>\n";
+        << "<topology-tsv> <contract-tsv> <db-dir> <seed>\n";
     return 2;
   }
 
@@ -641,9 +662,10 @@ int main(int argc, char** argv) {
     const std::string episode_id = argv[2];
     const fs::path observations_path = argv[3];
     const fs::path latent_path = argv[4];
-    const fs::path contract_path = argv[5];
-    const fs::path db_dir = argv[6];
-    const uint64_t seed = std::stoull(argv[7]);
+    const fs::path topology_path = argv[5];
+    const fs::path contract_path = argv[6];
+    const fs::path db_dir = argv[7];
+    const uint64_t seed = std::stoull(argv[8]);
     (void)seed;
 
     if (configuration != "G0E" &&
@@ -655,6 +677,7 @@ int main(int argc, char** argv) {
     const bool evidence_only = configuration == "G0E";
     const auto observations = load_observations(observations_path);
     const auto latent_observations = load_observations(latent_path);
+    const auto topology_edges = load_topology(topology_path);
     const HarnessContract contract = load_contract(contract_path);
     fs::remove_all(db_dir);
 
@@ -793,6 +816,33 @@ int main(int argc, char** argv) {
       insert_observation(latent, {0.0f, -1.0f, 0.0f}, "active");
     }
 
+    auto materialize_topology_from =
+        [&](const std::string& from_ref) {
+          const auto from_it = evidence_by_ref.find(from_ref);
+          if (from_it == evidence_by_ref.end()) return;
+          for (const TopologyEdge& topology : topology_edges) {
+            if (topology.from_ref != from_ref) continue;
+            const auto to_it = evidence_by_ref.find(topology.to_ref);
+            if (to_it == evidence_by_ref.end()) {
+              throw std::runtime_error(
+                  "topology references unknown latent evidence " +
+                  topology.to_ref);
+            }
+            EdgeInput bridge;
+            bridge.from = from_it->second.node_id;
+            bridge.to = to_it->second.node_id;
+            bridge.origin = EdgeOrigin::Observed;
+            bridge.role = EdgeRole::Mechanistic;
+            bridge.confidence = 0.90;
+            bridge.metadata["topology_bridge"] = "true";
+            bridge.metadata["expansion_opportunity_class"] =
+                topology.opportunity_class;
+            uint32_t ignored_edge = 0;
+            require(db.put_edge(bridge, &ignored_edge),
+                    "put V3 topology bridge");
+          }
+        };
+
     bool previous_available = false;
     bool previous_has_answer = false;
     uint32_t previous_operative = 0;
@@ -816,6 +866,7 @@ int main(int argc, char** argv) {
           observation.kind == "revoke" ? "audit_only" : "active";
       insert_observation(
           observation, {0.0f, 1.0f, 0.0f}, lifecycle);
+      materialize_topology_from(observation.id);
 
       StepResult step;
       step.step = observation.step;
@@ -851,6 +902,7 @@ int main(int argc, char** argv) {
         << ",\"H2\":" << h2 << "}"
         << ",\"harness\":{\"latent_observations\":"
         << latent_observations.size()
+        << ",\"topology_edges\":" << topology_edges.size()
         << ",\"semantic_candidates\":"
         << contract.semantic_candidates
         << ",\"max_paths\":" << contract.max_paths
