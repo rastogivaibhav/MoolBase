@@ -1,0 +1,65 @@
+{
+  "schema": "epistemic-process-v3-controls-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "profiles": [
+    {
+      "id": "C0",
+      "persistent_graphene_state": false,
+      "decision": "common_head",
+      "hypokosh": false,
+      "dwm": false,
+      "role": "stateless same-head control"
+    },
+    {
+      "id": "G0E",
+      "persistent_graphene_state": true,
+      "decision": "none",
+      "hypokosh": false,
+      "dwm": false,
+      "role": "Graphene evidence/provenance capability"
+    },
+    {
+      "id": "C1",
+      "persistent_graphene_state": true,
+      "decision": "common_head",
+      "hypokosh": false,
+      "dwm": false,
+      "role": "persistence treatment"
+    },
+    {
+      "id": "G1",
+      "persistent_graphene_state": true,
+      "decision": "hypokosh",
+      "hypokosh": true,
+      "dwm": false,
+      "role": "HypoKosh governed selection"
+    },
+    {
+      "id": "G2",
+      "persistent_graphene_state": true,
+      "decision": "hypokosh",
+      "hypokosh": true,
+      "dwm": true,
+      "role": "DWM treatment"
+    }
+  ],
+  "causal_comparisons": {
+    "C0->C1": {
+      "status": "VALID_PRIMARY_CAUSAL",
+      "attribution": "persistent evidence/provenance with decision head held constant"
+    },
+    "C1->G1": {
+      "status": "ARCHITECTURAL_OPERATIVE_ONLY",
+      "attribution": "HypoKosh operative-selection/governance effect",
+      "commitment_causality": false
+    },
+    "G1->G2": {
+      "status": "VALID_PRIMARY_CAUSAL",
+      "attribution": "incremental DWM effect"
+    }
+  },
+  "score_bearing_additional_ablations": [],
+  "diagnostic_ablations_allowed_pre_score": true,
+  "rule": "No additional score-bearing control may be added after V3 task outcomes become visible."
+}
