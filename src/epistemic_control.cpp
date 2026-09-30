@@ -432,7 +432,8 @@ ConvergedAnswer EpistemicController::converge(
     const FiberBundle& bundle,
     const EpistemicAdmissibility& admissibility,
     const StabilityAssessment& stability,
-    const DialecticOptions& options) const {
+    const DialecticOptions& options,
+    const StabilityThresholds& thresholds) const {
   ConvergedAnswer output;
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
@@ -443,7 +444,7 @@ ConvergedAnswer EpistemicController::converge(
   }
 
   const TargetCandidate* primary_target =
-      select_primary_target(targets);
+      select_primary_target(targets, thresholds);
   if (!primary_target) {
     output.residual_uncertainty.push_back(
         "no target earned an operative selection");
