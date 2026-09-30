@@ -57,6 +57,16 @@ struct NativeEpistemicEvent {
   std::string reason;
 };
 
+struct PriorEpistemicState {
+  bool available{false};
+  bool has_answer{false};
+  uint32_t operative_node{0};
+  uint32_t committed_node{0};
+  GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
+  uint64_t bundle_hash{0};
+  StabilityAssessment stability;
+};
+
 struct RuntimeOptions {
   DialecticOptions dialectic;
   StabilityWeights stability_weights;
@@ -64,6 +74,10 @@ struct RuntimeOptions {
   LyapunovWeights lyapunov_weights;
   LyapunovTargets lyapunov_targets;
   const PathVerifier* path_verifier{nullptr};
+  // Optional persistent state from the immediately preceding evidence update.
+  // This lets native transition receipts and Lyapunov dwell span sequential
+  // production calls without relying on evaluator/oracle state.
+  PriorEpistemicState prior_epistemic_state;
   uint32_t max_recursive_cycles{2};
   bool enable_opposition_research{false};
   uint32_t unchanged_recovery_patience{2};
