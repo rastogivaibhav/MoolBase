@@ -1,0 +1,147 @@
+name: EP Process V2 Cycle 5 blind unscored validation
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v2/**"
+      - "include/graphene/epistemic_control.hpp"
+      - "include/graphene/hypokosh_runtime.hpp"
+      - "src/epistemic_control.cpp"
+      - "src/hypokosh_runtime_frontier_part_2.inc"
+      - "src/hypokosh_runtime_frontier_part_3.inc"
+      - "tools/epistemic_process_runtime_runner_v2_cycle4.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-v2-cycle5-unscored.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v2-cycle5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle5-blind-unscored:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify score-bearing execution remains forbidden
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          model=json.loads(Path("benchmarks/epistemic_process_v2/measurement_model_v2.json").read_text())
+          assert model["status"] == "PREREGISTERED_UNSCORED"
+          assert model["score_bearing_authorized"] is False
+          tasks=json.loads(Path("benchmarks/epistemic_process_v2/tasks_v2_candidate.json").read_text())
+          assert tasks["score_bearing_allowed"] is False
+          print("cycle5_score_authorization=false")
+          PY
+
+      - name: Compile Cycle 5 Python
+        run: |
+          set -euo pipefail
+          python -m py_compile             benchmarks/epistemic_process_v2/generate_tasks_v2.py             benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py             benchmarks/epistemic_process_v2/strip_runtime_tasks_v2.py             benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py             benchmarks/epistemic_process_v2/validate_cycle5_round_telemetry_v2.py             benchmarks/epistemic_process_v2/summarize_cycle5_mechanical_v2.py             benchmarks/epistemic_process_v2/evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/test_evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/compare_cycle4_determinism_v2.py
+
+      - name: Verify generated task universe is reproducible
+        run: |
+          set -euo pipefail
+          cp benchmarks/epistemic_process_v2/tasks_v2_candidate.json /tmp/tasks-v2-expected.json
+          python benchmarks/epistemic_process_v2/generate_tasks_v2.py
+          cmp /tmp/tasks-v2-expected.json benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+          python benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py             benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+
+      - name: Build oracle-free runtime task copy
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cycle5
+          python benchmarks/epistemic_process_v2/strip_runtime_tasks_v2.py             --tasks benchmarks/epistemic_process_v2/tasks_v2_candidate.json             --out /tmp/cycle5/runtime-tasks.json
+
+      - name: Unit-test evaluator without candidate outputs
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_evaluate_v2_candidate.py)
+
+      - name: Configure production runtime
+        run: |
+          cmake -S . -B build-cycle5             -DCMAKE_BUILD_TYPE=Release             -DGRAPHENEDB_BUILD_TESTS=ON             -DGRAPHENEDB_BUILD_SERVER=OFF             -DGRAPHENEDB_BUILD_BENCH=OFF             -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build runner and inherited behavior tests
+        run: |
+          cmake --build build-cycle5 --parallel 2 --target             graphenedb_epistemic_process_runtime_runner_v2_cycle4             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests
+
+      - name: Prove telemetry additions did not break inherited behavior
+        run: |
+          set -euo pipefail
+          ./build-cycle5/graphenedb_epistemic_control_tests
+          ./build-cycle5/graphenedb_hypokosh_runtime_tests
+
+      - name: Execute 270-episode blind mechanical campaign
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-tasks.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/raw-full.json
+          python benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py             /tmp/cycle5/raw-full.json
+          python benchmarks/epistemic_process_v2/validate_cycle5_round_telemetry_v2.py             /tmp/cycle5/raw-full.json
+          mkdir -p reports/epistemic-process-v2-cycle5
+          python benchmarks/epistemic_process_v2/summarize_cycle5_mechanical_v2.py             --raw /tmp/cycle5/raw-full.json             --out reports/epistemic-process-v2-cycle5/mechanical-summary.json
+
+      - name: Verify deterministic semantics on 16 blinded episodes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          from pathlib import Path
+          full=json.loads(Path("benchmarks/epistemic_process_v2/tasks_v2_candidate.json").read_text())
+          runtime=json.loads(Path("/tmp/cycle5/runtime-tasks.json").read_text())
+          ids=[]
+          seen=defaultdict(int)
+          for task in full["episodes"]:
+              family=task["task_family"]
+              if seen[family] < 2:
+                  ids.append(task["id"])
+                  seen[family] += 1
+          by_id={task["id"]:task for task in runtime["episodes"]}
+          subset={k:v for k,v in runtime.items() if k != "episodes"}
+          subset["episodes"]=[by_id[x] for x in ids]
+          Path("/tmp/cycle5/runtime-subset.json").write_text(
+              json.dumps(subset, indent=2, sort_keys=True)+"\n")
+          assert len(ids) == 18
+          print("cycle5_determinism_subset=18")
+          PY
+          python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-subset.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/replay-a.json
+          python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-subset.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/replay-b.json
+          python benchmarks/epistemic_process_v2/compare_cycle4_determinism_v2.py             /tmp/cycle5/replay-a.json /tmp/cycle5/replay-b.json
+
+      - name: Enforce blind evidence boundary
+        run: |
+          set -euo pipefail
+          rm -f /tmp/cycle5/raw-full.json /tmp/cycle5/replay-a.json /tmp/cycle5/replay-b.json
+          if find reports/epistemic-process-v2-cycle5 -type f | grep -E '/(raw|score|scores|accuracy|claim|aggregate)' ; then
+            echo "outcome-bearing artifact escaped Cycle 5 blind boundary" >&2
+            exit 1
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary=json.loads(Path("reports/epistemic-process-v2-cycle5/mechanical-summary.json").read_text())
+          assert summary["outcome_metrics_computed"] is False
+          assert summary["oracle_join_performed"] is False
+          assert summary["score_bearing"] is False
+          print("cycle5_blind_boundary=passed")
+          PY
+
+      - name: Upload mechanical evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v2-cycle5-mechanical-${{ github.sha }}
+          path: reports/epistemic-process-v2-cycle5/mechanical-summary.json
+          retention-days: 90

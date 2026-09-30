@@ -1,0 +1,112 @@
+name: EP Process V2 score
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v2-score-001
+  cancel-in-progress: false
+
+jobs:
+  frozen-score:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify immutable score authorization
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v2/score_gate_v2.py             --manifest benchmarks/epistemic_process_v2/score_freeze_v2.json             --repo-root .
+
+      - name: Verify frozen evaluator hashes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          freeze=json.loads(Path("benchmarks/epistemic_process_v2/evaluator_freeze_v2.json").read_text())
+          for rel, expected in freeze["frozen_sha256"].items():
+              actual=hashlib.sha256(Path(rel).read_bytes()).hexdigest()
+              assert actual == expected, (rel, expected, actual)
+          print("score_evaluator_freeze_hashes=passed")
+          PY
+
+      - name: Re-run non-outcome contract gates
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_statistics_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_evaluate_v2_candidate.py)
+          (cd benchmarks/epistemic_process_v2 && python test_evaluator_adversarial_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_claim_gate_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_score_gate_v2.py)
+          python benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py             benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+
+      - name: Build oracle-free runtime task copy
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2-score
+          python benchmarks/epistemic_process_v2/strip_runtime_tasks_v2.py             --tasks benchmarks/epistemic_process_v2/tasks_v2_candidate.json             --out /tmp/v2-score/runtime-tasks.json
+
+      - name: Configure production runtime
+        run: |
+          cmake -S . -B build-v2-score             -DCMAKE_BUILD_TYPE=Release             -DGRAPHENEDB_BUILD_TESTS=ON             -DGRAPHENEDB_BUILD_SERVER=OFF             -DGRAPHENEDB_BUILD_BENCH=OFF             -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build score runtime and inherited behavior tests
+        run: |
+          cmake --build build-v2-score --parallel 2 --target             graphenedb_epistemic_process_runtime_runner_v2_cycle4             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests
+
+      - name: Re-verify inherited production behavior
+        run: |
+          set -euo pipefail
+          ./build-v2-score/graphenedb_epistemic_control_tests
+          ./build-v2-score/graphenedb_hypokosh_runtime_tests
+
+      - name: Run first untouched score-bearing campaign
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v2-score-001
+          python benchmarks/epistemic_process_v2/run_score_v2.py             --tasks /tmp/v2-score/runtime-tasks.json             --runtime-runner ./build-v2-score/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --experiment-id EP-PROCESS-V2-SCORE-001             --out reports/epistemic-process-v2-score-001/raw.json
+
+      - name: Validate score-bearing raw evidence
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v2/validate_score_raw_v2.py             reports/epistemic-process-v2-score-001/raw.json
+
+      - name: Evaluate frozen metrics and claim gates
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v2/evaluate_score_v2.py             --tasks benchmarks/epistemic_process_v2/tasks_v2_candidate.json             --raw reports/epistemic-process-v2-score-001/raw.json             --measurement-model benchmarks/epistemic_process_v2/measurement_model_v2.json             --evaluation-out reports/epistemic-process-v2-score-001/evaluation.json             --claims-out reports/epistemic-process-v2-score-001/claims.json
+
+      - name: Record exact environment and checksums
+        run: |
+          set -euo pipefail
+          {
+            echo "experiment_id=EP-PROCESS-V2-SCORE-001"
+            echo "github_sha=${GITHUB_SHA}"
+            echo "github_ref=${GITHUB_REF}"
+            echo "git_head=$(git rev-parse HEAD)"
+            echo "git_tree=$(git rev-parse 'HEAD^{tree}')"
+            echo "python=$(python --version 2>&1)"
+            echo "cmake=$(cmake --version | head -1)"
+            echo "cxx=$(c++ --version | head -1)"
+            echo "uname=$(uname -a)"
+          } > reports/epistemic-process-v2-score-001/environment.txt
+          sha256sum             benchmarks/epistemic_process_v2/score_freeze_v2.json             benchmarks/epistemic_process_v2/evaluator_freeze_v2.json             benchmarks/epistemic_process_v2/tasks_v2_candidate.json             benchmarks/epistemic_process_v2/evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/statistics_v2.py             benchmarks/epistemic_process_v2/claim_gate_v2.py             benchmarks/epistemic_process_v2/run_score_v2.py             benchmarks/epistemic_process_v2/score_gate_v2.py             reports/epistemic-process-v2-score-001/raw.json             reports/epistemic-process-v2-score-001/evaluation.json             reports/epistemic-process-v2-score-001/claims.json             > reports/epistemic-process-v2-score-001/checksums.sha256
+
+      - name: Upload immutable score evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v2-score-001-${{ github.sha }}
+          path: reports/epistemic-process-v2-score-001/
+          retention-days: 90

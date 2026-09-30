@@ -65,6 +65,11 @@ GovernedProjection project_status(
           "resolution_conditions_not_fully_earned"};
 }
 
+bool trace_status_commits(GovernedEpistemicStatus status) {
+  return status == GovernedEpistemicStatus::Resolved ||
+         status == GovernedEpistemicStatus::ProvisionallyResolved;
+}
+
 }  // namespace
 
 CompleteHypoKoshRuntime::CompleteHypoKoshRuntime(
@@ -242,6 +247,10 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   DialecticOptions current_options = options.dialectic;
   EscapePlan current_escape = result.initial_escape;
   uint32_t consecutive_unchanged_bundles = 0;
+  GovernedEpistemicStatus current_trace_status = project_status(
+      result.final_convergence, result.final_opposition,
+      result.final_stability, result.final_admissibility,
+      current_options.mode, options.stability_thresholds).status;
   for (uint32_t round = 0; round < options.max_recursive_cycles; ++round) {
     RecoveryRoundTrace trace;
     trace.round_index = round;
@@ -274,6 +283,29 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     trace.previous_visited_states =
         result.final_bundle.visited_states;
     trace.previous_truncated = result.final_bundle.truncated;
+
+    trace.previous_has_answer = result.final_convergence.has_answer;
+    trace.previous_primary_node =
+        trace.previous_has_answer ? result.final_convergence.primary_node : 0;
+    trace.previous_status = current_trace_status;
+    trace.previous_committed_node =
+        trace.previous_has_answer &&
+                trace_status_commits(trace.previous_status)
+            ? trace.previous_primary_node
+            : 0;
+    trace.previous_target_ranking =
+        controller.inspect_targets(result.final_bundle);
+
+    // Default the next snapshot to the current one so early-stop rounds have a
+    // complete before/after record without implying unobserved change.
+    trace.next_bundle_hash = trace.previous_bundle_hash;
+    trace.next_visited_states = trace.previous_visited_states;
+    trace.next_truncated = trace.previous_truncated;
+    trace.next_has_answer = trace.previous_has_answer;
+    trace.next_primary_node = trace.previous_primary_node;
+    trace.next_status = trace.previous_status;
+    trace.next_committed_node = trace.previous_committed_node;
+    trace.next_target_ranking = trace.previous_target_ranking;
 
     const bool recovery_search_requested =
         trace.recovery_search_requested;

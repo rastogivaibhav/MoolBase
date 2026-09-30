@@ -1,0 +1,123 @@
+{
+  "schema": "epistemic-process-v2-telemetry-contract-v1",
+  "status": "PREREGISTERED_UNIMPLEMENTED",
+  "oracle_leakage_forbidden": true,
+  "runtime_forbidden_fields": [
+    "terminal_supported",
+    "expected_answer",
+    "benchmark_correctness",
+    "decisive",
+    "evaluator_independence_label",
+    "future_observations"
+  ],
+  "runtime_allowed_observation_fields": [
+    "step",
+    "evidence_id",
+    "family_id",
+    "event_kind",
+    "bears_on",
+    "depends_on",
+    "observed_provenance"
+  ],
+  "step_record": {
+    "required": [
+      "episode_id",
+      "configuration",
+      "step",
+      "ingested_evidence_ids",
+      "previous_step_state",
+      "initial_state",
+      "recovery_rounds",
+      "final_state",
+      "native_events",
+      "execution"
+    ],
+    "previous_step_state": [
+      "operative_hypothesis",
+      "committed_answer",
+      "epistemic_status"
+    ],
+    "state_snapshot": [
+      "has_answer",
+      "operative_hypothesis",
+      "committed_answer",
+      "epistemic_status",
+      "confidence",
+      "bundle_hash",
+      "visited_states",
+      "truncated",
+      "evidence_edge_ids",
+      "evidence_family_ids",
+      "target_ranking"
+    ],
+    "target_ranking_entry": [
+      "target_id",
+      "rank",
+      "support_strength",
+      "opposition_strength",
+      "belief_strength",
+      "semantic_verification",
+      "independent_support_family_count"
+    ],
+    "recovery_round": [
+      "round_index",
+      "trigger",
+      "reopen_nodes",
+      "options_before",
+      "options_after",
+      "bundle_hash_before",
+      "bundle_hash_after",
+      "visited_states_before",
+      "visited_states_after",
+      "target_ranking_before",
+      "target_ranking_after",
+      "frontier_changed",
+      "rank_changed",
+      "operative_hypothesis_changed",
+      "status_changed",
+      "committed_answer_changed",
+      "stop_reason"
+    ],
+    "execution": [
+      "execution_seconds",
+      "expansion_rounds",
+      "visited_states_total",
+      "evidence_edges_considered",
+      "runtime_failure"
+    ]
+  },
+  "event_types": {
+    "observation_ingested": "records newly visible evidence",
+    "cross_step_belief_change": "change between previous final operative state and current initial operative state",
+    "challenge": "DWM challenge event",
+    "reopen": "DWM or recovery reopen event",
+    "within_call_revision": "operative hypothesis changes during recovery within one reason call",
+    "commitment_change": "committed answer becomes set, cleared, or changes",
+    "terminal": "final state for this observation step"
+  },
+  "cross_step_belief_change_required_when": {
+    "previous_and_current_differ": true,
+    "required_evidence": [
+      "from",
+      "to",
+      "triggering_evidence_ids",
+      "step"
+    ]
+  },
+  "commitment_rule": {
+    "operative_hypothesis_separate_from_committed_answer": true,
+    "noncommitting_statuses": [
+      "open",
+      "contested",
+      "evidence_required",
+      "speculative",
+      "abstain"
+    ],
+    "committed_answer_must_be_null_for_noncommitting_status": true
+  },
+  "determinism": {
+    "canonical_array_order_required": true,
+    "stable_target_ranking_tiebreak_required": true,
+    "same_input_same_telemetry_except_timing": true
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "schema": "epistemic-process-v2-evaluator-freeze-v1",
+  "status": "FROZEN_PRE_SCORE",
+  "experiment_id_candidate": "EP-PROCESS-V2-SCORE-001",
+  "validated_scientific_code_commit": "fafe753b45fa9289dbcd3253a5b3f7e3e01ab4d2",
+  "validated_scientific_code_tree": "33078208052c89762967195e049601635f44e360",
+  "candidate_commit": "d5a0338d609b6f72018b83121aa6e605b1a0ca37",
+  "candidate_tree": "fd4cf322140b5e212dc4c24f083955cca0a72a22",
+  "allowed_changes_after_candidate": [
+    "benchmarks/epistemic_process_v2/evaluator_freeze_v2.json"
+  ],
+  "score_bearing_authorized": false,
+  "candidate_outcomes_opened": false,
+  "candidate_oracle_join_performed": false,
+  "task_universe": {
+    "episodes": 270,
+    "families": 9,
+    "episodes_per_family": 30,
+    "mirror_balance_per_family": "15/15",
+    "single_step_control_family": "single_step_control"
+  },
+  "validation": {
+    "cycle6_workflow_run_id": 36699461036,
+    "cycle6_artifact_id": 11088998451,
+    "cycle6_artifact_digest": "sha256:92bf537d696e8bd7d45b84fd9d81909ee5d9369dc792703af291eaf255c44942",
+    "expanded_cycle5_workflow_run_id": 36699461013,
+    "expanded_cycle5_artifact_id": 11088559463,
+    "expanded_cycle5_artifact_digest": "sha256:dfcaa0cd88ada9f6fb267be807767faaefc766c0a87266643b68203b38121f67",
+    "adversarial_evaluator_cases": 16,
+    "statistics_contracts_passed": true,
+    "claim_gate_contracts_passed": true,
+    "expanded_mechanical_executions": 1350,
+    "expanded_mechanical_runtime_failures": 0,
+    "expanded_mechanical_telemetry_gaps": 0,
+    "expanded_mechanical_step_records": 5700,
+    "expanded_mechanical_recovery_rounds": 2280,
+    "expanded_mechanical_oracle_join_performed": false,
+    "expanded_mechanical_outcome_metrics_computed": false
+  },
+  "frozen_sha256": {
+    "benchmarks/epistemic_process_v2/evaluate_v2_candidate.py": "7a3eeee3b035e1601a1f0a255563e145a1344a2fe64a2a36c0053049c8c02569",
+    "benchmarks/epistemic_process_v2/statistics_v2.py": "b7b296e4908f235702741087922add83457238652b6d264c9399d0c736cb42c7",
+    "benchmarks/epistemic_process_v2/claim_gate_v2.py": "314df06b0ccea0bc470804aa5f25675a3f8580ca30632ca6198278ae12ff8f29",
+    "benchmarks/epistemic_process_v2/metric_definitions_v2.json": "72ef7d5adb30a2ba08312cf4bcc4565a503bf8cb6d66c7313b706597ea518487",
+    "benchmarks/epistemic_process_v2/tasks_v2_candidate.json": "0960f2b0af349bb122a8dc026a94bbd128f9081e6750eeed6ac67ca81f90f2a7",
+    "benchmarks/epistemic_process_v2/generate_tasks_v2.py": "0dece1d693c9475e995a15367151dffeb0f12bc48187d395a949441ca9c4a2e1",
+    "benchmarks/epistemic_process_v2/measurement_model_v2.json": "def0ac19f6f7a94afe12ca166fb51ede0b2576c276d5ed23728742fa97ffe689",
+    "benchmarks/epistemic_process_v2/telemetry_contract_v2.json": "735f1a7fa1ed4c2d27dc24ce1aee5e7c9e30310ab20d41a552d7d7713e1914ab"
+  },
+  "claim_applicability": {
+    "C0->C1": "VALID_PRIMARY_CAUSAL",
+    "C1->G1": "ARCHITECTURAL_OPERATIVE_ONLY",
+    "hypokosh_commitment_calibration": "INELIGIBLE_DESIGN",
+    "G1->G2": "VALID_PRIMARY_CAUSAL"
+  },
+  "next_authorized_activity": "construct immutable V2 pre-freeze candidate and score-authorization boundary without inspecting candidate outcome metrics"
+}

@@ -1,0 +1,135 @@
+name: EP Process V2 Cycle 6 evaluator adversarial validation
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v2/**"
+      - ".github/workflows/epistemic-process-v2-cycle6-evaluator.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v2-cycle6-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle6-evaluator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify scoring remains unauthorized
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          model=json.loads(Path("benchmarks/epistemic_process_v2/measurement_model_v2.json").read_text())
+          tasks=json.loads(Path("benchmarks/epistemic_process_v2/tasks_v2_candidate.json").read_text())
+          defs=json.loads(Path("benchmarks/epistemic_process_v2/metric_definitions_v2.json").read_text())
+          assert model["score_bearing_authorized"] is False
+          assert tasks["score_bearing_allowed"] is False
+          assert defs["score_bearing_authorized"] is False
+          print("cycle6_score_authorization=false")
+          PY
+
+      - name: Compile evaluator and statistics
+        run: |
+          set -euo pipefail
+          python -m py_compile             benchmarks/epistemic_process_v2/statistics_v2.py             benchmarks/epistemic_process_v2/evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/claim_gate_v2.py             benchmarks/epistemic_process_v2/test_statistics_v2.py             benchmarks/epistemic_process_v2/test_evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/test_evaluator_adversarial_v2.py             benchmarks/epistemic_process_v2/test_claim_gate_v2.py             benchmarks/epistemic_process_v2/generate_tasks_v2.py             benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py
+
+      - name: Verify 270-episode candidate is reproducible
+        run: |
+          set -euo pipefail
+          cp benchmarks/epistemic_process_v2/tasks_v2_candidate.json /tmp/tasks-v2-expected.json
+          python benchmarks/epistemic_process_v2/generate_tasks_v2.py
+          cmp /tmp/tasks-v2-expected.json benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+          python benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py             benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+
+      - name: Run statistical test vectors
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_statistics_v2.py)
+
+      - name: Run evaluator smoke contract
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_evaluate_v2_candidate.py)
+
+      - name: Attack evaluator fail-closed boundary
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_evaluator_adversarial_v2.py)
+
+      - name: Test frozen claim gates
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_claim_gate_v2.py)
+
+      - name: Verify deterministic evaluator semantics
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python - <<'PY'
+          import json
+          from evaluate_v2_candidate import evaluate
+          from test_evaluator_adversarial_v2 import fixture
+          tasks, raw = fixture()
+          a=evaluate(tasks, raw)
+          b=evaluate(tasks, raw)
+          assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+          print("cycle6_evaluator_determinism=passed")
+          PY
+          )
+
+      - name: Assert candidate outcomes remain unopened
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          workflow=Path(".github/workflows/epistemic-process-v2-cycle6-evaluator.yml").read_text()
+          # Build sentinels dynamically so the guard does not match its own
+          # source text.
+          runtime_runner = "run_" + "cycle4_unscored_v2.py"
+          raw_candidate = "raw-" + "full.json"
+          assert runtime_runner not in workflow
+          assert raw_candidate not in workflow
+          print("cycle6_candidate_outcome_boundary=passed")
+          PY
+
+      - name: Record frozen input checksums
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v2-cycle6
+          sha256sum             benchmarks/epistemic_process_v2/evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/statistics_v2.py             benchmarks/epistemic_process_v2/claim_gate_v2.py             benchmarks/epistemic_process_v2/metric_definitions_v2.json             benchmarks/epistemic_process_v2/tasks_v2_candidate.json             benchmarks/epistemic_process_v2/generate_tasks_v2.py             benchmarks/epistemic_process_v2/measurement_model_v2.json             benchmarks/epistemic_process_v2/telemetry_contract_v2.json             > reports/epistemic-process-v2-cycle6/frozen-input-checksums.sha256
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary={
+              "schema":"epistemic-process-v2-cycle6-audit-v1",
+              "score_bearing":False,
+              "candidate_outcomes_opened":False,
+              "candidate_oracle_join_performed":False,
+              "task_episodes":270,
+              "task_families":9,
+              "adversarial_cases":16,
+              "statistics_contracts":"passed",
+              "claim_gate_contracts":"passed"
+          }
+          Path("reports/epistemic-process-v2-cycle6/audit-summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True)+"\n"
+          )
+          PY
+
+      - name: Upload evaluator audit evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v2-cycle6-evaluator-audit-${{ github.sha }}
+          path: reports/epistemic-process-v2-cycle6/
+          retention-days: 90

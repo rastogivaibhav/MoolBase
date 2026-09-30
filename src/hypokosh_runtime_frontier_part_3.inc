@@ -89,6 +89,20 @@
     EscapePlan reopened_escape = escape.plan(
         reopened_bundle, reopened_stability, current_options.mode);
 
+    const GovernedProjection reopened_projection = project_status(
+        reopened_convergence, reopened_opposition,
+        reopened_stability, reopened_admissibility,
+        current_options.mode, options.stability_thresholds);
+    trace.next_has_answer = reopened_convergence.has_answer;
+    trace.next_primary_node =
+        trace.next_has_answer ? reopened_convergence.primary_node : 0;
+    trace.next_status = reopened_projection.status;
+    trace.next_committed_node =
+        trace.next_has_answer && trace_status_commits(trace.next_status)
+            ? trace.next_primary_node
+            : 0;
+    trace.next_target_ranking = controller.inspect_targets(reopened_bundle);
+
     const bool revised_answer =
         previous_has_answer != reopened_convergence.has_answer ||
         (previous_has_answer && reopened_convergence.has_answer &&
@@ -161,6 +175,23 @@
         partial.certificate.limit_cycle_detected;
     trace.lyapunov_oscillation =
         partial.certificate.oscillation_detected;
+
+    if (trace.lyapunov_limit_cycle ||
+        trace.lyapunov_oscillation) {
+      trace.next_status =
+          trace.next_has_answer
+              ? GovernedEpistemicStatus::Contested
+              : GovernedEpistemicStatus::Abstain;
+      trace.next_committed_node = 0;
+    } else if (
+        trace.next_status == GovernedEpistemicStatus::Resolved &&
+        !partial.certificate.practical_stability_observed) {
+      trace.next_status = GovernedEpistemicStatus::ProvisionallyResolved;
+      trace.next_committed_node =
+          trace.next_has_answer ? trace.next_primary_node : 0;
+    }
+    current_trace_status = trace.next_status;
+
     if (trace.lyapunov_limit_cycle ||
         trace.lyapunov_oscillation) {
       trace.stop_reason = trace.lyapunov_limit_cycle

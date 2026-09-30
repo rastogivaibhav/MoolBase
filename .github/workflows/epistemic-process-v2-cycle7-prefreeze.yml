@@ -1,0 +1,133 @@
+name: EP Process V2 Cycle 7 pre-freeze verification
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v2/**"
+      - ".github/workflows/epistemic-process-v2-cycle7-prefreeze.yml"
+      - ".github/workflows/epistemic-process-v2-score.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v2-cycle7-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Assert score manifest is absent pre-freeze
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v2/score_freeze_v2.json
+          echo "cycle7_score_manifest=absent"
+
+      - name: Verify evaluator freeze hashes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          freeze=json.loads(Path("benchmarks/epistemic_process_v2/evaluator_freeze_v2.json").read_text())
+          for rel, expected in freeze["frozen_sha256"].items():
+              actual=hashlib.sha256(Path(rel).read_bytes()).hexdigest()
+              assert actual == expected, (rel, expected, actual)
+          assert freeze["score_bearing_authorized"] is False
+          print("cycle7_evaluator_freeze_hashes=passed")
+          PY
+
+      - name: Compile score wrappers and frozen evaluator
+        run: |
+          set -euo pipefail
+          python -m py_compile             benchmarks/epistemic_process_v2/score_gate_v2.py             benchmarks/epistemic_process_v2/run_score_v2.py             benchmarks/epistemic_process_v2/validate_score_raw_v2.py             benchmarks/epistemic_process_v2/evaluate_score_v2.py             benchmarks/epistemic_process_v2/test_score_gate_v2.py             benchmarks/epistemic_process_v2/statistics_v2.py             benchmarks/epistemic_process_v2/evaluate_v2_candidate.py             benchmarks/epistemic_process_v2/claim_gate_v2.py
+
+      - name: Re-run frozen evaluator adversarial gates
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v2 && python test_statistics_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_evaluate_v2_candidate.py)
+          (cd benchmarks/epistemic_process_v2 && python test_evaluator_adversarial_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_claim_gate_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python test_score_gate_v2.py)
+
+      - name: Verify task universe remains reproducible
+        run: |
+          set -euo pipefail
+          cp benchmarks/epistemic_process_v2/tasks_v2_candidate.json /tmp/tasks-v2-candidate.json
+          python benchmarks/epistemic_process_v2/generate_tasks_v2.py
+          cmp /tmp/tasks-v2-candidate.json benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+          python benchmarks/epistemic_process_v2/validate_tasks_v2_candidate.py             benchmarks/epistemic_process_v2/tasks_v2_candidate.json
+
+      - name: Verify score workflow is manual-only
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          text=Path(".github/workflows/epistemic-process-v2-score.yml").read_text()
+          assert "workflow_dispatch:" in text
+          assert "pull_request:" not in text
+          assert "push:" not in text
+          assert "schedule:" not in text
+          print("cycle7_score_workflow_trigger=manual_only")
+          PY
+
+      - name: Verify score wrapper reuses frozen runtime harness
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("benchmarks/epistemic_process_v2/run_score_v2.py").read_text()
+          required=[
+              "from run_cycle4_unscored_v2 import",
+              "c0_episode",
+              "runtime_episode",
+          ]
+          for item in required:
+              assert item in text
+          print("cycle7_score_runtime_path=reused")
+          PY
+
+      - name: Record pre-freeze evidence
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v2-cycle7
+          git rev-parse HEAD > reports/epistemic-process-v2-cycle7/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v2-cycle7/tree.txt
+          sha256sum             benchmarks/epistemic_process_v2/score_gate_v2.py             benchmarks/epistemic_process_v2/run_score_v2.py             benchmarks/epistemic_process_v2/validate_score_raw_v2.py             benchmarks/epistemic_process_v2/evaluate_score_v2.py             .github/workflows/epistemic-process-v2-score.yml             benchmarks/epistemic_process_v2/evaluator_freeze_v2.json             > reports/epistemic-process-v2-cycle7/prefreeze-checksums.sha256
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary={
+              "schema":"epistemic-process-v2-cycle7-prefreeze-v1",
+              "score_bearing":False,
+              "score_manifest_present":False,
+              "candidate_outcomes_opened":False,
+              "candidate_oracle_join_performed":False,
+              "task_episodes":270,
+              "task_families":9,
+              "score_workflow_manual_only":True,
+              "score_gate_contracts":"passed"
+          }
+          Path("reports/epistemic-process-v2-cycle7/prefreeze-summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True)+"\n"
+          )
+          PY
+
+      - name: Upload pre-freeze evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v2-cycle7-prefreeze-${{ github.sha }}
+          path: reports/epistemic-process-v2-cycle7/
+          retention-days: 90

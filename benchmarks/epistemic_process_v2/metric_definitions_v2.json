@@ -1,0 +1,118 @@
+{
+  "schema": "epistemic-process-v2-metric-definitions-v1",
+  "status": "FROZEN_PRE_SCORE",
+  "score_bearing_authorized": false,
+  "episode_universe": {
+    "minimum_episodes": 240,
+    "candidate_episodes": 270,
+    "candidate_families": 9,
+    "episodes_per_family": 30,
+    "single_step_control_family": "single_step_control"
+  },
+  "definitions": {
+    "operative_hypothesis_accuracy": {
+      "numerator": "episodes whose terminal operative_hypothesis equals oracle terminal_operative",
+      "denominator": "all episodes for answer-producing profiles"
+    },
+    "committed_coverage_rate": {
+      "numerator": "episodes with non-null terminal committed_answer",
+      "denominator": "all episodes for G1/G2"
+    },
+    "committed_accuracy": {
+      "numerator": "terminal commitments equal to oracle terminal_committed",
+      "denominator": "episodes with a non-null terminal commitment"
+    },
+    "false_commitment_rate": {
+      "numerator": "non-null terminal commitments unequal to oracle terminal_committed, including commitment where oracle requires abstention",
+      "denominator": "episodes with a non-null terminal commitment"
+    },
+    "appropriate_abstention_rate": {
+      "numerator": "oracle-abstention episodes with null terminal committed_answer",
+      "denominator": "episodes whose oracle terminal_committed is null"
+    },
+    "cross_step_refutation_response_rate": {
+      "numerator": "eligible response windows in which operative hypothesis changes to an allowed target/null, or a previously committed contradicted answer is explicitly decommitted",
+      "denominator": "episodes with a preregistered response_window"
+    },
+    "cross_step_revision_latency_steps": {
+      "value": "first accepted response step minus decisive trigger step",
+      "nonresponse": "preserved as nonresponse, never imputed"
+    },
+    "false_convergence_rate": {
+      "numerator": "resolved decisions with insufficient active independent support or active decisive refutation/revocation",
+      "denominator": "all decisions emitted with epistemic_status=resolved"
+    },
+    "earned_resolution_rate": {
+      "numerator": "resolution-eligible episodes ending resolved with correct committed answer",
+      "denominator": "episodes whose oracle terminal answer has the required active independent support and no active decisive refutation"
+    },
+    "evidence_retention_exactness": {
+      "numerator": "step snapshots whose active evidence refs equal the task-derived active evidence set after revocations",
+      "denominator": "all G0E/C1 step snapshots"
+    },
+    "evidence_family_identity_exactness": {
+      "numerator": "step snapshots whose evidence family set equals the task-derived active family set",
+      "denominator": "all G0E/C1 step snapshots"
+    },
+    "dependency_lineage_exactness": {
+      "numerator": "step snapshots whose derivation lineage equals task-derived active dependency lineage",
+      "denominator": "all G0E/C1 step snapshots"
+    },
+    "revocation_visibility_rate": {
+      "numerator": "revoked evidence ids absent immediately after the revocation event",
+      "denominator": "all explicit revocation references"
+    },
+    "cross_episode_leakage_rate": {
+      "policy": "any cross-episode evidence ref invalidates the run before metrics are computed",
+      "valid_run_value": 0
+    },
+    "challenge_precision": {
+      "numerator": "G2 challenge events occurring on preregistered challenge-warranted steps",
+      "denominator": "all G2 challenge events"
+    },
+    "challenge_rate": {
+      "numerator": "G2 challenge events",
+      "denominator": "all G2 observation steps"
+    },
+    "reopen_usefulness_rate": {
+      "numerator": "DWM reopen rounds changing frontier, rank, operative hypothesis, governed status, or committed answer",
+      "denominator": "all DWM reopen rounds"
+    },
+    "unnecessary_reopen_rate": {
+      "numerator": "DWM reopen events on non-warranted steps",
+      "denominator": "all DWM reopen events"
+    }
+  },
+  "statistics": {
+    "episode_is_independent_unit": true,
+    "binary_paired_test": "two-sided exact McNemar",
+    "paired_interval": "paired bootstrap percentile 95% CI of treatment-minus-control mean",
+    "bootstrap_seed": 20261006,
+    "bootstrap_resamples": 10000,
+    "multiple_testing": "Holm within each primary claim family",
+    "effect_sizes_always_reported": true,
+    "counts_and_denominators_always_reported": true
+  },
+  "causal_comparisons": {
+    "C0->C1": {
+      "status": "VALID_PRIMARY_CAUSAL",
+      "primary_endpoint": "operative_hypothesis_accuracy",
+      "safety_control": "single_step_control accuracy regression"
+    },
+    "C1->G1": {
+      "status": "ARCHITECTURAL_OPERATIVE_ONLY",
+      "commitment_causal_comparison_authorized": false,
+      "reason": "C1 never emits committed answers, so commitment calibration cannot be causally compared against G1 in this profile set."
+    },
+    "G1->G2": {
+      "status": "VALID_PRIMARY_CAUSAL",
+      "primary_surfaces": [
+        "operative_hypothesis_accuracy",
+        "terminal commitment correctness",
+        "false commitment",
+        "DWM process metrics",
+        "cost"
+      ]
+    }
+  }
+}
