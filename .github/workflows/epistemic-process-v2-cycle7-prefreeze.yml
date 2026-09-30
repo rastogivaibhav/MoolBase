@@ -6,6 +6,7 @@ on:
       - "benchmarks/epistemic_process_v2/**"
       - ".github/workflows/epistemic-process-v2-cycle7-prefreeze.yml"
       - ".github/workflows/epistemic-process-v2-score.yml"
+      - "!benchmarks/epistemic_process_v2/score_freeze_v2.json"
   workflow_dispatch:
 
 permissions:
