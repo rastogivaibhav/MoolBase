@@ -1,0 +1,172 @@
+{
+  "artifact": {
+    "id": 11079766673,
+    "zip_sha256": "3787cdb173a816a034229bd3faa9f086c9df5f47375feb99cf44a61a9e3e4fe9"
+  },
+  "cycle_1": {
+    "all_reopens_initial_terminal_hypothesis_unchanged": true,
+    "decisive_episode_findings": {
+      "EP01_DUPLICATE_SUPPORT_THEN_REFUTE": {
+        "decisive_step": 4,
+        "kind": "refute",
+        "contradicted": "H1",
+        "expected": "H2",
+        "prior_step_hypothesis": "H1",
+        "decisive_step_terminal_hypothesis": "H2",
+        "decisive_step_status": "open",
+        "challenge": true,
+        "reopen": true,
+        "revision": false,
+        "reopen_from": "H2",
+        "reopen_to": "H2",
+        "evaluator_refutation_responded": false,
+        "cross_step_change_at_decisive_step": true,
+        "classification": "ANSWER_STATE_UNCHANGED"
+      },
+      "EP02_LATE_REVOCATION": {
+        "decisive_step": 4,
+        "kind": "revoke",
+        "contradicted": "H1",
+        "expected": "H2",
+        "prior_step_hypothesis": "H1",
+        "decisive_step_terminal_hypothesis": "H1",
+        "decisive_step_status": "open",
+        "challenge": true,
+        "reopen": true,
+        "revision": false,
+        "reopen_from": "H1",
+        "reopen_to": "H1",
+        "evaluator_refutation_responded": true,
+        "cross_step_change_at_decisive_step": false,
+        "classification": "ANSWER_STATE_UNCHANGED"
+      },
+      "EP03_CORRELATED_MAJORITY_MINORITY_WINS": {
+        "decisive_step": 5,
+        "kind": "refute",
+        "contradicted": "H1",
+        "expected": "H2",
+        "prior_step_hypothesis": "H1",
+        "decisive_step_terminal_hypothesis": "H2",
+        "decisive_step_status": "open",
+        "challenge": true,
+        "reopen": true,
+        "revision": false,
+        "reopen_from": "H2",
+        "reopen_to": "H2",
+        "evaluator_refutation_responded": false,
+        "cross_step_change_at_decisive_step": true,
+        "classification": "ANSWER_STATE_UNCHANGED"
+      },
+      "EP04_REFUTE_WITHOUT_ENOUGH_REPLACEMENT_EVIDENCE": {
+        "decisive_step": 3,
+        "kind": "refute",
+        "contradicted": "H1",
+        "expected": "ABSTAIN",
+        "prior_step_hypothesis": "H1",
+        "decisive_step_terminal_hypothesis": "H2",
+        "decisive_step_status": "open",
+        "challenge": true,
+        "reopen": true,
+        "revision": false,
+        "reopen_from": "H2",
+        "reopen_to": "H2",
+        "evaluator_refutation_responded": false,
+        "cross_step_change_at_decisive_step": true,
+        "classification": "ANSWER_STATE_UNCHANGED"
+      }
+    },
+    "g2_totals": {
+      "challenges": 19,
+      "reopens": 19,
+      "revisions": 0
+    },
+    "no_revision_primary_classification": "ANSWER_STATE_UNCHANGED",
+    "observability_gaps": [
+      "initial_vs_reopened_bundle_hash",
+      "initial_vs_reopened_visited_states",
+      "search_option_deltas",
+      "per_target_support_strength",
+      "per_target_opposition_strength",
+      "per_target_belief_strength",
+      "target_rank_order_before_after_reopen",
+      "explicit_previous_observation_step_state"
+    ],
+    "interpretation": "Zero revisions are explained by unchanged within-call operative hypothesis. Whether frontier contents, confidence or ranking margins changed cannot be proven from preserved V1 telemetry."
+  },
+  "cycle_2": {
+    "g0": {
+      "classification": "CAPABILITY_CONTRACT_CONSEQUENCE_WITH_REAL_NO_ANSWER_OUTPUT",
+      "terminal_cause": "g0_evidence_projection_no_hypothesis_selection",
+      "hypothesis_selection_enabled": false,
+      "graphene_executed": true,
+      "final_episode_evidence_retention": ["5/5", "5/5", "6/6", "4/4"],
+      "receipt_completeness_rate": 1.0
+    },
+    "g1_g2": {
+      "same_terminal_hypothesis_all_episodes": true,
+      "g2_additional_challenges": 19,
+      "g2_additional_reopens": 19,
+      "g2_additional_revisions": 0,
+      "g2_additional_expansion_rounds": 4,
+      "final_visited_state_total_g1": 162,
+      "final_visited_state_total_g2": 162
+    },
+    "metric_applicability": {
+      "evidence_use": {
+        "B0->G0": "NON_APPLICABLE_BY_CAPABILITY_CONTRACT",
+        "G0->G1": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G1->G2": "VALID_CAUSAL_COMPARISON"
+      },
+      "refutation_response": {
+        "B0->G0": "NON_APPLICABLE_BY_CAPABILITY_CONTRACT",
+        "G0->G1": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G1->G2": "CONFOUNDED_BY_INTERFACE_DIFFERENCE"
+      },
+      "revision_inertia": {
+        "B0->G0": "NON_APPLICABLE_BY_CAPABILITY_CONTRACT",
+        "G0->G1": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G1->G2": "INSUFFICIENT_EVIDENCE"
+      },
+      "false_convergence": {
+        "B0->G0": "VALID_DESCRIPTIVE_ONLY",
+        "G0->G1": "VALID_DESCRIPTIVE_ONLY",
+        "G1->G2": "VALID_DESCRIPTIVE_ONLY"
+      },
+      "independent_evidence_convergence": {
+        "B0->G0": "INSUFFICIENT_EVIDENCE",
+        "G0->G1": "INSUFFICIENT_EVIDENCE",
+        "G1->G2": "INSUFFICIENT_EVIDENCE"
+      },
+      "selective_coverage": {
+        "B0->G0": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G0->G1": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G1->G2": "VALID_DESCRIPTIVE_ONLY"
+      },
+      "receipt_completeness": {
+        "B0->G0": "VALID_DESCRIPTIVE_ONLY",
+        "G0->G1": "VALID_DESCRIPTIVE_ONLY",
+        "G1->G2": "VALID_DESCRIPTIVE_ONLY"
+      },
+      "execution_cost": {
+        "B0->G0": "CONFOUNDED_BY_INTERFACE_DIFFERENCE",
+        "G0->G1": "VALID_CAUSAL_COMPARISON",
+        "G1->G2": "VALID_CAUSAL_COMPARISON"
+      }
+    }
+  },
+  "later_v2_hypotheses": [
+    "graphene_persistence_provenance",
+    "common_decision_head_ablation",
+    "cross_step_belief_change",
+    "dwm_reopen_usefulness",
+    "dwm_challenge_precision",
+    "commitment_calibration",
+    "refutation_response_semantics",
+    "cost_value_tradeoff"
+  ],
+  "production_code_changed": false,
+  "schema": "epistemic-process-v2-diagnostic-findings-v1",
+  "source_commit": "3c008577739b83a94defc47c73275bf8ba76e76c",
+  "source_experiment": "EP-PROCESS-V1-SCORE-001",
+  "v1_modified": false
+}
