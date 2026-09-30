@@ -18,6 +18,7 @@ enum class GovernedEpistemicStatus : uint8_t {
   ProvisionallyResolved,
   Contested,
   EvidenceRequired,
+  Open,
   Abstain,
   Speculative
 };
