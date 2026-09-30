@@ -12,6 +12,10 @@ GovernedProjection project_status(
     QueryMode mode,
     const StabilityThresholds& thresholds) {
   if (!convergence.has_answer) {
+    if (admissibility.contradiction_blocks_resolution) {
+      return {GovernedEpistemicStatus::Contested,
+              "material_contradiction_without_earned_replacement"};
+    }
     return {
         stability.missing_evidence_penalty > 0.0
             ? GovernedEpistemicStatus::EvidenceRequired
