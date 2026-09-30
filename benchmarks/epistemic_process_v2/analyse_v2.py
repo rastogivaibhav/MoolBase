@@ -87,7 +87,16 @@ def main():
     ap.add_argument("--tasks",required=True)
     ap.add_argument("--artifacts-dir",required=True)
     ap.add_argument("--out",required=True)
+    ap.add_argument("--mode",choices=["unscored-dry-run","score"],default="unscored-dry-run")
+    ap.add_argument("--freeze-manifest")
     args=ap.parse_args()
+    if args.mode=="score":
+        if not args.freeze_manifest:
+            raise SystemExit("score-bearing analysis blocked: freeze manifest is required")
+        from score_gate_v2 import verify_score_gate
+        gate=verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit("score-bearing analysis blocked: "+"; ".join(gate["errors"]))
     root=Path(args.artifacts_dir); tasks_doc=load(Path(args.tasks)); tasks=tasks_doc["episodes"]
     task_by_id={x["id"]:x for x in tasks}
     report={"schema":"epistemic-process-v2-score-analysis" if args.mode=="score" else "epistemic-process-v2-unscored-analysis","score_bearing":args.mode=="score",
@@ -172,7 +181,7 @@ def main():
     Path(args.out).parent.mkdir(parents=True,exist_ok=True)
     Path(args.out).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print(json.dumps({
-        "score_bearing":args.mode=="score,
+        "score_bearing":args.mode=="score",
         "episodes_per_configuration":{c:report["configurations"][c]["episodes"] for c in CONFIGS},
         "failures":{c:report["configurations"][c]["failures"] for c in CONFIGS},
         "native_revisions":{c:report["configurations"][c]["native_events"]["revision_transitions"] for c in CONFIGS},
