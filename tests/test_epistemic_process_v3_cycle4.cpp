@@ -84,6 +84,18 @@ bool has_event(const HypoKoshRuntimeResult& result,
   return false;
 }
 
+bool has_evidence_source(const FiberBundle& bundle,
+                         const std::string& source_id) {
+  for (const auto& fiber : bundle.fibers) {
+    for (const auto& path : fiber.paths) {
+      for (const auto& evidence : path.evidence) {
+        if (evidence.source_id == source_id) return true;
+      }
+    }
+  }
+  return false;
+}
+
 void open_db(GrapheneDB* db, const fs::path& dir) {
   fs::remove_all(dir);
   DBOptions db_options;
@@ -208,6 +220,8 @@ int main() {
            "NEW_ELIGIBLE_NODE_AVAILABLE");
     assert(trace.opposition_search_requested);
     assert(trace.next_reopen_nodes > 0);
+    assert(has_evidence_source(result.final_bundle, "lat-hidden"));
+    assert(trace.bundle_changed || trace.frontier_progress);
     require(db.close(), "close latent db");
   }
 
