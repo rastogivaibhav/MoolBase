@@ -2,6 +2,7 @@
 
 #include "graphene/stability_critic.hpp"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
