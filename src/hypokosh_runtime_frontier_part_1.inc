@@ -95,6 +95,83 @@ bool options_changed(const DialecticOptions& left,
          left.reopen_nodes != right.reopen_nodes;
 }
 
+struct ExpansionOpportunity {
+  bool available{false};
+  std::string classification{"NO_EXPANSION_OPPORTUNITY"};
+};
+
+bool runtime_search_edge_allowed(const Edge& edge, QueryMode mode) {
+  if (mode == QueryMode::Empirical) {
+    if (edge.origin != EdgeOrigin::Observed &&
+        edge.origin != EdgeOrigin::Discovered) {
+      return false;
+    }
+    if (edge.role == EdgeRole::Analogical) return false;
+    if (edge.role == EdgeRole::Compressed) {
+      const auto derivation = edge.metadata.find("derived_from");
+      if (derivation == edge.metadata.end() || derivation->second.empty()) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (mode == QueryMode::Balanced) {
+    return edge.origin != EdgeOrigin::Hypothetical;
+  }
+  return true;
+}
+
+std::set<uint32_t> bundle_observed_nodes(const FiberBundle& bundle) {
+  std::set<uint32_t> nodes;
+  for (const auto& fiber : bundle.fibers) {
+    nodes.insert(fiber.target_node);
+    for (const auto& path : fiber.paths) {
+      nodes.insert(path.nodes.begin(), path.nodes.end());
+    }
+  }
+  return nodes;
+}
+
+ExpansionOpportunity assess_expansion_opportunity(
+    const GrapheneDB& db,
+    const FiberBundle& bundle,
+    const OppositionReport& opposition,
+    const DialecticOptions& options,
+    uint64_t snapshot_version) {
+  if (!opposition.requests_reexpansion ||
+      opposition.reopen_nodes.empty()) {
+    return {};
+  }
+
+  const std::set<uint32_t> observed = bundle_observed_nodes(bundle);
+  for (uint32_t reopen_node : opposition.reopen_nodes) {
+    for (const Edge& edge :
+         db.outgoing_edges(reopen_node, snapshot_version)) {
+      if (!runtime_search_edge_allowed(edge, options.mode)) continue;
+      if (observed.count(edge.to) == 0) {
+        return {true, "NEW_ELIGIBLE_NODE_AVAILABLE"};
+      }
+    }
+  }
+
+  size_t total_paths = 0;
+  bool root_path_budget_bound = false;
+  for (const auto& fiber : bundle.fibers) {
+    total_paths += fiber.paths.size();
+    root_path_budget_bound =
+        root_path_budget_bound ||
+        fiber.paths.size() >= options.max_paths_per_root;
+  }
+  if (bundle.truncated ||
+      bundle.visited_states >= options.max_visited_states ||
+      total_paths >= options.max_paths ||
+      root_path_budget_bound) {
+    return {true, "BUDGET_BOUND_AND_EXPANDABLE"};
+  }
+
+  return {false, "NO_EXPANSION_OPPORTUNITY"};
+}
+
 uint64_t append_state_hash(uint64_t hash, uint64_t value) {
   for (int shift = 0; shift < 8; ++shift) {
     hash ^= static_cast<unsigned char>((value >> (shift * 8)) & 0xffU);
