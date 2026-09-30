@@ -89,6 +89,20 @@
     EscapePlan reopened_escape = escape.plan(
         reopened_bundle, reopened_stability, current_options.mode);
 
+    const GovernedProjection reopened_projection = project_status(
+        reopened_convergence, reopened_opposition,
+        reopened_stability, reopened_admissibility,
+        current_options.mode, options.stability_thresholds);
+    trace.next_has_answer = reopened_convergence.has_answer;
+    trace.next_primary_node =
+        trace.next_has_answer ? reopened_convergence.primary_node : 0;
+    trace.next_status = reopened_projection.status;
+    trace.next_committed_node =
+        trace.next_has_answer && trace_status_commits(trace.next_status)
+            ? trace.next_primary_node
+            : 0;
+    trace.next_target_ranking = controller.inspect_targets(reopened_bundle);
+
     const bool revised_answer =
         previous_has_answer != reopened_convergence.has_answer ||
         (previous_has_answer && reopened_convergence.has_answer &&
