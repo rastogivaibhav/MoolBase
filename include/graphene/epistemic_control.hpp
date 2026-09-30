@@ -19,6 +19,7 @@ struct EpistemicAdmissibility {
 
   bool evidence_admissible{false};
   bool contradiction_blocks_resolution{false};
+  bool semantic_tie{false};
   bool sufficient_independent_support{false};
   bool requires_external_verification{true};
   SemanticVerificationStatus semantic_verification{
