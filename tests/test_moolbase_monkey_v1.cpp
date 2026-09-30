@@ -275,6 +275,9 @@ void family_f(size_t index) {
   RootBundle h1;
   h1.root_node = 1;
   h1.paths.push_back(make_path(1, 60, "f-a", "f-a", 0.90));
+  h1.paths.push_back(make_path(
+      1, 62, "f-opp", "f-opp", 0.85, true, 1.0,
+      SemanticVerificationStatus::Contradicted));
   RootBundle h2;
   h2.root_node = 2;
   h2.paths.push_back(make_path(2, 61, "f-b", "f-b", 0.89));
@@ -288,13 +291,14 @@ void family_f(size_t index) {
   const auto opposition =
       controller.oppose(bundle, answer, admissibility, stability);
   const bool pass =
-      answer.has_answer && !opposition.challenged_claims.empty() &&
-      opposition.reopen_nodes.size() >= 2 &&
+      opposition.dialectical_challenge &&
+      !opposition.challenged_claims.empty() &&
+      opposition.opposition_score > 0.0 &&
       std::find(opposition.reopen_nodes.begin(),
-                opposition.reopen_nodes.end(), answer.primary_node) !=
+                opposition.reopen_nodes.end(), 1) !=
           opposition.reopen_nodes.end();
   record("F_dialectic", pass,
-         "competing target failed to create observable opposition/reopen");
+         "material contradiction failed to create observable dialectical challenge");
 }
 
 void family_g(size_t index) {
