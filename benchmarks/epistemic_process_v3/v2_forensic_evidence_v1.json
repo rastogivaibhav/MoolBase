@@ -1,0 +1,91 @@
+{
+  "schema": "epistemic-process-v3-cycle1-v2-forensic-evidence-v1",
+  "source": {
+    "experiment_id": "EP-PROCESS-V2-SCORE-001",
+    "score_run_id": 36744340611,
+    "artifact_id": 11111687583,
+    "artifact_sha256": "5fb274690294acf83760c86c621bdc3bd8f6150d4c42db01a8be557dde4eb9cc",
+    "frozen_master": "723ac328458411e43680a2853d31d30006fc18a2"
+  },
+  "production_behavior_modified": false,
+  "tie_g1": {
+    "episodes": 30,
+    "selected_h1": 30,
+    "selected_h2": 0,
+    "abstained": 0,
+    "h1_node_zero": 30,
+    "h2_node_one": 30
+  },
+  "c0_c1_family_correct": {
+    "correlated_majority_independent_minority": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "duplicate_correlated_support": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "evidence_accumulation": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "genuine_ambiguity_tie": {
+      "episodes": 30,
+      "C0_correct": 0,
+      "C1_correct": 30
+    },
+    "insufficient_replacement": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 0
+    },
+    "late_refutation": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "revocation": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "single_step_control": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    },
+    "stale_belief_recovery": {
+      "episodes": 30,
+      "C0_correct": 30,
+      "C1_correct": 30
+    }
+  },
+  "hypokosh_insufficient_replacement": {
+    "episodes": 30,
+    "top_rank_differs_from_operative": 30,
+    "final_status_contested": 30,
+    "interpretation": "The target with higher attenuated belief ranks first, but the corroboration safeguard selects the historically stronger support target because the replacement has fewer than two independent support families."
+  },
+  "dwm": {
+    "reopen_rounds": 1020,
+    "no_progress_after_expansion": 1020,
+    "bundle_hash_unchanged": 1020,
+    "visited_states_unchanged": 1020,
+    "frontier_changed": 0,
+    "rank_changed": 0,
+    "operative_changed": 0,
+    "status_changed": 0,
+    "commitment_changed": 0,
+    "reopen_one_node": 420,
+    "reopen_two_nodes": 600
+  },
+  "g0e_family_namespace": {
+    "aggregate_family_identity_exactness": 0,
+    "family_ids_observed": 2640,
+    "prefixed_family_ids": 2640,
+    "unprefixed_family_ids": 0
+  }
+}
