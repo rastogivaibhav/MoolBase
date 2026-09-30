@@ -193,7 +193,8 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       options.dialectic.mode);
   result.initial_convergence = controller.converge(
       result.initial_bundle, result.initial_admissibility,
-      result.initial_stability, options.dialectic);
+      result.initial_stability, options.dialectic,
+      options.stability_thresholds);
   result.initial_opposition =
       options.enable_dwm
           ? controller.oppose(
