@@ -349,6 +349,20 @@ std::vector<std::string> bundle_families(const FiberBundle& bundle) {
   return families;
 }
 
+std::vector<std::string> bundle_derivations(const FiberBundle& bundle) {
+  std::vector<std::string> derivations;
+  for (const auto& fiber : bundle.fibers) {
+    for (const auto& path : fiber.paths) {
+      derivations.insert(
+          derivations.end(),
+          path.derivation_lineage.begin(),
+          path.derivation_lineage.end());
+    }
+  }
+  sort_unique(&derivations);
+  return derivations;
+}
+
 std::vector<std::string> refs_for_edges(
     const std::vector<uint32_t>& edges,
     const std::map<uint32_t, std::string>& edge_to_ref) {
@@ -384,6 +398,8 @@ void print_state(
           ? convergence->evidence_edges
           : bundle_edges(bundle);
   const std::vector<std::string> families = bundle_families(bundle);
+  const std::vector<std::string> derivations =
+      bundle_derivations(bundle);
 
   std::cout
       << "{\"has_answer\":" << (has_answer ? "true" : "false")
@@ -398,6 +414,8 @@ void print_state(
   print_u32_array(edges);
   std::cout << ",\"evidence_family_ids\":";
   print_string_array(families);
+  std::cout << ",\"dependency_lineage_ids\":";
+  print_string_array(derivations);
   std::cout << ",\"target_ranking\":";
   print_target_ranking(bundle);
   std::cout << '}';
@@ -541,6 +559,7 @@ void print_previous_state(const StepResult& step) {
       << ",\"truncated\":null"
       << ",\"evidence_edge_ids\":[]"
       << ",\"evidence_family_ids\":[]"
+      << ",\"dependency_lineage_ids\":[]"
       << ",\"target_ranking\":[]}";
 }
 
