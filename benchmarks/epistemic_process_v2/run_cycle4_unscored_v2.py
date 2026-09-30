@@ -99,6 +99,7 @@ def null_state() -> dict[str, Any]:
         "truncated": None,
         "evidence_edge_ids": [],
         "evidence_family_ids": [],
+        "dependency_lineage_ids": [],
         "target_ranking": [],
     }
 
@@ -198,6 +199,7 @@ def c0_episode(task: Mapping[str, Any]) -> dict[str, Any]:
                 | set(decision["opposition_families"]["H1"])
                 | set(decision["opposition_families"]["H2"])
             ),
+            "dependency_lineage_ids": [],
             "target_ranking": [
                 {"target_id": target, "net_family_score": score}
                 for target, score in sorted(
