@@ -97,8 +97,13 @@ struct ConvergedAnswer {
 struct OppositionReport {
   std::vector<std::string> challenged_claims;
   std::vector<std::string> falsification_questions;
+  std::vector<std::string> corroboration_questions;
   std::vector<uint32_t> reopen_nodes;
   double opposition_score{0.0};
+  // V3 separates genuine dialectical opposition from simple lack of
+  // independent corroboration. Only the former may emit a DWM Challenge.
+  bool dialectical_challenge{false};
+  bool corroboration_search_required{false};
   bool requests_reexpansion{false};
 };
 
