@@ -48,6 +48,7 @@ REQUIRED_STATE_FIELDS = {
     "truncated",
     "evidence_edge_ids",
     "evidence_family_ids",
+    "dependency_lineage_ids",
     "target_ranking",
 }
 
