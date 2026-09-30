@@ -316,5 +316,26 @@
         ]
       ]
     }
-  }
+  },
+  "derived_metrics": [
+    "appropriate_abstention_rate_on_exact_ties",
+    "near_tie_correct_selection_rate",
+    "history_dependent_operative_accuracy_delta",
+    "history_dependent_delta_ci_low",
+    "history_dependent_Holm_p",
+    "single_step_control_accuracy_delta",
+    "clear_non_tie_accuracy_delta",
+    "incumbent_replacement_policy_conformity",
+    "revision_latency_steps_p95",
+    "native_revision_receipt_completeness",
+    "false_commitment_incidence_delta",
+    "false_commitment_incidence_delta_ci_high",
+    "false_commitment_incidence_Holm_p",
+    "G2_false_commitment_incidence",
+    "appropriate_abstention_delta",
+    "commitment_coverage_delta",
+    "correct_commitment_yield_delta",
+    "operative_hypothesis_accuracy_delta",
+    "committed_accuracy_delta"
+  ]
 }
