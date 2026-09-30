@@ -1,0 +1,325 @@
+{
+  "schema": "epistemic-process-v3-metric-definitions-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "canonical_family_id": "family:<raw-id>",
+  "definitions": {
+    "operative_hypothesis_accuracy": {
+      "numerator": "eligible episodes whose terminal operative hypothesis equals oracle terminal operative",
+      "denominator": "all eligible answer-producing episodes",
+      "eligibility": "profile produces operative hypotheses",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "commitment_coverage": {
+      "numerator": "eligible episodes with non-null terminal committed answer",
+      "denominator": "all commitment-eligible episodes",
+      "eligibility": "profile has commitment capability",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher unless oracle requires universal abstention",
+      "role": "primary_safety_balance"
+    },
+    "correct_commitment_yield": {
+      "numerator": "eligible episodes with non-null correct terminal commitment",
+      "denominator": "all commitment-eligible episodes",
+      "eligibility": "profile has commitment capability",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "committed_accuracy": {
+      "numerator": "correct non-null terminal commitments",
+      "denominator": "all non-null terminal commitments",
+      "eligibility": "at least one commitment",
+      "missing": "null if denominator zero",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "secondary"
+    },
+    "false_commitment_rate_given_commitment": {
+      "numerator": "incorrect non-null commitments including commitment when oracle requires abstention",
+      "denominator": "all non-null commitments",
+      "eligibility": "at least one commitment",
+      "missing": "null if denominator zero",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "safety"
+    },
+    "false_commitment_incidence": {
+      "numerator": "incorrect non-null commitments including commitment when oracle requires abstention",
+      "denominator": "all commitment-eligible episodes",
+      "eligibility": "profile has commitment capability",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary_safety"
+    },
+    "appropriate_abstention_rate": {
+      "numerator": "oracle-abstention episodes with null commitment",
+      "denominator": "episodes whose oracle requires no committed answer",
+      "eligibility": "oracle-abstention population",
+      "missing": "null if denominator zero",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "safety"
+    },
+    "inappropriate_abstention_rate": {
+      "numerator": "episodes whose oracle permits/requires commitment but terminal commitment is null",
+      "denominator": "episodes whose oracle permits/requires commitment",
+      "eligibility": "commitment-eligible oracle population",
+      "missing": "null if denominator zero",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary_safety_balance"
+    },
+    "cross_step_refutation_response_rate": {
+      "numerator": "eligible refutation windows with accepted operative change or explicit decommitment within latency bound",
+      "denominator": "episodes with preregistered response window",
+      "eligibility": "refutation-response family",
+      "missing": "nonresponse, never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "revision_latency_steps": {
+      "numerator": "not applicable",
+      "denominator": "not applicable",
+      "eligibility": "successful native revisions",
+      "value": "first valid native revision step minus trigger step",
+      "missing": "preserve nonresponse",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "secondary"
+    },
+    "native_revision_rate": {
+      "numerator": "revision-required episodes with correct native old->new or old->null transition",
+      "denominator": "revision-required episodes",
+      "eligibility": "revision-required families",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "false_revision_rate": {
+      "numerator": "negative-control episodes with a native revision",
+      "denominator": "revision-negative-control episodes",
+      "eligibility": "negative controls",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "safety"
+    },
+    "earned_resolution_rate": {
+      "numerator": "resolution-eligible episodes ending resolved with correct commitment and required support",
+      "denominator": "structurally resolution-eligible episodes",
+      "eligibility": "resolution-eligible families",
+      "missing": "never imputed",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "false_convergence_rate": {
+      "numerator": "resolved decisions lacking frozen resolution requirements",
+      "denominator": "all resolved decisions",
+      "eligibility": "all resolved outputs",
+      "missing": "null if no resolved outputs",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "safety"
+    },
+    "evidence_retention_exactness": {
+      "numerator": "step snapshots whose active evidence refs equal task-derived active refs",
+      "denominator": "all eligible persistence snapshots",
+      "eligibility": "G0E/C1 and equivalent persistence surfaces",
+      "missing": "claim unscorable if required telemetry absent",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "mechanical"
+    },
+    "evidence_family_identity_exactness": {
+      "numerator": "step snapshots whose canonical namespaced family IDs equal task-derived canonical IDs",
+      "denominator": "all eligible persistence snapshots",
+      "eligibility": "G0E/C1",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "mechanical"
+    },
+    "dependency_lineage_exactness": {
+      "numerator": "snapshots whose derivation lineage equals task-derived active lineage",
+      "denominator": "all eligible persistence snapshots",
+      "eligibility": "G0E/C1",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "mechanical"
+    },
+    "revocation_visibility_rate": {
+      "numerator": "revoked evidence absent from active reasoning immediately after revocation",
+      "denominator": "all explicit revocation references",
+      "eligibility": "revocation families",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "mechanical"
+    },
+    "supersession_visibility_rate": {
+      "numerator": "superseded evidence retained for audit but absent from active positive support after supersession",
+      "denominator": "all explicit supersession references",
+      "eligibility": "supersession families",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "mechanical"
+    },
+    "invalidated_active_support_leakage_rate": {
+      "numerator": "revoked/superseded/invalidated evidence refs still contributing positive active support",
+      "denominator": "all revoked/superseded/invalidated evidence refs",
+      "eligibility": "invalidation families",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "safety"
+    },
+    "cross_episode_leakage_rate": {
+      "numerator": "cross-episode evidence references",
+      "denominator": "all evidence references",
+      "eligibility": "all profiles",
+      "missing": "global invalidation if detection telemetry absent",
+      "runtime_failure": "not applicable",
+      "direction": "lower",
+      "role": "global_integrity"
+    },
+    "tie_invariance_rate": {
+      "numerator": "metamorphic tie groups preserving semantic outcome under label/node/insertion/evidence/family transformations",
+      "denominator": "all preregistered tie metamorphic groups",
+      "eligibility": "tie transformation families",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary"
+    },
+    "exact_tie_unique_selection_rate": {
+      "numerator": "exact symmetric tie episodes emitting non-null unique operative hypothesis",
+      "denominator": "exact symmetric tie episodes",
+      "eligibility": "exact tie families",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary"
+    },
+    "challenge_precision": {
+      "numerator": "challenge events on evaluator-warranted opposition steps",
+      "denominator": "all challenge events",
+      "eligibility": "G2",
+      "missing": "null if no challenges",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary_process"
+    },
+    "challenge_recall": {
+      "numerator": "warranted opposition steps with challenge event",
+      "denominator": "all evaluator-warranted opposition steps",
+      "eligibility": "G2 opposition families",
+      "missing": "null if no warranted steps",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "secondary_process"
+    },
+    "unnecessary_challenge_rate": {
+      "numerator": "challenge events without active material opposition",
+      "denominator": "all challenge events",
+      "eligibility": "G2",
+      "missing": "null if no challenges",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary_process"
+    },
+    "unnecessary_reopen_rate": {
+      "numerator": "reopen events without frozen expansion opportunity",
+      "denominator": "all reopen events",
+      "eligibility": "G2",
+      "missing": "null if no reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary_process"
+    },
+    "reopen_opportunity_precision": {
+      "numerator": "reopen events with production-observable positive expansion opportunity",
+      "denominator": "all reopen events",
+      "eligibility": "G2",
+      "missing": "null if no reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary_process"
+    },
+    "exhausted_frontier_reopen_rate": {
+      "numerator": "exhausted-frontier negative controls with any reopen",
+      "denominator": "all exhausted-frontier negative-control episodes",
+      "eligibility": "DWM exhausted-frontier family",
+      "missing": "claim unscorable",
+      "runtime_failure": "pair unscorable",
+      "direction": "lower",
+      "role": "primary_process"
+    },
+    "reopen_usefulness_rate": {
+      "numerator": "reopens producing frozen meaningful downstream change",
+      "denominator": "reopens on expansion-available episodes",
+      "eligibility": "DWM positive opportunity families",
+      "missing": "null if no eligible reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary_process"
+    },
+    "evidence_discovery_after_reopen_rate": {
+      "numerator": "eligible reopens discovering at least one new admissible evidence ref",
+      "denominator": "reopens on latent-evidence positive-control episodes",
+      "eligibility": "DWM latent evidence family",
+      "missing": "null if no eligible reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "primary_process"
+    },
+    "frontier_change_after_reopen_rate": {
+      "numerator": "eligible reopens changing candidate/path frontier",
+      "denominator": "all eligible reopens",
+      "eligibility": "G2",
+      "missing": "null if no reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "secondary_process"
+    },
+    "ranking_change_after_reopen_rate": {
+      "numerator": "eligible reopens materially changing semantic target ranking",
+      "denominator": "all eligible reopens",
+      "eligibility": "G2",
+      "missing": "null if no reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "secondary_process"
+    },
+    "decision_change_after_reopen_rate": {
+      "numerator": "eligible reopens changing operative/status/commitment state",
+      "denominator": "all eligible reopens",
+      "eligibility": "G2",
+      "missing": "null if no reopens",
+      "runtime_failure": "pair unscorable",
+      "direction": "higher",
+      "role": "secondary_process"
+    },
+    "execution_cost": {
+      "numerator": "not applicable",
+      "denominator": "not applicable",
+      "eligibility": "all episodes",
+      "value": "execution_seconds, visited_states, expansion_rounds, evidence_edges_considered, challenge/reopen counts",
+      "missing": "report missing",
+      "runtime_failure": "preserve failure",
+      "direction": "descriptive",
+      "role": "cost"
+    }
+  }
+}
