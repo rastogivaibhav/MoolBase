@@ -609,7 +609,10 @@ def evaluate(
         for task_id in sorted(tasks_by_id):
             task = tasks_by_id[task_id]
             episode = episodes_by_pair[(task_id, config)]
-            record: dict[str, Any] = {"episode_id": task_id}
+            record: dict[str, Any] = {
+                "episode_id": task_id,
+                "task_family": str(task.get("task_family") or ""),
+            }
 
             if config in ANSWER_CONFIGS:
                 terminal = _terminal_metrics(task, episode)
@@ -788,8 +791,20 @@ def _comparison_statistics(
             [bool(c["operative_correct"]) for c, _ in pairs],
             [bool(t["operative_correct"]) for _, t in pairs],
         )
+        control_pairs = [
+            (c, t)
+            for c, t in pairs
+            if c.get("task_family") == "single_step_control"
+        ]
+        control_summary = None
+        if control_pairs:
+            control_summary = paired_binary_summary(
+                [bool(c["operative_correct"]) for c, _ in control_pairs],
+                [bool(t["operative_correct"]) for _, t in control_pairs],
+            )
         out["C0->C1"] = {
             "operative_hypothesis_accuracy": binary,
+            "single_step_control_accuracy": control_summary,
             "holm_adjusted_p_values": {
                 "operative_hypothesis_accuracy": binary[
                     "exact_mcnemar"
