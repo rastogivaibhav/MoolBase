@@ -54,7 +54,7 @@ jobs:
               "36748279512",
               "11113966063",
               "df219207220b27868d7ba95bc5a764c3b11e9262",
-              "numeric target-node tie-break bias",
+              "lower numeric `target_node`",
               "1,020",
               "family:<id>",
           ]
