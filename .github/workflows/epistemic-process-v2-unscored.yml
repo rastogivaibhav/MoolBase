@@ -30,6 +30,8 @@ jobs:
           python benchmarks/epistemic_process_v2/validate_v2.py \
             --prereg benchmarks/epistemic_process_v2/preregistration_v2.json \
             --tasks benchmarks/epistemic_process_v2/tasks_v2.json
+          (cd benchmarks/epistemic_process_v2 && python test_score_gate_v2.py)
+          (cd benchmarks/epistemic_process_v2 && python freeze_guard_v2.py --require-freeze-ready)
 
       - name: Configure V2 runtime
         run: |
@@ -70,7 +72,7 @@ jobs:
               --mode unscored-dry-run \
               --out "$out/scores-$cfg.json"
           done
-          python benchmarks/epistemic_process_v2/analyse_unscored_v2.py \
+          python benchmarks/epistemic_process_v2/analyse_v2.py \
             --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
             --artifacts-dir "$out" \
             --out "$out/analysis.json"
@@ -145,7 +147,7 @@ jobs:
               --mode unscored-dry-run \
               --out "$out/scores-$cfg.json"
           done
-          python benchmarks/epistemic_process_v2/analyse_unscored_v2.py \
+          python benchmarks/epistemic_process_v2/analyse_v2.py \
             --tasks benchmarks/epistemic_process_v2/realistic_workloads_v2.json \
             --artifacts-dir "$out" \
             --out "$out/analysis.json"

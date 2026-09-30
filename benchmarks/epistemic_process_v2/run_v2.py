@@ -173,10 +173,22 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260927)
     parser.add_argument(
         "--mode",
-        choices=["unscored-dry-run"],
+        choices=["unscored-dry-run", "score"],
         default="unscored-dry-run",
     )
+    parser.add_argument(
+        "--freeze-manifest",
+        help="required in score mode; verified by score_gate_v2.py",
+    )
     args = parser.parse_args()
+
+    if args.mode == "score":
+        if not args.freeze_manifest:
+            raise SystemExit("score-bearing execution blocked: freeze manifest is required")
+        from score_gate_v2 import verify_score_gate
+        gate = verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit("score-bearing execution blocked: " + "; ".join(gate["errors"]))
 
     tasks = load(args.tasks)
     configs: Sequence[str] = tuple(args.configuration or CONFIGS)
@@ -202,7 +214,7 @@ def main() -> None:
         "protocol": tasks["protocol"],
         "mode": args.mode,
         "runner": "production-runtime-v2-instrumented",
-        "score_bearing": False,
+        "score_bearing": args.mode == "score",
         "seed": args.seed,
         "runtime_input_fields": list(RUNTIME_FIELDS),
         "episodes": episodes,
@@ -214,7 +226,7 @@ def main() -> None:
                 "episodes": len(episodes),
                 "configurations": list(configs),
                 "runtime_failures": sum(bool(ep["failures"]) for ep in episodes),
-                "score_bearing": False,
+                "score_bearing": args.mode == "score",
             },
             sort_keys=True,
         )

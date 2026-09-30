@@ -686,7 +686,7 @@ def evaluate(
     return {
         "protocol": tasks["protocol"],
         "mode": mode,
-        "score_bearing": False,
+        "score_bearing": mode == "score",
         "episodes": rows,
         "aggregate": aggregate(rows),
     }
@@ -704,9 +704,17 @@ def main() -> None:
     )
     parser.add_argument(
         "--freeze-manifest",
-        help="required in score mode; verified by future V2 immutable score gate",
+        help="required in score mode; verified by score_gate_v2.py",
     )
     args = parser.parse_args()
+
+    if args.mode == "score":
+        if not args.freeze_manifest:
+            raise SystemExit("score-bearing execution blocked: freeze manifest is required")
+        from score_gate_v2 import verify_score_gate
+        gate = verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit("score-bearing execution blocked: " + "; ".join(gate["errors"]))
 
     tasks = load(args.tasks)
     receipts = load(args.receipts)

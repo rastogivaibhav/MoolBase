@@ -1,0 +1,126 @@
+name: Epistemic Process v2 score-bearing execution
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "benchmarks/epistemic_process_v2/score_freeze_v2.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-score-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify immutable V2 score authorization
+        working-directory: benchmarks/epistemic_process_v2
+        run: |
+          set -euo pipefail
+          python score_gate_v2.py --manifest score_freeze_v2.json
+          python freeze_guard_v2.py --freeze-manifest score_freeze_v2.json --require-freeze-ready --require-score-gate
+          python test_score_gate_v2.py
+          python validate_v2.py --prereg preregistration_v2.json --tasks tasks_v2.json
+
+      - name: Configure frozen V2 runtime
+        run: |
+          cmake -S . -B build-score-v2 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build frozen V2 and adversarial targets
+        run: |
+          cmake --build build-score-v2 --parallel 2 --target \
+            graphenedb_epistemic_process_runtime_runner_v2 \
+            graphenedb_moolbase_monkey_v1 \
+            graphenedb_moolbase_multiseed_v1 \
+            graphenedb_moolbase_metamorphic_v1
+
+      - name: Run claim-killing checks before score visibility
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-score-v2/prescore
+          mkdir -p "$out/multiseed"
+          ./build-score-v2/graphenedb_moolbase_metamorphic_v1 | tee "$out/metamorphic.log"
+          ./build-score-v2/graphenedb_moolbase_monkey_v1 "$out/monkey.json" | tee "$out/monkey.log"
+          for seed in 20260930 20261001 20261002; do
+            ./build-score-v2/graphenedb_moolbase_multiseed_v1 "$seed" 100 "$out/multiseed/$seed.json" \
+              | tee "$out/multiseed/$seed.log"
+          done
+
+      - name: Execute frozen score-bearing B0 G0 G1 G2 campaign
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-score-v2/scored
+          mkdir -p "$out"
+          manifest=benchmarks/epistemic_process_v2/score_freeze_v2.json
+          for cfg in B0 G0 G1 G2; do
+            python benchmarks/epistemic_process_v2/run_v2.py \
+              --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+              --runtime-runner ./build-score-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              --configuration "$cfg" --seed 20261003 --mode score --freeze-manifest "$manifest" \
+              --out "$out/raw-$cfg.json"
+            python benchmarks/epistemic_process_v2/adapt_v2.py \
+              --raw "$out/raw-$cfg.json" --mode score --freeze-manifest "$manifest" \
+              --out "$out/receipts-$cfg.json"
+            python benchmarks/epistemic_process_v2/evaluate_v2.py \
+              --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+              --receipts "$out/receipts-$cfg.json" --mode score --freeze-manifest "$manifest" \
+              --out "$out/scores-$cfg.json"
+          done
+          python benchmarks/epistemic_process_v2/analyse_v2.py \
+            --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+            --artifacts-dir "$out" --mode score --freeze-manifest "$manifest" \
+            --out "$out/analysis.json"
+
+      - name: Verify score artifacts contain no runtime or adapter failures
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/epistemic-process-score-v2/scored")
+          for cfg in ("B0","G0","G1","G2"):
+              raw=json.loads((root/f"raw-{cfg}.json").read_text())
+              receipts=json.loads((root/f"receipts-{cfg}.json").read_text())
+              runtime=sum(bool(x.get("failures")) for x in raw["episodes"])
+              adapter=sum(bool(x.get("adapter_failure")) for x in receipts)
+              if runtime or adapter:
+                  raise SystemExit(f"{cfg}: runtime={runtime} adapter={adapter}")
+          print("v2_score_failure_gate=passed")
+          PY
+
+      - name: Write immutable checksums and environment receipt
+        run: |
+          set -euo pipefail
+          root=reports/epistemic-process-score-v2
+          (
+            cd "$root"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          {
+            echo "head=$(git rev-parse HEAD)"
+            echo "tree=$(git rev-parse HEAD^{tree})"
+            echo "cmake=$(cmake --version | head -n 1)"
+            echo "python=$(python3 --version 2>&1)"
+            echo "experiment_id=$(python -c 'import json; print(json.load(open("benchmarks/epistemic_process_v2/score_freeze_v2.json"))["experiment_id"])')"
+          } > "$root/environment-receipt.txt"
+
+      - name: Upload immutable V2 score evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-process-v2-score-${{ github.sha }}
+          path: reports/epistemic-process-score-v2/
+          retention-days: 90

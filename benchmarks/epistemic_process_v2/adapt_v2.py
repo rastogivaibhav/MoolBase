@@ -488,10 +488,22 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     parser.add_argument(
         "--mode",
-        choices=["unscored-dry-run"],
+        choices=["unscored-dry-run", "score"],
         default="unscored-dry-run",
     )
+    parser.add_argument(
+        "--freeze-manifest",
+        help="required in score mode; verified by score_gate_v2.py",
+    )
     args = parser.parse_args()
+
+    if args.mode == "score":
+        if not args.freeze_manifest:
+            raise SystemExit("score-bearing execution blocked: freeze manifest is required")
+        from score_gate_v2 import verify_score_gate
+        gate = verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit("score-bearing execution blocked: " + "; ".join(gate["errors"]))
 
     raw = load(args.raw)
     if raw.get("protocol") != "epistemic-process-v2":
