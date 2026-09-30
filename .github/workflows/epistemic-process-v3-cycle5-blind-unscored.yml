@@ -32,7 +32,7 @@ jobs:
       - name: Protect frozen experiment and Cycle 4 production
         run: |
           set -euo pipefail
-          BASE=a7ed3794d7d4c25648e7478867070f36546469ac
+          BASE=65b12489764a0f4cd181549f53642d23d19264f5
           changed="$(git diff --name-only "$BASE"...HEAD)"
           echo "$changed"
           if echo "$changed" | grep -E '^(src/|include/|tests/)'; then
@@ -143,7 +143,7 @@ jobs:
           receipt={
               "schema":"epistemic-process-v3-cycle5-receipt-v1",
               "gate":"PASSED",
-              "cycle4_source_commit":"a7ed3794d7d4c25648e7478867070f36546469ac",
+              "cycle4_source_commit":"65b12489764a0f4cd181549f53642d23d19264f5",
               "task_candidate_sha256":"575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829",
               "blind_input_sha256":hashlib.sha256((root/"blind-input.json").read_bytes()).hexdigest(),
               "raw_pass_1_sha256":hashlib.sha256((root/"raw-pass-1.json").read_bytes()).hexdigest(),
