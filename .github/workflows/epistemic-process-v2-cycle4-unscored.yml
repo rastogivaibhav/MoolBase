@@ -79,6 +79,9 @@ jobs:
             --out reports/epistemic-process-v2-cycle4/run1/raw.json
           python benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py \
             reports/epistemic-process-v2-cycle4/run1/raw.json
+          python benchmarks/epistemic_process_v2/assert_cycle4_fixture_behaviour_v2.py \
+            --raw reports/epistemic-process-v2-cycle4/run1/raw.json \
+            --tasks benchmarks/epistemic_process_v2/cycle4_fixture_tasks_v2.json
 
       - name: Execute deterministic replay
         run: |
