@@ -135,11 +135,16 @@ def _normalise_state(
     node_to_name: Mapping[int, str],
 ) -> dict[str, Any]:
     row = dict(state)
-    row["operative_hypothesis"] = _node_name(
-        row.pop("operative_hypothesis_node", 0), node_to_name
+    raw_operative = row.pop("operative_hypothesis_node", 0)
+    raw_committed = row.pop("committed_answer_node", 0)
+    has_answer = bool(row.get("has_answer"))
+    status = str(row.get("epistemic_status") or "")
+    row["operative_hypothesis"] = (
+        _node_name(raw_operative, node_to_name) if has_answer else None
     )
-    row["committed_answer"] = _node_name(
-        row.pop("committed_answer_node", 0), node_to_name
+    commits = status in {"resolved", "provisionally_resolved"} and has_answer
+    row["committed_answer"] = (
+        _node_name(raw_committed, node_to_name) if commits else None
     )
     row["target_ranking"] = _normalise_ranking(
         row.get("target_ranking"), node_to_name
