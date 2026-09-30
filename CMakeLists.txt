@@ -118,6 +118,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_epistemic_control_tests
            COMMAND graphenedb_epistemic_control_tests)
 
+  add_executable(graphenedb_epistemic_process_v3_cycle4_tests
+                 tests/test_epistemic_process_v3_cycle4.cpp)
+  target_link_libraries(graphenedb_epistemic_process_v3_cycle4_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_process_v3_cycle4_tests
+           COMMAND graphenedb_epistemic_process_v3_cycle4_tests)
+
   add_executable(graphenedb_epistemic_receipt_tests
                  tests/test_epistemic_receipt.cpp)
   target_link_libraries(graphenedb_epistemic_receipt_tests PRIVATE graphenedb)
