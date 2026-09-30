@@ -283,6 +283,47 @@ void print_target_ranking(const FiberBundle& bundle) {
   std::cout << ']';
 }
 
+void print_target_trace_ranking(
+    const std::vector<TargetEpistemicTrace>& ranking) {
+  std::cout << '[';
+  for (size_t i = 0; i < ranking.size(); ++i) {
+    if (i) std::cout << ',';
+    const auto& item = ranking[i];
+    std::cout
+        << "{\"target_id\":" << item.target_node
+        << ",\"rank\":" << (i + 1)
+        << ",\"support_strength\":" << item.support_strength
+        << ",\"opposition_strength\":" << item.opposition_strength
+        << ",\"belief_strength\":" << item.belief_strength
+        << ",\"semantic_verification\":\""
+        << verification_name(item.semantic_verification)
+        << "\",\"independent_support_family_count\":"
+        << item.independent_support_family_count
+        << ",\"best_support_score\":" << item.best_support_score
+        << '}';
+  }
+  std::cout << ']';
+}
+
+bool target_trace_ranking_changed(
+    const std::vector<TargetEpistemicTrace>& left,
+    const std::vector<TargetEpistemicTrace>& right) {
+  if (left.size() != right.size()) return true;
+  for (size_t i = 0; i < left.size(); ++i) {
+    if (left[i].target_node != right[i].target_node ||
+        left[i].support_strength != right[i].support_strength ||
+        left[i].opposition_strength != right[i].opposition_strength ||
+        left[i].belief_strength != right[i].belief_strength ||
+        left[i].semantic_verification != right[i].semantic_verification ||
+        left[i].independent_support_family_count !=
+            right[i].independent_support_family_count ||
+        left[i].best_support_score != right[i].best_support_score) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::vector<uint32_t> bundle_edges(const FiberBundle& bundle) {
   std::vector<uint32_t> edges;
   for (const auto& fiber : bundle.fibers) {
@@ -407,8 +448,12 @@ void print_recovery_rounds(const HypoKoshRuntimeResult& result) {
   for (size_t i = 0; i < traces.size(); ++i) {
     if (i) std::cout << ',';
     const auto& trace = traces[i];
-    const bool before_ranking_available = i == 0;
-    const bool after_ranking_available = i + 1 == traces.size();
+    const bool operative_changed =
+        trace.previous_has_answer != trace.next_has_answer ||
+        (trace.previous_has_answer && trace.next_has_answer &&
+         trace.previous_primary_node != trace.next_primary_node);
+    const bool rank_changed = target_trace_ranking_changed(
+        trace.previous_target_ranking, trace.next_target_ranking);
 
     std::cout
         << "{\"round_index\":" << trace.round_index
@@ -444,23 +489,36 @@ void print_recovery_rounds(const HypoKoshRuntimeResult& result) {
         << ",\"visited_states_after\":" << trace.next_visited_states
         << ",\"frontier_changed\":"
         << (trace.bundle_changed || trace.frontier_progress ? "true" : "false")
-        << ",\"target_ranking_before\":";
-    if (before_ranking_available) {
-      print_target_ranking(result.initial_bundle);
-    } else {
-      std::cout << "null";
-    }
+        << ",\"has_answer_before\":"
+        << (trace.previous_has_answer ? "true" : "false")
+        << ",\"has_answer_after\":"
+        << (trace.next_has_answer ? "true" : "false")
+        << ",\"operative_hypothesis_node_before\":"
+        << trace.previous_primary_node
+        << ",\"operative_hypothesis_node_after\":"
+        << trace.next_primary_node
+        << ",\"committed_answer_node_before\":"
+        << trace.previous_committed_node
+        << ",\"committed_answer_node_after\":"
+        << trace.next_committed_node
+        << ",\"status_before\":\""
+        << governed_status_name(trace.previous_status)
+        << "\",\"status_after\":\""
+        << governed_status_name(trace.next_status)
+        << "\",\"target_ranking_before\":";
+    print_target_trace_ranking(trace.previous_target_ranking);
     std::cout << ",\"target_ranking_after\":";
-    if (after_ranking_available) {
-      print_target_ranking(result.final_bundle);
-    } else {
-      std::cout << "null";
-    }
+    print_target_trace_ranking(trace.next_target_ranking);
     std::cout
-        << ",\"rank_changed\":null"
-        << ",\"operative_hypothesis_changed\":null"
-        << ",\"status_changed\":null"
-        << ",\"committed_answer_changed\":null"
+        << ",\"rank_changed\":"
+        << (rank_changed ? "true" : "false")
+        << ",\"operative_hypothesis_changed\":"
+        << (operative_changed ? "true" : "false")
+        << ",\"status_changed\":"
+        << (trace.previous_status != trace.next_status ? "true" : "false")
+        << ",\"committed_answer_changed\":"
+        << (trace.previous_committed_node != trace.next_committed_node
+                ? "true" : "false")
         << ",\"stop_reason\":\""
         << json_escape(trace.stop_reason) << "\"}";
   }
@@ -716,18 +774,7 @@ int main(int argc, char** argv) {
                 << ",\"active_evidence_refs\":";
       print_string_array(step.active_evidence_refs);
 
-      std::vector<std::string> gaps;
-      const auto& traces = result.receipt.recovery_trace;
-      if (traces.size() > 1) {
-        gaps.push_back(
-            "intermediate_round_target_ranking_not_exposed_by_production_receipt");
-        gaps.push_back(
-            "intermediate_round_operative_and_commitment_state_not_exposed_by_production_receipt");
-      }
-      if (!traces.empty()) {
-        gaps.push_back(
-            "per_round_status_change_not_exposed_by_production_receipt");
-      }
+      const std::vector<std::string> gaps;
       std::cout << ",\"telemetry_gaps\":";
       print_string_array(gaps);
 
