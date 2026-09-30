@@ -186,6 +186,15 @@ def validate_family_semantics(ep: dict[str, Any]) -> None:
     if fam in {"refutation_sufficient_replacement","delayed_sufficient_replacement","earned_revision"}:
         rev=oracle["expected_revision"]
         require(oracle["revision_required"] is True and rev is not None, f"{ep['id']}: missing revision oracle")
+        prior_incumbent_support=[
+            e for e in all_e
+            if e["kind"]=="support" and e["bears_on"]==rev["from"]
+            and e["independent"] and e["step"] < rev["trigger_step"]
+        ]
+        require(
+            len({e["canonical_family_id"] for e in prior_incumbent_support}) >= 2,
+            f"{ep['id']}: revision lacks prior justified incumbent"
+        )
         refute_steps=[e["step"] for e in runtime if e["kind"]=="refute" and e["bears_on"]==rev["from"]]
         require(refute_steps and min(refute_steps)==rev["trigger_step"], f"{ep['id']}: revision trigger")
         replacement_support=[e for e in all_e if e["kind"]=="support" and e["bears_on"]==rev["to"] and e["independent"]]
