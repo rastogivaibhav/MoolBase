@@ -41,6 +41,7 @@ struct FiberPath {
 
   std::string route_signature;
   std::string evidence_lineage_signature;
+  std::string evidence_state_signature;
   std::string causal_ancestry_signature;
   std::string verifier_version;
   std::vector<std::string> verification_findings;
@@ -61,6 +62,7 @@ struct FiberPath {
   bool irrelevant{false};
   bool contains_contradiction{false};
   bool contains_hypothetical{false};
+  bool contains_nonoperative_evidence{false};
 };
 
 struct EvidenceCorrelationGroup {
