@@ -82,14 +82,12 @@ bool has_event(const HypoKoshRuntimeResult& result,
   return false;
 }
 
-GrapheneDB open_db(const fs::path& dir) {
+void open_db(GrapheneDB* db, const fs::path& dir) {
   fs::remove_all(dir);
-  GrapheneDB db;
   DBOptions db_options;
   db_options.dimension = 3;
   db_options.fsync_on_commit = false;
-  require(db.open(dir, db_options), "open db");
-  return db;
+  require(db->open(dir, db_options), "open db");
 }
 
 }  // namespace
@@ -102,7 +100,8 @@ int main() {
 
   // Contract 1: an exact semantic tie is Open, not target-id-selected.
   {
-    GrapheneDB db = open_db(base / "tie");
+    GrapheneDB db;
+    open_db(&db, base / "tie");
     const uint32_t h1 = add_node(db, "H1", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t h2 = add_node(db, "H2", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t e1 = add_node(db, "H1 evidence", {1.0f, 0.0f, 0.0f});
@@ -124,7 +123,8 @@ int main() {
 
   // Contract 2: insufficient corroboration is not a DWM challenge.
   {
-    GrapheneDB db = open_db(base / "corroboration");
+    GrapheneDB db;
+    open_db(&db, base / "corroboration");
     const uint32_t root =
         add_node(db, "single support hypothesis", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t evidence =
@@ -144,7 +144,8 @@ int main() {
   // Contract 3: real opposition with an exhausted frontier emits Challenge
   // but no Reopen.
   {
-    GrapheneDB db = open_db(base / "exhausted");
+    GrapheneDB db;
+    open_db(&db, base / "exhausted");
     const uint32_t root =
         add_node(db, "exhausted hypothesis", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t s1 =
@@ -175,7 +176,8 @@ int main() {
   // Contract 4: opposition plus a genuinely unseen downstream observation
   // makes the opportunity observable and permits Reopen.
   {
-    GrapheneDB db = open_db(base / "latent");
+    GrapheneDB db;
+    open_db(&db, base / "latent");
     const uint32_t root =
         add_node(db, "latent hypothesis", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t s1 =
