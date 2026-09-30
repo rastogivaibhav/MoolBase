@@ -35,6 +35,10 @@ if(GRAPHENEDB_BUILD_TESTS)
                  tools/epistemic_process_runtime_runner.cpp)
   target_link_libraries(graphenedb_epistemic_process_runtime_runner PRIVATE graphenedb)
 
+  add_executable(graphenedb_epistemic_process_runtime_runner_v2
+                 tools/epistemic_process_runtime_runner_v2.cpp)
+  target_link_libraries(graphenedb_epistemic_process_runtime_runner_v2 PRIVATE graphenedb)
+
   add_executable(graphenedb_moolbase_monkey_v1
                  tests/test_moolbase_monkey_v1.cpp)
   target_link_libraries(graphenedb_moolbase_monkey_v1 PRIVATE graphenedb)
