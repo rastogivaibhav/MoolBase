@@ -1,88 +1,22 @@
 #!/usr/bin/env python3
+"""Compatibility smoke test retained for the Cycle-5 workflow.
+
+The full Cycle-6 adversarial suite lives in test_evaluator_adversarial_v2.py.
+"""
 from __future__ import annotations
 
+from test_evaluator_adversarial_v2 import fixture
 from evaluate_v2_candidate import evaluate
 
 
-def state(op, committed, families=None, derivations=None):
-    return {
-        "operative_hypothesis": op,
-        "committed_answer": committed,
-        "evidence_family_ids": families or [],
-        "dependency_lineage_ids": derivations or [],
-    }
-
-
-def main():
-    task = {
-        "id": "T1",
-        "challenge_warranted_steps": [2],
-        "oracle": {
-            "terminal_operative": "H2",
-            "terminal_committed": "H2",
-            "response_window": {
-                "trigger_step": 2,
-                "contradicted": "H1",
-                "acceptable_to": ["H2", None],
-                "max_latency_steps": 0,
-            },
-        },
-        "events": [
-            {"step": 1, "id": "e1", "family": "F1", "kind": "support",
-             "bears_on": "H1"},
-            {"step": 2, "id": "e2", "family": "F2", "kind": "refute",
-             "bears_on": "H1", "decisive": True},
-        ],
-    }
-    raw = {
-        "score_bearing": False,
-        "configurations": ["G2"],
-        "episodes": [{
-            "episode_id": "T1",
-            "configuration": "G2",
-            "evidence_metadata": {
-                "e1": {"family": "F1", "kind": "support",
-                       "bears_on": "H1", "depends_on": []},
-                "e2": {"family": "F2", "kind": "refute",
-                       "bears_on": "H1", "depends_on": []},
-            },
-            "steps": [
-                {
-                    "step": 1,
-                    "active_evidence_refs": ["e1"],
-                    "final_state": state("H1", "H1", ["F1"]),
-                    "native_events": [],
-                    "recovery_rounds": [],
-                },
-                {
-                    "step": 2,
-                    "active_evidence_refs": ["e1", "e2"],
-                    "final_state": state("H2", "H2", ["F1", "F2"]),
-                    "native_events": [
-                        {"type": "challenge"},
-                        {"type": "reopen"},
-                        {"type": "revision"},
-                    ],
-                    "recovery_rounds": [{
-                        "trigger": "dwm_opposition",
-                        "frontier_changed": True,
-                        "rank_changed": True,
-                        "operative_hypothesis_changed": True,
-                        "status_changed": True,
-                        "committed_answer_changed": True,
-                    }],
-                },
-            ],
-        }],
-    }
-    result = evaluate({"episodes": [task]}, raw)["G2"]
-    assert result["operative_hypothesis_accuracy"] == 1.0
-    assert result["committed_accuracy"] == 1.0
-    assert result["cross_step_refutation_response_rate"] == 1.0
-    assert result["challenge_precision"] == 1.0
-    assert result["unnecessary_reopen_rate"] == 0.0
-    assert result["reopen_usefulness_rate"] == 1.0
-    assert result["within_call_revision_rate"] == 1.0
+def main() -> None:
+    tasks, raw = fixture()
+    result = evaluate(tasks, raw)
+    assert result["aggregate"]["C1"]["evidence_retention_exactness"] == 1.0
+    assert result["aggregate"]["G1"]["committed_accuracy"] == 1.0
+    assert result["aggregate"]["G2"]["earned_resolution_rate"] == 1.0
+    assert "C0->C1" in result["comparisons"]
+    assert "G1->G2" in result["comparisons"]
     print("cycle5_evaluator_contracts=passed")
 
 
