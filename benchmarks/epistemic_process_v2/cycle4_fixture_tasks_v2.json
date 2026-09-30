@@ -1,0 +1,55 @@
+{
+  "protocol": "epistemic-process-v2-cycle4-fixture",
+  "status": "UNSCORED_MECHANICAL_FIXTURE",
+  "score_bearing_allowed": false,
+  "episodes": [
+    {
+      "id": "C4_HISTORY_BEATS_CURRENT_01",
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1"},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H1"},
+        {"step":3,"id":"e3","family":"F_C","kind":"support","bears_on":"H2"}
+      ]
+    },
+    {
+      "id": "C4_DUPLICATE_FAMILY_02",
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1"},
+        {"step":2,"id":"e2","family":"F_A","kind":"support","bears_on":"H1","depends_on":["e1"]},
+        {"step":3,"id":"e3","family":"F_B","kind":"support","bears_on":"H2"}
+      ]
+    },
+    {
+      "id": "C4_LATE_REFUTATION_03",
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1"},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H1"},
+        {"step":3,"id":"e3","family":"F_C","kind":"support","bears_on":"H2"},
+        {"step":4,"id":"e4","family":"F_D","kind":"refute","bears_on":"H1"},
+        {"step":5,"id":"e5","family":"F_E","kind":"support","bears_on":"H2"}
+      ]
+    },
+    {
+      "id": "C4_TIE_ABSTAINS_04",
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1"},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H2"}
+      ]
+    },
+    {
+      "id": "C4_CURRENT_ONLY_DIFFERS_05",
+      "events": [
+        {"step":1,"id":"e1","family":"F_A","kind":"support","bears_on":"H1"},
+        {"step":2,"id":"e2","family":"F_B","kind":"support","bears_on":"H1"},
+        {"step":3,"id":"e3","family":"F_C","kind":"support","bears_on":"H2"}
+      ]
+    },
+    {
+      "id": "C4_ISOLATED_EPISODE_06",
+      "events": [
+        {"step":1,"id":"e1","family":"F_X","kind":"support","bears_on":"H2"},
+        {"step":2,"id":"e2","family":"F_Y","kind":"support","bears_on":"H2"}
+      ]
+    }
+  ]
+}
