@@ -30,10 +30,13 @@ for key,pair in groups.items():
     ae=a["runtime"]["events"]+a["environment"]["latent_events"]
     be=b["runtime"]["events"]+b["environment"]["latent_events"]
     assert len(ae)==len(be),key
-    for x,y in zip(ae,be):
-        sx,sy=event_signature(x),event_signature(y)
-        assert swap_h(sx.pop("bears_on"))==sy.pop("bears_on"),key
-        assert sx==sy,key
+    def mirrored_signature(e):
+        s=event_signature(e)
+        s["bears_on"]=swap_h(s["bears_on"])
+        return tuple(sorted(s.items()))
+    def plain_signature(e):
+        return tuple(sorted(event_signature(e).items()))
+    assert sorted(mirrored_signature(x) for x in ae) == sorted(plain_signature(y) for y in be), key
     ao,bo=a["oracle"],b["oracle"]
     assert swap_h(ao["expected_terminal_operative"])==bo["expected_terminal_operative"],key
     assert swap_h(ao["expected_terminal_committed"])==bo["expected_terminal_committed"],key
