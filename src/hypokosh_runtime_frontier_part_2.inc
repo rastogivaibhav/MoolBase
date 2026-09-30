@@ -249,6 +249,12 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   result.final_self_healing = result.initial_self_healing;
 
   std::vector<LyapunovSample> samples;
+  if (options.prior_epistemic_state.available &&
+      options.prior_epistemic_state.bundle_hash != 0) {
+    samples.push_back(
+        {options.prior_epistemic_state.bundle_hash,
+         options.prior_epistemic_state.stability});
+  }
   samples.push_back(
       {reasoning_state_hash(result.initial_bundle, options.dialectic),
        result.initial_stability});
