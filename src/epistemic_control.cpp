@@ -307,6 +307,9 @@ EpistemicAdmissibility EpistemicController::assess(
   const auto targets = target_candidates(bundle);
   const TargetCandidate* selected =
       select_primary_target(targets, thresholds);
+  output.semantic_tie =
+      !selected && targets.size() > 1 &&
+      semantic_target_equal(targets[0], targets[1]);
   const uint32_t selected_target =
       selected ? selected->fiber->target_node : 0;
   const auto selected_candidates =
