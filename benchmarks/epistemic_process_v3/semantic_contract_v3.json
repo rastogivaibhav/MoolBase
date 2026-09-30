@@ -1,0 +1,178 @@
+{
+  "schema": "epistemic-process-v3-semantic-contract-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "canonical_family_id": "family:<raw-id>",
+  "tie": {
+    "continuous_comparison": {
+      "absolute_tolerance": 1e-9,
+      "relative_tolerance": 0.000001,
+      "rule": "abs(a-b) <= max(abs_tol, rel_tol * max(abs(a),abs(b)))"
+    },
+    "exact_integer_coordinates": [
+      "independent_support_family_count"
+    ],
+    "semantic_coordinates": [
+      "belief_strength",
+      "support_strength",
+      "opposition_strength",
+      "semantic_verification",
+      "independent_support_family_count",
+      "best_support_score",
+      "admissibility",
+      "contradiction_state"
+    ],
+    "forbidden_tiebreakers": [
+      "target_node",
+      "database_insertion_order",
+      "target_insertion_order",
+      "evidence_insertion_order",
+      "hypothesis_label",
+      "lexical_order",
+      "evidence_family_name"
+    ],
+    "no_prior_material_opposition": {
+      "operative_hypothesis": null,
+      "epistemic_status": "open",
+      "committed_answer": null
+    },
+    "prior_or_current_material_opposition": {
+      "operative_hypothesis": null,
+      "epistemic_status": "contested",
+      "committed_answer": null
+    }
+  },
+  "evidence_states": {
+    "active_support": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": true,
+      "opposition": false,
+      "counts_independent_family": true,
+      "ranking": true,
+      "commitment": true
+    },
+    "historical_support": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": false,
+      "opposition": false,
+      "counts_independent_family": false,
+      "ranking": false,
+      "commitment": false
+    },
+    "refuted_support": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": true,
+      "opposition": false,
+      "counts_independent_family": true,
+      "ranking": true,
+      "commitment": "blocked_if_material_contradiction_active",
+      "note": "Refutation adds opposition; it does not itself revoke or invalidate the supporting evidence."
+    },
+    "revoked_evidence": {
+      "stored": "audit_history_permitted",
+      "audit_visible": true,
+      "positive_support": false,
+      "opposition": false,
+      "counts_independent_family": false,
+      "ranking": false,
+      "commitment": false
+    },
+    "superseded_evidence": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": false,
+      "opposition": false,
+      "counts_independent_family": false,
+      "ranking": false,
+      "commitment": false
+    },
+    "invalid_evidence": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": false,
+      "opposition": false,
+      "counts_independent_family": false,
+      "ranking": false,
+      "commitment": false
+    },
+    "opposing_evidence": {
+      "stored": true,
+      "audit_visible": true,
+      "positive_support": false,
+      "opposition": true,
+      "counts_independent_family": "as_opposition_family_only",
+      "ranking": true,
+      "commitment": "may_block"
+    }
+  },
+  "terms": {
+    "operative_hypothesis": "Current non-committed best justified target. It may exist without a committed answer.",
+    "provisional_hypothesis": "Operative target that has not met full resolution requirements.",
+    "contested": "Material opposition exists or a formerly operative belief has been defeated without an earned replacement. Contested may carry an operative hypothesis only when that hypothesis remains the unique semantic leader; in the frozen incumbent-replacement case below it must be null.",
+    "committed_answer": "Governed answer emitted only after commitment criteria are met.",
+    "abstention": "A commitment-layer decision to emit no committed answer. Abstention is not synonymous with open or contested and may coexist with a non-null operative hypothesis.",
+    "open": "Insufficient evidence to select a unique operative hypothesis and no material defeated-incumbent condition.",
+    "resolved": "A fully earned state meeting independent-support, contradiction, verification, stability and validity requirements.",
+    "provisionally_resolved": "Not resolved; must never enter the resolved denominator as success.",
+    "revision": "A native transition where a previously operative hypothesis is replaced by a different hypothesis or deliberately cleared because new evidence changes the justified operative state.",
+    "decommitment": "A previously committed answer becomes null after new evidence invalidates continued commitment.",
+    "challenge": "A dialectical event caused by active material opposition to a current/provisional hypothesis; insufficient corroboration alone is not a challenge.",
+    "evidence_insufficiency": "Insufficient corroboration/support without active material opposition. May request corroboration search but must not be labeled a dialectical challenge.",
+    "reopen": "A search-expansion action. It is legitimate only when a production-observable expansion opportunity is present.",
+    "frontier_exhaustion": "No unseen eligible node, admissible untraversed path, binding-expandable budget, changed dependency state, or newly arrived external evidence is available."
+  },
+  "incumbent_replacement_policy": {
+    "id": "CONTESTED_CLEAR_INCUMBENT_UNTIL_REPLACEMENT_EARNED",
+    "scenario": "incumbent materially refuted; different target is belief/rank leader; replacement lacks required independent corroboration",
+    "operative_hypothesis": null,
+    "epistemic_status": "contested",
+    "committed_answer": null,
+    "incumbent_may_remain_operative": false,
+    "replacement_may_be_committed": false,
+    "replacement_becomes_operative_when": "it becomes a unique semantic leader and satisfies the frozen minimum operative corroboration rule",
+    "rationale": "Avoid stale-incumbent promotion and avoid premature replacement commitment without equating refutation with revocation."
+  },
+  "resolution": {
+    "minimum_independent_support_families": 2,
+    "requires_no_active_material_contradiction": true,
+    "requires_semantic_verification": true,
+    "requires_stability": true,
+    "requires_no_active_revocation_supersession_invalidation_conflict": true,
+    "provisional_counts_as_resolved": false
+  },
+  "revision": {
+    "requires_native_receipt": true,
+    "valid_transitions": [
+      "Hx->Hy",
+      "Hx->null"
+    ],
+    "challenge_alone": false,
+    "reopen_alone": false,
+    "rank_change_alone": false,
+    "contested_status_alone": false,
+    "decommitment_recorded_separately": true,
+    "recommitment_recorded_separately": true
+  },
+  "dwm": {
+    "legitimate_challenge": "active material opposition to a current/provisional hypothesis",
+    "insufficient_support_event": "corroboration_search_required",
+    "legitimate_reopen": "challenge or corroboration search AND expansion_opportunity=true",
+    "expansion_opportunity_classes": [
+      "NEW_ELIGIBLE_NODE_AVAILABLE",
+      "NEW_ADMISSIBLE_PATH_AVAILABLE",
+      "BUDGET_BOUND_AND_EXPANDABLE",
+      "DEPENDENCY_STATE_CHANGED",
+      "EXTERNAL_EVIDENCE_ARRIVED"
+    ],
+    "no_opportunity_classes": [
+      "FRONTIER_EXHAUSTED",
+      "NO_EXPANSION_OPPORTUNITY"
+    ],
+    "opportunity_predicate": "true iff at least one positive opportunity class is observed from runtime-visible search state",
+    "useful_reopen": "discovers new admissible evidence OR changes candidate/path frontier with a resulting evidence-set, rank, operative, governed-status, commitment, decommitment or recommitment change",
+    "visited_state_growth_alone_is_useful": false
+  }
+}
