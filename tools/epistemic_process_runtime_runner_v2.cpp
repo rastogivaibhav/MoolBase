@@ -253,29 +253,34 @@ int main(int argc, char** argv) {
               "put evidence node " + observation.id);
       evidence_node_by_ref[observation.id] = evidence_node;
 
-      const uint32_t target =
-          observation.bears_on == "H2" ? h2 : h1;
-      const EdgeRole role =
-          observation.kind == "support"
-              ? EdgeRole::Supports
-              : EdgeRole::Contradicts;
-      EdgeInput edge;
-      edge.from = target;
-      edge.to = evidence_node;
-      edge.origin = EdgeOrigin::Observed;
-      edge.role = role;
-      edge.confidence =
-          observation.kind == "support" ? 0.90 : 0.95;
-      edge.metadata["source_id"] = observation.id;
-      edge.metadata["evidence_family_id"] = observation.family;
-      edge.metadata["event_kind"] = observation.kind;
-      if (!observation.depends_on.empty()) {
-        edge.metadata["derivation_id"] = observation.depends_on;
+      // Noise is intentionally persisted as an observed node but is not
+      // attached to either hypothesis. This lets V2 measure whether unrelated
+      // material perturbs retrieval without falsely encoding it as opposition.
+      if (observation.kind != "noise") {
+        const uint32_t target =
+            observation.bears_on == "H2" ? h2 : h1;
+        const EdgeRole role =
+            observation.kind == "support"
+                ? EdgeRole::Supports
+                : EdgeRole::Contradicts;
+        EdgeInput edge;
+        edge.from = target;
+        edge.to = evidence_node;
+        edge.origin = EdgeOrigin::Observed;
+        edge.role = role;
+        edge.confidence =
+            observation.kind == "support" ? 0.90 : 0.95;
+        edge.metadata["source_id"] = observation.id;
+        edge.metadata["evidence_family_id"] = observation.family;
+        edge.metadata["event_kind"] = observation.kind;
+        if (!observation.depends_on.empty()) {
+          edge.metadata["derivation_id"] = observation.depends_on;
+        }
+        uint32_t edge_id = 0;
+        require(db.put_edge(edge, &edge_id),
+                "put evidence edge " + observation.id);
+        edge_to_ref[edge_id] = observation.id;
       }
-      uint32_t edge_id = 0;
-      require(db.put_edge(edge, &edge_id),
-              "put evidence edge " + observation.id);
-      edge_to_ref[edge_id] = observation.id;
 
       StepResult step;
       step.step = observation.step;
