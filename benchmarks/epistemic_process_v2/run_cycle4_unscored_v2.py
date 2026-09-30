@@ -173,6 +173,40 @@ def _normalise_runtime_schema(episode: dict[str, Any]) -> None:
             round_row["target_ranking_after"] = _normalise_ranking(
                 round_row.get("target_ranking_after"), node_to_name
             )
+            before_has = bool(round_row.get("has_answer_before"))
+            after_has = bool(round_row.get("has_answer_after"))
+            before_status = str(round_row.get("status_before") or "")
+            after_status = str(round_row.get("status_after") or "")
+            before_node = round_row.pop(
+                "operative_hypothesis_node_before", 0
+            )
+            after_node = round_row.pop(
+                "operative_hypothesis_node_after", 0
+            )
+            before_committed = round_row.pop(
+                "committed_answer_node_before", 0
+            )
+            after_committed = round_row.pop(
+                "committed_answer_node_after", 0
+            )
+            round_row["operative_hypothesis_before"] = (
+                _node_name(before_node, node_to_name) if before_has else None
+            )
+            round_row["operative_hypothesis_after"] = (
+                _node_name(after_node, node_to_name) if after_has else None
+            )
+            round_row["committed_answer_before"] = (
+                _node_name(before_committed, node_to_name)
+                if before_has
+                and before_status in {"resolved", "provisionally_resolved"}
+                else None
+            )
+            round_row["committed_answer_after"] = (
+                _node_name(after_committed, node_to_name)
+                if after_has
+                and after_status in {"resolved", "provisionally_resolved"}
+                else None
+            )
 
 
 def c0_episode(task: Mapping[str, Any]) -> dict[str, Any]:
