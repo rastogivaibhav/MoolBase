@@ -78,7 +78,8 @@
         options.stability_thresholds);
     ConvergedAnswer reopened_convergence = controller.converge(
         reopened_bundle, reopened_admissibility,
-        reopened_stability, current_options);
+        reopened_stability, current_options,
+        options.stability_thresholds);
     OppositionReport reopened_opposition =
         options.enable_dwm
             ? controller.oppose(
