@@ -1,0 +1,86 @@
+{
+  "schema": "epistemic-process-score-freeze-v1",
+  "status": "FROZEN",
+  "score_bearing_authorized": true,
+  "experiment_id": "EP-PROCESS-V1-SCORE-001",
+  "protocol": "epistemic-process-v1",
+  "production_architecture_commit": "ecbb45d337c5fcbaac7521feadc8fb3c08381d5d",
+  "benchmark_candidate_commit": "05059127d0076440dc94e163d392d1e2ba5490bb",
+  "benchmark_candidate_tree": "97bb8f4a98458ad1717f70ca1723dcf4bc143efe",
+  "allowed_changes_after_candidate": [
+    "benchmarks/epistemic_process_v1/score_freeze_v1.json"
+  ],
+  "frozen_files": {
+    ".github/workflows/epistemic-process-score-v1.yml": "3227da16ec6028c785080caed0c3a676bb24651a24d1dfa359382da9c4644da1",
+    "CMakeLists.txt": "3d41aa993a6c565feaacf59254f2c83bac2993483cac9be4ac794e3591420a44",
+    "benchmarks/epistemic_process_v1/B0_BASELINE_CONTRACT.md": "d0930647854138acfd7a3dbbb454c34327ec6d6b424457a4c73243e9cd5fe2bf",
+    "benchmarks/epistemic_process_v1/adapt_v1.py": "52121dbca48a4b6abb1fec0f5d01eb6dc160153753c54f8e2bf8ed3fbec279ff",
+    "benchmarks/epistemic_process_v1/analyse_v1.py": "bbd907c17259792fd836dc55a80be94a7c6d1ef0714157d9afeea5a0fed6ebef",
+    "benchmarks/epistemic_process_v1/evaluate_v1.py": "d0af67b25a3d905dd0347cbec753928568e9fe6c2bfcb2ec764f8b67535c66ed",
+    "benchmarks/epistemic_process_v1/freeze_guard_v1.py": "9bf51e5ee24956db7d5e34446a12e58fd888461aebb9b34a046a8dd32ce740cf",
+    "benchmarks/epistemic_process_v1/metric_spec_v1.json": "f603b0f20c5986d94e83d0c7d544738178858d1ab2e9368c4404e53b9ac3c3e0",
+    "benchmarks/epistemic_process_v1/preregistration.json": "0fe4cfe1c4e0f88a708bcfa56e1ec4ae051e1df5eadbf9cd38cf9bfd94477aea",
+    "benchmarks/epistemic_process_v1/run_production_v1.py": "bd32a14aca5106a9e5094635ceca150e9674a272f660023a4d0bc0c144241d60",
+    "benchmarks/epistemic_process_v1/score_gate_v1.py": "56a2c7ddc0e4a30abca5a92044019adc11b3aaa9830af5dce0d885b94f04b10f",
+    "benchmarks/epistemic_process_v1/tasks_v1.json": "6ed5b88e8f314aed96fdceb35b2a7145191c6811fef823ee7a6be9dc09ea4f19",
+    "scripts/run_alpha_release_gate.sh": "99bd53fbcacbbd8bec8f8d33e3cf3c6dc744dabcb218bf39e8bf6d98584630d6",
+    "scripts/run_flagship_perturbations_v1.py": "bdddc6f7b2b2d9c6578ab533dc4df9fee61679ee8defaf71703726c38ff9d86e",
+    "scripts/run_flagship_proof.py": "87584b20b8cb7720161ebff9fdff5c6f8e5a686a0f05fe9af7df61b15c90b6f7",
+    "src/epistemic_control.cpp": "25723a933b7fefde04db25098b98b2a5d2178d5a3776da2baf7289d2d7a892c8",
+    "tests/moolbase_monkey_v1_manifest.json": "572895da03ff9040f82b1f48b8c126b489fc5cf202a398e992d3272a3f6fd7fe",
+    "tests/test_moolbase_metamorphic_v1.cpp": "05417f3c5f4f52878e289394c2e6a3f5db89ddf3669572daa15543ea8c12094f",
+    "tests/test_moolbase_monkey_v1.cpp": "24b118b577d805dd3e06717630151bf23c70889e7a8fe1a910ea1b34ba512b3c",
+    "tests/test_moolbase_multiseed_v1.cpp": "3bb81a0b98c9990f044016697bb9f2da2ecdd7ad64d54eae73529b23f54424fc",
+    "tools/epistemic_process_runtime_runner.cpp": "4c255ca99430ce88c0796a40ba3bc6392714deb353fec34d9c3a97c3910956bc"
+  },
+  "configuration_profiles": {
+    "B0": {
+      "graphene_core": false,
+      "hypokosh": false,
+      "dwm": false,
+      "execution": "stateless-local-baseline"
+    },
+    "G0": {
+      "graphene_core": true,
+      "hypokosh": false,
+      "dwm": false,
+      "execution": "production-graphene-only"
+    },
+    "G1": {
+      "graphene_core": true,
+      "hypokosh": true,
+      "dwm": false,
+      "execution": "production-graphene-plus-hypokosh"
+    },
+    "G2": {
+      "graphene_core": true,
+      "hypokosh": true,
+      "dwm": true,
+      "execution": "production-full-stack"
+    }
+  },
+  "policies": {
+    "seed_policy": "fixed-seed-20260927",
+    "repetition_policy": "single-untouched-score-bearing-run-per-configuration",
+    "timeout_policy": "github-job-timeout-65m-preserve-failure-no-score-retry",
+    "runtime_failure_policy": "preserve-and-report-separately-exclude-from-primary-metrics",
+    "adapter_failure_policy": "preserve-and-report-separately-exclude-from-primary-metrics",
+    "missing_receipt_policy": "preserve-and-report-separately-exclude-from-primary-metrics",
+    "abstention_policy": "report-explicitly-with-coverage-never-impute"
+  },
+  "score_plan": {
+    "configuration_order": [
+      "B0",
+      "G0",
+      "G1",
+      "G2"
+    ],
+    "task_manifest": "benchmarks/epistemic_process_v1/tasks_v1.json",
+    "episodes_per_configuration": 4,
+    "seed": 20260927,
+    "untouched_run": true,
+    "negative_results_preserved": true,
+    "post_freeze_tuning_forbidden": true
+  },
+  "freeze_statement": "This manifest freezes the first score-bearing Epistemic Process v1 ablation. The benchmark candidate tree is immutable; after the candidate commit, only this manifest path is allowed. Any other repository change blocks the score gate."
+}
