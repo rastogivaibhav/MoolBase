@@ -16,6 +16,10 @@ GovernedProjection project_status(
       return {GovernedEpistemicStatus::Contested,
               "material_contradiction_without_earned_replacement"};
     }
+    if (admissibility.semantic_tie) {
+      return {GovernedEpistemicStatus::Open,
+              "unresolved_semantic_tie"};
+    }
     return {
         stability.missing_evidence_penalty > 0.0
             ? GovernedEpistemicStatus::EvidenceRequired
