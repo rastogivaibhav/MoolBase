@@ -247,6 +247,10 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   DialecticOptions current_options = options.dialectic;
   EscapePlan current_escape = result.initial_escape;
   uint32_t consecutive_unchanged_bundles = 0;
+  GovernedEpistemicStatus current_trace_status = project_status(
+      result.final_convergence, result.final_opposition,
+      result.final_stability, result.final_admissibility,
+      current_options.mode, options.stability_thresholds).status;
   for (uint32_t round = 0; round < options.max_recursive_cycles; ++round) {
     RecoveryRoundTrace trace;
     trace.round_index = round;
@@ -280,14 +284,10 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
         result.final_bundle.visited_states;
     trace.previous_truncated = result.final_bundle.truncated;
 
-    const GovernedProjection previous_projection = project_status(
-        result.final_convergence, result.final_opposition,
-        result.final_stability, result.final_admissibility,
-        current_options.mode, options.stability_thresholds);
     trace.previous_has_answer = result.final_convergence.has_answer;
     trace.previous_primary_node =
         trace.previous_has_answer ? result.final_convergence.primary_node : 0;
-    trace.previous_status = previous_projection.status;
+    trace.previous_status = current_trace_status;
     trace.previous_committed_node =
         trace.previous_has_answer &&
                 trace_status_commits(trace.previous_status)
