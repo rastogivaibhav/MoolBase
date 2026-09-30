@@ -13,7 +13,6 @@ def strip_document(doc):
         layout=ep["runtime"]["target_layout"]
         episodes.append({
             "id":ep["id"],
-            "task_family":ep["task_family"],
             "variant":ep["variant"],
             "runtime":{
                 "target_layout":{
