@@ -137,9 +137,11 @@ int main() {
   assert(multi_answer.primary_node == 2);
   const OppositionReport multi_opposition = controller.oppose(
       multi_target, multi_answer, multi_admissibility, multi_stability);
-  assert(multi_opposition.opposition_score > 0.0);
-  assert(multi_opposition.requests_reexpansion);
-  assert(!multi_opposition.challenged_claims.empty());
+  // V3: a supported alternative is competition, not material opposition.
+  assert(multi_opposition.opposition_score == 0.0);
+  assert(!multi_opposition.dialectical_challenge);
+  assert(!multi_opposition.requests_reexpansion);
+  assert(multi_opposition.challenged_claims.empty());
 
   // R1: a materially contradicted single-path H1 must not remain primary
   // over a better independently corroborated H2.
