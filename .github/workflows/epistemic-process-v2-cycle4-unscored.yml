@@ -1,0 +1,112 @@
+name: EP Process V2 Cycle 4 unscored validation
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v2/**"
+      - "tools/epistemic_process_runtime_runner_v2_cycle4.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-v2-cycle4-unscored.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cycle4-unscored:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Cycle 3 still forbids scoring
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          model=json.loads(Path("benchmarks/epistemic_process_v2/measurement_model_v2.json").read_text())
+          assert model["status"] == "PREREGISTERED_UNSCORED"
+          assert model["score_bearing_authorized"] is False
+          print("v2_score_authorization=false")
+          PY
+
+      - name: Compile benchmark Python and run common-head contracts
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            benchmarks/epistemic_process_v2/common_head_v2.py \
+            benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py \
+            benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py \
+            benchmarks/epistemic_process_v2/compare_cycle4_determinism_v2.py \
+            benchmarks/epistemic_process_v2/test_cycle4_contracts_v2.py
+          (cd benchmarks/epistemic_process_v2 && python test_cycle4_contracts_v2.py)
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-cycle4 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build Cycle 4 runner and inherited epistemic tests
+        run: |
+          cmake --build build-cycle4 --parallel 2 --target \
+            graphenedb_epistemic_process_runtime_runner_v2_cycle4 \
+            graphenedb_epistemic_control_tests \
+            graphenedb_hypokosh_runtime_tests
+
+      - name: Run inherited production behavior tests
+        run: |
+          set -euo pipefail
+          ./build-cycle4/graphenedb_epistemic_control_tests
+          ./build-cycle4/graphenedb_hypokosh_runtime_tests
+
+      - name: Execute first unscored mechanical run
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v2-cycle4/run1
+          python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py \
+            --tasks benchmarks/epistemic_process_v2/cycle4_fixture_tasks_v2.json \
+            --runtime-runner ./build-cycle4/graphenedb_epistemic_process_runtime_runner_v2_cycle4 \
+            --seed 20261001 \
+            --out reports/epistemic-process-v2-cycle4/run1/raw.json
+          python benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py \
+            reports/epistemic-process-v2-cycle4/run1/raw.json
+
+      - name: Execute deterministic replay
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v2-cycle4/run2
+          python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py \
+            --tasks benchmarks/epistemic_process_v2/cycle4_fixture_tasks_v2.json \
+            --runtime-runner ./build-cycle4/graphenedb_epistemic_process_runtime_runner_v2_cycle4 \
+            --seed 20261001 \
+            --out reports/epistemic-process-v2-cycle4/run2/raw.json
+          python benchmarks/epistemic_process_v2/validate_cycle4_telemetry_v2.py \
+            reports/epistemic-process-v2-cycle4/run2/raw.json
+          python benchmarks/epistemic_process_v2/compare_cycle4_determinism_v2.py \
+            reports/epistemic-process-v2-cycle4/run1/raw.json \
+            reports/epistemic-process-v2-cycle4/run2/raw.json
+
+      - name: Assert no score artifacts exist
+        run: |
+          set -euo pipefail
+          if find reports/epistemic-process-v2-cycle4 -type f | grep -E '/(score|scores|aggregate|claim)' ; then
+            echo "unexpected score-like artifact produced in Cycle 4" >&2
+            exit 1
+          fi
+          echo "cycle4_score_artifacts=none"
+
+      - name: Upload unscored mechanical evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v2-cycle4-unscored-${{ github.sha }}
+          path: reports/epistemic-process-v2-cycle4/
+          retention-days: 90
