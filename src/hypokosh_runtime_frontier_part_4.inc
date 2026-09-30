@@ -140,6 +140,7 @@ const char* governed_status_name(GovernedEpistemicStatus status) {
     case GovernedEpistemicStatus::Contested: return "contested";
     case GovernedEpistemicStatus::EvidenceRequired:
       return "evidence_required";
+    case GovernedEpistemicStatus::Open: return "open";
     case GovernedEpistemicStatus::Abstain: return "abstain";
     case GovernedEpistemicStatus::Speculative: return "speculative";
   }
