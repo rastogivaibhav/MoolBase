@@ -1,0 +1,175 @@
+name: Epistemic Process v2 unscored laboratory
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v2/**"
+      - "tools/epistemic_process_runtime_runner_v2.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-v2-unscored.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unscored-v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate preregistration and task integrity
+        run: |
+          set -euo pipefail
+          python -m py_compile benchmarks/epistemic_process_v2/*.py
+          python benchmarks/epistemic_process_v2/validate_v2.py \
+            --prereg benchmarks/epistemic_process_v2/preregistration_v2.json \
+            --tasks benchmarks/epistemic_process_v2/tasks_v2.json
+
+      - name: Configure V2 runtime
+        run: |
+          cmake -S . -B build-v2 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build V2 and adversarial targets
+        run: |
+          cmake --build build-v2 --parallel 2 --target \
+            graphenedb_epistemic_process_runtime_runner_v2 \
+            graphenedb_moolbase_monkey_v1 \
+            graphenedb_moolbase_multiseed_v1 \
+            graphenedb_moolbase_metamorphic_v1
+
+      - name: Execute 66-episode unscored ablation
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-v2/main
+          mkdir -p "$out"
+          for cfg in B0 G0 G1 G2; do
+            python benchmarks/epistemic_process_v2/run_v2.py \
+              --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+              --runtime-runner ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              --configuration "$cfg" \
+              --seed 20261001 \
+              --out "$out/raw-$cfg.json"
+            python benchmarks/epistemic_process_v2/adapt_v2.py \
+              --raw "$out/raw-$cfg.json" \
+              --mode unscored-dry-run \
+              --out "$out/receipts-$cfg.json"
+            python benchmarks/epistemic_process_v2/evaluate_v2.py \
+              --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+              --receipts "$out/receipts-$cfg.json" \
+              --mode unscored-dry-run \
+              --out "$out/scores-$cfg.json"
+          done
+          python benchmarks/epistemic_process_v2/analyse_unscored_v2.py \
+            --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+            --artifacts-dir "$out" \
+            --out "$out/analysis.json"
+
+      - name: Verify semantic determinism on second execution
+        run: |
+          set -euo pipefail
+          base=reports/epistemic-process-v2/main
+          out=reports/epistemic-process-v2/determinism
+          mkdir -p "$out"
+          for cfg in B0 G0 G1 G2; do
+            python benchmarks/epistemic_process_v2/run_v2.py \
+              --tasks benchmarks/epistemic_process_v2/tasks_v2.json \
+              --runtime-runner ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              --configuration "$cfg" \
+              --seed 20261002 \
+              --out "$out/raw-$cfg.json"
+            python benchmarks/epistemic_process_v2/compare_determinism_v2.py \
+              "$base/raw-$cfg.json" "$out/raw-$cfg.json"
+          done
+
+      - name: Run inherited adversarial and multiseed campaigns
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-v2/adversarial
+          mkdir -p "$out/multiseed"
+          ./build-v2/graphenedb_moolbase_metamorphic_v1 | tee "$out/metamorphic.log"
+          ./build-v2/graphenedb_moolbase_monkey_v1 "$out/monkey.json" | tee "$out/monkey.log"
+          for seed in 20260930 20261001 20261002; do
+            ./build-v2/graphenedb_moolbase_multiseed_v1 \
+              "$seed" 100 "$out/multiseed/$seed.json" \
+              | tee "$out/multiseed/$seed.log"
+          done
+
+      - name: Run fail-closed harness checks
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-v2/faults
+          mkdir -p "$out"
+          printf '1\tbroken\tF_A\tsupport\tH1\n' > "$out/malformed.tsv"
+          if ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              G1 MALFORMED "$out/malformed.tsv" "$out/db-malformed" 20261001; then
+            echo "malformed input unexpectedly accepted" >&2
+            exit 1
+          fi
+          printf '1\trevoke_1\tF_REV\trevoke\tH1\t\tmissing_evidence\n' > "$out/unknown-revoke.tsv"
+          if ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              G1 UNKNOWN_REVOKE "$out/unknown-revoke.tsv" "$out/db-revoke" 20261001; then
+            echo "unknown revocation unexpectedly accepted" >&2
+            exit 1
+          fi
+
+      - name: Execute realistic deterministic validation pack
+        run: |
+          set -euo pipefail
+          out=reports/epistemic-process-v2/realistic
+          mkdir -p "$out"
+          for cfg in B0 G0 G1 G2; do
+            python benchmarks/epistemic_process_v2/run_v2.py \
+              --tasks benchmarks/epistemic_process_v2/realistic_workloads_v2.json \
+              --runtime-runner ./build-v2/graphenedb_epistemic_process_runtime_runner_v2 \
+              --configuration "$cfg" \
+              --seed 20261001 \
+              --out "$out/raw-$cfg.json"
+            python benchmarks/epistemic_process_v2/adapt_v2.py \
+              --raw "$out/raw-$cfg.json" \
+              --mode unscored-dry-run \
+              --out "$out/receipts-$cfg.json"
+            python benchmarks/epistemic_process_v2/evaluate_v2.py \
+              --tasks benchmarks/epistemic_process_v2/realistic_workloads_v2.json \
+              --receipts "$out/receipts-$cfg.json" \
+              --mode unscored-dry-run \
+              --out "$out/scores-$cfg.json"
+          done
+          python benchmarks/epistemic_process_v2/analyse_unscored_v2.py \
+            --tasks benchmarks/epistemic_process_v2/realistic_workloads_v2.json \
+            --artifacts-dir "$out" \
+            --out "$out/analysis.json"
+
+      - name: Assert unscored execution produced no runtime or adapter failures
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for suite in ("main","realistic"):
+              root=Path("reports/epistemic-process-v2")/suite
+              for cfg in ("B0","G0","G1","G2"):
+                  raw=json.loads((root/f"raw-{cfg}.json").read_text())
+                  receipts=json.loads((root/f"receipts-{cfg}.json").read_text())
+                  runtime=sum(bool(x.get("failures")) for x in raw["episodes"])
+                  adapter=sum(bool(x.get("adapter_failure")) for x in receipts)
+                  if runtime or adapter:
+                      raise SystemExit(f"{suite}/{cfg}: runtime={runtime} adapter={adapter}")
+          print("v2_unscored_failure_gate=passed")
+          PY
+
+      - name: Upload V2 unscored evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-process-v2-unscored-${{ github.sha }}
+          path: reports/epistemic-process-v2/
+          retention-days: 90
