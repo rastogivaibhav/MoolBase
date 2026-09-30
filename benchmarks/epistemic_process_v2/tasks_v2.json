@@ -1,0 +1,3809 @@
+{
+  "protocol": "epistemic-process-v2",
+  "status": "PREREGISTERED_UNSCORED",
+  "generator": "deterministic-11-strata-x-6-variants",
+  "episode_count": 66,
+  "oracle_fields_not_sent_to_sut": [
+    "terminal_supported",
+    "minimum_independent_families_for_resolution",
+    "temporal_oracle",
+    "notes",
+    "stratum",
+    "variant",
+    "independent",
+    "decisive"
+  ],
+  "episodes": [
+    {
+      "id": "V2_DUPLICATE_CORRELATION_01",
+      "stratum": "duplicate_correlation",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_C_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_D_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DUPLICATE_CORRELATION_02",
+      "stratum": "duplicate_correlation",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_C_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_D_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DUPLICATE_CORRELATION_03",
+      "stratum": "duplicate_correlation",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_C_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_D_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DUPLICATE_CORRELATION_04",
+      "stratum": "duplicate_correlation",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_C_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_D_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DUPLICATE_CORRELATION_05",
+      "stratum": "duplicate_correlation",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_C_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_D_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DUPLICATE_CORRELATION_06",
+      "stratum": "duplicate_correlation",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "duplicate H1 support must not multiply independent support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_C_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_D_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_01",
+      "stratum": "independent_corroboration",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_02",
+      "stratum": "independent_corroboration",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_03",
+      "stratum": "independent_corroboration",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_04",
+      "stratum": "independent_corroboration",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_05",
+      "stratum": "independent_corroboration",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_INDEPENDENT_CORROBORATION_06",
+      "stratum": "independent_corroboration",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "two independent H1 families should remain operative",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_01",
+      "stratum": "decisive_refutation",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_D_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_E_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_02",
+      "stratum": "decisive_refutation",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_D_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_E_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_03",
+      "stratum": "decisive_refutation",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_D_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_E_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_04",
+      "stratum": "decisive_refutation",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_D_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_E_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_05",
+      "stratum": "decisive_refutation",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_D_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_E_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_DECISIVE_REFUTATION_06",
+      "stratum": "decisive_refutation",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "decisive contradiction should force reconsideration",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_D_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_E_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_01",
+      "stratum": "late_revocation",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_REV_1",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_1",
+            "e2_1"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_D_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_02",
+      "stratum": "late_revocation",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_REV_2",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_2",
+            "e2_2"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_D_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_03",
+      "stratum": "late_revocation",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_REV_3",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_3",
+            "e2_3"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_D_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_04",
+      "stratum": "late_revocation",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_REV_4",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_4",
+            "e2_4"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_D_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_05",
+      "stratum": "late_revocation",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_REV_5",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_5",
+            "e2_5"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_D_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_LATE_REVOCATION_06",
+      "stratum": "late_revocation",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "revoked evidence is removed through Graphene delete_node in V2 harness",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_REV_6",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_6",
+            "e2_6"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_D_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_01",
+      "stratum": "insufficient_replacement",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_D_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_02",
+      "stratum": "insufficient_replacement",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_D_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_03",
+      "stratum": "insufficient_replacement",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_D_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_04",
+      "stratum": "insufficient_replacement",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_D_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_05",
+      "stratum": "insufficient_replacement",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_D_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_INSUFFICIENT_REPLACEMENT_06",
+      "stratum": "insufficient_replacement",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "notes": "replacement has only one independent family; explicit abstention required",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_D_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_01",
+      "stratum": "abstention",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_02",
+      "stratum": "abstention",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_03",
+      "stratum": "abstention",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_04",
+      "stratum": "abstention",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_05",
+      "stratum": "abstention",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_ABSTENTION_06",
+      "stratum": "abstention",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 3
+      },
+      "notes": "insufficient evidence for either resolved replacement",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_01",
+      "stratum": "temporary_contradiction",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_D_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_02",
+      "stratum": "temporary_contradiction",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_D_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_03",
+      "stratum": "temporary_contradiction",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_D_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_04",
+      "stratum": "temporary_contradiction",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_D_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_05",
+      "stratum": "temporary_contradiction",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_D_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_TEMPORARY_CONTRADICTION_06",
+      "stratum": "temporary_contradiction",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 3
+      },
+      "notes": "contradiction followed by independent replacement support",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_D_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_01",
+      "stratum": "misleading_majority",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_02",
+      "stratum": "misleading_majority",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_03",
+      "stratum": "misleading_majority",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_04",
+      "stratum": "misleading_majority",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_05",
+      "stratum": "misleading_majority",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_MISLEADING_MAJORITY_06",
+      "stratum": "misleading_majority",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "notes": "three correlated H1 items must not outweigh two independent H2 families",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_01",
+      "stratum": "irrelevant_noise",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_1",
+          "family": "F_NOISE_1",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_1",
+          "family": "F_NOISE_1",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_02",
+      "stratum": "irrelevant_noise",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_2",
+          "family": "F_NOISE_2",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_2",
+          "family": "F_NOISE_2",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_03",
+      "stratum": "irrelevant_noise",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_3",
+          "family": "F_NOISE_3",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_3",
+          "family": "F_NOISE_3",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_04",
+      "stratum": "irrelevant_noise",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_4",
+          "family": "F_NOISE_4",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_4",
+          "family": "F_NOISE_4",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_05",
+      "stratum": "irrelevant_noise",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_5",
+          "family": "F_NOISE_5",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_5",
+          "family": "F_NOISE_5",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_IRRELEVANT_NOISE_06",
+      "stratum": "irrelevant_noise",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "noise observations are stored but not attached as support/opposition edges",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_6",
+          "family": "F_NOISE_6",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_6",
+          "family": "F_NOISE_6",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_01",
+      "stratum": "order_permutation",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_C_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_D_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_02",
+      "stratum": "order_permutation",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_C_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_D_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_03",
+      "stratum": "order_permutation",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_C_3",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_D_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_04",
+      "stratum": "order_permutation",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_C_4",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_D_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_05",
+      "stratum": "order_permutation",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_C_5",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_D_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_ORDER_PERMUTATION_06",
+      "stratum": "order_permutation",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "notes": "permuted evidence order should preserve final semantics",
+      "events": [
+        {
+          "step": 1,
+          "id": "e3_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e2_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_C_6",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_D_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_01",
+      "stratum": "negative_control_no_change",
+      "variant": 1,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "F_B_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "F_A_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "F_C_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_02",
+      "stratum": "negative_control_no_change",
+      "variant": 2,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "F_B_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "F_A_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "F_C_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_03",
+      "stratum": "negative_control_no_change",
+      "variant": 3,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_3",
+          "family": "F_B_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_3",
+          "family": "F_A_3",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_3"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_3",
+          "family": "F_C_3",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_04",
+      "stratum": "negative_control_no_change",
+      "variant": 4,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_4",
+          "family": "F_B_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_4",
+          "family": "F_A_4",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_4"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_4",
+          "family": "F_C_4",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_05",
+      "stratum": "negative_control_no_change",
+      "variant": 5,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_5",
+          "family": "F_B_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_5",
+          "family": "F_A_5",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_5"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_5",
+          "family": "F_C_5",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "V2_NEGATIVE_CONTROL_NO_CHANGE_06",
+      "stratum": "negative_control_no_change",
+      "variant": 6,
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "notes": "no decisive contrary evidence; added machinery should not churn",
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_6",
+          "family": "F_B_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_6",
+          "family": "F_A_6",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_6"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_6",
+          "family": "F_C_6",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_6"
+          ]
+        }
+      ]
+    }
+  ],
+  "reporting": {
+    "preserve_all_episodes": true,
+    "process_metrics_separate_from_terminal_accuracy": true,
+    "score_bearing_allowed": false
+  }
+}
