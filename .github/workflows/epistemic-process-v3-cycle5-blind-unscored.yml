@@ -1,0 +1,167 @@
+name: EP Process V3 Cycle 5 blind unscored campaign
+
+on:
+  pull_request:
+    paths:
+      - "tools/epistemic_process_runtime_runner_v3_cycle5.cpp"
+      - "benchmarks/epistemic_process_v3/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-v3-cycle5-blind-unscored.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v3-cycle5-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle5-blind-unscored:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Protect frozen experiment and Cycle 4 production
+        run: |
+          set -euo pipefail
+          BASE=a7ed3794d7d4c25648e7478867070f36546469ac
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(src/|include/|tests/)'; then
+            echo "Cycle 5 may not change production implementation or tests" >&2
+            exit 1
+          fi
+
+          check() {
+            file="$1"; expected="$2"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            echo "$actual  $file"
+            test "$actual" = "$expected"
+          }
+
+          check benchmarks/epistemic_process_v3/semantic_contract_v3.json 3873b8a9383782c16fab7c813c5d0d4f969bd424f7fcd1f6818439a05803737f
+          check benchmarks/epistemic_process_v3/measurement_model_v3.json 799252c703a06b8f9c1a66d697aaa1d965c9edbfb53acc769e37e8759368a5d0
+          check benchmarks/epistemic_process_v3/metric_definitions_v3.json 3e95ef5b83ffad6a52c88833e750883d5d662ad595e55508e66ddd7348ab1b57
+          check benchmarks/epistemic_process_v3/telemetry_contract_v3.json 900c186c56689b5c06222839e0d07755dcd81cba9bdf2722f86286347d4cef0a
+          check benchmarks/epistemic_process_v3/claim_gates_v3.json 4ebf21dd6da6b603be8c5d3a417aaf0f292a17bfd5d298b6effbd5c7c3cb4d31
+          check benchmarks/epistemic_process_v3/failure_policy_v3.json e6ab18eaf563bed4fd11ddcd665d118591ef0160c81f7fa064f68261153c74ec
+          check benchmarks/epistemic_process_v3/statistics_plan_v3.json bc245acc76a10ecccf540fd3f9951dc865243a07965f6b0fa7949b401b4bd152
+          check benchmarks/epistemic_process_v3/task_family_requirements_v3.json c20f9f03e540f945c66cb8b032ee123487c8b47b81cf60b34acbeed879cd1d8a
+          check benchmarks/epistemic_process_v3/controls_v3.json 102ea72b6cb7caf134d6752890b50e38a1a72c8ad12649a83e7b361d143b9b94
+          check benchmarks/epistemic_process_v3/generate_tasks_v3.py b14184302fcf736f7fab46edf72c11e528719d7f639fd1ecd517cfc9365185d7
+          check benchmarks/epistemic_process_v3/tasks_v3_candidate.json 575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829
+
+          echo "cycle5_frozen_boundary=passed"
+
+      - name: Assert scoring remains impossible
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v3/score_freeze_v3.json
+          test ! -e .github/workflows/epistemic-process-v3-score.yml
+          for f in evaluation_v3.json claims_v3.json score_results_v3.json candidate_scores_v3.json; do
+            test ! -e "benchmarks/epistemic_process_v3/$f"
+          done
+          echo "cycle5_score_authorization=false"
+
+      - name: Compile campaign Python
+        run: |
+          python -m py_compile             benchmarks/epistemic_process_v3/prepare_cycle5_blind_inputs_v3.py             benchmarks/epistemic_process_v3/run_cycle5_unscored_v3.py             benchmarks/epistemic_process_v3/validate_cycle5_blind_v3.py             benchmarks/epistemic_process_v3/summarize_cycle5_mechanical_v3.py             benchmarks/epistemic_process_v3/compare_cycle5_determinism_v3.py
+
+      - name: Build oracle-free campaign input
+        run: |
+          mkdir -p reports/epistemic-process-v3-cycle5
+          python benchmarks/epistemic_process_v3/prepare_cycle5_blind_inputs_v3.py             --tasks benchmarks/epistemic_process_v3/tasks_v3_candidate.json             --out reports/epistemic-process-v3-cycle5/blind-input.json
+          grep -q '"score_bearing_authorized":false' reports/epistemic-process-v3-cycle5/blind-input.json
+
+      - name: Configure production runner
+        run: |
+          cmake -S . -B build-v3-cycle5             -DCMAKE_BUILD_TYPE=Release             -DGRAPHENEDB_BUILD_TESTS=ON             -DGRAPHENEDB_BUILD_SERVER=OFF             -DGRAPHENEDB_BUILD_BENCH=OFF             -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build production runner
+        run: |
+          cmake --build build-v3-cycle5 --parallel 2 --target             graphenedb_epistemic_process_runtime_runner_v3_cycle5
+
+      - name: Blind campaign pass 1
+        run: |
+          python benchmarks/epistemic_process_v3/run_cycle5_unscored_v3.py             --tasks reports/epistemic-process-v3-cycle5/blind-input.json             --runtime-runner build-v3-cycle5/graphenedb_epistemic_process_runtime_runner_v3_cycle5             --seed 20261004             --out reports/epistemic-process-v3-cycle5/raw-pass-1.json
+
+      - name: Validate pass 1 mechanically
+        run: |
+          python benchmarks/epistemic_process_v3/validate_cycle5_blind_v3.py             --raw reports/epistemic-process-v3-cycle5/raw-pass-1.json             --blind-input reports/epistemic-process-v3-cycle5/blind-input.json
+          python benchmarks/epistemic_process_v3/summarize_cycle5_mechanical_v3.py             --raw reports/epistemic-process-v3-cycle5/raw-pass-1.json             --out reports/epistemic-process-v3-cycle5/mechanical-summary.json
+
+      - name: Blind campaign pass 2
+        run: |
+          python benchmarks/epistemic_process_v3/run_cycle5_unscored_v3.py             --tasks reports/epistemic-process-v3-cycle5/blind-input.json             --runtime-runner build-v3-cycle5/graphenedb_epistemic_process_runtime_runner_v3_cycle5             --seed 20261004             --out reports/epistemic-process-v3-cycle5/raw-pass-2.json
+
+      - name: Validate pass 2 and determinism
+        run: |
+          python benchmarks/epistemic_process_v3/validate_cycle5_blind_v3.py             --raw reports/epistemic-process-v3-cycle5/raw-pass-2.json             --blind-input reports/epistemic-process-v3-cycle5/blind-input.json
+          python benchmarks/epistemic_process_v3/compare_cycle5_determinism_v3.py             reports/epistemic-process-v3-cycle5/raw-pass-1.json             reports/epistemic-process-v3-cycle5/raw-pass-2.json
+
+      - name: Prove no oracle join or score output
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/epistemic-process-v3-cycle5")
+          for name in ("blind-input.json","raw-pass-1.json","raw-pass-2.json","mechanical-summary.json"):
+              d=json.loads((root/name).read_text())
+              text=json.dumps(d,sort_keys=True)
+              for forbidden in (
+                  '"oracle"', '"expected_terminal_operative"',
+                  '"expected_terminal_committed"', '"correctness"',
+                  '"accuracy"', '"claim_status"', '"task_family"'
+              ):
+                  assert forbidden not in text, (name,forbidden)
+          summary=json.loads((root/"mechanical-summary.json").read_text())
+          assert summary["outcome_metrics_computed"] is False
+          assert summary["oracle_join_performed"] is False
+          print("cycle5_no_oracle_join=true score_bearing=false")
+          PY
+
+      - name: Record exact campaign evidence
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > reports/epistemic-process-v3-cycle5/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle5/tree.txt
+          sha256sum             tools/epistemic_process_runtime_runner_v3_cycle5.cpp             benchmarks/epistemic_process_v3/prepare_cycle5_blind_inputs_v3.py             benchmarks/epistemic_process_v3/run_cycle5_unscored_v3.py             benchmarks/epistemic_process_v3/validate_cycle5_blind_v3.py             benchmarks/epistemic_process_v3/summarize_cycle5_mechanical_v3.py             benchmarks/epistemic_process_v3/compare_cycle5_determinism_v3.py             reports/epistemic-process-v3-cycle5/blind-input.json             reports/epistemic-process-v3-cycle5/raw-pass-1.json             reports/epistemic-process-v3-cycle5/raw-pass-2.json             reports/epistemic-process-v3-cycle5/mechanical-summary.json             > reports/epistemic-process-v3-cycle5/checksums.sha256
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path("reports/epistemic-process-v3-cycle5")
+          summary=json.loads((root/"mechanical-summary.json").read_text())
+          receipt={
+              "schema":"epistemic-process-v3-cycle5-receipt-v1",
+              "gate":"PASSED",
+              "cycle4_source_commit":"a7ed3794d7d4c25648e7478867070f36546469ac",
+              "task_candidate_sha256":"575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829",
+              "blind_input_sha256":hashlib.sha256((root/"blind-input.json").read_bytes()).hexdigest(),
+              "raw_pass_1_sha256":hashlib.sha256((root/"raw-pass-1.json").read_bytes()).hexdigest(),
+              "raw_pass_2_sha256":hashlib.sha256((root/"raw-pass-2.json").read_bytes()).hexdigest(),
+              "mechanical_summary_sha256":hashlib.sha256((root/"mechanical-summary.json").read_bytes()).hexdigest(),
+              "executions_per_pass":summary["configuration_episode_total"],
+              "passes":2,
+              "score_bearing":False,
+              "oracle_join_performed":False,
+              "outcome_metrics_computed":False,
+          }
+          (root/"campaign-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(receipt,sort_keys=True))
+          PY
+
+      - name: Upload Cycle 5 blind evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v3-cycle5-blind-unscored-${{ github.sha }}
+          path: reports/epistemic-process-v3-cycle5/
+          retention-days: 90
