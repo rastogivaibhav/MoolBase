@@ -101,6 +101,21 @@ struct RecoveryRoundTrace {
   size_t next_visited_states{0};
   bool previous_truncated{false};
   bool next_truncated{false};
+
+  // Read-only before/after epistemic snapshots for this recovery round.
+  // These fields are diagnostic evidence only and are never consumed by
+  // production control flow.
+  bool previous_has_answer{false};
+  bool next_has_answer{false};
+  uint32_t previous_primary_node{0};
+  uint32_t next_primary_node{0};
+  GovernedEpistemicStatus previous_status{GovernedEpistemicStatus::Abstain};
+  GovernedEpistemicStatus next_status{GovernedEpistemicStatus::Abstain};
+  uint32_t previous_committed_node{0};
+  uint32_t next_committed_node{0};
+  std::vector<TargetEpistemicTrace> previous_target_ranking;
+  std::vector<TargetEpistemicTrace> next_target_ranking;
+
   bool bundle_changed{false};
   bool frontier_progress{false};
   uint32_t consecutive_unchanged_bundles{0};
