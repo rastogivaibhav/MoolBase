@@ -84,6 +84,56 @@ bool has_event(const HypoKoshRuntimeResult& result,
   return false;
 }
 
+bool has_transition(const HypoKoshRuntimeResult& result,
+                    EpistemicEventType type,
+                    uint32_t from,
+                    uint32_t to) {
+  for (const auto& event : result.receipt.epistemic_events) {
+    if (event.type == type &&
+        event.previous_hypothesis_node == from &&
+        event.hypothesis_node == to) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool status_commits_for_test(GovernedEpistemicStatus status) {
+  return status == GovernedEpistemicStatus::Resolved ||
+         status == GovernedEpistemicStatus::ProvisionallyResolved;
+}
+
+PriorEpistemicState prior_from(const HypoKoshRuntimeResult& result,
+                               uint32_t last_committed = 0) {
+  PriorEpistemicState prior;
+  prior.available = true;
+  prior.has_answer = result.final_convergence.has_answer;
+  prior.operative_node =
+      prior.has_answer ? result.final_convergence.primary_node : 0;
+  prior.committed_node =
+      prior.has_answer && status_commits_for_test(result.status)
+          ? result.final_convergence.primary_node
+          : 0;
+  prior.last_committed_node =
+      prior.committed_node != 0 ? prior.committed_node : last_committed;
+  prior.status = result.status;
+  prior.bundle_hash = result.final_bundle.immutable_hash;
+  prior.stability = result.final_stability;
+  return prior;
+}
+
+class AlwaysVerifiedPathVerifier final : public PathVerifier {
+ public:
+  PathVerificationResult verify(
+      const DialecticPath&,
+      const PathVerificationContext&) const override {
+    PathVerificationResult out;
+    out.semantic_verification = SemanticVerificationStatus::Verified;
+    out.verifier_version = "v3-cycle4.2-test-verifier";
+    return out;
+  }
+};
+
 bool has_evidence_source(const FiberBundle& bundle,
                          const std::string& source_id) {
   for (const auto& fiber : bundle.fibers) {
@@ -276,6 +326,111 @@ int main() {
     assert(!superseded_was_active);
 
     require(db.close(), "close lifecycle db");
+  }
+
+  // Contract 6: native epistemic transitions span sequential production
+  // calls over the same persistent evidence store.
+  {
+    GrapheneDB db;
+    open_db(&db, base / "native-transitions");
+    const uint32_t h1 =
+        add_node(db, "transition H1", {-1.0f, 0.0f, 0.0f}, true);
+    const uint32_t h2 =
+        add_node(db, "transition H2", {0.0f, -1.0f, 0.0f}, true);
+    const uint32_t h1a =
+        add_node(db, "H1 support A", {1.0f, 0.00f, 0.0f});
+    const uint32_t h1b =
+        add_node(db, "H1 support B", {0.99f, 0.01f, 0.0f});
+    add_edge(db, h1, h1a, EdgeRole::Supports, 0.95, "tr-h1-a", "tr-h1-fa");
+    add_edge(db, h1, h1b, EdgeRole::Supports, 0.94, "tr-h1-b", "tr-h1-fb");
+
+    RuntimeOptions run = options(8);
+    run.enable_dwm = false;
+    run.enable_opposition_research = false;
+    CompleteHypoKoshRuntime runtime(db);
+
+    const auto first = runtime.reason({1.0f, 0.0f, 0.0f}, 0, run);
+    assert(first.final_convergence.has_answer);
+    assert(first.final_convergence.primary_node == h1);
+    const PriorEpistemicState first_prior = prior_from(first);
+    assert(first_prior.committed_node == h1);
+
+    const uint32_t refute =
+        add_node(db, "H1 refutation", {0.98f, 0.02f, 0.0f});
+    add_edge(db, h1, refute, EdgeRole::Contradicts, 0.95,
+             "tr-refute", "tr-refute-family");
+    RuntimeOptions second_options = run;
+    second_options.prior_epistemic_state = first_prior;
+    const auto second =
+        runtime.reason({1.0f, 0.0f, 0.0f}, 0, second_options);
+    assert(!second.final_convergence.has_answer);
+    assert(second.status == GovernedEpistemicStatus::Contested);
+    assert(has_transition(
+        second, EpistemicEventType::Revision, h1, 0));
+    assert(has_transition(
+        second, EpistemicEventType::Decommitment, h1, 0));
+
+    const PriorEpistemicState second_prior =
+        prior_from(second, first_prior.last_committed_node);
+    assert(second_prior.committed_node == 0);
+    assert(second_prior.last_committed_node == h1);
+
+    const uint32_t h2a =
+        add_node(db, "H2 support A", {0.97f, 0.03f, 0.0f});
+    const uint32_t h2b =
+        add_node(db, "H2 support B", {0.96f, 0.04f, 0.0f});
+    add_edge(db, h2, h2a, EdgeRole::Supports, 0.96, "tr-h2-a", "tr-h2-fa");
+    add_edge(db, h2, h2b, EdgeRole::Supports, 0.95, "tr-h2-b", "tr-h2-fb");
+
+    RuntimeOptions third_options = run;
+    third_options.prior_epistemic_state = second_prior;
+    const auto third =
+        runtime.reason({1.0f, 0.0f, 0.0f}, 0, third_options);
+    assert(third.final_convergence.has_answer);
+    assert(third.final_convergence.primary_node == h2);
+    assert(has_transition(
+        third, EpistemicEventType::Recommitment, h1, h2));
+
+    require(db.close(), "close native transition db");
+  }
+
+  // Contract 7: verified stable evidence can earn Resolution across calls
+  // using the production Lyapunov dwell requirement rather than a synthetic
+  // status override.
+  {
+    GrapheneDB db;
+    open_db(&db, base / "native-resolution");
+    const uint32_t root =
+        add_node(db, "resolution hypothesis", {-1.0f, 0.0f, 0.0f}, true);
+    const uint32_t a =
+        add_node(db, "resolution support A", {1.0f, 0.00f, 0.0f});
+    const uint32_t b =
+        add_node(db, "resolution support B", {0.99f, 0.01f, 0.0f});
+    add_edge(db, root, a, EdgeRole::Supports, 0.97, "rs-a", "rs-fa");
+    add_edge(db, root, b, EdgeRole::Supports, 0.96, "rs-b", "rs-fb");
+
+    AlwaysVerifiedPathVerifier verifier;
+    RuntimeOptions run = options(4);
+    run.enable_dwm = false;
+    run.enable_opposition_research = false;
+    run.path_verifier = &verifier;
+    CompleteHypoKoshRuntime runtime(db);
+
+    const auto first = runtime.reason({1.0f, 0.0f, 0.0f}, 0, run);
+    assert(first.final_convergence.has_answer);
+    assert(first.final_admissibility.semantic_verification ==
+           SemanticVerificationStatus::Verified);
+
+    RuntimeOptions second_options = run;
+    second_options.prior_epistemic_state = prior_from(first);
+    const auto second =
+        runtime.reason({1.0f, 0.0f, 0.0f}, 0, second_options);
+    assert(second.final_convergence.has_answer);
+    assert(second.status == GovernedEpistemicStatus::Resolved);
+    assert(has_event(second, EpistemicEventType::Resolution));
+    assert(second.lyapunov.certificate.practical_stability_observed);
+
+    require(db.close(), "close native resolution db");
   }
 
   fs::remove_all(base);
