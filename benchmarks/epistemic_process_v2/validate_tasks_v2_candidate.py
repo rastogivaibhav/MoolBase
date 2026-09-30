@@ -15,6 +15,7 @@ FAMILIES = {
     "evidence_accumulation",
     "correlated_majority_independent_minority",
     "stale_belief_recovery",
+    "single_step_control",
 }
 RUNTIME_FIELDS = {"step", "id", "family", "kind", "bears_on", "depends_on", "revokes"}
 EVALUATOR_ONLY = {
@@ -31,8 +32,8 @@ def main() -> None:
 
     assert data["schema"] == "epistemic-process-v2-task-universe-v1"
     assert data["score_bearing_allowed"] is False
-    assert data["episode_count"] == 240
-    assert data["family_count"] == 8
+    assert data["episode_count"] == 270
+    assert data["family_count"] == 9
     assert data["episodes_per_family"] == 30
     assert set(data["families"]) == FAMILIES
     assert set(data["runtime_fields"]) == RUNTIME_FIELDS
@@ -40,7 +41,7 @@ def main() -> None:
 
     episodes = data["episodes"]
     ids = [ep["id"] for ep in episodes]
-    assert len(ids) == len(set(ids)) == 240
+    assert len(ids) == len(set(ids)) == 270
 
     counts = collections.Counter(ep["task_family"] for ep in episodes)
     assert counts == collections.Counter({name: 30 for name in FAMILIES})
@@ -80,8 +81,8 @@ def main() -> None:
 
     print(json.dumps({
         "task_universe": "passed",
-        "episodes": 240,
-        "families": 8,
+        "episodes": 270,
+        "families": 9,
         "per_family": 30,
         "mirror_balance": "15/15",
         "runtime_oracle_overlap": 0,
