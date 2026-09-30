@@ -227,6 +227,25 @@ EdgeProvenance assess_edge_provenance(const Edge& edge) {
   evidence.content_hash = first_metadata_value(
       edge.metadata,
       {"evidence_content_hash", "graphene_evidence_hash", "content_hash"});
+  evidence.lifecycle_state = first_metadata_value(
+      edge.metadata,
+      {"evidence_state", "graphene_evidence_state"});
+  if (evidence.lifecycle_state.empty()) {
+    evidence.lifecycle_state = "active";
+  }
+  const bool lifecycle_known =
+      evidence.lifecycle_state == "active" ||
+      evidence.lifecycle_state == "refuted" ||
+      evidence.lifecycle_state == "revoked" ||
+      evidence.lifecycle_state == "superseded" ||
+      evidence.lifecycle_state == "invalidated" ||
+      evidence.lifecycle_state == "audit_only";
+  if (!lifecycle_known) {
+    result.findings.push_back(
+        {edge.id, "INVALID_EVIDENCE_STATE",
+         "unknown evidence lifecycle state; evidence was fail-closed as invalidated"});
+    evidence.lifecycle_state = "invalidated";
+  }
   if (!evidence.source_id.empty()) result.evidence.push_back(evidence);
 
   if ((edge.origin == EdgeOrigin::Observed ||
