@@ -61,6 +61,33 @@ std::vector<std::string> derivations(const DialecticPath& path) {
   return {unique.begin(), unique.end()};
 }
 
+bool evidence_lifecycle_operational(const EvidenceRef& evidence) {
+  return evidence.lifecycle_state.empty() ||
+         evidence.lifecycle_state == "active" ||
+         evidence.lifecycle_state == "refuted";
+}
+
+bool contains_nonoperative_evidence(const DialecticPath& path) {
+  return std::any_of(
+      path.evidence.begin(), path.evidence.end(),
+      [](const EvidenceRef& evidence) {
+        return !evidence_lifecycle_operational(evidence);
+      });
+}
+
+std::string evidence_state_signature(const DialecticPath& path) {
+  std::vector<std::string> states;
+  states.reserve(path.evidence.size());
+  for (const auto& evidence : path.evidence) {
+    const std::string state =
+        evidence.lifecycle_state.empty() ? "active" : evidence.lifecycle_state;
+    states.push_back(
+        evidence.source_id + "|" + evidence.evidence_family_id + "|" + state);
+  }
+  std::sort(states.begin(), states.end());
+  return join(states, '\x1e');
+}
+
 FiberPathRole classify(const DialecticPath& path) {
   if (path.role_hint == PathRoleHint::Noise ||
       path.query_relevance < kEligibilityThreshold ||
@@ -92,6 +119,7 @@ uint64_t path_hash(const FiberPath& path) {
   uint64_t hash = 1469598103934665603ULL;
   hash = append_hash(hash, path.route_signature);
   hash = append_hash(hash, path.evidence_lineage_signature);
+  hash = append_hash(hash, path.evidence_state_signature);
   return append_hash(hash, std::to_string(static_cast<int>(path.role)));
 }
 
@@ -356,6 +384,9 @@ void append_path_state_hash(uint64_t* hash, const FiberPath& path) {
   *hash = append_hash(*hash, "v" +
       std::to_string(static_cast<int>(path.semantic_verification)));
   *hash = append_hash(*hash, "vv" + path.verifier_version);
+  *hash = append_hash(*hash, "es" + path.evidence_state_signature);
+  *hash = append_hash(
+      *hash, path.contains_nonoperative_evidence ? "eo0" : "eo1");
   for (const auto& finding : path.verification_findings) {
     *hash = append_hash(*hash, "vf" + finding);
   }
@@ -412,6 +443,9 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
       converted.source_lineage = sources(path);
       converted.evidence_family_lineage = families(path);
       converted.derivation_lineage = derivations(path);
+      converted.evidence_state_signature = evidence_state_signature(path);
+      converted.contains_nonoperative_evidence =
+          contains_nonoperative_evidence(path);
       converted.verifier_version = path.verifier_version;
       converted.verification_findings = path.verification_findings;
       converted.confidence = std::clamp(path.score, 0.0, 1.0);
@@ -454,15 +488,21 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
           converted.validity.temporal_windows_overlap;
       converted.eligible_for_support =
           converted.role == FiberPathRole::Support && structurally_valid &&
+          !converted.contains_nonoperative_evidence &&
           converted.query_relevance >= kEligibilityThreshold &&
           converted.target_consistency >= kEligibilityThreshold &&
           converted.completeness >= kEligibilityThreshold &&
           converted.provenance_quality > 0.0;
       converted.eligible_for_opposition =
           converted.role == FiberPathRole::Opposition && structurally_valid &&
+          !converted.contains_nonoperative_evidence &&
           converted.query_relevance >= kEligibilityThreshold &&
           converted.target_consistency >= kEligibilityThreshold &&
           converted.provenance_quality > 0.0;
+      if (converted.contains_nonoperative_evidence) {
+        converted.validity.findings.push_back(
+            "non-operative evidence retained for audit only");
+      }
       converted.route_signature = route_signature(converted);
       converted.evidence_lineage_signature =
           join(converted.evidence_family_lineage, '\x1f');
@@ -472,6 +512,7 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
 
       const std::string exact = converted.route_signature + '|' +
                                 converted.evidence_lineage_signature + '|' +
+                                converted.evidence_state_signature + '|' +
                                 std::to_string(static_cast<int>(converted.role));
       auto [existing, inserted] = exact_paths.emplace(exact, converted);
       if (!inserted) merge_exact_path(&existing->second, converted);
