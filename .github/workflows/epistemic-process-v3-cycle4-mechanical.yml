@@ -1,0 +1,165 @@
+name: EP Process V3 Cycle 4 mechanical fixes
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "include/**"
+      - "tests/**"
+      - "CMakeLists.txt"
+      - "benchmarks/epistemic_process_v3/CYCLE_04_IMPLEMENTATION_REPORT.md"
+      - ".github/workflows/epistemic-process-v3-cycle4-mechanical.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v3-cycle4-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle4-mechanical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Protect frozen Cycle 2 and Cycle 3 experiment
+        run: |
+          set -euo pipefail
+          BASE=f90352e51a2524a0703b522400f864b8af40782a
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+
+          protected='^benchmarks/epistemic_process_v3/(PREREGISTRATION\.md|semantic_contract_v3\.json|measurement_model_v3\.json|metric_definitions_v3\.json|telemetry_contract_v3\.json|claim_gates_v3\.json|failure_policy_v3\.json|statistics_plan_v3\.json|task_family_requirements_v3\.json|controls_v3\.json|generate_tasks_v3\.py|tasks_v3_candidate\.json|task_generation_receipt_v3\.json)$'
+          if echo "$changed" | grep -E "$protected"; then
+            echo "Cycle 4 changed a frozen scientific/task artifact" >&2
+            exit 1
+          fi
+
+          check() {
+            file="$1"; expected="$2"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            echo "$actual  $file"
+            test "$actual" = "$expected"
+          }
+
+          check benchmarks/epistemic_process_v3/semantic_contract_v3.json 3873b8a9383782c16fab7c813c5d0d4f969bd424f7fcd1f6818439a05803737f
+          check benchmarks/epistemic_process_v3/measurement_model_v3.json 799252c703a06b8f9c1a66d697aaa1d965c9edbfb53acc769e37e8759368a5d0
+          check benchmarks/epistemic_process_v3/metric_definitions_v3.json 3e95ef5b83ffad6a52c88833e750883d5d662ad595e55508e66ddd7348ab1b57
+          check benchmarks/epistemic_process_v3/telemetry_contract_v3.json 900c186c56689b5c06222839e0d07755dcd81cba9bdf2722f86286347d4cef0a
+          check benchmarks/epistemic_process_v3/claim_gates_v3.json 4ebf21dd6da6b603be8c5d3a417aaf0f292a17bfd5d298b6effbd5c7c3cb4d31
+          check benchmarks/epistemic_process_v3/failure_policy_v3.json e6ab18eaf563bed4fd11ddcd665d118591ef0160c81f7fa064f68261153c74ec
+          check benchmarks/epistemic_process_v3/statistics_plan_v3.json bc245acc76a10ecccf540fd3f9951dc865243a07965f6b0fa7949b401b4bd152
+          check benchmarks/epistemic_process_v3/task_family_requirements_v3.json c20f9f03e540f945c66cb8b032ee123487c8b47b81cf60b34acbeed879cd1d8a
+          check benchmarks/epistemic_process_v3/controls_v3.json 102ea72b6cb7caf134d6752890b50e38a1a72c8ad12649a83e7b361d143b9b94
+          check benchmarks/epistemic_process_v3/tasks_v3_candidate.json 575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829
+          check benchmarks/epistemic_process_v3/generate_tasks_v3.py b14184302fcf736f7fab46edf72c11e528719d7f639fd1ecd517cfc9365185d7
+
+          echo "cycle4_frozen_experiment_protection=passed"
+
+      - name: Assert scoring remains impossible
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v3/score_freeze_v3.json
+          test ! -e .github/workflows/epistemic-process-v3-score.yml
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("benchmarks/epistemic_process_v3")
+          for name in (
+              "semantic_contract_v3.json","measurement_model_v3.json",
+              "metric_definitions_v3.json","telemetry_contract_v3.json",
+              "claim_gates_v3.json","failure_policy_v3.json",
+              "statistics_plan_v3.json","task_family_requirements_v3.json",
+              "controls_v3.json","tasks_v3_candidate.json"
+          ):
+              doc=json.loads((root/name).read_text())
+              assert doc["score_bearing_authorized"] is False, name
+          for name in (
+              "evaluation_v3.json","claims_v3.json","score_results_v3.json",
+              "candidate_scores_v3.json"
+          ):
+              assert not (root/name).exists(), name
+          print("cycle4_score_authorization=false outcome_peeking=false")
+          PY
+
+      - name: Configure focused production test build
+        run: |
+          cmake -S . -B build-v3-cycle4             -DCMAKE_BUILD_TYPE=Release             -DGRAPHENEDB_BUILD_TESTS=ON             -DGRAPHENEDB_BUILD_SERVER=OFF             -DGRAPHENEDB_BUILD_BENCH=OFF             -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build Cycle 4 mechanical targets
+        run: |
+          cmake --build build-v3-cycle4 --parallel 2 --target             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests             graphenedb_epistemic_process_v3_cycle4_tests             graphenedb_moolbase_metamorphic_v1             graphenedb_moolbase_monkey_v1             graphenedb_fiber_bundle_v2_tests             graphenedb_epistemic_receipt_tests
+
+      - name: Run focused Cycle 4 contracts
+        run: |
+          set -euo pipefail
+          ./build-v3-cycle4/graphenedb_epistemic_control_tests
+          ./build-v3-cycle4/graphenedb_hypokosh_runtime_tests
+          ./build-v3-cycle4/graphenedb_epistemic_process_v3_cycle4_tests
+
+      - name: Run inherited adversarial contracts
+        run: |
+          set -euo pipefail
+          ./build-v3-cycle4/graphenedb_moolbase_metamorphic_v1
+          ./build-v3-cycle4/graphenedb_moolbase_monkey_v1 /tmp/v3-cycle4-monkey.json
+          ./build-v3-cycle4/graphenedb_fiber_bundle_v2_tests
+          ./build-v3-cycle4/graphenedb_epistemic_receipt_tests
+
+      - name: Assert no score-derived files appeared
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v3/evaluation_v3.json
+          test ! -e benchmarks/epistemic_process_v3/claims_v3.json
+          test ! -e benchmarks/epistemic_process_v3/score_results_v3.json
+          echo "cycle4_no_outcome_join=passed"
+
+      - name: Record Cycle 4 audit evidence
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v3-cycle4
+          git rev-parse HEAD > reports/epistemic-process-v3-cycle4/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle4/tree.txt
+          sha256sum             src/epistemic_control.cpp             src/epistemic.cpp             src/fiber_bundle.cpp             src/hypokosh_runtime_frontier_part_1.inc             src/hypokosh_runtime_frontier_part_2.inc             src/hypokosh_runtime_frontier_part_3.inc             src/hypokosh_runtime_frontier_part_4.inc             include/graphene/dialectic.hpp             include/graphene/epistemic.hpp             include/graphene/epistemic_control.hpp             include/graphene/fiber_bundle.hpp             include/graphene/hypokosh_runtime.hpp             tests/test_epistemic_process_v3_cycle4.cpp             tests/test_epistemic_control.cpp             tests/test_hypokosh_runtime_frontier_part_2.inc             tests/test_moolbase_metamorphic_v1.cpp             tests/test_moolbase_monkey_v1.cpp             > reports/epistemic-process-v3-cycle4/checksums.sha256
+          cp /tmp/v3-cycle4-monkey.json reports/epistemic-process-v3-cycle4/monkey.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary={
+              "schema":"epistemic-process-v3-cycle4-audit-v1",
+              "gate":"PASSED",
+              "production_behavior_changed":True,
+              "frozen_task_candidate_unchanged":True,
+              "cycle2_contracts_unchanged":True,
+              "score_bearing_authorized":False,
+              "outcome_peeking":False,
+              "mechanisms":[
+                  "identity_invariant_semantic_tie",
+                  "contested_clear_incumbent_until_replacement_earned",
+                  "explicit_open_state",
+                  "challenge_vs_corroboration_separation",
+                  "dwm_expansion_opportunity_gate",
+                  "native_commitment_transition_events",
+                  "evidence_lifecycle_audit_nonoperative_filter"
+              ]
+          }
+          Path("reports/epistemic-process-v3-cycle4/audit-summary.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - name: Upload Cycle 4 mechanical evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v3-cycle4-mechanical-${{ github.sha }}
+          path: reports/epistemic-process-v3-cycle4/
+          retention-days: 90
