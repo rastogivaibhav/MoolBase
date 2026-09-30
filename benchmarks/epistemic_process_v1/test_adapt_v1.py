@@ -150,6 +150,147 @@ class AdapterContractTests(unittest.TestCase):
             receipt["adapter_receipt"]["synthetic_semantic_events"], 0
         )
 
+    def test_valid_node_zero_is_not_treated_as_missing_hypothesis(self):
+        raw = {
+            "episode_id": "EP_ZERO",
+            "configuration": "G1",
+            "hypothesis_nodes": {"H1": 0, "H2": 1},
+            "edge_to_evidence_ref": {"10": "e1"},
+            "evidence_metadata": {
+                "e1": {
+                    "family": "F_A",
+                    "kind": "support",
+                    "bears_on": "H1",
+                    "depends_on": [],
+                }
+            },
+            "runtime_receipts": [{"step": 1, "graphene_executed": True}],
+            "steps": [
+                {
+                    "step": 1,
+                    "native_events": [
+                        {
+                            "source": "hypokosh",
+                            "type": "hypothesis_set",
+                            "hypothesis_node": 0,
+                            "competing_hypotheses": [0, 1],
+                            "evidence_edges": [10],
+                            "epistemic_state": "selected",
+                        },
+                        {
+                            "source": "graphene_core",
+                            "type": "terminal",
+                            "hypothesis_node": 0,
+                            "competing_hypotheses": [0, 1],
+                            "evidence_edges": [10],
+                            "epistemic_state": "provisionally_resolved",
+                        },
+                    ],
+                }
+            ],
+        }
+        receipt = adapt_v1.adapt_episode(raw)
+        self.assertFalse(receipt["adapter_failure"])
+        self.assertEqual(receipt["terminal_hypothesis"], "H1")
+        self.assertEqual(receipt["decisions"][0]["hypothesis"], "H1")
+        self.assertEqual(
+            {item["id"] for item in receipt["hypotheses"]},
+            {"H1", "H2"},
+        )
+
+    def test_explicit_null_is_missing_but_unknown_integer_fails(self):
+        mapping = {0: "H1", 1: "H2"}
+        self.assertIsNone(adapt_v1._node_to_hypothesis(None, mapping))
+        self.assertEqual(adapt_v1._node_to_hypothesis(0, mapping), "H1")
+        with self.assertRaises(adapt_v1.AdapterError):
+            adapt_v1._node_to_hypothesis(99, mapping)
+
+    def test_native_challenge_reopen_revision_and_audit_metadata_survive(self):
+        raw = {
+            "episode_id": "EP_AUDIT",
+            "configuration": "G2",
+            "hypothesis_nodes": {"H1": 0, "H2": 1},
+            "edge_to_evidence_ref": {"20": "e4", "21": "e5"},
+            "evidence_metadata": {
+                "e4": {
+                    "family": "F_C",
+                    "kind": "refute",
+                    "bears_on": "H1",
+                    "depends_on": [],
+                },
+                "e5": {
+                    "family": "F_D",
+                    "kind": "support",
+                    "bears_on": "H2",
+                    "depends_on": ["e3"],
+                },
+            },
+            "runtime_receipts": [
+                {
+                    "step": 4,
+                    "graphene_executed": True,
+                    "hypokosh_capability_enabled": True,
+                    "dwm_capability_enabled": True,
+                    "opposition_executed": True,
+                }
+            ],
+            "steps": [
+                {
+                    "step": 4,
+                    "native_events": [
+                        {
+                            "source": "dwm",
+                            "type": "challenge",
+                            "hypothesis_node": 0,
+                            "competing_hypotheses": [0, 1],
+                            "reopen_nodes": [0, 1],
+                            "evidence_edges": [20],
+                            "epistemic_state": "challenged",
+                        },
+                        {
+                            "source": "dwm",
+                            "type": "reopen",
+                            "previous_hypothesis_node": 0,
+                            "hypothesis_node": 0,
+                            "competing_hypotheses": [0, 1],
+                            "reopen_nodes": [0, 1],
+                            "evidence_edges": [20],
+                            "epistemic_state": "reopened",
+                        },
+                        {
+                            "source": "dwm",
+                            "type": "revision",
+                            "previous_hypothesis_node": 0,
+                            "hypothesis_node": 1,
+                            "competing_hypotheses": [0, 1],
+                            "evidence_edges": [20, 21],
+                            "epistemic_state": "revised",
+                        },
+                        {
+                            "source": "graphene_core",
+                            "type": "terminal",
+                            "hypothesis_node": 1,
+                            "competing_hypotheses": [0, 1],
+                            "evidence_edges": [20, 21],
+                            "epistemic_state": "resolved",
+                        },
+                    ],
+                }
+            ],
+        }
+        receipt = adapt_v1.adapt_episode(raw)
+        self.assertFalse(receipt["adapter_failure"])
+        self.assertEqual(receipt["challenges"][0]["hypothesis"], "H1")
+        self.assertEqual(
+            [item["type"] for item in receipt["transitions"]],
+            ["reopen", "revise"],
+        )
+        self.assertEqual(receipt["transitions"][0]["from"], "H1")
+        self.assertEqual(receipt["transitions"][1]["from"], "H1")
+        self.assertEqual(receipt["transitions"][1]["to"], "H2")
+        self.assertEqual(receipt["evidence_metadata"]["e5"]["depends_on"], ["e3"])
+        self.assertTrue(receipt["execution_receipts"])
+
     def test_unknown_runtime_evidence_is_preserved_as_adapter_failure(self):
         raw = {
             "episode_id": "EP_TEST",

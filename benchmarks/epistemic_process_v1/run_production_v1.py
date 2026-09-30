@@ -12,11 +12,27 @@ import argparse
 import json
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence
 
 CONFIGS = ("B0", "G0", "G1", "G2")
 RUNTIME_FIELDS = ("step", "id", "family", "kind", "bears_on", "depends_on")
+
+
+def _evidence_metadata(task: Mapping[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Return only observation metadata that is legitimate SUT input."""
+    return {
+        str(event["id"]): {
+            "family": str(event["family"]),
+            "kind": str(event["kind"]),
+            "bears_on": str(event["bears_on"]),
+            "depends_on": [
+                str(value) for value in (event.get("depends_on") or [])
+            ],
+        }
+        for event in task["events"]
+    }
 
 
 def load(path: str | Path) -> Any:
@@ -31,6 +47,7 @@ def dump(path: str | Path, value: Any) -> None:
 
 def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
     """Bounded/stateless baseline: only the current observation is visible."""
+    started = time.perf_counter()
     steps: List[Dict[str, Any]] = []
     for event in task["events"]:
         kind = str(event["kind"])
@@ -52,9 +69,11 @@ def _b0_episode(task: Mapping[str, Any]) -> Dict[str, Any]:
         "configuration": "B0",
         "hypothesis_nodes": {"H1": 101, "H2": 102},
         "edge_to_evidence_ref": {},
+        "evidence_metadata": _evidence_metadata(task),
         "steps": steps,
         "failures": [],
         "runtime_receipts": [],
+        "execution_seconds": time.perf_counter() - started,
     }
 
 
@@ -88,6 +107,7 @@ def _runtime_episode(
         encoding="utf-8",
     )
     db_dir = work_root / f"db-{configuration}-{safe_id}"
+    started = time.perf_counter()
     proc = subprocess.run(
         [
             str(runtime_runner),
@@ -100,6 +120,7 @@ def _runtime_episode(
         capture_output=True,
         text=True,
     )
+    elapsed = time.perf_counter() - started
     if proc.returncode != 0:
         return {
             "episode_id": episode_id,
@@ -112,9 +133,15 @@ def _runtime_episode(
                 proc.stderr.strip(),
             ],
             "runtime_receipts": [],
+            "execution_seconds": elapsed,
         }
     try:
         value = json.loads(proc.stdout)
+        # Preserve the exact non-oracle observation metadata supplied to the
+        # production runner. The adapter may use it only when a runtime edge
+        # maps back to the corresponding evidence id.
+        value["evidence_metadata"] = _evidence_metadata(task)
+        value["execution_seconds"] = elapsed
     except json.JSONDecodeError as exc:
         return {
             "episode_id": episode_id,
@@ -127,6 +154,7 @@ def _runtime_episode(
                 proc.stdout[-2000:],
             ],
             "runtime_receipts": [],
+            "execution_seconds": elapsed,
         }
     return value
 
@@ -140,14 +168,28 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260927)
     parser.add_argument(
         "--mode",
-        choices=["unscored-dry-run"],
+        choices=["unscored-dry-run", "score"],
         default="unscored-dry-run",
+    )
+    parser.add_argument(
+        "--freeze-manifest",
+        help="required in score mode; verified by score_gate_v1.py",
     )
     args = parser.parse_args()
 
     tasks = load(args.tasks)
-    if tasks.get("reporting", {}).get("score_bearing_allowed"):
-        raise SystemExit("production runner is UNSCORED until a dedicated freeze change")
+    if args.mode == "score":
+        if not args.freeze_manifest:
+            raise SystemExit(
+                "score-bearing execution blocked: freeze manifest is required"
+            )
+        from score_gate_v1 import verify_score_gate
+
+        gate = verify_score_gate(Path(args.freeze_manifest))
+        if not gate["valid"]:
+            raise SystemExit(
+                "score-bearing execution blocked: " + "; ".join(gate["errors"])
+            )
     configs: Sequence[str] = tuple(args.configuration or CONFIGS)
     runtime_runner = Path(args.runtime_runner).resolve()
     if not runtime_runner.exists():
@@ -171,7 +213,7 @@ def main() -> None:
         "protocol": tasks["protocol"],
         "mode": args.mode,
         "runner": "production-runtime-v1",
-        "score_bearing": False,
+        "score_bearing": args.mode == "score",
         "seed": args.seed,
         "runtime_input_fields": list(RUNTIME_FIELDS),
         "episodes": episodes,
@@ -183,7 +225,7 @@ def main() -> None:
                 "episodes": len(episodes),
                 "configurations": list(configs),
                 "runtime_failures": sum(bool(ep["failures"]) for ep in episodes),
-                "score_bearing": False,
+                "score_bearing": args.mode == "score",
             },
             sort_keys=True,
         )

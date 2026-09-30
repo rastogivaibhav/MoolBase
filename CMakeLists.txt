@@ -44,6 +44,18 @@ if(GRAPHENEDB_BUILD_TESTS)
   set_tests_properties(graphenedb_moolbase_monkey_v1
                        PROPERTIES TIMEOUT 180 LABELS "monkey;adversarial")
 
+  add_executable(graphenedb_moolbase_multiseed_v1
+                 tests/test_moolbase_multiseed_v1.cpp)
+  target_link_libraries(graphenedb_moolbase_multiseed_v1 PRIVATE graphenedb)
+
+  add_executable(graphenedb_moolbase_metamorphic_v1
+                 tests/test_moolbase_metamorphic_v1.cpp)
+  target_link_libraries(graphenedb_moolbase_metamorphic_v1 PRIVATE graphenedb)
+  add_test(NAME graphenedb_moolbase_metamorphic_v1
+           COMMAND graphenedb_moolbase_metamorphic_v1)
+  set_tests_properties(graphenedb_moolbase_metamorphic_v1
+                       PROPERTIES TIMEOUT 120 LABELS "metamorphic;adversarial")
+
   add_executable(graphenedb_cli_reason_tests tests/test_cli_reason.cpp)
   target_link_libraries(graphenedb_cli_reason_tests PRIVATE graphenedb)
   if(TARGET graphenedb_cli)

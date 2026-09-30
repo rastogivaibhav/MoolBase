@@ -205,15 +205,19 @@ const TargetCandidate* select_primary_target(
     return belief_leader;
   }
 
-  // Opposition may demote the previously strongest support target, but a
-  // replacement is only allowed to become operative after it has earned
-  // independent corroboration. Otherwise retain the challenged hypothesis as
-  // the operative candidate and let admissibility mark it contested rather
-  // than silently promoting a weak alternative.
-  if (belief_leader->independent_support_count >= 2) {
-    return belief_leader;
+  // The corroboration safeguard applies only when target-level opposition
+  // has demoted a *strictly stronger* support leader. Equal-support ties are
+  // already resolved by the declared ranking coordinates above (verification,
+  // independent-family count, best support, deterministic target id) and must
+  // not be overwritten here.
+  if (support_leader->support_strength >
+      belief_leader->support_strength) {
+    if (belief_leader->independent_support_count >= 2) {
+      return belief_leader;
+    }
+    return support_leader;
   }
-  return support_leader;
+  return belief_leader;
 }
 
 }  // namespace

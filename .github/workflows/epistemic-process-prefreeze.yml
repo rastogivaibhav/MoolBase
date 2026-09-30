@@ -1,0 +1,249 @@
+name: Epistemic Process v1 pre-freeze verification
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - "tools/epistemic_process_runtime_runner.cpp"
+      - "tests/test_moolbase_multiseed_v1.cpp"
+      - "tests/test_moolbase_metamorphic_v1.cpp"
+      - "tests/test_moolbase_monkey_v1.cpp"
+      - "tests/moolbase_monkey_v1_manifest.json"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-prefreeze.yml"
+  push:
+    branches: [master]
+    paths:
+      - "benchmarks/epistemic_process_v1/**"
+      - "tools/epistemic_process_runtime_runner.cpp"
+      - "tests/test_moolbase_multiseed_v1.cpp"
+      - "tests/test_moolbase_metamorphic_v1.cpp"
+      - "tests/test_moolbase_monkey_v1.cpp"
+      - "tests/moolbase_monkey_v1_manifest.json"
+      - "CMakeLists.txt"
+      - ".github/workflows/epistemic-process-prefreeze.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  measurement-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run benchmark measurement contracts
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          python test_adapt_v1.py
+          python test_evaluate_v1.py
+          python test_score_gate_v1.py
+          python test_analyse_v1.py
+          python test_run_production_v1.py
+          python freeze_guard_v1.py --require-freeze-ready
+
+  scientific-prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run exact-source alpha gate
+        env:
+          GRAPHENEDB_CROSS_DATASET_MODE: offline
+          GRAPHENEDB_JOBS: "2"
+        run: bash scripts/run_alpha_release_gate.sh
+
+      - name: Reproduce frozen flagship
+        run: python3 scripts/run_flagship_proof.py
+
+      - name: Run frozen flagship perturbations
+        run: python3 scripts/run_flagship_perturbations_v1.py
+
+      - name: Configure adversarial verification binaries
+        run: |
+          cmake -S . -B build-prefreeze \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_SERVER=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+
+      - name: Build adversarial and production runners
+        run: |
+          cmake --build build-prefreeze --parallel 2 --target \
+            graphenedb_epistemic_process_runtime_runner \
+            graphenedb_moolbase_monkey_v1 \
+            graphenedb_moolbase_multiseed_v1 \
+            graphenedb_moolbase_metamorphic_v1
+
+      - name: Freeze fresh adversarial campaign manifest
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-prefreeze/monkey
+          python - <<'PY'
+          import datetime
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          spec_path = Path("tests/moolbase_monkey_v1_manifest.json")
+          generator_path = Path("tests/test_moolbase_monkey_v1.cpp")
+          binary = Path("build-prefreeze/graphenedb_moolbase_monkey_v1")
+          spec = json.loads(spec_path.read_text())
+          manifest = {
+              "schema": "epistemic-process-prefreeze-monkey-v1",
+              "campaign_id": "EP-PROCESS-V1-PREFREEZE-" + os.environ["GITHUB_SHA"],
+              "master_or_candidate_sha": os.environ["GITHUB_SHA"],
+              "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "seed_set": [spec["seed"]],
+              "deterministic_episode_count": spec["deterministic_episodes"],
+              "mutation_episode_count": spec["mutation_episodes"],
+              "invariants": spec["invariants"],
+              "pass_definition": spec["pass_definition"],
+              "claim_map": {
+                  "A": "correlated-copy resistance",
+                  "B": "competing-hypothesis preservation",
+                  "C": "contradiction/falsification",
+                  "D": "supersession/history",
+                  "E": "bounded recovery",
+                  "F": "dialectic separation",
+                  "G": "receipt consistency",
+                  "H": "snapshot reproducibility",
+                  "I": "durability",
+                  "J": "parameter boundaries",
+                  "K": "metamorphic invariance",
+              },
+              "spec_sha256": hashlib.sha256(spec_path.read_bytes()).hexdigest(),
+              "generator_sha256": hashlib.sha256(generator_path.read_bytes()).hexdigest(),
+              "test_binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+          }
+          Path("reports/epistemic-process-prefreeze/monkey/run-manifest.json").write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          cat reports/epistemic-process-prefreeze/monkey/run-manifest.json
+
+      - name: Execute fresh 500 plus 100 adversarial campaign
+        run: |
+          set -euo pipefail
+          ./build-prefreeze/graphenedb_moolbase_monkey_v1 \
+            reports/epistemic-process-prefreeze/monkey/results.json \
+            | tee reports/epistemic-process-prefreeze/monkey/console.log
+
+      - name: Execute multi-seed robustness
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-prefreeze/multiseed
+          for seed in 20260927 20260928 20260929; do
+            ./build-prefreeze/graphenedb_moolbase_multiseed_v1 \
+              "$seed" 100 \
+              "reports/epistemic-process-prefreeze/multiseed/$seed.json" \
+              | tee "reports/epistemic-process-prefreeze/multiseed/$seed.log"
+          done
+
+      - name: Execute metamorphic M1-M11 contract
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-prefreeze/metamorphic
+          ./build-prefreeze/graphenedb_moolbase_metamorphic_v1 \
+            | tee reports/epistemic-process-prefreeze/metamorphic/console.log
+
+      - name: Run production B0 G0 G1 G2 UNSCORED
+        working-directory: benchmarks/epistemic_process_v1
+        run: |
+          set -euo pipefail
+          mkdir -p ../../reports/epistemic-process-prefreeze/architecture
+          runner="../../build-prefreeze/graphenedb_epistemic_process_runtime_runner"
+          for config in B0 G0 G1 G2; do
+            python run_production_v1.py \
+              --tasks tasks_v1.json \
+              --runtime-runner "$runner" \
+              --configuration "$config" \
+              --out "../../reports/epistemic-process-prefreeze/architecture/raw-$config.json" \
+              --mode unscored-dry-run
+            python adapt_v1.py \
+              --raw "../../reports/epistemic-process-prefreeze/architecture/raw-$config.json" \
+              --out "../../reports/epistemic-process-prefreeze/architecture/receipts-$config.json" \
+              --mode unscored-dry-run
+            python evaluate_v1.py \
+              --tasks tasks_v1.json \
+              --receipts "../../reports/epistemic-process-prefreeze/architecture/receipts-$config.json" \
+              --out "../../reports/epistemic-process-prefreeze/architecture/evaluation-$config.json" \
+              --mode unscored-dry-run
+          done
+
+      - name: Verify UNSCORED architecture and measurement boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("reports/epistemic-process-prefreeze/architecture")
+          for config in ("B0", "G0", "G1", "G2"):
+              raw = json.loads((root / f"raw-{config}.json").read_text())
+              receipts = json.loads((root / f"receipts-{config}.json").read_text())
+              evaluation = json.loads((root / f"evaluation-{config}.json").read_text())
+              assert raw["score_bearing"] is False
+              assert not any(ep.get("failures") for ep in raw["episodes"])
+              assert not any(r.get("adapter_failure") for r in receipts)
+              assert evaluation["score_bearing"] is False
+              aggregate = evaluation["aggregate"]
+              for metric in (
+                  "evidence_use_rate",
+                  "refutation_response_rate",
+                  "revision_inertia_steps",
+                  "false_convergence_rate",
+                  "independent_evidence_convergence",
+                  "selective_coverage",
+                  "receipt_completeness",
+              ):
+                  assert metric in aggregate, (config, metric)
+
+          g1_raw = json.loads((root / "raw-G1.json").read_text())
+          g1_receipts = json.loads((root / "receipts-G1.json").read_text())
+          assert any(ep["hypothesis_nodes"].get("H1") == 0 for ep in g1_raw["episodes"])
+          assert any(
+              any(d.get("hypothesis") == "H1" for d in receipt["decisions"])
+              for receipt in g1_receipts
+          )
+          print("prefreeze_architecture_measurement_gate=PASS")
+          PY
+
+      - name: Write evidence checksums and environment
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-prefreeze
+          {
+            echo "sha=$GITHUB_SHA"
+            echo "runner_os=$RUNNER_OS"
+            cmake --version | head -n 1
+            c++ --version | head -n 1
+            python3 --version
+          } > reports/epistemic-process-prefreeze/environment.txt
+          find reports/epistemic-process-prefreeze -type f -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            > reports/epistemic-process-prefreeze/SHA256SUMS
+
+      - name: Upload pre-freeze evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: epistemic-process-prefreeze-${{ github.sha }}
+          path: |
+            reports/epistemic-process-prefreeze/
+            reports/alpha-release-gate/
+            reports/flagship-proof/
+            reports/flagship-perturbations-v1/
+          if-no-files-found: warn
+          retention-days: 60
