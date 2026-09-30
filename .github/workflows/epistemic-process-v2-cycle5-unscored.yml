@@ -84,7 +84,7 @@ jobs:
           ./build-cycle5/graphenedb_epistemic_control_tests
           ./build-cycle5/graphenedb_hypokosh_runtime_tests
 
-      - name: Execute 240-episode blind mechanical campaign
+      - name: Execute 270-episode blind mechanical campaign
         run: |
           set -euo pipefail
           python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-tasks.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/raw-full.json
@@ -114,8 +114,8 @@ jobs:
           subset["episodes"]=[by_id[x] for x in ids]
           Path("/tmp/cycle5/runtime-subset.json").write_text(
               json.dumps(subset, indent=2, sort_keys=True)+"\n")
-          assert len(ids) == 16
-          print("cycle5_determinism_subset=16")
+          assert len(ids) == 18
+          print("cycle5_determinism_subset=18")
           PY
           python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-subset.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/replay-a.json
           python benchmarks/epistemic_process_v2/run_cycle4_unscored_v2.py             --tasks /tmp/cycle5/runtime-subset.json             --runtime-runner ./build-cycle5/graphenedb_epistemic_process_runtime_runner_v2_cycle4             --seed 20261005             --out /tmp/cycle5/replay-b.json
