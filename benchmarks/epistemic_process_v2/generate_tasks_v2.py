@@ -18,6 +18,7 @@ FAMILIES = [
     "evidence_accumulation",
     "correlated_majority_independent_minority",
     "stale_belief_recovery",
+    "single_step_control",
 ]
 GENERATOR_SEED = 20261005
 
@@ -172,6 +173,16 @@ def episode(family_name: str, variant: int):
             },
         }
         warranted = [3, 4, 5, 6]
+    elif family_name == "single_step_control":
+        events = [
+            event(1, evid(1), fam("A"), "support", primary),
+        ]
+        oracle = {
+            "terminal_operative": primary,
+            "terminal_committed": primary,
+            "response_window": None,
+        }
+        warranted = []
     else:
         raise ValueError(family_name)
 
@@ -180,7 +191,9 @@ def episode(family_name: str, variant: int):
         "task_family": family_name,
         "variant": variant,
         "mirror_primary": primary,
-        "minimum_independent_families_for_resolution": 2,
+        "minimum_independent_families_for_resolution": (
+            1 if family_name == "single_step_control" else 2
+        ),
         "challenge_warranted_steps": warranted,
         "oracle": oracle,
         "events": events,
@@ -199,7 +212,7 @@ def generate():
         "experiment_id_candidate": "EP-PROCESS-V2-SCORE-001",
         "generator_seed": GENERATOR_SEED,
         "score_bearing_allowed": False,
-        "family_count": 8,
+        "family_count": 9,
         "episodes_per_family": 30,
         "episode_count": len(episodes),
         "runtime_fields": [
@@ -221,4 +234,4 @@ if __name__ == "__main__":
         json.dumps(generate(), indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"generated={target} episodes=240")
+    print(f"generated={target} episodes=270")
