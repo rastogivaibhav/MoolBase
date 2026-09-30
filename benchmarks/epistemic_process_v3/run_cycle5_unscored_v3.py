@@ -93,10 +93,17 @@ def run_episode(ep: Mapping[str,Any],config: str,runner: Path,root: Path,seed:in
     safe="".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in ep["id"])
     visible=root/f"{config}-{safe}-visible.tsv"
     latent=root/f"{config}-{safe}-latent.tsv"
+    topology=root/f"{config}-{safe}-topology.tsv"
     contract=root/f"{config}-{safe}-contract.tsv"
     visible.write_text("\n".join(sanitized_row(e) for e in ep["runtime"]["events"])+"\n")
     latent_rows=[sanitized_row(e) for e in ep["harness_environment"]["latent_events"]]
     latent.write_text(("\n".join(latent_rows)+"\n") if latent_rows else "")
+    topology_rows=[]
+    for edge in ep["harness_environment"]["search_topology"].get("edges",[]):
+        topology_rows.append("\t".join([
+            str(edge["from"]),str(edge["to"]),str(edge["opportunity_class"])
+        ]))
+    topology.write_text(("\n".join(topology_rows)+"\n") if topology_rows else "")
     layout=ep["runtime"]["target_layout"]
     limits=ep["runtime"]["initial_search_limits"]
     contract.write_text("\t".join([
@@ -109,7 +116,7 @@ def run_episode(ep: Mapping[str,Any],config: str,runner: Path,root: Path,seed:in
     db=root/f"db-{config}-{safe}"
     proc=subprocess.run([
         str(runner),config,str(ep["id"]),str(visible),str(latent),
-        str(contract),str(db),str(seed)
+        str(topology),str(contract),str(db),str(seed)
     ],capture_output=True,text=True)
     if proc.returncode:
         return {"episode_id":ep["id"],"configuration":config,"steps":[],
