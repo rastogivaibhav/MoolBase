@@ -547,46 +547,31 @@ OppositionReport EpistemicController::oppose(
     }
   }
 
-  // A separately supported target is not discarded noise. It is a competing
-  // hypothesis and must remain visible to opposition and falsification. Use
-  // the same target-level aggregate used by convergence rather than the best
-  // individual support path.
-  if (answer.has_answer) {
-    const auto ranked_targets = target_candidates(bundle);
-    for (const TargetCandidate& candidate : ranked_targets) {
-      if (candidate.fiber->target_node == answer.primary_node) continue;
-      strongest = std::max(strongest, candidate.belief_strength);
-      output.challenged_claims.push_back(
-          "independently supported alternative target " +
-          std::to_string(candidate.fiber->target_node) +
-          " competes with selected target " +
-          std::to_string(answer.primary_node));
-      output.falsification_questions.push_back(
-          "Which observation discriminates selected target " +
-          std::to_string(answer.primary_node) + " from alternative target " +
-          std::to_string(candidate.fiber->target_node) + "?");
-      reopen.insert(answer.primary_node);
-      reopen.insert(candidate.fiber->target_node);
-    }
-  }
-
   output.opposition_score = std::max(
       strongest, admissibility.unresolved_contradiction);
-  if (stability.retrieval_noise_penalty > 0.0) {
-    output.challenged_claims.push_back(
-        "retrieval included paths unrelated to the selected target");
-  }
+
+  // V3 semantic split:
+  // - Challenge is reserved for actual material opposition.
+  // - Missing corroboration is an evidence-acquisition request, not a
+  //   dialectical challenge.
+  output.dialectical_challenge =
+      !output.challenged_claims.empty() &&
+      output.opposition_score >= options.reexpansion_threshold;
+
   if (!admissibility.sufficient_independent_support && answer.has_answer) {
-    output.falsification_questions.push_back(
+    output.corroboration_search_required = true;
+    output.corroboration_questions.push_back(
         "Which new evidence family could independently corroborate the selected answer?");
-    reopen.insert(answer.primary_node);
   }
+
   output.reopen_nodes.assign(reopen.begin(), reopen.end());
   output.requests_reexpansion =
-      output.opposition_score >= options.reexpansion_threshold ||
-      !admissibility.evidence_admissible ||
-      !admissibility.sufficient_independent_support ||
-      stability.retrieval_noise_penalty > 0.10;
+      output.dialectical_challenge &&
+      !output.reopen_nodes.empty();
+
+  // Retrieval noise remains a recovery concern handled by the generic escape
+  // planner. It is not promoted into a DWM challenge.
+  (void)stability;
   return output;
 }
 
