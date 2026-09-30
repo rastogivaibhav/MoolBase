@@ -1,0 +1,61 @@
+{
+  "schema": "epistemic-process-v2-score-freeze-v1",
+  "status": "FROZEN",
+  "experiment_id": "EP-PROCESS-V2-SCORE-001",
+  "score_bearing_authorized": true,
+  "candidate_commit": "eec8a0a1166b93e0e1e22e808310db9c3ca4f3f0",
+  "candidate_tree": "6b81581c36f2afa29ffead1a5a6a310369bf6ec3",
+  "evaluator_freeze_commit": "1618bf73bf05b9537536f5fc9b5a22b85f856423",
+  "evaluator_freeze_manifest_sha256": "b028c77184fc0fe5ab667d8d3e8c8a69bd27f1329b6a75ba355bb96316519a5a",
+  "allowed_changes_after_candidate": [
+    "benchmarks/epistemic_process_v2/score_freeze_v2.json"
+  ],
+  "profiles": [
+    "C0",
+    "G0E",
+    "C1",
+    "G1",
+    "G2"
+  ],
+  "score_repetitions": 1,
+  "automatic_retry": false,
+  "imputation": false,
+  "task_episodes": 270,
+  "task_families": 9,
+  "episodes_per_family": 30,
+  "runtime_seed": 20261005,
+  "bootstrap_seed": 20261006,
+  "bootstrap_resamples": 10000,
+  "pre_freeze_validation": {
+    "workflow_run_id": 36702731944,
+    "artifact_id": 11090866591,
+    "artifact_digest": "sha256:3606d2d6d656bd46adc4e9d2dc836c9d96cfdd843a8d981232f095e16113f51a",
+    "validated_head": "dc4752c51936f84594907f28f12b6244e7c393e9",
+    "validated_tree": "6b81581c36f2afa29ffead1a5a6a310369bf6ec3",
+    "manifest_absent_during_validation": true,
+    "score_workflow_manual_only": true,
+    "score_gate_contracts_passed": true
+  },
+  "superseded_pre_score_authorization": {
+    "master_commit": "d9e57e9593ba16bec1ddbf3788a4ac7a4129c7b1",
+    "reason": "Normal merge topology produced two commits after candidate and failed the frozen commit-count contract before any score run.",
+    "score_run_occurred": false
+  },
+  "policies": {
+    "candidate_outcomes_previously_opened": false,
+    "candidate_oracle_join_previously_performed": false,
+    "post_freeze_tuning_allowed": false,
+    "failed_episode_imputation": false,
+    "score_run_retry": false,
+    "score_run_count": 1,
+    "preserve_runtime_failures": true,
+    "preserve_negative_results": true
+  },
+  "claim_applicability": {
+    "C0->C1": "VALID_PRIMARY_CAUSAL",
+    "C1->G1": "ARCHITECTURAL_OPERATIVE_ONLY",
+    "hypokosh_commitment_calibration": "INELIGIBLE_DESIGN",
+    "G1->G2": "VALID_PRIMARY_CAUSAL"
+  },
+  "authorization_note": "This manifest authorizes exactly one first untouched score-bearing run on master after candidate-boundary verification. It does not authorize post-score tuning or retries."
+}
