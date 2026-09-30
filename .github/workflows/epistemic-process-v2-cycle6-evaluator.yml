@@ -94,16 +94,12 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           workflow=Path(".github/workflows/epistemic-process-v2-cycle6-evaluator.yml").read_text()
-          forbidden=[
-              "raw-full.json",
-              "run_cycle4_unscored_v2.py",
-              "--raw reports/",
-              "score-bearing execution",
-          ]
-          # The workflow may discuss score authorization textually, but it must
-          # never execute the candidate runtime or join a candidate raw file.
-          assert "run_cycle4_unscored_v2.py" not in workflow
-          assert "raw-full.json" not in workflow
+          # Build sentinels dynamically so the guard does not match its own
+          # source text.
+          runtime_runner = "run_" + "cycle4_unscored_v2.py"
+          raw_candidate = "raw-" + "full.json"
+          assert runtime_runner not in workflow
+          assert raw_candidate not in workflow
           print("cycle6_candidate_outcome_boundary=passed")
           PY
 
