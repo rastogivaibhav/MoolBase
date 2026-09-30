@@ -547,7 +547,14 @@ OppositionReport EpistemicController::oppose(
       output.falsification_questions.push_back(
           "What independently sourced observation discriminates target " +
           std::to_string(fiber.target_node) + " from its opposition?");
+      // Reopen both the challenged hypothesis and the concrete opposition
+      // anchor. V3 latent-frontier tasks attach newly discoverable evidence
+      // downstream of the observed challenge/evidence anchor, not necessarily
+      // directly below the hypothesis root.
       reopen.insert(fiber.target_node);
+      if (path_it->anchor_node != 0) {
+        reopen.insert(path_it->anchor_node);
+      }
     }
   }
 
