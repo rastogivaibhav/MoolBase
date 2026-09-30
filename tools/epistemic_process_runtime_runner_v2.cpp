@@ -20,6 +20,7 @@ struct Observation {
   std::string kind;
   std::string bears_on;
   std::string depends_on;
+  std::string revokes;
 };
 
 std::vector<std::string> split(const std::string& value, char delimiter) {
@@ -70,11 +71,11 @@ std::vector<Observation> load_observations(const fs::path& path) {
     // std::getline does not preserve a final empty field. Most observations
     // legitimately have no depends_on value, so restore that
     // empty sixth column rather than rejecting the sanitized runtime input.
-    if (fields.size() == 5 && !line.empty() && line.back() == '\t') {
+    if (fields.size() == 6 && !line.empty() && line.back() == '\t') {
       fields.emplace_back();
     }
-    if (fields.size() != 6) {
-      throw std::runtime_error("sanitized observation row must contain 6 fields");
+    if (fields.size() != 7) {
+      throw std::runtime_error("sanitized observation row must contain 7 fields");
     }
     Observation observation;
     observation.step = std::stoi(fields[0]);
@@ -83,6 +84,7 @@ std::vector<Observation> load_observations(const fs::path& path) {
     observation.kind = fields[3];
     observation.bears_on = fields[4];
     observation.depends_on = fields[5];
+    observation.revokes = fields[6];
     out.push_back(std::move(observation));
   }
   return out;
@@ -203,6 +205,7 @@ int main(int argc, char** argv) {
 
     CompleteHypoKoshRuntime runtime(db);
     std::map<uint32_t, std::string> edge_to_ref;
+    std::map<std::string, uint32_t> evidence_node_by_ref;
 
     std::cout << "{\"episode_id\":\"" << json_escape(episode_id)
               << "\",\"configuration\":\"" << configuration
@@ -227,6 +230,18 @@ int main(int argc, char** argv) {
     uint32_t previous_primary_node = 0;
 
     for (const Observation& observation : observations) {
+      if (observation.kind == "revoke" && !observation.revokes.empty()) {
+        for (const std::string& revoked_ref : split(observation.revokes, ',')) {
+          const auto revoked = evidence_node_by_ref.find(revoked_ref);
+          if (revoked == evidence_node_by_ref.end()) {
+            throw std::runtime_error(
+                "revoke references unknown evidence id " + revoked_ref);
+          }
+          require(db.delete_node(revoked->second),
+                  "revoke evidence node " + revoked_ref);
+        }
+      }
+
       uint32_t evidence_node = 0;
       NodeInput evidence = make_node(
           observation.id + " " + observation.kind + " " +
@@ -236,6 +251,7 @@ int main(int argc, char** argv) {
       evidence.metadata["family"] = observation.family;
       require(db.put_node(evidence, &evidence_node),
               "put evidence node " + observation.id);
+      evidence_node_by_ref[observation.id] = evidence_node;
 
       const uint32_t target =
           observation.bears_on == "H2" ? h2 : h1;
