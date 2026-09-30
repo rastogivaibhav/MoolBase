@@ -175,6 +175,23 @@
         partial.certificate.limit_cycle_detected;
     trace.lyapunov_oscillation =
         partial.certificate.oscillation_detected;
+
+    if (trace.lyapunov_limit_cycle ||
+        trace.lyapunov_oscillation) {
+      trace.next_status =
+          trace.next_has_answer
+              ? GovernedEpistemicStatus::Contested
+              : GovernedEpistemicStatus::Abstain;
+      trace.next_committed_node = 0;
+    } else if (
+        trace.next_status == GovernedEpistemicStatus::Resolved &&
+        !partial.certificate.practical_stability_observed) {
+      trace.next_status = GovernedEpistemicStatus::ProvisionallyResolved;
+      trace.next_committed_node =
+          trace.next_has_answer ? trace.next_primary_node : 0;
+    }
+    current_trace_status = trace.next_status;
+
     if (trace.lyapunov_limit_cycle ||
         trace.lyapunov_oscillation) {
       trace.stop_reason = trace.lyapunov_limit_cycle
