@@ -1,0 +1,144 @@
+{
+  "schema": "epistemic-process-v2-measurement-model-v1",
+  "status": "PREREGISTERED_UNSCORED",
+  "minimum_score_episodes": 240,
+  "minimum_episode_families": 8,
+  "minimum_episodes_per_family": 30,
+  "profiles": [
+    {
+      "id": "C0",
+      "persistent_graphene_state": false,
+      "decision": "common_head",
+      "hypokosh": false,
+      "dwm": false,
+      "primary_role": "stateless common-head causal control"
+    },
+    {
+      "id": "G0E",
+      "persistent_graphene_state": true,
+      "decision": "none",
+      "hypokosh": false,
+      "dwm": false,
+      "primary_role": "Graphene evidence/provenance capability"
+    },
+    {
+      "id": "C1",
+      "persistent_graphene_state": true,
+      "decision": "common_head",
+      "hypokosh": false,
+      "dwm": false,
+      "primary_role": "persistence causal treatment"
+    },
+    {
+      "id": "G1",
+      "persistent_graphene_state": true,
+      "decision": "hypokosh",
+      "hypokosh": true,
+      "dwm": false,
+      "primary_role": "governed hypothesis selection"
+    },
+    {
+      "id": "G2",
+      "persistent_graphene_state": true,
+      "decision": "hypokosh",
+      "hypokosh": true,
+      "dwm": true,
+      "primary_role": "DWM causal treatment"
+    }
+  ],
+  "primary_comparisons": {
+    "C0->C1": "persistent evidence/provenance causal effect with decision head held constant",
+    "C1->G1": "architectural/governance effect; not a single-feature attribution",
+    "G1->G2": "DWM causal effect"
+  },
+  "common_head": {
+    "unit": "distinct evidence family",
+    "score": "distinct_support_families - distinct_opposition_families",
+    "selection": "unique strictly-positive highest score",
+    "tie": "no operative hypothesis",
+    "output_is_committed_answer": false
+  },
+  "primary_metrics": {
+    "persistence": [
+      "evidence_retention_exactness",
+      "evidence_family_identity_exactness",
+      "dependency_lineage_exactness",
+      "revocation_visibility_rate",
+      "cross_episode_leakage_rate"
+    ],
+    "operative_reasoning": [
+      "operative_hypothesis_accuracy",
+      "cross_step_refutation_response_rate",
+      "cross_step_revision_latency_steps",
+      "false_convergence_rate"
+    ],
+    "commitment": [
+      "committed_coverage_rate",
+      "committed_accuracy",
+      "false_commitment_rate",
+      "appropriate_abstention_rate",
+      "earned_resolution_rate"
+    ],
+    "dwm": [
+      "challenge_precision",
+      "challenge_rate",
+      "reopen_usefulness_rate",
+      "frontier_change_after_reopen_rate",
+      "rank_change_after_reopen_rate",
+      "status_change_after_reopen_rate",
+      "within_call_revision_rate",
+      "unnecessary_reopen_rate"
+    ],
+    "cost": [
+      "execution_seconds",
+      "visited_states",
+      "expansion_rounds",
+      "evidence_edges_considered",
+      "challenge_reopen_count"
+    ]
+  },
+  "claim_gates": {
+    "graphene_persistence": {
+      "minimum_accuracy_delta": 0.10,
+      "paired_ci_excludes_zero": true,
+      "minimum_evidence_retention_exactness": 0.99,
+      "maximum_cross_episode_leakage_rate": 0.0,
+      "maximum_single_step_control_regression": 0.05
+    },
+    "hypokosh_governance": {
+      "minimum_claimed_rate_delta": 0.10,
+      "paired_ci_excludes_zero": true,
+      "raw_coverage_alone_is_insufficient": true
+    },
+    "dwm_process_value": {
+      "minimum_challenge_precision": 0.80,
+      "maximum_unnecessary_reopen_rate": 0.20,
+      "minimum_reopen_usefulness_rate": 0.50,
+      "maximum_false_commitment_regression": 0.05
+    },
+    "dwm_outcome_value": {
+      "minimum_outcome_delta": 0.10,
+      "paired_ci_excludes_zero": true,
+      "maximum_committed_accuracy_regression": 0.05
+    }
+  },
+  "failure_policy": {
+    "automatic_score_retry": false,
+    "imputation": false,
+    "preserve_failure_classes": true,
+    "operationally_inconclusive_failure_rate_above": 0.01,
+    "cross_episode_leakage_invalidates_run": true
+  },
+  "statistics": {
+    "binary_paired_test": "exact_mcnemar",
+    "paired_interval": "paired_bootstrap_95_percent",
+    "continuous_reporting": [
+      "mean",
+      "median",
+      "paired_bootstrap_95_percent"
+    ],
+    "multiple_testing": "holm_within_primary_claim_family",
+    "always_report_counts_and_denominators": true
+  },
+  "score_bearing_authorized": false
+}
