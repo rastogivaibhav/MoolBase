@@ -1,0 +1,44 @@
+name: EP Process V3 Cycle 3 bootstrap candidate
+
+on:
+  push:
+    branches:
+      - lab/epistemic-process-v3-cycle3-task-universe
+
+permissions:
+  contents: write
+
+jobs:
+  generate-once:
+    if: github.ref == 'refs/heads/lab/epistemic-process-v3-cycle3-task-universe'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generate candidate exactly once
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v3/tasks_v3_candidate.json
+          python benchmarks/epistemic_process_v3/generate_tasks_v3.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("benchmarks/epistemic_process_v3/tasks_v3_candidate.json")
+          d=json.loads(p.read_text())
+          assert d["episode_count"] == 384
+          assert d["family_count"] == 24
+          assert d["episodes_per_family"] == 16
+          assert d["score_bearing_authorized"] is False
+          print("bootstrap_candidate_structure=passed")
+          PY
+      - name: Commit generated candidate and remove bootstrap workflow
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/epistemic_process_v3/tasks_v3_candidate.json
+          git rm .github/workflows/epistemic-process-v3-cycle3-bootstrap.yml
+          git commit -m "bench: generate frozen V3 task candidate"
+          git push origin HEAD:lab/epistemic-process-v3-cycle3-task-universe
