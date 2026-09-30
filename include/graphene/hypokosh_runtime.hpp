@@ -32,8 +32,12 @@ enum class EpistemicEventType : uint8_t {
   HypothesisSet,
   Decision,
   Challenge,
+  CorroborationSearch,
   Reopen,
   Revision,
+  Decommitment,
+  Recommitment,
+  Resolution,
   Terminal
 };
 
@@ -78,6 +82,10 @@ struct RecoveryRoundTrace {
   bool searchable_escape{false};
   bool recovery_search_requested{false};
   bool opposition_search_requested{false};
+  bool dialectical_challenge_present{false};
+  bool corroboration_search_requested{false};
+  bool expansion_opportunity_available{false};
+  std::string expansion_opportunity_class{"NO_EXPANSION_OPPORTUNITY"};
   bool generic_expansion_allowed{false};
   bool options_changed{false};
   bool depth_repair_active{false};
