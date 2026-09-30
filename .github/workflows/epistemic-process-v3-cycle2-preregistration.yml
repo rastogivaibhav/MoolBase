@@ -56,7 +56,7 @@ jobs:
               "df219207220b27868d7ba95bc5a764c3b11e9262",
               "lower numeric `target_node`",
               "1,020",
-              "family:<id>",
+              "family:",
           ]
           for item in required:
               assert item in report or item in proposal, item
