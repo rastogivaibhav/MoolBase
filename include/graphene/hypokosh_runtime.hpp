@@ -62,6 +62,7 @@ struct PriorEpistemicState {
   bool has_answer{false};
   uint32_t operative_node{0};
   uint32_t committed_node{0};
+  uint32_t last_committed_node{0};
   GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
   uint64_t bundle_hash{0};
   StabilityAssessment stability;
