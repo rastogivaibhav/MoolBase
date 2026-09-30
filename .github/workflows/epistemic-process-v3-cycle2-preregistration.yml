@@ -1,0 +1,144 @@
+name: EP Process V3 Cycle 2 preregistration
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v3/**"
+      - ".github/workflows/epistemic-process-v3-cycle2-preregistration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v3-cycle2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle2-preregistration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce Cycle 2 preregistration-only boundary
+        run: |
+          set -euo pipefail
+          BASE=2b6d98c1d4135e6a6e482832c69acc8091bb7fc5
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(src/|include/)'; then
+            echo "Cycle 2 may not modify production behavior" >&2
+            exit 1
+          fi
+          if echo "$changed" | grep -E 'tasks_v3\.json|score_freeze_v3\.json'; then
+            echo "Cycle 2 may not create final score tasks or score authorization" >&2
+            exit 1
+          fi
+          echo "cycle2_production_behavior_changes=none"
+
+      - name: Verify source evidence references
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          report=Path("benchmarks/epistemic_process_v3/CYCLE_01_FORENSIC_ROOT_CAUSE_REPORT.md").read_text()
+          proposal=Path("benchmarks/epistemic_process_v3/PREREGISTRATION_PROPOSAL_V3.md").read_text()
+          required=[
+              "36748279512",
+              "11113966063",
+              "df219207220b27868d7ba95bc5a764c3b11e9262",
+              "numeric target-node tie-break bias",
+              "1,020",
+              "family:<id>",
+          ]
+          for item in required:
+              assert item in report or item in proposal, item
+          print("cycle2_source_evidence=passed")
+          PY
+
+      - name: Compile Cycle 2 contracts
+        run: |
+          set -euo pipefail
+          python -m py_compile             benchmarks/epistemic_process_v3/claim_gate_v3.py             benchmarks/epistemic_process_v3/validate_preregistration_v3.py             benchmarks/epistemic_process_v3/test_metric_semantics_v3.py             benchmarks/epistemic_process_v3/test_claim_gates_v3.py
+
+      - name: Validate preregistration completeness
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v3/validate_preregistration_v3.py
+
+      - name: Test metric semantics and trivial strategies
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_metric_semantics_v3.py)
+
+      - name: Attack claim gates with synthetic systems
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_claim_gates_v3.py)
+
+      - name: Verify score remains impossible
+        run: |
+          set -euo pipefail
+          test ! -e benchmarks/epistemic_process_v3/tasks_v3.json
+          test ! -e benchmarks/epistemic_process_v3/score_freeze_v3.json
+          test ! -e .github/workflows/epistemic-process-v3-score.yml
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("benchmarks/epistemic_process_v3")
+          for name in [
+              "semantic_contract_v3.json",
+              "measurement_model_v3.json",
+              "metric_definitions_v3.json",
+              "telemetry_contract_v3.json",
+              "claim_gates_v3.json",
+              "failure_policy_v3.json",
+              "statistics_plan_v3.json",
+              "task_family_requirements_v3.json",
+              "controls_v3.json",
+          ]:
+              doc=json.loads((root/name).read_text())
+              assert doc["score_bearing_authorized"] is False, name
+          print("cycle2_score_authorization=false")
+          PY
+
+      - name: Record preregistration hashes
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v3-cycle2
+          git rev-parse HEAD > reports/epistemic-process-v3-cycle2/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle2/tree.txt
+          sha256sum             benchmarks/epistemic_process_v3/PREREGISTRATION.md             benchmarks/epistemic_process_v3/semantic_contract_v3.json             benchmarks/epistemic_process_v3/measurement_model_v3.json             benchmarks/epistemic_process_v3/metric_definitions_v3.json             benchmarks/epistemic_process_v3/telemetry_contract_v3.json             benchmarks/epistemic_process_v3/claim_gates_v3.json             benchmarks/epistemic_process_v3/failure_policy_v3.json             benchmarks/epistemic_process_v3/statistics_plan_v3.json             benchmarks/epistemic_process_v3/task_family_requirements_v3.json             benchmarks/epistemic_process_v3/controls_v3.json             benchmarks/epistemic_process_v3/claim_gate_v3.py             benchmarks/epistemic_process_v3/validate_preregistration_v3.py             benchmarks/epistemic_process_v3/test_metric_semantics_v3.py             benchmarks/epistemic_process_v3/test_claim_gates_v3.py             > reports/epistemic-process-v3-cycle2/preregistration-checksums.sha256
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary={
+              "schema":"epistemic-process-v3-cycle2-audit-v1",
+              "gate":"PASSED",
+              "production_behavior_changed":False,
+              "final_score_tasks_created":False,
+              "score_bearing_authorized":False,
+              "planned_episodes":384,
+              "families":24,
+              "episodes_per_family":16,
+              "semantic_questions_answered":20,
+              "synthetic_claim_gate_cases":9
+          }
+          Path("reports/epistemic-process-v3-cycle2/audit-summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True)+"\n"
+          )
+          PY
+
+      - name: Upload Cycle 2 audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v3-cycle2-preregistration-${{ github.sha }}
+          path: reports/epistemic-process-v3-cycle2/
+          retention-days: 90
