@@ -222,6 +222,24 @@ const TargetCandidate* select_primary_target(
 
 }  // namespace
 
+std::vector<TargetEpistemicTrace> EpistemicController::inspect_targets(
+    const FiberBundle& bundle) const {
+  std::vector<TargetEpistemicTrace> output;
+  for (const TargetCandidate& target : target_candidates(bundle)) {
+    TargetEpistemicTrace trace;
+    trace.target_node = target.fiber->target_node;
+    trace.support_strength = target.support_strength;
+    trace.opposition_strength = target.opposition_strength;
+    trace.belief_strength = target.belief_strength;
+    trace.semantic_verification = target.semantic_verification;
+    trace.independent_support_family_count =
+        target.independent_support_count;
+    trace.best_support_score = target.best_support_score;
+    output.push_back(trace);
+  }
+  return output;
+}
+
 EpistemicAdmissibility EpistemicController::assess(
     const FiberBundle& bundle,
     const StabilityAssessment& stability,
