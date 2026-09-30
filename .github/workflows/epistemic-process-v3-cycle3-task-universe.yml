@@ -1,0 +1,196 @@
+name: EP Process V3 Cycle 3 task universe
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/epistemic_process_v3/**"
+      - ".github/workflows/epistemic-process-v3-cycle3-task-universe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ep-process-v3-cycle3-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cycle3-task-universe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Enforce Cycle 3 structural-only boundary
+        run: |
+          set -euo pipefail
+          BASE=d0f3680c426602561e0664b9ad5b4892df4789ae
+          changed="$(git diff --name-only "$BASE"...HEAD)"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(src/|include/)'; then
+            echo "Cycle 3 may not modify production behavior" >&2
+            exit 1
+          fi
+          test ! -e benchmarks/epistemic_process_v3/score_freeze_v3.json
+          test ! -e .github/workflows/epistemic-process-v3-score.yml
+          echo "cycle3_production_behavior_changes=none"
+
+      - name: Verify frozen Cycle 2 hashes
+        run: |
+          set -euo pipefail
+          check() {
+            file="$1"; expected="$2"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            echo "$actual  $file"
+            test "$actual" = "$expected"
+          }
+          check benchmarks/epistemic_process_v3/semantic_contract_v3.json 3873b8a9383782c16fab7c813c5d0d4f969bd424f7fcd1f6818439a05803737f
+          check benchmarks/epistemic_process_v3/measurement_model_v3.json 799252c703a06b8f9c1a66d697aaa1d965c9edbfb53acc769e37e8759368a5d0
+          check benchmarks/epistemic_process_v3/metric_definitions_v3.json 3e95ef5b83ffad6a52c88833e750883d5d662ad595e55508e66ddd7348ab1b57
+          check benchmarks/epistemic_process_v3/telemetry_contract_v3.json 900c186c56689b5c06222839e0d07755dcd81cba9bdf2722f86286347d4cef0a
+          check benchmarks/epistemic_process_v3/claim_gates_v3.json 4ebf21dd6da6b603be8c5d3a417aaf0f292a17bfd5d298b6effbd5c7c3cb4d31
+          check benchmarks/epistemic_process_v3/failure_policy_v3.json e6ab18eaf563bed4fd11ddcd665d118591ef0160c81f7fa064f68261153c74ec
+          check benchmarks/epistemic_process_v3/statistics_plan_v3.json bc245acc76a10ecccf540fd3f9951dc865243a07965f6b0fa7949b401b4bd152
+          check benchmarks/epistemic_process_v3/task_family_requirements_v3.json c20f9f03e540f945c66cb8b032ee123487c8b47b81cf60b34acbeed879cd1d8a
+          check benchmarks/epistemic_process_v3/controls_v3.json 102ea72b6cb7caf134d6752890b50e38a1a72c8ad12649a83e7b361d143b9b94
+          echo "cycle3_cycle2_hash_protection=passed"
+
+      - name: Compile Cycle 3 Python
+        run: |
+          set -euo pipefail
+          python -m py_compile             benchmarks/epistemic_process_v3/generate_tasks_v3.py             benchmarks/epistemic_process_v3/validate_tasks_v3_candidate.py             benchmarks/epistemic_process_v3/strip_runtime_tasks_v3.py             benchmarks/epistemic_process_v3/test_task_symmetry_v3.py             benchmarks/epistemic_process_v3/test_task_oracle_boundary_v3.py             benchmarks/epistemic_process_v3/test_task_dwm_topology_v3.py             benchmarks/epistemic_process_v3/test_task_revision_structure_v3.py             benchmarks/epistemic_process_v3/test_task_determinism_v3.py             benchmarks/epistemic_process_v3/test_task_adversarial_mutations_v3.py
+
+      - name: Regenerate and byte-compare candidate
+        run: |
+          set -euo pipefail
+          cp benchmarks/epistemic_process_v3/tasks_v3_candidate.json /tmp/tasks-v3-committed.json
+          python benchmarks/epistemic_process_v3/generate_tasks_v3.py
+          cmp /tmp/tasks-v3-committed.json benchmarks/epistemic_process_v3/tasks_v3_candidate.json
+          echo "cycle3_byte_reproducibility=passed"
+
+      - name: Validate complete candidate
+        run: |
+          set -euo pipefail
+          python benchmarks/epistemic_process_v3/validate_tasks_v3_candidate.py
+
+      - name: Validate mirror and permutation structure
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_symmetry_v3.py)
+
+      - name: Prove runtime-oracle separation
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_oracle_boundary_v3.py)
+          python benchmarks/epistemic_process_v3/strip_runtime_tasks_v3.py
+
+      - name: Prove DWM topology
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_dwm_topology_v3.py)
+
+      - name: Validate revision and resolution chronology
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_revision_structure_v3.py)
+
+      - name: Prove deterministic family-local generation
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_determinism_v3.py)
+
+      - name: Reject adversarial task mutations
+        run: |
+          set -euo pipefail
+          (cd benchmarks/epistemic_process_v3 && python test_task_adversarial_mutations_v3.py)
+
+      - name: Assert no outcome computation or score authorization
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("benchmarks/epistemic_process_v3")
+          d=json.loads((root/"tasks_v3_candidate.json").read_text())
+          assert d["score_bearing_authorized"] is False
+          assert not (root/"score_freeze_v3.json").exists()
+          assert not Path(".github/workflows/epistemic-process-v3-score.yml").exists()
+          for name in (
+              "evaluation_v3.json","claims_v3.json","score_results_v3.json",
+              "candidate_scores_v3.json"
+          ):
+              assert not (root/name).exists(), name
+          print("cycle3_score_authorization=false outcome_peeking=false")
+          PY
+
+      - name: Create Cycle 3 audit evidence
+        run: |
+          set -euo pipefail
+          mkdir -p reports/epistemic-process-v3-cycle3
+          git rev-parse HEAD > reports/epistemic-process-v3-cycle3/head.txt
+          git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle3/tree.txt
+          sha256sum             benchmarks/epistemic_process_v3/generate_tasks_v3.py             benchmarks/epistemic_process_v3/tasks_v3_candidate.json             benchmarks/epistemic_process_v3/validate_tasks_v3_candidate.py             benchmarks/epistemic_process_v3/strip_runtime_tasks_v3.py             benchmarks/epistemic_process_v3/test_task_symmetry_v3.py             benchmarks/epistemic_process_v3/test_task_oracle_boundary_v3.py             benchmarks/epistemic_process_v3/test_task_dwm_topology_v3.py             benchmarks/epistemic_process_v3/test_task_revision_structure_v3.py             benchmarks/epistemic_process_v3/test_task_determinism_v3.py             benchmarks/epistemic_process_v3/test_task_adversarial_mutations_v3.py             benchmarks/epistemic_process_v3/tasks_v3_runtime_view.json             > reports/epistemic-process-v3-cycle3/checksums.sha256
+          python - <<'PY'
+          import hashlib,json
+          from collections import Counter
+          from pathlib import Path
+          root=Path("benchmarks/epistemic_process_v3")
+          d=json.loads((root/"tasks_v3_candidate.json").read_text())
+          families=Counter(e["task_family"] for e in d["episodes"])
+          summary={
+              "schema":"epistemic-process-v3-cycle3-audit-v1",
+              "gate":"PASSED",
+              "production_behavior_changed":False,
+              "score_bearing_authorized":False,
+              "outcome_peeking":False,
+              "episodes":len(d["episodes"]),
+              "families":len(families),
+              "episodes_per_family":sorted(set(families.values())),
+              "mirror_primary":Counter(e["mirror_primary"] for e in d["episodes"]),
+              "events":sum(len(e["runtime"]["events"])+len(e["environment"]["latent_events"]) for e in d["episodes"]),
+              "hidden_evidence_positive_controls":sum(bool(e["environment"]["latent_events"]) for e in d["episodes"]),
+              "exhausted_frontier_controls":sum(e["task_family"]=="dwm_exhausted_frontier_negative" for e in d["episodes"]),
+              "revision_required":sum(bool(e["oracle"]["revision_required"]) for e in d["episodes"]),
+              "resolution_eligible":sum(bool(e["oracle"]["resolution_eligible"]) for e in d["episodes"]),
+              "abstention_required":sum(bool(e["oracle"]["expected_abstention"]) for e in d["episodes"]),
+              "adversarial_mutations_rejected":20,
+              "generator_seed":d["generator_seed"],
+              "task_candidate_sha256":hashlib.sha256((root/"tasks_v3_candidate.json").read_bytes()).hexdigest(),
+              "generator_sha256":hashlib.sha256((root/"generate_tasks_v3.py").read_bytes()).hexdigest(),
+              "runtime_view_sha256":hashlib.sha256((root/"tasks_v3_runtime_view.json").read_bytes()).hexdigest(),
+          }
+          Path("reports/epistemic-process-v3-cycle3/audit-summary.json").write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+"\n"
+          )
+          Path("reports/epistemic-process-v3-cycle3/task_generation_receipt_v3.json").write_text(
+              json.dumps({
+                  "schema":"epistemic-process-v3-task-generation-receipt-v1",
+                  "cycle2_source_commit":"d0f3680c426602561e0664b9ad5b4892df4789ae",
+                  "cycle2_scientific_commit":"d5f41522634153900b1f0aac12f8e9cfb90010d0",
+                  "cycle2_scientific_tree":"b911b4e7625a2cb9dac2365649637c236f5a2244",
+                  "generator_seed":d["generator_seed"],
+                  "generator_sha256":summary["generator_sha256"],
+                  "task_candidate_sha256":summary["task_candidate_sha256"],
+                  "runtime_oracle_stripping_sha256":summary["runtime_view_sha256"],
+                  "episode_count":summary["episodes"],
+                  "family_count":summary["families"],
+                  "episodes_per_family":16,
+                  "mirror_counts":{"H1":192,"H2":192},
+                  "score_bearing_authorized":False
+              },indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(summary,sort_keys=True))
+          PY
+
+      - name: Upload Cycle 3 audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ep-process-v3-cycle3-task-universe-${{ github.sha }}
+          path: reports/epistemic-process-v3-cycle3/
+          retention-days: 90
