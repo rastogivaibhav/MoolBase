@@ -1,0 +1,979 @@
+{
+  "protocol": "epistemic-process-v2",
+  "status": "UNSCORED_REALISTIC_VALIDATION",
+  "episode_count": 16,
+  "semantics": "Deterministic scenario-shaped workloads. These are not external production data and are not score-bearing.",
+  "oracle_fields_not_sent_to_sut": [
+    "terminal_supported",
+    "minimum_independent_families_for_resolution",
+    "temporal_oracle",
+    "scenario",
+    "domain",
+    "stratum",
+    "variant",
+    "independent",
+    "decisive"
+  ],
+  "episodes": [
+    {
+      "id": "REAL_INCIDENT_CORRECTION_1",
+      "stratum": "incident_correction",
+      "domain": "service-incident",
+      "variant": 1,
+      "scenario": "Initial incident cause is overturned by independent telemetry and a decisive forensic contradiction",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "monitor_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "operator_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "monitor_b_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "forensics_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "trace_a_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_INCIDENT_CORRECTION_2",
+      "stratum": "incident_correction",
+      "domain": "service-incident",
+      "variant": 2,
+      "scenario": "Initial incident cause is overturned by independent telemetry and a decisive forensic contradiction",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "monitor_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "operator_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "monitor_b_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "forensics_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "trace_a_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_POLICY_SUPERSESSION_1",
+      "stratum": "policy_supersession",
+      "domain": "policy",
+      "variant": 1,
+      "scenario": "An old policy interpretation is superseded by a revoked source and a current independent source",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "policy_old_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "guidance_old_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "policy_new_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "supersession_1",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_1",
+            "e2_1"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "guidance_new_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_POLICY_SUPERSESSION_2",
+      "stratum": "policy_supersession",
+      "domain": "policy",
+      "variant": 2,
+      "scenario": "An old policy interpretation is superseded by a revoked source and a current independent source",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "policy_old_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "guidance_old_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "policy_new_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "supersession_2",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_2",
+            "e2_2"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "guidance_new_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_PRODUCT_FACT_UPDATE_1",
+      "stratum": "product_fact_update",
+      "domain": "catalog",
+      "variant": 1,
+      "scenario": "A product fact changes after an authoritative update",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "catalog_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "feed_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "feed_b_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "manufacturer_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "catalog_b_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_PRODUCT_FACT_UPDATE_2",
+      "stratum": "product_fact_update",
+      "domain": "catalog",
+      "variant": 2,
+      "scenario": "A product fact changes after an authoritative update",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "catalog_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "feed_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "feed_b_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "manufacturer_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "catalog_b_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_RESEARCH_SOURCE_CORRELATION_1",
+      "stratum": "research_source_correlation",
+      "domain": "research",
+      "variant": 1,
+      "scenario": "Several copied reports favor H1 but two independent primary sources favor H2",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "syndicated_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "syndicated_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "syndicated_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_1"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "primary_a_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "primary_b_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_RESEARCH_SOURCE_CORRELATION_2",
+      "stratum": "research_source_correlation",
+      "domain": "research",
+      "variant": 2,
+      "scenario": "Several copied reports favor H1 but two independent primary sources favor H2",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 5
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "syndicated_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "syndicated_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "syndicated_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e1_2"
+          ]
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "primary_a_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "primary_b_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_SECURITY_SIGNAL_RETRACTION_1",
+      "stratum": "security_signal_retraction",
+      "domain": "security",
+      "variant": 1,
+      "scenario": "A security hypothesis loses its principal signals after retraction",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "sensor_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "sensor_b_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "investigator_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "sensor_retraction_1",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_1",
+            "e2_1"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_1",
+          "family": "forensics_b_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_SECURITY_SIGNAL_RETRACTION_2",
+      "stratum": "security_signal_retraction",
+      "domain": "security",
+      "variant": 2,
+      "scenario": "A security hypothesis loses its principal signals after retraction",
+      "initial_preference": "H1",
+      "terminal_supported": "H2",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_H2",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "sensor_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "sensor_b_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "investigator_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "sensor_retraction_2",
+          "kind": "revoke",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true,
+          "revokes": [
+            "e1_2",
+            "e2_2"
+          ]
+        },
+        {
+          "step": 5,
+          "id": "e5_2",
+          "family": "forensics_b_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_INSUFFICIENT_OPERATIONAL_EVIDENCE_1",
+      "stratum": "insufficient_operational_evidence",
+      "domain": "operations",
+      "variant": 1,
+      "scenario": "The leading explanation is falsified but replacement evidence is insufficient",
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "ops_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "ops_b_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "ops_c_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "audit_1",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "REAL_INSUFFICIENT_OPERATIONAL_EVIDENCE_2",
+      "stratum": "insufficient_operational_evidence",
+      "domain": "operations",
+      "variant": 2,
+      "scenario": "The leading explanation is falsified but replacement evidence is insufficient",
+      "initial_preference": "H1",
+      "terminal_supported": "ABSTAIN",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "to_abstain",
+        "trigger_step": 4
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "ops_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "ops_b_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "ops_c_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "audit_2",
+          "kind": "refute",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": true
+        }
+      ]
+    },
+    {
+      "id": "REAL_NOISE_RESISTANCE_1",
+      "stratum": "noise_resistance",
+      "domain": "knowledge",
+      "variant": 1,
+      "scenario": "Irrelevant history arrives after two independent supports and should not force a belief change",
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "source_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "source_b_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_1",
+          "family": "archive_noise_1",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_1",
+          "family": "archive_noise_1",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_NOISE_RESISTANCE_2",
+      "stratum": "noise_resistance",
+      "domain": "knowledge",
+      "variant": 2,
+      "scenario": "Irrelevant history arrives after two independent supports and should not force a belief change",
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "source_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "source_b_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "n1_2",
+          "family": "archive_noise_2",
+          "kind": "noise",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "n2_2",
+          "family": "archive_noise_2",
+          "kind": "noise",
+          "bears_on": "H1",
+          "independent": false,
+          "decisive": false
+        }
+      ]
+    },
+    {
+      "id": "REAL_STABLE_NEGATIVE_CONTROL_1",
+      "stratum": "stable_negative_control",
+      "domain": "operations",
+      "variant": 1,
+      "scenario": "Weak correlated alternatives arrive without decisive refutation; operative hypothesis should remain stable",
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_1",
+          "family": "source_a_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_1",
+          "family": "source_b_1",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_1",
+          "family": "alt_a_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_1",
+          "family": "alt_a_1",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "REAL_STABLE_NEGATIVE_CONTROL_2",
+      "stratum": "stable_negative_control",
+      "domain": "operations",
+      "variant": 2,
+      "scenario": "Weak correlated alternatives arrive without decisive refutation; operative hypothesis should remain stable",
+      "initial_preference": "H1",
+      "terminal_supported": "H1",
+      "minimum_independent_families_for_resolution": 2,
+      "temporal_oracle": {
+        "mode": "no_change",
+        "trigger_step": null
+      },
+      "events": [
+        {
+          "step": 1,
+          "id": "e1_2",
+          "family": "source_a_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 2,
+          "id": "e2_2",
+          "family": "source_b_2",
+          "kind": "support",
+          "bears_on": "H1",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 3,
+          "id": "e3_2",
+          "family": "alt_a_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": true,
+          "decisive": false
+        },
+        {
+          "step": 4,
+          "id": "e4_2",
+          "family": "alt_a_2",
+          "kind": "support",
+          "bears_on": "H2",
+          "independent": false,
+          "decisive": false,
+          "depends_on": [
+            "e3_2"
+          ]
+        }
+      ]
+    }
+  ],
+  "reporting": {
+    "score_bearing_allowed": false,
+    "preserve_all_episodes": true
+  }
+}
