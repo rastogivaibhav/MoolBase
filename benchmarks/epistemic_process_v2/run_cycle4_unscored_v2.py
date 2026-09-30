@@ -103,6 +103,72 @@ def null_state() -> dict[str, Any]:
     }
 
 
+def _node_name(raw: Any, node_to_name: Mapping[int, str]) -> str | None:
+    try:
+        node = int(raw or 0)
+    except (TypeError, ValueError):
+        return None
+    return node_to_name.get(node)
+
+
+def _normalise_ranking(
+    ranking: Any,
+    node_to_name: Mapping[int, str],
+) -> Any:
+    if ranking is None:
+        return None
+    if not isinstance(ranking, list):
+        return ranking
+    out = []
+    for item in ranking:
+        if not isinstance(item, Mapping):
+            out.append(item)
+            continue
+        row = dict(item)
+        row["target_id"] = _node_name(row.get("target_id"), node_to_name)
+        out.append(row)
+    return out
+
+
+def _normalise_state(
+    state: Mapping[str, Any],
+    node_to_name: Mapping[int, str],
+) -> dict[str, Any]:
+    row = dict(state)
+    row["operative_hypothesis"] = _node_name(
+        row.pop("operative_hypothesis_node", 0), node_to_name
+    )
+    row["committed_answer"] = _node_name(
+        row.pop("committed_answer_node", 0), node_to_name
+    )
+    row["target_ranking"] = _normalise_ranking(
+        row.get("target_ranking"), node_to_name
+    )
+    return row
+
+
+def _normalise_runtime_schema(episode: dict[str, Any]) -> None:
+    hypothesis_nodes = episode.get("hypothesis_nodes") or {}
+    node_to_name = {
+        int(node): str(name)
+        for name, node in hypothesis_nodes.items()
+    }
+    for step in episode.get("steps") or []:
+        for key in ("previous_step_state", "initial_state", "final_state"):
+            state = step.get(key)
+            if isinstance(state, Mapping):
+                step[key] = _normalise_state(state, node_to_name)
+        for round_row in step.get("recovery_rounds") or []:
+            if not isinstance(round_row, dict):
+                continue
+            round_row["target_ranking_before"] = _normalise_ranking(
+                round_row.get("target_ranking_before"), node_to_name
+            )
+            round_row["target_ranking_after"] = _normalise_ranking(
+                round_row.get("target_ranking_after"), node_to_name
+            )
+
+
 def c0_episode(task: Mapping[str, Any]) -> dict[str, Any]:
     metadata = evidence_metadata(task)
     previous = null_state()
@@ -243,6 +309,7 @@ def runtime_episode(
     episode["configuration"] = configuration
     episode["evidence_metadata"] = evidence_metadata(task)
     episode["execution_seconds"] = elapsed
+    _normalise_runtime_schema(episode)
 
     if configuration == "C1":
         metadata = episode["evidence_metadata"]
