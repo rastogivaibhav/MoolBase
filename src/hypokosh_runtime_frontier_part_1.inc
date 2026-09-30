@@ -101,6 +101,19 @@ struct ExpansionOpportunity {
 };
 
 bool runtime_search_edge_allowed(const Edge& edge, QueryMode mode) {
+  const auto state_it = edge.metadata.find("evidence_state");
+  const auto graphene_state_it =
+      edge.metadata.find("graphene_evidence_state");
+  const std::string lifecycle =
+      state_it != edge.metadata.end()
+          ? state_it->second
+          : (graphene_state_it != edge.metadata.end()
+                 ? graphene_state_it->second
+                 : "active");
+  if (lifecycle != "active" && lifecycle != "refuted") {
+    return false;
+  }
+
   if (mode == QueryMode::Empirical) {
     if (edge.origin != EdgeOrigin::Observed &&
         edge.origin != EdgeOrigin::Discovered) {
