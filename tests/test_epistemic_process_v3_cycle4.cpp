@@ -333,6 +333,7 @@ int main() {
   {
     GrapheneDB db;
     open_db(&db, base / "native-transitions");
+    add_node(db, "reserved null sentinel", {0.0f, -1.0f, 0.0f});
     const uint32_t h1 =
         add_node(db, "transition H1", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t h2 =
@@ -352,6 +353,8 @@ int main() {
     const auto first = runtime.reason({1.0f, 0.0f, 0.0f}, 0, run);
     assert(first.final_convergence.has_answer);
     assert(first.final_convergence.primary_node == h1);
+    assert(!has_event(first, EpistemicEventType::Revision));
+    assert(!has_event(first, EpistemicEventType::Decommitment));
     const PriorEpistemicState first_prior = prior_from(first);
     assert(first_prior.committed_node == h1);
 
@@ -359,6 +362,12 @@ int main() {
         add_node(db, "H1 refutation", {0.98f, 0.02f, 0.0f});
     add_edge(db, h1, refute, EdgeRole::Contradicts, 0.95,
              "tr-refute", "tr-refute-family");
+    // The frozen clear-incumbent policy requires a different semantic leader
+    // whose replacement corroboration is still insufficient. Refutation
+    // alone may leave a unique operative leader inspectable while contested.
+    const uint32_t h2a =
+        add_node(db, "H2 support A", {0.97f, 0.03f, 0.0f});
+    add_edge(db, h2, h2a, EdgeRole::Supports, 0.96, "tr-h2-a", "tr-h2-fa");
     RuntimeOptions second_options = run;
     second_options.prior_epistemic_state = first_prior;
     const auto second =
@@ -375,11 +384,8 @@ int main() {
     assert(second_prior.committed_node == 0);
     assert(second_prior.last_committed_node == h1);
 
-    const uint32_t h2a =
-        add_node(db, "H2 support A", {0.97f, 0.03f, 0.0f});
     const uint32_t h2b =
         add_node(db, "H2 support B", {0.96f, 0.04f, 0.0f});
-    add_edge(db, h2, h2a, EdgeRole::Supports, 0.96, "tr-h2-a", "tr-h2-fa");
     add_edge(db, h2, h2b, EdgeRole::Supports, 0.95, "tr-h2-b", "tr-h2-fb");
 
     RuntimeOptions third_options = run;
@@ -391,6 +397,15 @@ int main() {
     assert(has_transition(
         third, EpistemicEventType::Recommitment, h1, h2));
 
+    RuntimeOptions unchanged_options = run;
+    unchanged_options.prior_epistemic_state = prior_from(third);
+    const auto unchanged =
+        runtime.reason({1.0f, 0.0f, 0.0f}, 0, unchanged_options);
+    assert(unchanged.final_convergence.primary_node == h2);
+    assert(!has_event(unchanged, EpistemicEventType::Revision));
+    assert(!has_event(unchanged, EpistemicEventType::Decommitment));
+    assert(!has_event(unchanged, EpistemicEventType::Recommitment));
+
     require(db.close(), "close native transition db");
   }
 
@@ -400,6 +415,7 @@ int main() {
   {
     GrapheneDB db;
     open_db(&db, base / "native-resolution");
+    add_node(db, "reserved null sentinel", {0.0f, -1.0f, 0.0f});
     const uint32_t root =
         add_node(db, "resolution hypothesis", {-1.0f, 0.0f, 0.0f}, true);
     const uint32_t a =
@@ -429,6 +445,13 @@ int main() {
     assert(second.status == GovernedEpistemicStatus::Resolved);
     assert(has_event(second, EpistemicEventType::Resolution));
     assert(second.lyapunov.certificate.practical_stability_observed);
+
+    RuntimeOptions unchanged_options = run;
+    unchanged_options.prior_epistemic_state = prior_from(second);
+    const auto unchanged =
+        runtime.reason({1.0f, 0.0f, 0.0f}, 0, unchanged_options);
+    assert(unchanged.status == GovernedEpistemicStatus::Resolved);
+    assert(!has_event(unchanged, EpistemicEventType::Resolution));
 
     require(db.close(), "close native resolution db");
   }
