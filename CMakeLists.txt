@@ -171,3 +171,8 @@ if(GRAPHENEDB_BUILD_BENCH)
                  bench/bench_dialectic_intervention.cpp)
   target_link_libraries(graphenedb_dialectic_intervention_bench PRIVATE graphenedb)
 endif()
+
+if(GRAPHENEDB_BUILD_EXAMPLES)
+  add_executable(moolbase_customer_showcase examples/customer_showcase/engine.cpp)
+  target_link_libraries(moolbase_customer_showcase PRIVATE graphenedb)
+endif()

@@ -49,6 +49,10 @@ If you only need fast semantic similarity search, a conventional vector store wi
 
 ---
 
+## Try customer workflows
+
+Run incident investigation, agent memory updates and conflicting-report examples with the actual database engine. See [Customer showcase](examples/customer_showcase/README.md) for sample code, fixtures, expected behavior and use-case boundaries.
+
 ## Run the proof
 
 The fastest way to understand the current mechanism is to reproduce it from a clean checkout:
