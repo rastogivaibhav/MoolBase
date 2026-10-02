@@ -1,6 +1,12 @@
 # MoolBase by RASVAI
 
-**The epistemic database for reasoning agents.**
+**Evidence-aware memory for agents whose answers must change when the evidence changes.**
+
+MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Try a customer-memory correction before exploring the architecture.
+
+**Start:** [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (currently access-controlled) · [Runnable Python examples](https://github.com/rastogivaibhav/graphenedb_v1/tree/demo/moolbase-developer-onboarding/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+
+The newcomer examples use `demo/moolbase-developer-onboarding`. This default branch also contains frozen research experiments; clone the documented example branch for the customer workflows.
 
 [![CI](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml)
 [![Alpha release gate](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml)
@@ -22,7 +28,7 @@ MoolBase is built around the harder question:
 
 > **Naming:** MoolBase is the provisional public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names during migration. See [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
 
-**Start here:** [Run the proof](#run-the-proof) · [Architecture](#architecture) · [Developer interaction levels](#developer-interaction-levels) · [Build](#build-from-source) · [Docs](#documentation) · [Contribute](#contribute-or-challenge-it)
+**Explore further:** [Run the proof](#run-the-proof) · [Architecture](#architecture) · [Developer interaction levels](#developer-interaction-levels) · [Build](#build-from-source) · [Docs](#documentation) · [Contribute](#contribute-or-challenge-it)
 
 ---
 
@@ -195,42 +201,24 @@ For the packaged historical alpha quickstart, see [Developer quickstart](docs/DE
 
 ---
 
-## Minimal API examples
+## Your first application
 
-### C++ storage
+Use the supported customer example checkout with Git, a C++20 compiler, CMake 3.16+ and Python 3:
 
-```cpp
-#include "graphene/db.hpp"
-
-graphene::GrapheneDB db;
-graphene::DBOptions options;
-options.dimension = 16;
-
-auto status = db.open("/tmp/moolbase", options);
+```bash
+git clone --branch demo/moolbase-developer-onboarding --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
+python3 examples/customer_showcase/python_memory.py
+python3 examples/customer_showcase/python_http.py
 ```
 
-### C++ governed reasoning
+The first script shows EU fulfilment resolved → no committed answer after supersession → US fulfilment resolved after independent corroboration and retiring stale copies. It saves native receipts and verifies file reopen. The second starts an authenticated local HTTP server, ingests evidence, calls the complete runtime and verifies the evidence bundle after restarting the server process. The HTTP server requires POSIX.
 
-```cpp
-#include "graphene/hypokosh_runtime.hpp"
+No model key or pip package is required. The scripts manage imports, temporary databases and process cleanup. The memory example uses Python to drive the native adapter; HTTP currently does not expose its complete supersession lifecycle. See [Agent integration](docs/AGENT_INTEGRATION.md) for exact surfaces and responsibilities.
 
-graphene::CompleteHypoKoshRuntime runtime(db);
-graphene::RuntimeOptions options;
-
-auto result = runtime.reason(query, signature, options);
-```
-
-### Python / HTTP client
-
-```python
-from graphenedb_client import GrapheneDBClient
-
-client = GrapheneDBClient(api_key="development-key")
-result = client.reason_hypokosh("What best explains the evidence?")
-print(result.data)
-```
-
-The Python client currently exposes HTTP pilot surfaces; the C++ API remains the richest integration surface.
+The Python HTTP client’s `reason_hypokosh()` returns hypothetical proposals. `/v1/reason/runtime` runs the full governed runtime. Native files persist, but these examples do not persist prior reasoning state between processes; the browser demo is session-local.
 
 ---
 
