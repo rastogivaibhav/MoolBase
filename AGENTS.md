@@ -1,8 +1,10 @@
-# GrapheneDB Agent Context
+# MoolBase / GrapheneDB Agent Context
 
 GrapheneDB v0.6.0-rc1 is a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
 
 The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
+
+MoolBase is the public product name; `GrapheneDB`, `graphene` and `GRAPHENEDB_*` remain implementation/API names. For newcomer integrations, use [Agent integration](docs/AGENT_INTEGRATION.md) and the documented `demo/moolbase-developer-onboarding` checkout. Do not assume the default branch contains customer examples. The repository is public and `LICENSE` contains Apache 2.0.
 
 ## Start Here
 
@@ -86,5 +88,4 @@ Do not add new features by default. The next evidence gates are:
 1. 24-hour and then 72-hour soak on intended production hardware/filesystem.
 2. Actual OCI build, SBOM, and Trivy/Grype scan with pinned base-image digests.
 3. Resolve the slow 5,000-incident in-process stress profile and the higher-load long-soak harness shutdown issue.
-4. Replace the placeholder licence before public distribution.
-5. Only after those gates, decide whether to call this a public preview or continue as a design-partner pilot.
+4. Only after those gates, decide whether to call this a public preview or continue as a design-partner pilot.

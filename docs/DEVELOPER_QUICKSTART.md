@@ -1,4 +1,4 @@
-# GrapheneDB developer quickstart
+# MoolBase developer quickstart
 
 This guide is for a developer who wants a first successful GrapheneDB run before studying FiberBundle, the Lyapunov critic or the model-world architecture.
 
@@ -12,15 +12,15 @@ This guide is for a developer who wants a first successful GrapheneDB run before
 
 The reasoning runtime is an experimental developer alpha, not an enterprise-GA decision system.
 
-## 1. Clone the consolidated alpha branch
+## 1. Clone the supported newcomer examples
 
 ```bash
-git clone --branch release/v0.6.0-alpha.1 --single-branch \
+git clone --branch demo/moolbase-developer-onboarding --single-branch \
   https://github.com/rastogivaibhav/graphenedb_v1.git
 cd graphenedb_v1
 ```
 
-The repository is currently private, so GitHub authentication is required.
+The repository is public. The example checkout is separate from the frozen research work on the default branch. For complete Python lifecycle and HTTP examples, follow [Agent integration](AGENT_INTEGRATION.md).
 
 ## 2. Run the first demo
 
