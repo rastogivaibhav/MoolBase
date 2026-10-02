@@ -15,9 +15,9 @@ The reasoning runtime is an experimental developer alpha, not an enterprise-GA d
 ## 1. Clone the supported newcomer examples
 
 ```bash
-git clone --branch demo/moolbase-developer-onboarding --single-branch \
-  https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone --branch v0.6.0-alpha.2 --single-branch \
+  https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 ```
 
 The repository is public. The example checkout is separate from the frozen research work on the default branch. For complete Python lifecycle and HTTP examples, follow [Agent integration](AGENT_INTEGRATION.md).

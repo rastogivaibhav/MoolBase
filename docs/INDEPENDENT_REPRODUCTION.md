@@ -30,8 +30,8 @@ No model API key, hosted LLM or external service is required after cloning the r
 ## One-command reproduction
 
 ```bash
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 python3 scripts/run_flagship_perturbations_v1.py
 ```
 

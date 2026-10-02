@@ -317,8 +317,8 @@ The project intentionally asks people to test the mechanism rather than trust th
 From a clean checkout:
 
 ```bash
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 python3 scripts/run_flagship_perturbations_v1.py
 ```
 
@@ -328,8 +328,8 @@ See:
 
 - [README](../../README.md)
 - [Independent reproduction guide](../INDEPENDENT_REPRODUCTION.md)
-- [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/graphenedb_v1/issues/25)
-- [Public reproduction request](https://github.com/rastogivaibhav/graphenedb_v1/issues/38)
+- [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/issues/25)
+- [Public reproduction request](https://github.com/rastogivaibhav/MoolBase/issues/38)
 
 The most useful external contribution right now is a reproduction, counterexample, failure case or criticism.
 

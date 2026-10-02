@@ -4,7 +4,7 @@ GrapheneDB v0.6.0-rc1 is a C++20 embedded database and optional controlled-pilot
 
 The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
 
-MoolBase is the public product name; `GrapheneDB`, `graphene` and `GRAPHENEDB_*` remain implementation/API names. For newcomer integrations, use [Agent integration](docs/AGENT_INTEGRATION.md) and the documented `demo/moolbase-developer-onboarding` checkout. Do not assume the default branch contains customer examples. The repository is public and `LICENSE` contains Apache 2.0.
+MoolBase is the public product name; `GrapheneDB`, `graphene` and `GRAPHENEDB_*` remain implementation/API names. For newcomer integrations, use [Agent integration](docs/AGENT_INTEGRATION.md) and the documented `v0.6.0-alpha.2` checkout. Do not assume the default branch contains customer examples. The repository is public and `LICENSE` contains Apache 2.0.
 
 ## Start Here
 

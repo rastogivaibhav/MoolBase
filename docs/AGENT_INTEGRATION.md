@@ -4,11 +4,11 @@ MoolBase stores evidence and exposes competing hypotheses, opposition and decisi
 
 ## Supported newcomer checkout
 
-Use `demo/moolbase-developer-onboarding` for the examples in this guide. The customer engine derives from tested fixes commit `6f5d9b95330ddb59a0d881c67ffb2fa5864f439f`. The repository default branch also contains frozen scientific experiments; it is not the customer example checkout.
+Use the released `v0.6.0-alpha.2` tag for the examples in this guide. Its source commit is `6d276cacc3fd7e82ba38a364e818e91a3f1141ac`; the customer engine derives from tested fixes commit `6f5d9b95330ddb59a0d881c67ffb2fa5864f439f`. The repository default branch also contains frozen scientific experiments; it is not the customer example checkout.
 
 ```bash
-git clone --branch demo/moolbase-developer-onboarding --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
 python3 examples/customer_showcase/python_memory.py

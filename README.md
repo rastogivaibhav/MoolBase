@@ -4,14 +4,14 @@
 
 MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Try a customer-memory correction before exploring the architecture.
 
-**Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/graphenedb_v1/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
+**Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
 
-**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (currently access-controlled) · [Versioned Python examples](https://github.com/rastogivaibhav/graphenedb_v1/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (public; no sign-in required) · [Versioned Python examples](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
 
 Use the `v0.6.0-alpha.2` release tag for the runnable customer workflows. The default branch also carries the research programme.
 
-[![CI](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml)
-[![Alpha release gate](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml)
+[![CI](https://github.com/rastogivaibhav/MoolBase/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/MoolBase/actions/workflows/ci.yml)
+[![Alpha release gate](https://github.com/rastogivaibhav/MoolBase/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/MoolBase/actions/workflows/alpha-release-gate.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 **Store the evidence. Preserve the alternatives. Know why belief changed.**
@@ -28,7 +28,7 @@ MoolBase is built around the harder question:
 
 **Status:** released developer preview for evaluation and controlled pilots. Not enterprise GA and not a semantic truth engine.
 
-> **Naming:** MoolBase is the provisional public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names during migration. See [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
+> **Naming:** MoolBase is the provisional public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names during migration. The `GrapheneDB` CMake package, `GrapheneDB::graphenedb` target and existing executable names remain supported. See [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
 
 **Explore further:** [Run the proof](#run-the-proof) · [Architecture](#architecture) · [Developer interaction levels](#developer-interaction-levels) · [Build](#build-from-source) · [Docs](#documentation) · [Contribute](#contribute-or-challenge-it)
 
@@ -54,7 +54,7 @@ The [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site)
 
 MoolBase stores the evidence and exposes alternatives, status changes and inspectable receipts. Your application supplies provenance, verification and explicit retirement of stale derived evidence. Scores are policy strengths, not calibrated probabilities.
 
-The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [released source examples](https://github.com/rastogivaibhav/graphenedb_v1/releases/download/v0.6.0-alpha.2/moolbase-0.6.0-alpha.2-examples.zip) without access to the Site.
+The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [released source examples](https://github.com/rastogivaibhav/MoolBase/releases/download/v0.6.0-alpha.2/moolbase-0.6.0-alpha.2-examples.zip) without using the browser demo.
 
 ---
 
@@ -63,8 +63,8 @@ The Lab includes **incident investigation**, **agent-memory correction**, and **
 Use the released customer examples with Git, a C++20 compiler, CMake 3.16+ and Python 3. The commands below build the native adapter and POSIX HTTP server:
 
 ```bash
-git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
 python3 examples/customer_showcase/python_memory.py
@@ -107,8 +107,8 @@ If you only need fast semantic similarity search, a conventional vector store wi
 For the research mechanism and its frozen reproduction contract, use a clean checkout:
 
 ```bash
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 python3 scripts/run_flagship_perturbations_v1.py
 ```
 
@@ -273,7 +273,7 @@ G2  + Dialectic Engine
 
 The score lock remains closed until the production execution boundaries and clean UNSCORED runs are proven.
 
-See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/graphenedb_v1/issues/25) for the governing evidence and adoption criteria.
+See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/issues/25) for the governing evidence and adoption criteria.
 
 ---
 
@@ -310,8 +310,8 @@ The most valuable contribution right now is an **independent reproduction, failu
 
 - Read [CONTRIBUTING.md](CONTRIBUTING.md).
 - Reproduce the [flagship proof](docs/INDEPENDENT_REPRODUCTION.md).
-- Submit a failure case or technical critique through [GitHub Issues](https://github.com/rastogivaibhav/graphenedb_v1/issues).
-- See the [public reproduction request](https://github.com/rastogivaibhav/graphenedb_v1/issues/38).
+- Submit a failure case or technical critique through [GitHub Issues](https://github.com/rastogivaibhav/MoolBase/issues).
+- See the [public reproduction request](https://github.com/rastogivaibhav/MoolBase/issues/38).
 
 For security vulnerabilities, follow [SECURITY.md](SECURITY.md) rather than opening a public issue.
 
