@@ -38,7 +38,7 @@ For an attested artifact, GitHub CLI can verify provenance:
 
 ```bash
 gh attestation verify graphenedb-<version>-linux-x86_64.zip \
-  -R rastogivaibhav/graphenedb_v1
+  -R rastogivaibhav/MoolBase
 ```
 
 ## Verify the SBOM attestation
@@ -48,7 +48,7 @@ requests, attest it against the release artifact.
 
 ```bash
 gh attestation verify graphenedb-<version>-linux-x86_64.zip \
-  -R rastogivaibhav/graphenedb_v1 \
+  -R rastogivaibhav/MoolBase \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 

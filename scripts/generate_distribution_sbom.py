@@ -19,7 +19,7 @@ def main() -> int:
     commit = manifest["source_commit"]
     package_hash = manifest["package_sha256"]
     namespace = (
-        "https://github.com/rastogivaibhav/graphenedb_v1/"
+        "https://github.com/rastogivaibhav/MoolBase/"
         f"spdx/{urllib.parse.quote(version, safe='')}/{commit}/{package_hash}"
     )
 
@@ -64,7 +64,7 @@ def main() -> int:
                 "name": "GrapheneDB",
                 "SPDXID": "SPDXRef-Package-GrapheneDB",
                 "versionInfo": version,
-                "downloadLocation": "https://github.com/rastogivaibhav/graphenedb_v1",
+                "downloadLocation": "https://github.com/rastogivaibhav/MoolBase",
                 "filesAnalyzed": True,
                 "licenseConcluded": "Apache-2.0",
                 "licenseDeclared": "Apache-2.0",
@@ -77,7 +77,7 @@ def main() -> int:
                         "referenceCategory": "OTHER",
                         "referenceType": "vcs",
                         "referenceLocator": (
-                            "git+https://github.com/rastogivaibhav/graphenedb_v1.git@"
+                            "git+https://github.com/rastogivaibhav/MoolBase.git@"
                             + commit
                         ),
                     }
