@@ -2,7 +2,7 @@
 
 **Evidence-aware memory for agents whose answers must change when the evidence changes.**
 
-MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Try a customer-memory correction before exploring the architecture.
+MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Its embedded C++20 database stores nodes with content, vectors and provenance metadata, connected by typed relationships. Optional reasoning layers expose alternatives, opposition and decision receipts. Try a customer-memory correction before exploring the architecture.
 
 **Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
 
@@ -57,6 +57,18 @@ MoolBase stores the evidence and exposes alternatives, status changes and inspec
 The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [released source examples](https://github.com/rastogivaibhav/MoolBase/releases/download/v0.6.0-alpha.2/moolbase-0.6.0-alpha.2-examples.zip) without using the browser demo.
 
 ---
+
+## Choose your download
+
+The [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) offers three separate downloads with checksums, manifests and SPDX inventories:
+
+| Download | Use it when |
+|---|---|
+| [Compiled database — Linux x86_64](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
+| [Examples for the installed database](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
+| [Optional source](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-source.zip) | You want to inspect or build the database and examples yourself. |
+
+Follow the [download installation instructions](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/INSTALL.md). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
 
 ## Your first application
 

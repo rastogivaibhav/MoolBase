@@ -1,6 +1,6 @@
 # MoolBase / GrapheneDB Agent Context
 
-GrapheneDB v0.6.0-rc1 is a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
+MoolBase v0.6.0-alpha.2 is a released developer preview of a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
 
 The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
 
@@ -47,7 +47,7 @@ Domain references:
 - Do not silently promote inferred/reinforced data into observed/discovered truth.
 - Keep JSON logs and API responses valid for arbitrary user-controlled text.
 - Treat graceful shutdown, checkpointing, restart, backup/restore, and second-open rejection as database correctness contracts.
-- Public claims must match evidence. `v0.6.0-rc1` is a controlled-pilot release candidate, not unrestricted public GA.
+- Public claims must match evidence. `v0.6.0-alpha.2` is a released developer preview for evaluation and controlled pilots, not enterprise GA.
 - Do not add Kosh/dialectic/model-world features to the DB correctness branch unless the user explicitly reopens that scope.
 
 ## Verification
@@ -81,11 +81,10 @@ Package-consumer verification:
 bash scripts/verify_package_install.sh
 ```
 
-## Immediate Next Step
+## Current maintenance scope
 
-Do not add new features by default. The next evidence gates are:
+Use the released `v0.6.0-alpha.2` tag for newcomer examples. Follow the user's task; do not default to another release-preparation or research programme.
 
-1. 24-hour and then 72-hour soak on intended production hardware/filesystem.
-2. Actual OCI build, SBOM, and Trivy/Grype scan with pinned base-image digests.
-3. Resolve the slow 5,000-incident in-process stress profile and the higher-load long-soak harness shutdown issue.
-4. Only after those gates, decide whether to call this a public preview or continue as a design-partner pilot.
+For documentation changes, check links, commands and the diff. Preserve release tags, assets, checksums, historical reports and frozen scientific contracts. Run implementation tests when the implementation changes.
+
+Long hardware soak, target-scale testing and security hardening are separate future production-readiness work; they do not reopen the completed developer-preview release.
