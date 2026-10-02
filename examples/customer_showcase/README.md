@@ -2,6 +2,26 @@
 
 Three runnable, realistic synthetic workloads demonstrate when provenance-aware agent memory is useful. They are examples, not customer case studies or production benchmarks. The adapter calls the actual embedded C++ database and `CompleteHypoKoshRuntime`; the web interface compiles the same adapter and engine to WebAssembly.
 
+## Start with Python
+
+Build once using the commands below, then run:
+
+```bash
+python3 examples/customer_showcase/python_memory.py
+```
+
+Expected progression: EU resolved → open after supersession → US resolved after independent corroboration and explicit retirement of stale copies. The script saves all native receipts and verifies file reopen. It starts a disposable native database and uses no model or API key.
+
+For HTTP ingestion, full runtime evaluation and process restart, also build the server:
+
+```bash
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_SERVER=ON -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF
+cmake --build build-showcase --target graphenedb_server -j2
+python3 examples/customer_showcase/python_http.py
+```
+
+The HTTP example starts an authenticated loopback server with a temporary key and database, ingests a causal chain, verifies retry-safe ingestion, evaluates `/v1/reason/runtime`, and checks the bundle after restarting the server process. It cleans up its process and database. HTTP currently does not expose the native adapter’s supersession operation or carry prior reasoning state between requests. Use the native example for the complete lifecycle. See [Agent integration guide](../../docs/AGENT_INTEGRATION.md).
+
 ## Run the native examples
 
 From the repository root, with C++20, CMake 3.16+ and Python 3:
@@ -47,7 +67,7 @@ Read `engine.cpp` for a complete small adapter:
 
 ## Hosted demo boundaries
 
-The Site hosts the UI and actual compiled database engine. The engine runs in a browser worker using a session-local virtual filesystem. It is not a shared, hosted database service. Close/reopen replays real database files inside that filesystem, but reload discards the session. No localStorage persistence, remote LLM, API key or invented JavaScript reasoning results are used. Evidence is capped at 100 records and bounded to two hypotheses. It is developer alpha for controlled demos, not a production deployment recommendation.
+The Site hosts the UI and actual compiled database engine. The engine runs in a browser worker using a session-local virtual filesystem. It is not a shared, hosted database service. Close/reopen replays real database files inside that filesystem, but reload discards the session. No localStorage persistence, remote LLM, API key or invented JavaScript reasoning results are used. Sessions allow 100 active observations and 200 total history events, and are bounded to two hypotheses. It is developer alpha for controlled demos, not a production deployment recommendation.
 
 ## Reproduce the browser build
 

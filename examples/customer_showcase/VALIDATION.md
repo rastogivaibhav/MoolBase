@@ -38,3 +38,7 @@ node examples/customer_showcase/verify_playwright.mjs /absolute/site/dist
 ```
 
 Use the README to build the native executable and the browser module first.
+
+## Newcomer onboarding update — 2026-10-02
+
+The Python memory example passed against the native engine (EU resolved → open → US resolved). The Python HTTP example passed authenticated extraction replay and preserved the evidence bundle across a real server process restart. HTTP limitations are documented separately from the native lifecycle. The updated Lab is tested with Playwright, including before/after explanations for repeated source families. Site access remains owner-only pending an explicit audience change.
