@@ -4,9 +4,11 @@
 
 MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Try a customer-memory correction before exploring the architecture.
 
-**Start:** [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (currently access-controlled) · [Runnable Python examples](https://github.com/rastogivaibhav/graphenedb_v1/tree/demo/moolbase-developer-onboarding/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+**Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/graphenedb_v1/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
 
-The newcomer examples use `demo/moolbase-developer-onboarding`. This default branch also contains frozen research experiments; clone the documented example branch for the customer workflows.
+**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (currently access-controlled) · [Versioned Python examples](https://github.com/rastogivaibhav/graphenedb_v1/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+
+Use the `v0.6.0-alpha.2` release tag for the runnable customer workflows. The default branch also carries the research programme.
 
 [![CI](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml)
 [![Alpha release gate](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml)
@@ -24,11 +26,56 @@ MoolBase is built around the harder question:
 
 > **Why should the agent believe this, what evidence supports it, what alternatives remain plausible, and what should happen when new evidence contradicts the current belief?**
 
-**Status:** developer alpha for research and controlled pilots. Not enterprise GA and not a semantic truth engine.
+**Status:** released developer preview for evaluation and controlled pilots. Not enterprise GA and not a semantic truth engine.
 
 > **Naming:** MoolBase is the provisional public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names during migration. See [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
 
 **Explore further:** [Run the proof](#run-the-proof) · [Architecture](#architecture) · [Developer interaction levels](#developer-interaction-levels) · [Build](#build-from-source) · [Docs](#documentation) · [Contribute](#contribute-or-challenge-it)
+
+---
+
+## See the answer change
+
+The [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) explains MoolBase through a customer-memory correction: **which fulfilment region should the assistant use?**
+
+![Actual Evidence Lab replay: EU fulfilment resolved, no operative answer after supersession, then US fulfilment resolved](docs/images/evidence-lab-memory.gif)
+
+*Recorded from the published Lab’s UI and actual WebAssembly engine using its synthetic agent-memory fixture. The animation shows guided steps 3, 4 and 8; it is not a customer deployment result.*
+
+| What arrives | What the database returns | What that means for the agent |
+|---|---|---|
+| The stored EU preference has sufficient support under the demo policy. | **Resolved: use EU fulfilment.** | The current evidence supports the existing answer. |
+| A corrected profile supersedes the original preference, while stale derived copies remain. | **Open: no operative answer.** | The prior commitment is cleared; replacement evidence has not yet earned a new commitment. |
+| Independent US evidence is added and the known stale copies are explicitly retired. | **Resolved: use US fulfilment.** | The corrected answer is supported, and the receipt preserves how it changed. |
+
+**Copies do not become independent corroboration.** In the outage example, the second alert repeats the first alert’s evidence family. The Lab shows independent support families staying **1 → 1**. New wording or another event ID does not make the same source independent.
+
+**Contradiction stays visible.** In the outage and conflicting-report examples, a different target can lead while the final status remains **contested**. The selected answer, opposition and uncertainty must be read together.
+
+MoolBase stores the evidence and exposes alternatives, status changes and inspectable receipts. Your application supplies provenance, verification and explicit retirement of stale derived evidence. Scores are policy strengths, not calibrated probabilities.
+
+The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [released source examples](https://github.com/rastogivaibhav/graphenedb_v1/releases/download/v0.6.0-alpha.2/moolbase-0.6.0-alpha.2-examples.zip) without access to the Site.
+
+---
+
+## Your first application
+
+Use the released customer examples with Git, a C++20 compiler, CMake 3.16+ and Python 3. The commands below build the native adapter and POSIX HTTP server:
+
+```bash
+git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
+cd graphenedb_v1
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
+python3 examples/customer_showcase/python_memory.py
+python3 examples/customer_showcase/python_http.py
+```
+
+The first script shows EU fulfilment resolved → no committed answer after supersession → US fulfilment resolved after independent corroboration and retiring stale copies. It saves native receipts and verifies file reopen. The second starts an authenticated local HTTP server, ingests evidence, calls the complete runtime and verifies the evidence bundle after restarting the server process. The HTTP server requires POSIX. On Windows, set `GRAPHENEDB_BUILD_SERVER=OFF` and build only `moolbase_customer_showcase` for the native memory example.
+
+No model key or pip package is required. The scripts manage imports, temporary databases and process cleanup. The memory example uses Python to drive the native adapter; HTTP currently does not expose its complete supersession lifecycle. See [Agent integration](docs/AGENT_INTEGRATION.md) for exact surfaces and responsibilities.
+
+The Python HTTP client’s `reason_hypokosh()` returns hypothetical proposals. `/v1/reason/runtime` runs the full governed runtime. Native files persist, but these examples do not persist prior reasoning state between processes; the browser demo is session-local.
 
 ---
 
@@ -57,7 +104,7 @@ If you only need fast semantic similarity search, a conventional vector store wi
 
 ## Run the proof
 
-The fastest way to understand the current mechanism is to reproduce it from a clean checkout:
+For the research mechanism and its frozen reproduction contract, use a clean checkout:
 
 ```bash
 git clone https://github.com/rastogivaibhav/graphenedb_v1.git
@@ -201,26 +248,6 @@ For the packaged historical alpha quickstart, see [Developer quickstart](docs/DE
 
 ---
 
-## Your first application
-
-Use the supported customer example checkout with Git, a C++20 compiler, CMake 3.16+ and Python 3:
-
-```bash
-git clone --branch demo/moolbase-developer-onboarding --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
-cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
-cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
-python3 examples/customer_showcase/python_memory.py
-python3 examples/customer_showcase/python_http.py
-```
-
-The first script shows EU fulfilment resolved → no committed answer after supersession → US fulfilment resolved after independent corroboration and retiring stale copies. It saves native receipts and verifies file reopen. The second starts an authenticated local HTTP server, ingests evidence, calls the complete runtime and verifies the evidence bundle after restarting the server process. The HTTP server requires POSIX.
-
-No model key or pip package is required. The scripts manage imports, temporary databases and process cleanup. The memory example uses Python to drive the native adapter; HTTP currently does not expose its complete supersession lifecycle. See [Agent integration](docs/AGENT_INTEGRATION.md) for exact surfaces and responsibilities.
-
-The Python HTTP client’s `reason_hypokosh()` returns hypothetical proposals. `/v1/reason/runtime` runs the full governed runtime. Native files persist, but these examples do not persist prior reasoning state between processes; the browser demo is session-local.
-
----
 
 ## Evidence and validation
 
