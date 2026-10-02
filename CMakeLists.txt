@@ -30,9 +30,11 @@ if(MSVC AND TARGET graphenedb_rc_stress_tests)
     PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/tests/msvc_compat.hpp")
 endif()
 
-add_executable(graphenedb_epistemic_process_runtime_runner_v3_cycle5
-               tools/epistemic_process_runtime_runner_v3_cycle5.cpp)
-target_link_libraries(graphenedb_epistemic_process_runtime_runner_v3_cycle5 PRIVATE graphenedb)
+if(NOT GRAPHENEDB_BUILD_FUZZERS)
+  add_executable(graphenedb_epistemic_process_runtime_runner_v3_cycle5
+                 tools/epistemic_process_runtime_runner_v3_cycle5.cpp)
+  target_link_libraries(graphenedb_epistemic_process_runtime_runner_v3_cycle5 PRIVATE graphenedb)
+endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_epistemic_process_runtime_runner

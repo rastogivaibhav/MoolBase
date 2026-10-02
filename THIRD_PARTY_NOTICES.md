@@ -45,3 +45,7 @@ states otherwise.
 If GrapheneDB later vendors, statically embeds, or redistributes a third-party
 component, its applicable license and attribution requirements must be added to
 this file before the distribution may be released.
+
+## WebAssembly showcase
+
+The optional browser showcase contains Emscripten 3.1.74 generated runtime code and compiled standard-library support. Upstream licence texts for Emscripten, musl, compiler-rt, libc++, libc++abi and libunwind are retained under `third_party/emscripten/`. These browser assets are separate from the default native core build. See https://github.com/emscripten-core/emscripten/tree/3.1.74.

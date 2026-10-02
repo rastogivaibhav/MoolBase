@@ -1,0 +1,79 @@
+name: MoolBase developer preview release
+on:
+  push:
+    branches: [release/moolbase-v0.6.0-alpha.2]
+permissions:
+  contents: read
+concurrency:
+  group: moolbase-v0.6.0-alpha.2-release
+  cancel-in-progress: false
+jobs:
+  native:
+    name: Native and consumer (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build-preview -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_EXAMPLES=ON
+      - run: cmake --build build-preview --config Release -j 2
+      - run: ctest --test-dir build-preview -C Release --output-on-failure
+      - if: runner.os != 'Windows'
+        run: bash scripts/verify_package_install.sh
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/verify_package_install.ps1
+      - if: runner.os != 'Windows'
+        run: |
+          python3 examples/customer_showcase/python_memory.py --binary build-preview/moolbase_customer_showcase
+          python3 examples/customer_showcase/python_http.py --server build-preview/graphenedb_server
+          python3 examples/customer_showcase/verify_cli.py build-preview/moolbase_customer_showcase
+          python3 examples/customer_showcase/verify.py build-preview/moolbase_customer_showcase
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y clang
+      - run: bash scripts/run_fuzz_smoke.sh
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install 3.1.74
+          /tmp/emsdk/emsdk activate 3.1.74
+          source /tmp/emsdk/emsdk_env.sh
+          bash examples/customer_showcase/build_wasm.sh "$PWD/examples/customer_showcase/web"
+          python3 scripts/package_customer_preview.py "$PWD/examples/customer_showcase/web/customer-showcase.zip"
+      - run: |
+          npm install --prefix /tmp/preview-playwright playwright@1.51.1
+          /tmp/preview-playwright/node_modules/.bin/playwright install --with-deps chromium
+          PLAYWRIGHT_MODULE=/tmp/preview-playwright/node_modules/playwright/index.mjs node examples/customer_showcase/verify_playwright.mjs "$PWD/examples/customer_showcase/web"
+  publish:
+    needs: [native, fuzz, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build and validate Linux package
+        run: |
+          mkdir -p preview-dist
+          bash scripts/package_release_install.sh "$PWD/preview-dist/moolbase-0.6.0-alpha.2-linux-x86_64.zip"
+          python3 scripts/validate_distribution_policy.py preview-dist/moolbase-0.6.0-alpha.2-linux-x86_64.zip preview-dist/moolbase-0.6.0-alpha.2-linux-x86_64.zip.manifest.json
+          python3 scripts/generate_distribution_sbom.py preview-dist/moolbase-0.6.0-alpha.2-linux-x86_64.zip.manifest.json preview-dist/moolbase-0.6.0-alpha.2-linux-x86_64.spdx.json
+          python3 scripts/package_customer_preview.py "$PWD/preview-dist/moolbase-0.6.0-alpha.2-examples.zip"
+      - name: Publish exact verified prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.6.0-alpha.2 preview-dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease --title "MoolBase v0.6.0-alpha.2 — Developer preview" --notes-file docs/RELEASE_v0.6.0-alpha.2.md

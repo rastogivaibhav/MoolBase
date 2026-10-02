@@ -1,0 +1,272 @@
+[
+  {
+    "id": "incident",
+    "title": "Investigate an outage",
+    "category": "OPERATIONS",
+    "question": "Why is checkout timing out?",
+    "description": "A deployment looks guilty. Duplicate alerts repeat the same signal. Independent traces then point to connection exhaustion.",
+    "when": "Use when an incident agent must preserve competing causes, separate repeated alerts from independent corroboration, and revise an investigation as telemetry arrives.",
+    "alternative": "A simple search retrieves relevant logs; the investigator still has to track independence, contradictions and decision changes.",
+    "hypotheses": [
+      "The new release caused checkout failures",
+      "Database connection exhaustion caused checkout failures"
+    ],
+    "events": [
+      {
+        "id": "deploy-alert",
+        "content": "09:02 \u2014 Checkout timeouts start four minutes after release 4.8.",
+        "family": "deploy-monitor",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "alert-copy",
+        "content": "09:03 \u2014 Pager notification copies the same deployment-monitor alert.",
+        "family": "deploy-monitor",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "release-test",
+        "content": "09:05 \u2014 Replay of the release change reproduces elevated checkout errors.",
+        "family": "release-replay",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "pool-trace",
+        "content": "09:08 \u2014 A separate connection-pool trace shows all 80 connections occupied.",
+        "family": "pool-trace",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "release-refute",
+        "content": "09:10 \u2014 Timeouts persist after a complete release rollback.",
+        "family": "rollback",
+        "target": 0,
+        "kind": "refute",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "db-metric",
+        "content": "09:11 \u2014 Database metrics independently show connection wait queues at saturation.",
+        "family": "database-metrics",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "pool-fix",
+        "content": "09:13 \u2014 Releasing leaked connections restores checkout in a controlled replay.",
+        "family": "connection-intervention",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "bad-test-revoked",
+        "content": "09:15 \u2014 The release replay used the wrong configuration; withdraw it.",
+        "family": "test-audit",
+        "target": 0,
+        "kind": "revoke",
+        "verified": true,
+        "retire": "release-test"
+      }
+    ]
+  },
+  {
+    "id": "memory",
+    "title": "Keep agent memory current",
+    "category": "AGENT MEMORY",
+    "question": "Which fulfilment region should the assistant use?",
+    "description": "A stale EU preference keeps resurfacing. An authenticated update and independent order records support US fulfilment.",
+    "when": "Use when a long-running assistant must retire outdated facts without losing provenance, and recover stored evidence after reopening its database.",
+    "alternative": "Last-write-wins can be enough for a single authoritative preference. MoolBase adds value when several sources disagree and provenance matters.",
+    "hypotheses": [
+      "Use EU fulfilment for this account",
+      "Use US fulfilment for this account"
+    ],
+    "events": [
+      {
+        "id": "old-profile",
+        "content": "March 1 \u2014 Authenticated account profile requests EU fulfilment.",
+        "family": "profile-v1",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "crm-note",
+        "content": "March 2 \u2014 Separate account-manager call confirms the EU preference.",
+        "family": "account-call",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "cached-copy",
+        "content": "March 3 \u2014 A copied CRM summary repeats the old account profile.",
+        "family": "profile-v1",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "profile-update",
+        "content": "April 1 \u2014 Authenticated user changes fulfilment to the US.",
+        "family": "profile-v2",
+        "target": 1,
+        "kind": "supersede",
+        "verified": true,
+        "retire": "old-profile"
+      },
+      {
+        "id": "user-call",
+        "content": "April 2 \u2014 A separate recorded user call confirms the US move.",
+        "family": "move-confirmation",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "order-record",
+        "content": "April 3 \u2014 A verified order is successfully shipped from the US warehouse.",
+        "family": "order-system",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "stale-call-retired",
+        "content": "April 4 \u2014 The account manager retires the March call as outdated.",
+        "family": "call-audit",
+        "target": 0,
+        "kind": "revoke",
+        "verified": true,
+        "retire": "crm-note"
+      },
+      {
+        "id": "stale-copy-retired",
+        "content": "April 4 \u2014 The derived CRM cache is also retired explicitly.",
+        "family": "cache-audit",
+        "target": 0,
+        "kind": "revoke",
+        "verified": true,
+        "retire": "cached-copy"
+      }
+    ]
+  },
+  {
+    "id": "conflict",
+    "title": "Challenge conflicting reports",
+    "category": "EVIDENCE REVIEW",
+    "question": "What is the delivery window for part K-42?",
+    "description": "A widely repeated seven-day claim competes with supplier data. Unverified claims remain distinct from certified observations.",
+    "when": "Use when a research or procurement agent must retain conflicting claims, show unresolved uncertainty, and reconsider its answer after source corrections.",
+    "alternative": "A source list shows where claims came from. It does not automatically group copied sources or emit a governed revision receipt.",
+    "hypotheses": [
+      "Part K-42 ships within 7 days",
+      "Part K-42 requires 21 days"
+    ],
+    "events": [
+      {
+        "id": "supplier-page",
+        "content": "May 1 \u2014 A verified supplier catalogue lists a seven-day lead time.",
+        "family": "catalogue",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "page-copy",
+        "content": "May 2 \u2014 A distributor republishes the same catalogue statement.",
+        "family": "catalogue",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "sales-call",
+        "content": "May 3 \u2014 An independent verified sales call quotes seven days.",
+        "family": "sales-call",
+        "target": 0,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "forum-claim",
+        "content": "May 4 \u2014 An unverified forum post claims a 21-day backlog.",
+        "family": "forum",
+        "target": 1,
+        "kind": "support",
+        "verified": false,
+        "retire": ""
+      },
+      {
+        "id": "supplier-correction",
+        "content": "May 5 \u2014 Supplier issues a signed correction: the catalogue is outdated.",
+        "family": "signed-correction",
+        "target": 0,
+        "kind": "refute",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "production-plan",
+        "content": "May 6 \u2014 A verified production schedule shows a 21-day backlog.",
+        "family": "production-plan",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "warehouse-audit",
+        "content": "May 7 \u2014 An independent warehouse audit confirms no immediate stock.",
+        "family": "warehouse-audit",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "order-ack",
+        "content": "May 8 \u2014 A signed order acknowledgement confirms delivery in 21 days.",
+        "family": "order-ack",
+        "target": 1,
+        "kind": "support",
+        "verified": true,
+        "retire": ""
+      },
+      {
+        "id": "catalogue-retired",
+        "content": "May 9 \u2014 Supplier withdraws the old catalogue entry.",
+        "family": "catalogue-audit",
+        "target": 0,
+        "kind": "revoke",
+        "verified": true,
+        "retire": "supplier-page"
+      }
+    ]
+  }
+]

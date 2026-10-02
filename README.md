@@ -6,7 +6,7 @@ MoolBase keeps observations, competing explanations and an inspectable record of
 
 **Start:** [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (currently access-controlled) · [Runnable Python examples](https://github.com/rastogivaibhav/graphenedb_v1/tree/demo/moolbase-developer-onboarding/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
 
-The newcomer examples use `demo/moolbase-developer-onboarding`. This default branch also contains frozen research experiments; clone the documented example branch for the customer workflows.
+This developer preview is `v0.6.0-alpha.2`. The newcomer examples use `demo/moolbase-developer-onboarding`. This default branch also contains frozen research experiments; clone the documented example branch for the customer workflows.
 
 [![CI](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/ci.yml)
 [![Alpha release gate](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/graphenedb_v1/actions/workflows/alpha-release-gate.yml)
