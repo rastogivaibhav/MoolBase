@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <charconv>
+#include <algorithm>
 #include <memory>
 #include <sstream>
 using namespace graphene;
@@ -15,6 +17,9 @@ std::string directory = "/moolbase-demo";
 DBOptions db_options;
 RuntimeOptions options;
 uint32_t targets[2];
+uint32_t next_node_id = 3;
+constexpr size_t max_active_evidence = 100;
+constexpr size_t max_evidence_events = 200;
 const uint64_t signature = signature_for(21,34);
 struct Evidence { uint32_t node; int target; std::string content, family, kind, state; bool verified; };
 std::map<std::string,Evidence> records;
@@ -56,6 +61,8 @@ std::string evaluate() {
     << ",\"snapshot\":" << r.receipt.snapshot_version
     << ",\"visitedStates\":" << r.final_bundle.visited_states
     << ",\"truncated\":" << (r.final_bundle.truncated?"true":"false")
+    << ",\"capacity\":{\"active\":" << std::count_if(records.begin(), records.end(), [](const auto& entry) {return entry.second.state == "active";})
+    << ",\"events\":" << records.size() << ",\"maxActive\":" << max_active_evidence << ",\"maxEvents\":" << max_evidence_events << "}"
     << ",\"targets\":[";
   for(int i=0;i<2;i++) {
     if(i) o << ','; auto n=db->get_node(targets[i]);
@@ -107,10 +114,11 @@ const char* demo_reset(const char* first,const char* second) {
   check(db->put_node(node("reserved-null-sentinel",{0,-1,0}),&sentinel));
   check(db->put_node(node(first,{1,0,0},true),&targets[0]));
   check(db->put_node(node(second,{-1,0,0},true),&targets[1]));
+  next_node_id=std::max(targets[0],targets[1])+1;
   options=RuntimeOptions{};options.dialectic.mode=QueryMode::Empirical;
-  options.dialectic.semantic_candidates=32;options.dialectic.max_hops=2;
-  options.dialectic.max_paths=128;options.dialectic.max_paths_per_root=64;
-  options.dialectic.max_visited_states=4096;options.dialectic.minimum_confidence=.10;
+  options.dialectic.semantic_candidates=1024;options.dialectic.max_hops=2;
+  options.dialectic.max_paths=1024;options.dialectic.max_paths_per_root=512;
+  options.dialectic.max_visited_states=32768;options.dialectic.minimum_confidence=.10;
   options.dialectic.reexpansion_threshold=.25;options.max_recursive_cycles=2;
   options.update_model_world=false;options.enable_opposition_research=true; options.path_verifier=&verifier;
   return evaluate();
@@ -120,28 +128,46 @@ const char* demo_add(const char* id,const char* content,const char* family,int t
  return guarded([&] {
   if(!db||!db->is_open())throw std::runtime_error("start a scenario first");
   std::string key=id,text=content,fam=family,action=kind,old=retire;
-  if(key.empty()||key.size()>80||text.empty()||text.size()>1000||fam.empty()||fam.size()>80||target<0||target>1||records.size()>=100)throw std::runtime_error("invalid or excessive evidence");
+  if(key.empty()||key.size()>80||text.empty()||text.size()>1000||fam.empty()||fam.size()>80||target<0||target>1)throw std::runtime_error("invalid or excessive evidence");
+  auto blank=[](const std::string& value){return value.find_first_not_of(" \t\r\n") == std::string::npos;};
+  if(blank(key)||blank(text)||blank(fam))throw std::runtime_error("evidence fields must not be blank");
+  if(records.size()>=max_evidence_events)throw std::runtime_error("Session history limit reached (200 events). Download your receipt and reset.");
   if(records.count(key))throw std::runtime_error("evidence ID already exists");
   if(action!="support"&&action!="refute"&&action!="revoke"&&action!="supersede")throw std::runtime_error("unknown evidence action");
   if((action=="revoke"||action=="supersede")&&(old.empty()||!records.count(old)||records.at(old).state!="active"))throw std::runtime_error("choose active evidence to retire");
   if(action!="revoke"&&action!="supersede"&&!old.empty())throw std::runtime_error("retirement requires revoke or supersede");
+  size_t active=std::count_if(records.begin(), records.end(), [](const auto& entry){return entry.second.state=="active";});
+  const size_t projected=active-(old.empty()?0:1)+(action=="revoke"?0:1);
+  if(projected>max_active_evidence)throw std::runtime_error("Active evidence limit reached (100). Revoke or supersede existing evidence, or reset.");
+  BatchInput batch;
+  uint32_t next=next_node_id;
   if(!old.empty()) {
-    auto& e=records.at(old); check(db->delete_node(e.node)); e.state=action=="revoke"?"revoked":"superseded";
-    // Keep a nonoperative database audit record with original provenance.
-    uint32_t audit; auto a=node(e.content,{0,.95f,0});a.metadata["event_id"]=old;a.metadata["evidence_state"]=e.state;
-    check(db->put_node(a,&audit));EdgeInput edge;edge.from=targets[e.target];edge.to=audit;
-    edge.origin=EdgeOrigin::Observed;edge.role=EdgeRole::Supports;edge.confidence=.9;
-    edge.metadata={{"source_id",old},{"evidence_family_id",e.family},{"evidence_state",e.state}};
-    check(db->put_edge(edge,nullptr));
+    const auto& e=records.at(old);
+    batch.delete_node_ids.push_back(e.node);
+    const std::string retired=action=="revoke"?"revoked":"superseded";
+    auto audit=node(e.content,{0,.95f,0});
+    audit.metadata["event_id"]=old;audit.metadata["evidence_state"]=retired;
+    batch.nodes.push_back(audit);
+    EdgeInput audit_edge;audit_edge.from=targets[e.target];audit_edge.to=next++;
+    audit_edge.origin=EdgeOrigin::Observed;audit_edge.role=EdgeRole::Supports;audit_edge.confidence=.9;
+    audit_edge.metadata={{"source_id",old},{"evidence_family_id",e.family},{"evidence_state",retired}};
+    batch.edges.push_back(audit_edge);
   }
-  uint32_t nid;auto n=node(text,{0,1,0});n.metadata["event_id"]=key;check(db->put_node(n,&nid));
+  const uint32_t nid=next++;
+  auto observation=node(text,{0,1,0});observation.metadata["event_id"]=key;
+  batch.nodes.push_back(observation);
   EdgeInput edge;edge.from=targets[target];edge.to=nid;edge.origin=EdgeOrigin::Observed;
   edge.role=action=="refute"?EdgeRole::Contradicts:EdgeRole::Supports;edge.confidence=action=="refute"?.95:.9;
   const std::string state=action=="revoke"?"audit_only":"active";
   edge.metadata={{"source_id",key},{"evidence_family_id","family:"+fam},{"event_kind",action},{"evidence_state",state}};
   if(verified)edge.metadata["semantic_verification"]="verified";
   if(action=="refute")edge.metadata["material"]="true";
-  check(db->put_edge(edge,nullptr));records[key]={nid,target,text,"family:"+fam,action,state,verified!=0};
+  batch.edges.push_back(edge);
+  check(db->put_batch(batch));
+  // No adapter state advances until the entire WAL transaction succeeds.
+  next_node_id=next;
+  if(!old.empty())records.at(old).state=action=="revoke"?"revoked":"superseded";
+  records[key]={nid,target,text,"family:"+fam,action,state,verified!=0};
   return evaluate();
  });
 }
@@ -149,15 +175,30 @@ const char* demo_reopen() {return guarded([] {if(!db)throw std::runtime_error("n
 }
 #ifndef __EMSCRIPTEN__
 int main(int argc,char**argv) {
- if(argc!=5){std::cerr<<"usage: customer_showcase NEW_DB_DIR events.tsv hypothesis1 hypothesis2\n";return 2;}
- directory=argv[1]; if(fs::exists(directory)){std::cerr<<"Use a new database directory; existing directories are never overwritten by this CLI.\n";return 2;}
- std::cout<<demo_reset(argv[3],argv[4])<<'\n';std::ifstream f(argv[2]);if(!f)return 2;
- std::string line;
- while(std::getline(f,line)) { std::vector<std::string> v;std::stringstream s(line);std::string part;while(std::getline(s,part,'\t'))v.push_back(part);while(v.size()<8)v.emplace_back();
-   if(v.size()!=8)return 2;
-   std::cout<<demo_add(v[0].c_str(),v[1].c_str(),v[2].c_str(),std::stoi(v[3]),v[4].c_str(),std::stoi(v[5]),v[6].c_str())<<'\n';
-   if(response.find("\"ok\":false")!=std::string::npos)return 1;
- }
- std::cout<<demo_reopen()<<'\n';check(db->close());return 0;
+ try {
+  if(argc!=5){std::cerr<<"usage: customer_showcase NEW_DB_DIR events.tsv hypothesis1 hypothesis2\n";return 2;}
+  directory=argv[1];
+  if(fs::exists(directory))throw std::runtime_error("Use a new database directory; existing directories are never overwritten by this CLI.");
+  std::ifstream file(argv[2]);if(!file)throw std::runtime_error("cannot open events TSV");
+  std::vector<std::vector<std::string>> rows;
+  std::string line;size_t line_number=0;
+  auto integer=[](const std::string& text){int value=0;const auto r=std::from_chars(text.data(),text.data()+text.size(),value);if(r.ec!=std::errc{}||r.ptr!=text.data()+text.size())throw std::runtime_error("expected a complete integer");return value;};
+  while(std::getline(file,line)) {
+   ++line_number;if(!line.empty()&&line.back()=='\r')line.pop_back();
+   std::vector<std::string> fields;size_t from=0;
+   for(size_t to; (to=line.find('\t',from))!=std::string::npos;from=to+1)fields.push_back(line.substr(from,to-from));
+   fields.push_back(line.substr(from));
+   try {
+    if(fields.size()!=7&&fields.size()!=8)throw std::runtime_error("expected 7 fields and an optional reserved empty column");
+    if(fields.size()==8&&!fields[7].empty())throw std::runtime_error("reserved column must be empty");
+    const int target=integer(fields[3]),certificate=integer(fields[5]);
+    if(target<0||target>1||certificate<0||certificate>1)throw std::runtime_error("target and certificate must be 0 or 1");
+   }catch(const std::exception& e){throw std::runtime_error("row "+std::to_string(line_number)+": "+e.what());}
+   rows.push_back(std::move(fields));
+  }
+  std::cout<<demo_reset(argv[3],argv[4])<<'\n';if(response.find("\"ok\":false")!=std::string::npos)return 1;
+  for(size_t i=0;i<rows.size();++i){const auto& v=rows[i];std::cout<<demo_add(v[0].c_str(),v[1].c_str(),v[2].c_str(),integer(v[3]),v[4].c_str(),integer(v[5]),v[6].c_str())<<'\n';if(response.find("\"ok\":false")!=std::string::npos){std::cerr<<"row "<<i+1<<": operation rejected\n";return 1;}}
+  std::cout<<demo_reopen()<<'\n';if(response.find("\"ok\":false")!=std::string::npos)return 1;check(db->close());return 0;
+ }catch(const std::exception& e){std::cerr<<"customer_showcase: "<<e.what()<<'\n';return 2;}
 }
 #endif

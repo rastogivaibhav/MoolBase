@@ -58,3 +58,32 @@ bash examples/customer_showcase/build_wasm.sh /absolute/output/directory
 ```
 
 The output includes `moolbase.js` and `moolbase.wasm`. Serve them over HTTP with the Site's `worker.js`, `app.js`, `scenarios.json`, HTML and CSS. The downloadable code bundle contains the adapter, fixtures, complete database source, license and a minimal CMake build. It runs independently after extraction; the linked repository includes the wider product and validation history.
+
+### Lifecycle and bounded sessions
+
+The Evidence Lab permits 100 active observations and 200 total evidence events.
+Revocation and supersession remain available at the active limit. At the history
+limit, download the receipt and reset. Retrieval budgets cover every node and
+path within these limits, including audit records, so duplicate volume cannot
+hide a later contradiction. Evidence retirement, its audit record and the
+replacement are committed together through `BatchInput::delete_node_ids` and
+`put_batch`. Failed WAL commits leave both storage and adapter state unchanged.
+This extends the C++ batch API using existing WAL records; it does not change
+the durable storage format.
+
+The worker rejects malformed types, embedded NULs and excessive UTF-8 byte
+lengths before calling the engine. CLI numeric fields use complete, bounded
+integer parsing; malformed rows exit 2 with a row number before database writes.
+
+Run browser regressions with Playwright and Chromium:
+
+```sh
+npm install playwright@1.51.1
+npx playwright install chromium
+node examples/customer_showcase/verify_playwright.mjs /absolute/path/to/site/dist
+python3 examples/customer_showcase/verify_cli.py build-evaluator/moolbase_customer_showcase
+```
+
+The Playwright script serves the supplied site assets locally, exercises desktop
+and mobile flows, validates real worker inputs and capacity limits, and injects
+failed and partial WAL writes into the actual compiled engine.

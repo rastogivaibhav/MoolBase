@@ -250,6 +250,8 @@ struct SearchResult {
 struct BatchInput {
   std::vector<NodeInput> nodes;
   std::vector<EdgeInput> edges;
+  // Existing nodes retired in the same WAL transaction as inserted records.
+  std::vector<uint32_t> delete_node_ids;
 };
 
 struct BatchResult {
