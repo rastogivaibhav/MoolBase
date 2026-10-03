@@ -72,7 +72,7 @@ No hosted model or API key is required.
 ## Primary links
 
 - Repository: https://github.com/rastogivaibhav/MoolBase
-- Evidence Lab: https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+- Evidence Lab: https://moolbase.rasvai.com
 - Developer preview: https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2
 - Canonical article: ../articles/agent-memory-is-not-enough.md
 - Independent reproduction: ../INDEPENDENT_REPRODUCTION.md
@@ -136,7 +136,7 @@ I would especially value engineers trying to break the assumptions rather than s
 
 Repository: https://github.com/rastogivaibhav/MoolBase
 
-Evidence Lab: https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+Evidence Lab: https://moolbase.rasvai.com
 
 If duplicate evidence can manufacture confidence, contradiction disappears, or a belief changes without an explainable receipt, I want to know.
 
@@ -168,7 +168,7 @@ Repo:
 https://github.com/rastogivaibhav/MoolBase
 
 Evidence Lab:
-https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+https://moolbase.rasvai.com
 
 The current flagship proof is deterministic and does not require an LLM/API key:
 
@@ -212,7 +212,7 @@ Repo:
 https://github.com/rastogivaibhav/MoolBase
 
 Public Evidence Lab:
-https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+https://moolbase.rasvai.com
 
 There is also a deterministic flagship proof that runs without an LLM/API key.
 
@@ -274,7 +274,7 @@ I am explicitly looking for counterexamples and failure cases.
 ### Post 5
 
 Public Evidence Lab:
-https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+https://moolbase.rasvai.com
 
 If you can make it silently promote a claim, lose contradiction, fabricate independence or drift a receipt without explanation, please open an issue.
 
@@ -290,7 +290,7 @@ I am not looking for a promotional endorsement. I would value a technical counte
 
 Repo: https://github.com/rastogivaibhav/MoolBase
 
-Evidence Lab: https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+Evidence Lab: https://moolbase.rasvai.com
 
 ## Distribution rules
 
@@ -307,8 +307,8 @@ Evidence Lab: https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
 ### Days 0–2 — launch surface
 
 - merge the corrected public proof/reproduction path;
-- fix GitHub repository description/homepage/topics;
-- fix the published v0.6.0-alpha.2 release body clone command;
+- [x] GitHub repository description and homepage corrected; topics are partially aligned and remaining owner settings are tracked in #43;
+- [x] published v0.6.0-alpha.2 release body clone command corrected;
 - verify the README, article, Evidence Lab and reproduction issue all point to the same newcomer path;
 - publish the canonical article.
 
