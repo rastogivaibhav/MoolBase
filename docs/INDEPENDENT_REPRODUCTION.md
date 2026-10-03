@@ -1,22 +1,22 @@
-# Independent flagship reproduction
+# Independent MoolBase reproduction
 
-This is the shortest external path for testing the current GrapheneDB epistemic thesis.
+This is the shortest external path for testing the current MoolBase flagship mechanism.
 
-You do **not** need to read the GrapheneDB, HypoKosh or DWM papers first.
+You do **not** need to read the historical GrapheneDB, HypoKosh or DWM papers first.
 
 ## What this exercises
 
-The reproduction pack runs the canonical flagship proof plus five pre-registered attacks against:
+The current flagship proof checks a bounded set of mechanisms:
 
-- evidence-family de-correlation;
-- preservation of competing hypotheses;
-- contradiction-aware non-convergence;
-- bounded reopen/recovery;
-- ingestion-order stability;
-- explicit search-budget exhaustion;
-- deterministic mechanism receipts.
+- correlated paths must not fabricate independent corroboration;
+- competing hypotheses remain visible without being mislabeled as material opposition;
+- material contradiction can block final resolution;
+- a dialectical challenge can request bounded reopen/re-expansion;
+- missing-hop recovery expands the declared depth frontier rather than silently widening another search dimension;
+- discriminating evidence can change the governed evidence state;
+- the mechanism receipt remains deterministic for the frozen scenario.
 
-GrapheneDB is the durable epistemic substrate. HypoKosh is the competing-hypothesis/recovery runtime. DWM is the bounded challenge/reopen/synthesis loop.
+The public product name is **MoolBase**. Historical implementation identifiers such as GrapheneDB, HypoKosh and DWM remain visible in APIs, binaries and research artifacts for compatibility.
 
 ## Prerequisites
 
@@ -29,90 +29,77 @@ No model API key, hosted LLM or external service is required after cloning the r
 
 ## One-command reproduction
 
-```bash
+~~~bash
 git clone https://github.com/rastogivaibhav/MoolBase.git
 cd MoolBase
-python3 scripts/run_flagship_perturbations_v1.py
-```
+python3 scripts/run_flagship_proof.py
+~~~
 
-The perturbation runner first rebuilds and replays the canonical flagship. It refuses to interpret the attacks if the frozen flagship mechanism receipt has drifted.
+The runner builds the canonical demo, executes it, validates the current contract and writes a deterministic receipt.
 
-## Expected canonical flagship mechanism receipt
+## Expected canonical mechanism receipt
 
-```text
-36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef
-```
+~~~text
+12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89
+~~~
 
-## Expected perturbation mechanism receipts
-
-```text
-P1 f5e8579270e4325fb063aa60b0cad673d107979d6a8ca38ac8d52450e1d073f1
-P2 bcc9a100e2bc07ce883639bb4dfba195ce8644c9f11bcb673a560e4550b9bcfd
-P3 44fc5802e023c0c5d354e2dfc0c554a68e952648f24d559a71aa7f3c4ed405bd
-P4 3dffe6e7bb944f6575b32a10e042eae728ad9cb0a51d27be05609b544f9cbfa1
-P5 8d66770b62342b816d74dbad9dbfa532609ad0be3aaba173cdb8f90940d2f9ac
-```
-
-Mechanism hashes exclude the current commit identity. Each receipt records a separate provenance hash that binds the observed mechanism result to the tested source commit.
+The mechanism hash excludes the current commit identity. A separate provenance hash binds the observed mechanism result to the exact source commit used for the run.
 
 ## Output
 
 The command writes:
 
-```text
-reports/flagship-perturbations-v1/
-  aggregate.json
-  summary.md
+~~~text
+reports/flagship-proof/
+  receipt.json
+  scenario_manifest.json
   raw_output.txt
-  canonical-baseline/
-  receipts/
-    P1.json
-    P2.json
-    P3.json
-    P4.json
-    P5.json
-```
+  summary.md
+~~~
 
-A red run is useful evidence. The runner writes all available receipts before returning failure for a contract violation.
+A mismatch is useful evidence. The runner fails closed if the current mechanism receipt differs from the canonical receipt.
 
-## What the attacks mean
+## How to try to break it
 
-**P1 — duplicate-family injection**  
-Three graph-distinct support routes from one evidence family must remain one independent family. The system must require external verification/reopen rather than treating duplication as corroboration.
+The most useful external work is not another happy-path replay. Try to falsify the mechanism.
 
-**P2 — decisive-family removal**  
-Removing one of two independent support families must remove sufficient corroboration and restore the external-verification/reopen requirement.
+Useful perturbations include:
 
-**P3 — material contradiction injection**  
-A material contradiction must remain visible and block final resolution.
+1. duplicate a support path while keeping the same evidence family — independent corroboration must not increase;
+2. remove one genuinely independent support family — corroboration must fall rather than remain inflated;
+3. inject material contradiction — final resolution must remain blocked while the contradiction is operative;
+4. reorder deterministic evidence insertion or path presentation — the epistemic result should remain semantically stable;
+5. reduce the permitted search/depth budget — the receipt must expose the changed frontier/stop decision rather than silently widening another dimension.
 
-**P4 — ingestion-order permutation**  
-The same semantic evidence inserted/presented in a different order must produce the same canonical bundle identity and epistemic outcome.
+A bug is especially valuable if one of these causes silent promotion, contradiction loss, fabricated independence, unsupported re-expansion or an unexplained mechanism-receipt change.
 
-**P5 — reduced recovery budget**  
-A one-cycle recovery budget must be visible in the trace. The runtime may stop unresolved, but it must not silently widen another search dimension to manufacture an answer.
+## Historical perturbation packs
+
+The repository contains frozen historical perturbation artifacts, including V1, plus a V3-aligned V2 preregistration.
+
+Do **not** use the historical V1 perturbation runner as the newcomer reproduction command. It intentionally preserves its earlier frozen canonical contract and can reject the current V3-aligned flagship semantics.
+
+Historical failures and older receipts are retained as evidence rather than rewritten.
 
 ## Report an independent reproduction
 
-Use GitHub issue #38 or the **Independent reproduction report** issue template.
-
-Please include:
+Use the **Independent reproduction report** issue template and include:
 
 - operating system;
 - compiler and version;
 - Python version;
 - CMake version;
-- exact commit;
-- canonical flagship hash;
-- P1-P5 hashes/results;
+- exact commit or release;
+- proof / benchmark / protocol name;
+- mechanism receipt hash;
 - whether the instructions worked without assistance;
 - anything confusing or incorrect;
 - any adversarial case that should be added.
 
-Failed reproductions and criticism are explicitly welcome.
+Failed reproductions, null results and criticism are explicitly welcome.
 
 ## Claim boundary
 
-Passing this pack does not establish semantic truth, autonomous scientific discovery, automatic hidden-dependence discovery, durable cross-run DWM belief promotion, general superiority over other systems, or enterprise readiness.
+Passing this proof does not establish semantic truth, autonomous scientific discovery, automatic hidden-dependence discovery, durable cross-run DWM belief promotion, general superiority over other systems, or enterprise readiness.
 
-The programme exit criteria remain governed by issue #25 and require independent usability, outside validation, and independent recognition/adoption in addition to internal evidence.
+It establishes only the bounded mechanisms encoded by the current flagship scenario and runner.

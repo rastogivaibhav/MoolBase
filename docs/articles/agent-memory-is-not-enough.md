@@ -1,20 +1,40 @@
 # Agent Memory Is Not Enough
 
-## Why reasoning agents need evidence, competing hypotheses and belief revision
+## What happens when an agent's evidence changes?
 
-Long-running AI agents are quickly becoming stateful systems.
+Long-running AI agents are becoming stateful systems.
 
-They remember users, retrieve prior conversations, cache plans, build knowledge graphs, keep task history and carry context across sessions. This is important progress. But persistent memory alone does not solve the harder reasoning problem.
+They remember users, retrieve prior conversations, cache plans, maintain knowledge graphs and carry context across sessions. That is useful progress.
 
-A system can remember the wrong thing perfectly.
+But persistent memory does not solve the harder problem.
 
-The deeper question is not only:
+**An agent can remember the wrong thing perfectly.**
 
-> What should the agent remember?
+Consider a simple customer-memory example.
 
-It is also:
+An assistant has evidence that a customer should use **EU fulfilment**. Under the current policy, the evidence is sufficient, so the agent has an operative answer:
 
-> Why should the agent believe it, what evidence supports it, which alternatives remain plausible, and what happens when new evidence contradicts the current state?
+> Use EU fulfilment.
+
+Later, a corrected profile supersedes the original preference.
+
+A conventional memory implementation might simply overwrite the old value with the new value. Another might retrieve both values and ask the model to decide which one looks newer.
+
+MoolBase takes a different approach.
+
+The old commitment is cleared first.
+
+For a period, the correct answer is:
+
+> No operative answer yet.
+
+Then independent evidence supporting **US fulfilment** arrives, known stale derived copies are retired, and the system can resolve again:
+
+> Use US fulfilment.
+
+The important output is not only that the answer changed.
+
+It is that the system can show **why it changed, which evidence counted, which evidence did not count independently, what was superseded, and when the previous commitment stopped being justified**.
 
 That is the problem MoolBase is designed to explore.
 
@@ -22,21 +42,15 @@ That is the problem MoolBase is designed to explore.
 
 ## Memory retrieval and belief state are different problems
 
-A conventional memory system usually optimizes some combination of:
+A conventional memory system usually optimizes some combination of storage, semantic similarity, recency, importance, graph connectivity, summarization and retrieval relevance.
 
-- storage;
-- semantic similarity;
-- recency;
-- importance;
-- graph connectivity;
-- summarization;
-- retrieval relevance.
+Those are useful capabilities.
 
-Those are useful capabilities. But a reasoning agent also needs to understand the **epistemic status** of what it retrieves.
+But a long-running reasoning agent also needs to understand the **epistemic status** of what it retrieves.
 
 Imagine three documents all support the same claim.
 
-That may look like three independent pieces of evidence.
+That may look like three pieces of evidence.
 
 But what if all three copied the same original source?
 
@@ -44,43 +58,36 @@ Counting them independently creates false confidence.
 
 Or imagine one hypothesis currently has more support than another.
 
-Should the system delete the weaker hypothesis?
+Should the system erase the weaker hypothesis?
 
 Not necessarily.
 
-The weaker explanation might become the correct one when late evidence arrives.
+The weaker explanation may become the correct one when late evidence arrives.
 
-A useful persistent reasoning system therefore needs more than retrieval. It needs to preserve the structure of how belief was earned.
+Persistent agent state therefore needs more than retrieval. It needs to preserve how a belief was earned.
 
 ---
 
-## The four states a reasoning system should not collapse together
+## Four things an agent should not collapse into one memory
 
-A practical agent often needs to distinguish at least four things:
+A practical system often needs to distinguish:
 
 1. **Evidence** — observations, documents, events or claims with provenance.
 2. **Hypotheses** — competing explanations of that evidence.
-3. **Decisions** — the best governed action or belief given the current evidence.
-4. **Revisions** — the reason a previous decision was reopened or changed.
+3. **Decisions** — the current governed action or belief.
+4. **Revisions** — why a previous decision was reopened or changed.
 
-When these are stored as one undifferentiated "memory", important information disappears.
+When these are stored as one undifferentiated memory, important information disappears.
 
 A summary such as:
 
-> "Vendor A caused the outage."
+> Vendor A caused the outage.
 
-may be useful operationally.
+may be operationally convenient.
 
-But it does not tell us:
+But it does not tell us whether Vendor A was one of several plausible causes, whether its supporting alerts came from independent sources, whether contradictory evidence existed, whether the conclusion was provisional, whether it was later reopened, or what new evidence caused the revision.
 
-- whether Vendor A was one of several hypotheses;
-- whether the supporting events came from independent sources;
-- whether contradictory evidence existed;
-- whether the conclusion was provisional;
-- whether the conclusion was later revised;
-- why the revision happened.
-
-That missing structure matters for agents expected to operate autonomously over time.
+For agents expected to operate over hours, days or months, that missing structure matters.
 
 ---
 
@@ -88,130 +95,121 @@ That missing structure matters for agents expected to operate autonomously over 
 
 MoolBase treats persistent reasoning state as a data-system concern.
 
-```mermaid
+~~~mermaid
 flowchart LR
-    E[Evidence + provenance] --> M[MoolBase]
-    M --> H{Hypothesis Engine}
-    H -->|alternative 1| D[Dialectic Engine]
-    H -->|alternative 2| D
-    D -->|challenge / reopen| M
-    D --> R[Decision or revision]
-    R --> P[Epistemic receipt]
-    N[New evidence] --> M
-```
+    E["Evidence + provenance"] --> M["MoolBase persistent state"]
+    M --> H["Competing hypotheses"]
+    H --> D["Governed decision / abstention"]
+    D --> C["Challenge / contradiction"]
+    C --> Q{"Reopen needed?"}
+    Q -->|Yes| X["Targeted evidence expansion"]
+    X --> M
+    Q -->|No| R["Terminal governed state"]
+    R --> P["Inspectable receipt"]
+    N["New evidence"] --> M
+~~~
 
-The public architecture is intentionally simple:
+The public developer story is intentionally narrower than the entire research programme:
 
-- **MoolBase** stores persistent evidence, provenance and epistemic state.
-- **Hypothesis Engine** keeps plausible alternatives alive and competes them.
-- **Dialectic Engine** challenges the current state, reopens evidence when justified, and supports governed revision.
-- **Epistemic receipts** make the decision process inspectable after the fact.
+- **MoolBase** persists evidence, provenance and epistemic state.
+- Optional reasoning layers preserve alternatives and challenge the current state.
+- Contradiction can block a final commitment.
+- New evidence can reopen a previous decision.
+- A compact receipt makes the resulting state inspectable after the fact.
 
-The historical implementation lineage is GrapheneDB, HypoKosh and Dialectical Model Worlds (DWM).
-
----
-
-## Why competing hypotheses matter
-
-Premature convergence is one of the easiest ways for an agent to become confidently wrong.
-
-Suppose an operations agent observes:
-
-- latency increased after a deployment;
-- an application error rate also increased;
-- a downstream service shows intermittent failures.
-
-A simplistic system may choose:
-
-> The deployment caused the incident.
-
-That may be reasonable.
-
-But the downstream service remains a plausible alternative.
-
-If the system deletes that alternative after choosing the deployment hypothesis, it has made later correction harder.
-
-The better pattern is:
-
-```text
-H1: deployment regression
-H2: downstream dependency failure
-H3: shared infrastructure issue
-```
-
-The system can still act on H1 if the evidence justifies it. The important point is that choosing an action does not require pretending uncertainty has disappeared.
-
-This separation between **decision** and **belief certainty** is central to MoolBase.
+Historical implementation identifiers such as GrapheneDB, HypoKosh and DWM remain visible for compatibility.
 
 ---
 
-## Why provenance matters
+## Copies do not become independent corroboration
 
-Provenance is not only an audit feature.
+One of the easiest ways for an agent to become confidently wrong is to count repeated evidence as independent confirmation.
 
-It directly changes reasoning quality.
+Suppose an incident agent sees:
 
-If five alerts originate from the same underlying telemetry event, they should not necessarily count as five independent confirmations.
+~~~text
+Alert A: dependency X is failing
+Alert B: dependency X is failing
+Alert C: dependency X is failing
+~~~
 
-Likewise:
+Three alerts sound stronger than one.
 
-- copied reports;
-- derivative summaries;
-- mirrored data feeds;
-- multiple agents quoting the same source
+But if B and C are derivative copies of A, the independent evidence count may still be one.
 
-can produce an illusion of consensus.
+The public MoolBase Evidence Lab deliberately demonstrates this.
 
-MoolBase tracks source, evidence-family and derivation lineage so correlated support can remain visible rather than silently inflating confidence.
+A second graph-distinct alert can arrive while the number of independent evidence families stays:
+
+~~~text
+1 -> 1
+~~~
+
+Different wording or another event identifier does not make the underlying source independent.
+
+That is why provenance is not merely an audit feature. It changes how much support the system should assign to a claim.
 
 ---
 
-## Why contradiction should be persistent
+## Contradiction should be persistent state
 
-Many AI systems treat contradiction as a prompt-level inconvenience.
+Many AI systems treat contradiction as something the prompt should resolve.
 
 A persistent reasoning substrate should treat contradiction as state.
 
-Consider:
+For example:
 
-```text
+~~~text
 09:00  Evidence supports H1
-09:05  H1 becomes provisional decision
-09:12  New evidence contradicts H1
-09:13  H2 gains support
-09:14  Previous decision is reopened
-09:16  H2 becomes the supported world state
-```
+09:05  H1 becomes the current decision
+09:12  New evidence materially opposes H1
+09:13  Final resolution is blocked
+09:14  Targeted evidence is reopened
+09:16  Discriminating evidence changes the governed state
+~~~
 
 The useful artifact is not only the final answer.
 
-The useful artifact is the entire revision path.
+The useful artifact is the revision path.
 
-That path lets another engineer, agent or auditor understand:
-
-- what changed;
-- what new evidence mattered;
-- which earlier assumptions were invalidated;
-- whether the system reopened for a legitimate reason;
-- whether a previous decision was silently overwritten.
+That lets another engineer, agent or auditor understand what changed, what new evidence mattered, whether the contradiction was material, whether reopening was justified, and whether the system silently overwrote its previous state.
 
 ---
 
-## Decision provenance is different from chain-of-thought
+## A supported alternative is not automatically opposition
+
+This sounds subtle, but it matters.
+
+Suppose H1 is currently stronger and H2 remains a plausible alternative.
+
+The existence of H2 should not automatically be treated as a dialectical attack on H1.
+
+The current MoolBase flagship contract separates:
+
+- **insufficient corroboration**, which can require further evidence; from
+- **material opposition**, which can trigger a dialectical challenge and reopen.
+
+That distinction prevents a system from manufacturing conflict merely because another supported path exists.
+
+It also makes the receipt more meaningful: a challenge means actual material opposition was present, not simply that the system had more than one idea.
+
+---
+
+## Decision provenance is not chain-of-thought
 
 MoolBase is not intended to persist private model chain-of-thought.
 
-The goal is to persist **machine-readable decision provenance**:
+The goal is machine-readable decision provenance:
 
 - evidence references;
-- source lineage;
-- hypothesis state;
+- source and derivation lineage;
+- competing-hypothesis state;
 - contradiction state;
 - governed status;
 - selected paths;
 - residual uncertainty;
 - revision events;
-- stable receipts.
+- deterministic receipts.
 
 That is a different abstraction.
 
@@ -219,72 +217,81 @@ It is closer to a durable transaction record for belief change than a transcript
 
 ---
 
-## A concrete failure pattern
+## Try the actual customer-memory correction
 
-The scenario MoolBase is trying to make observable looks like this:
+The fastest way to understand the project is the public Evidence Lab:
 
-```text
-Initial evidence
-      ↓
-H1 appears strongest
-      ↓
-provisional decision
-      ↓
-H2 remains plausible
-      ↓
-new contradictory evidence
-      ↓
-reopen
-      ↓
-additional targeted evidence
-      ↓
-belief revision
-      ↓
-receipt showing what changed and why
-```
+https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
 
-A memory system can store every individual step.
+The customer-memory scenario shows:
 
-An epistemic database should also preserve their **relationship**.
+~~~text
+EU fulfilment resolved
+        |
+corrected profile supersedes old preference
+        |
+no operative answer
+        |
+independent US support arrives
+        |
+known stale copies are retired
+        |
+US fulfilment resolved
+~~~
+
+The Lab runs the actual C++ database/reasoning engine in a browser worker. The browser session is local and disposable; the released native examples persist evidence on disk.
+
+You can also reproduce the released workflow from the versioned examples in **v0.6.0-alpha.2**.
 
 ---
 
-## What MoolBase is not
+## Reproduce the current flagship mechanism
 
-MoolBase is not intended to claim that:
+The project asks developers to test the mechanism rather than trust the positioning.
 
-- structural consistency equals semantic truth;
-- every decision can be made deterministic;
-- a graph database automatically solves reasoning;
-- persistent memory eliminates hallucination;
-- one benchmark proves universal superiority.
+From a clean checkout:
 
-The current system is an experimental developer alpha.
+~~~bash
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
+python3 scripts/run_flagship_proof.py
+~~~
 
-Its scientific programme is explicitly testing whether the architecture improves:
+No hosted model or API key is required.
 
-1. truth acquisition;
-2. resistance to false convergence;
-3. explainable revision of belief.
+Expected current mechanism receipt:
 
-The current architecture-ablation work separates:
+~~~text
+12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89
+~~~
 
-```text
-B0  baseline
-G0  MoolBase persistence
-G1  + Hypothesis Engine
-G2  + Dialectic Engine
-```
+The most useful next step is not another internal benchmark.
 
-The score-bearing evaluation remains locked until those production execution boundaries are cleanly implemented and reproduced in UNSCORED runs.
+It is an external developer trying to break the assumptions.
+
+Try duplicate evidence. Remove a decisive independent family. Inject contradiction. Reorder deterministic input. Restrict the search budget.
+
+If the system silently promotes a claim, loses contradiction, fabricates independence or changes its receipt without explanation, that is useful evidence.
+
+See the [independent reproduction guide](../INDEPENDENT_REPRODUCTION.md).
+
+---
+
+## What MoolBase is not claiming
+
+MoolBase does not claim that structural consistency equals semantic truth, that a database can authenticate the real-world truth of its inputs, that every agent decision should be deterministic, that persistent memory eliminates hallucination, that one benchmark proves universal superiority, or that the current developer preview is enterprise GA.
+
+The claim is narrower:
+
+**when an application supplies evidence and provenance, MoolBase provides persistent structures for evidence state, competing explanations, contradiction, revision and inspectable receipts.**
+
+That is the claim the public examples and flagship proof are meant to make testable.
 
 ---
 
 ## Why this may matter for agent infrastructure
 
-As AI agents become longer-lived, the infrastructure question changes.
-
-The early question was:
+The early infrastructure question was:
 
 > How do I give the model context?
 
@@ -304,34 +311,9 @@ Not just retrieval.
 
 Not just chat history.
 
-Persistent evidence. Alternative hypotheses. Provenance. Contradiction. Governed revision.
+Persistent evidence. Provenance. Alternatives. Contradiction. Revision. Receipts.
 
 That is the space MoolBase is exploring.
-
----
-
-## Reproduce the current mechanism
-
-The project intentionally asks people to test the mechanism rather than trust the positioning.
-
-From a clean checkout:
-
-```bash
-git clone https://github.com/rastogivaibhav/MoolBase.git
-cd MoolBase
-python3 scripts/run_flagship_perturbations_v1.py
-```
-
-No hosted model or API key is required.
-
-See:
-
-- [README](../../README.md)
-- [Independent reproduction guide](../INDEPENDENT_REPRODUCTION.md)
-- [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/issues/25)
-- [Public reproduction request](https://github.com/rastogivaibhav/MoolBase/issues/38)
-
-The most useful external contribution right now is a reproduction, counterexample, failure case or criticism.
 
 ---
 
