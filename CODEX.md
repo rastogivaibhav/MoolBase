@@ -1,15 +1,9 @@
-# Codex Notes
+# MoolBase context for Codex
 
-Use `AGENTS.md` as the primary repository instruction file.
+Use [AGENTS.md](AGENTS.md) as the primary repository instruction file.
 
-GrapheneDB v0.6.0-rc1 is an embedded C++20 causal/physical-lattice database with an optional controlled-pilot HTTP server. Preserve the embedded core as the source of truth. Keep server concurrency, request admission, retry safety, graceful checkpoint shutdown, durable-format compatibility, and reverse-proxy-only deployment constraints intact.
+The supported newcomer release is **MoolBase v0.6.0-alpha.2**, a public developer preview for evaluation and controlled pilots. Start with [Developer quickstart](docs/DEVELOPER_QUICKSTART.md) and [Agent integration](docs/AGENT_INTEGRATION.md); use the release tag for the customer examples. The default branch also carries frozen research work.
 
-The current branch is a **pilot release candidate**, not unrestricted public GA. The default task is validation and stabilization, not new Kosh/dialectic features.
+MoolBase is licensed under Apache-2.0; the licence is not a placeholder. `GrapheneDB`, `graphene`, `GRAPHENEDB_*` and existing CMake/executable names remain compatibility identifiers.
 
-Run:
-
-```bash
-bash scripts/run_pilot_rc1_gate.sh
-```
-
-Before public distribution, complete external 24h/72h soak, actual OCI/SBOM/vulnerability scanning, resolve remaining long-profile performance/harness issues, and replace the placeholder licence.
+Preserve the embedded core, durable formats, bounded server concurrency, retry safety, graceful shutdown and TLS reverse-proxy deployment boundary. Do not claim enterprise GA. Follow the requested maintenance scope rather than restarting old pilot-release or research tasks. Documentation changes need focused documentation checks; implementation changes need appropriate implementation tests.
