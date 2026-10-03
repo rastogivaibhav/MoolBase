@@ -121,17 +121,17 @@ For the research mechanism and its frozen reproduction contract, use a clean che
 ```bash
 git clone https://github.com/rastogivaibhav/MoolBase.git
 cd MoolBase
-python3 scripts/run_flagship_perturbations_v1.py
+python3 scripts/run_flagship_proof.py
 ```
 
-This rebuilds and replays the frozen flagship proof, verifies its canonical mechanism receipt, runs five pre-registered adversarial perturbations and writes machine-readable receipts.
+This builds and replays the current canonical flagship proof, verifies its mechanism receipt, and writes machine-readable reproduction artifacts. The historical V1 perturbation pack remains frozen evidence and is not the newcomer entry point after the V3 semantic correction.
 
 **No hosted model or API key is required.**
 
 Canonical flagship mechanism receipt:
 
 ```text
-36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef
+12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89
 ```
 
 See [Independent flagship reproduction](docs/INDEPENDENT_REPRODUCTION.md) for expected hashes, interpretation, claim boundaries and instructions for submitting an external reproduction or critique.
@@ -267,23 +267,14 @@ The project follows a proof-first programme rather than treating internal CI as 
 
 Current reproducibility includes:
 
-- frozen flagship proof + adversarial perturbations;
+- current flagship proof with deterministic receipt verification;
 - exact-head CI and alpha-release gates;
 - controlled intervention benchmarks;
 - paper/system conformance checks;
 - installable-package consumer tests;
 - distribution integrity, checksums and SPDX 2.3 SBOM generation.
 
-The current scientific programme is implementing an architecture ablation:
-
-```text
-B0  baseline
-G0  MoolBase persistence only
-G1  + Hypothesis Engine
-G2  + Dialectic Engine
-```
-
-The score lock remains closed until the production execution boundaries and clean UNSCORED runs are proven.
+The repository preserves the B0/G0/G1/G2 evaluation lineage and the later V2/V3 research programme. Public launch claims remain deliberately narrower than the full research surface: the released evidence-state workflow, its inspectable receipts, and the reproducible flagship mechanism.
 
 See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/issues/25) for the governing evidence and adoption criteria.
 
@@ -293,7 +284,7 @@ See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/i
 
 **Developer alpha.** Current limitations include:
 
-- G0/G1/G2 production ablation is still being completed;
+- research and historical experiment contracts are more complex than the released developer-preview path;
 - structural stability is not semantic truth;
 - no global asymptotic-stability proof exists for an unbounded model world;
 - generic parsing is bounded and is not general natural-language understanding;
