@@ -97,26 +97,23 @@ This is **not** legal trademark clearance and does not establish registrability 
 
 ## Migration constraints
 
-Until #34 is closed:
-
 1. Do not mass-rename C++ symbols, namespaces, benchmark folders or frozen artifacts.
 2. Do not alter score-bearing benchmark semantics or hashes for naming reasons.
-3. Keep compatibility aliases when source/API renaming eventually begins.
-4. Public documentation may introduce **MoolBase by RASVAI** prospectively once namespace/domain checks are complete.
-5. Repository rename, package publication, SEO push and conference branding remain gated until the final namespace decision.
-6. HypoKosh and DWM remain valid research names in historical and technical material.
+3. Keep compatibility aliases if source/API renaming is introduced later.
+4. New public documentation should lead with **MoolBase by RASVAI** and explain GrapheneDB only as historical/compatibility lineage.
+5. HypoKosh and DWM remain valid research names in historical and technical material.
+6. Formal trademark registration, domain strategy and package-namespace expansion remain separate owner/legal decisions and are not implied by this ADR.
 
-## Exit criteria for the naming migration
+## Completion criteria for the repository naming migration
 
-#34 can close only when:
+The repository-level migration is complete when:
 
-- MoolBase passes a deeper trademark/company/product collision review;
-- primary domain strategy is selected and registered/controlled;
-- GitHub/package namespaces needed for distribution are confirmed;
-- repository description and current docs use one canonical public sentence;
-- migration/compatibility note is published;
-- no frozen scientific artifact was rewritten;
-- broad distribution no longer risks confusion with the existing GrapheneDB service.
+- the GitHub repository and current documentation use MoolBase consistently;
+- current release instructions point to `rastogivaibhav/MoolBase`;
+- a compatibility note preserves GrapheneDB/HypoKosh/DWM lineage;
+- frozen scientific artifacts remain unchanged.
+
+Formal trademark/domain clearance is tracked separately and is not a prerequisite for preserving historical scientific names.
 
 ## Consequences
 
