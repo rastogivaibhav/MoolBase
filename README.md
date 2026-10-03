@@ -28,7 +28,7 @@ MoolBase is built around the harder question:
 
 **Status:** released developer preview for evaluation and controlled pilots. Not enterprise GA and not a semantic truth engine.
 
-> **Naming:** MoolBase is the provisional public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names during migration. The `GrapheneDB` CMake package, `GrapheneDB::graphenedb` target and existing executable names remain supported. See [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
+> **Naming:** **MoolBase** is the selected public product identity for the system historically developed as **GrapheneDB**. Existing APIs, benchmark hashes, receipts, papers and implementation identifiers retain their historical names for compatibility and scientific provenance. The `GrapheneDB` CMake package, `GrapheneDB::graphenedb` target and existing executable names remain supported. This naming decision does not imply trademark registration or formal legal clearance; see [ADR-0001](docs/adr/0001-moolbase-public-product-identity.md).
 
 **Explore further:** [Run the proof](#run-the-proof) · [Architecture](#architecture) · [Developer interaction levels](#developer-interaction-levels) · [Build](#build-from-source) · [Docs](#documentation) · [Contribute](#contribute-or-challenge-it)
 
@@ -290,7 +290,7 @@ See [MoolBase Lab & Market Program](https://github.com/rastogivaibhav/MoolBase/i
 - generic parsing is bounded and is not general natural-language understanding;
 - public API surfaces still need further consolidation;
 - long-duration production-hardware soak remains open;
-- MoolBase domain/package migration is not final;
+- historical `GrapheneDB` API/package names intentionally remain supported for compatibility;
 - independent reproductions and adopters are still required before GA claims.
 
 ---
