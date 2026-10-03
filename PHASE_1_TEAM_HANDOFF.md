@@ -1,5 +1,7 @@
 # Phase 1 Pilot Team Handoff
 
+> **Historical pilot guidance (August 2026).** This document preserves the v0.6.0-rc1 Phase 1 workflow. Current newcomers should start with [Developer quickstart](docs/DEVELOPER_QUICKSTART.md) and the [MoolBase Evidence Lab](https://moolbase.rasvai.com).
+
 **GrapheneDB v0.6.0-rc1** — Developer Preview for Controlled Testing
 
 ---
@@ -8,8 +10,8 @@
 
 ```bash
 # Clone and build
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 ./scripts/build.sh  # or PowerShell on Windows
 
 # Create a test database
@@ -119,7 +121,7 @@ Environment: OS, data size, build date
 - **Architecture:** [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 - **Limitations:** [WIDER_SHARING_READINESS.md](./WIDER_SHARING_READINESS.md)
 - **Testing Plan:** [PHASE_1_TESTING_WORKBOOK.md](./PHASE_1_TESTING_WORKBOOK.md)
-- **Release Notes:** [v0.6.0-rc1 tag](https://github.com/rastogivaibhav/graphenedb_v1/releases/tag/v0.6.0-rc1)
+- **Release Notes:** [v0.6.0-rc1 tag](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-rc1)
 
 ---
 
