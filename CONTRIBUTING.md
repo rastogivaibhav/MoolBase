@@ -1,12 +1,14 @@
 # Contributing
 
-GrapheneDB is an experimental developer-alpha reasoning substrate. Contributions
-should preserve the evidence-first and safety-first posture.
+MoolBase is an experimental developer-preview reasoning substrate. Contributions
+should preserve the evidence-first and safety-first posture. Historical
+`GrapheneDB`, `graphene` and `GRAPHENEDB_*` implementation/API names remain
+supported for compatibility.
 
 ## License and contribution provenance
 
-GrapheneDB is distributed under the Apache License 2.0. By submitting a
-contribution for inclusion in GrapheneDB, you agree that the contribution is
+MoolBase is distributed under the Apache License 2.0. By submitting a
+contribution for inclusion in MoolBase, you agree that the contribution is
 submitted under the repository's Apache-2.0 license, consistent with section 5
 of that license.
 
