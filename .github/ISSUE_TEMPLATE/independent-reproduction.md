@@ -1,6 +1,6 @@
 ---
 name: Independent reproduction report
-about: Report a clean external reproduction or falsification attempt for the GrapheneDB flagship
+about: Report a clean external reproduction or falsification attempt for a MoolBase proof or benchmark
 title: "Independent reproduction: "
 labels: ""
 assignees: ""
@@ -12,16 +12,19 @@ assignees: ""
 - Compiler + version:
 - Python:
 - CMake:
-- Commit tested:
+- Commit or release tested:
 
-## Receipts
+## Proof / benchmark under test
 
-- Canonical flagship mechanism hash:
-- P1:
-- P2:
-- P3:
-- P4:
-- P5:
+- Proof, benchmark or protocol name:
+- Version / experiment ID:
+- Scenario or task set:
+- Mechanism receipt SHA-256 (if applicable):
+- Perturbation protocol/version (if applicable):
+
+## Receipts and artifacts
+
+List the relevant receipt hashes, manifests, logs or artifact links. Remove secrets and private data.
 
 ## Usability
 
@@ -36,7 +39,7 @@ What was confusing or undocumented?
 
 What reproduced successfully?
 
-What failed?
+What failed or differed?
 
 ## Technical critique
 
@@ -47,6 +50,7 @@ Did you observe any of the following?
 - [ ] correlated evidence counted as independent support
 - [ ] decisive-family removal failed to reduce corroboration
 - [ ] material contradiction failed to block final resolution
+- [ ] supported alternatives were mislabeled as material opposition
 - [ ] insertion order changed the epistemic result
 - [ ] search-budget exhaustion silently widened another dimension
 - [ ] unexplained mechanism-receipt change
