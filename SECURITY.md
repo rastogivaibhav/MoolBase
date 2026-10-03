@@ -2,11 +2,11 @@
 
 ## Supported status
 
-This repository is a v1 RC / controlled pilot candidate. It is not yet an enterprise GA security-certified product.
+MoolBase v0.6.0-alpha.2 is a released developer preview for evaluation and controlled pilots. It is not an enterprise GA security-certified product.
 
 ## Security boundary
 
-GrapheneDB is primarily an embedded library and local CLI. It also ships an
+MoolBase (with existing GrapheneDB API/package compatibility names) is primarily an embedded library and local CLI. It also ships an
 optional controlled-pilot HTTP origin server on supported POSIX platforms. The
 server provides a single API-key boundary, bounded workers/queues, request
 limits, and rate limiting, but it is not an internet-edge server, enterprise
@@ -18,7 +18,7 @@ Embedded callers are responsible for:
 - operating-system access control on database directories
 - process/user isolation for tenants
 - filesystem or volume encryption when data at rest must be encrypted
-- secret management outside GrapheneDB metadata/content fields
+- secret management outside MoolBase/GrapheneDB metadata/content fields
 
 The optional server must use an API key and an approved TLS reverse proxy for
 non-loopback deployment. Its administrative endpoints currently share the same
@@ -38,10 +38,7 @@ controls before being represented as enterprise GA.
 
 ## Reporting issues
 
-Please do not disclose an unpatched vulnerability in a public issue. Use the
-repository's private security-reporting channel when available; otherwise
-contact the project owner privately and include affected versions, impact,
-reproduction steps and any proposed mitigation.
+Please do not disclose an unpatched vulnerability in a public issue. First use GitHub's private **Report a vulnerability** flow from this repository's Security tab when it is available. If that private flow is unavailable, contact the project owner through an existing non-public channel before sharing exploit details. Include affected versions, impact, reproduction steps and any proposed mitigation. If you cannot establish a private channel, do not post technical exploit details publicly.
 
 ## Distribution and supply-chain policy
 
