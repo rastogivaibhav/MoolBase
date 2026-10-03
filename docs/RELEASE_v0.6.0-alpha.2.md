@@ -4,6 +4,18 @@ MoolBase stores evidence, competing explanations and inspectable decision receip
 
 This developer preview includes the embedded C++20 database, optional POSIX HTTP server, dependency-free Python examples and an actual-engine WebAssembly Evidence Lab. Native API/package names remain GrapheneDB for compatibility.
 
+
+## Architecture in this preview
+
+- **MoolBase Core** — durable evidence/provenance and causal-memory storage with WAL/checkpoint persistence.
+- **Dense graphene-inspired hexagonal lattice topology** — durable axial `q/r/layer` coordinates, deterministic hex-spiral placement, validated bonds and optional lattice-aware retrieval. This is a database topology/retrieval primitive, not a material-science simulator.
+- **FiberBundle** — deterministic, hashable evidence-path projection preserving target, role, lineage and independent-support structure.
+- **HypoKosh / Hypothesis Engine** — competing hypotheses with governed convergence or abstention.
+- **DWM / Dialectic Engine** — material opposition, challenge, bounded reopen/re-expansion and governed revision.
+- **Epistemic receipts** — compact machine-readable provenance for the resulting governed state and transitions.
+
+These layers are composable; applications do not have to adopt the complete reasoning stack.
+
 ## What ships
 
 - Atomic evidence retirement, audit and replacement in one existing-format WAL transaction.
