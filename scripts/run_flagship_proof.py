@@ -18,7 +18,7 @@ import sys
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-EXPECTED_MECHANISM_RECEIPT_SHA256 = "36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef"
+EXPECTED_MECHANISM_RECEIPT_SHA256 = "12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89"
 
 
 def checked(cmd: list[str], *, cwd: pathlib.Path = ROOT) -> subprocess.CompletedProcess[str]:
