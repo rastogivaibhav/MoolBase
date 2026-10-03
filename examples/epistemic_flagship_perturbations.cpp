@@ -139,6 +139,10 @@ int main() {
       << "|admissible=" << boolean(p1.admissibility.evidence_admissible)
       << "|requires_external_verification="
       << boolean(p1.admissibility.requires_external_verification)
+      << "|dialectical_challenge="
+      << boolean(p1.opposition.dialectical_challenge)
+      << "|corroboration_search_required="
+      << boolean(p1.opposition.corroboration_search_required)
       << "|opposition_requests_reexpansion="
       << boolean(p1.opposition.requests_reexpansion)
       << "|answer=" << boolean(p1.answer.has_answer)
@@ -184,6 +188,10 @@ int main() {
       << boolean(p2_baseline.admissibility.requires_external_verification)
       << "|perturbed_requires_external_verification="
       << boolean(p2_removed.admissibility.requires_external_verification)
+      << "|perturbed_dialectical_challenge="
+      << boolean(p2_removed.opposition.dialectical_challenge)
+      << "|perturbed_corroboration_search_required="
+      << boolean(p2_removed.opposition.corroboration_search_required)
       << "|perturbed_opposition_requests_reexpansion="
       << boolean(p2_removed.opposition.requests_reexpansion)
       << "\n";
@@ -201,6 +209,10 @@ int main() {
       << "|contradiction_blocks_resolution="
       << boolean(p3.admissibility.contradiction_blocks_resolution)
       << "|admissible=" << boolean(p3.admissibility.evidence_admissible)
+      << "|dialectical_challenge="
+      << boolean(p3.opposition.dialectical_challenge)
+      << "|corroboration_search_required="
+      << boolean(p3.opposition.corroboration_search_required)
       << "|opposition_requests_reexpansion="
       << boolean(p3.opposition.requests_reexpansion)
       << "|answer=" << boolean(p3.answer.has_answer)
