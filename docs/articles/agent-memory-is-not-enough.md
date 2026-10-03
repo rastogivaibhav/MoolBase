@@ -91,6 +91,19 @@ For agents expected to operate over hours, days or months, that missing structur
 
 ---
 
+## What is actually inside MoolBase
+
+The public story starts with evidence-aware memory, but the implementation is a broader stack:
+
+- **MoolBase Core** persists evidence, vectors, provenance, causal relationships and versioned durable state.
+- A **graphene-inspired dense hexagonal lattice topology** gives nodes durable `q/r/layer` coordinates, validated bonds and an optional lattice-aware retrieval path.
+- **FiberBundle** builds a deterministic, hashable evidence projection that keeps path role, target, lineage and independent-support structure visible.
+- **HypoKosh / Hypothesis Engine** preserves competing explanations and performs governed convergence or abstention.
+- **DWM / Dialectic Engine** handles material opposition, challenge, bounded reopen/re-expansion and governed revision.
+- **Epistemic receipts** preserve the externally inspectable result of that process without storing private model chain-of-thought.
+
+The lattice is a database topology/retrieval primitive, not a physics simulation. The reasoning layers are optional: MoolBase can be used as an evidence/provenance store without adopting the full HypoKosh + DWM runtime.
+
 ## The MoolBase model
 
 MoolBase treats persistent reasoning state as a data-system concern.

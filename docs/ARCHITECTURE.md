@@ -1,6 +1,28 @@
-# Architecture
+# MoolBase architecture
 
-GrapheneDB is organised into four layers.
+MoolBase is organised as a layered evidence-and-reasoning system. Historical implementation names such as GrapheneDB, HypoKosh and DWM remain in the codebase for compatibility and research provenance.
+
+At a glance:
+
+```text
+Persistent evidence + provenance
+        ↓
+Graphene-inspired dense hexagonal lattice topology
+        ↓
+FiberBundle evidence projection
+        ↓
+HypoKosh / Hypothesis Engine
+        ↓
+DWM / Dialectic Engine
+        ↓
+Governed decision / reopen / revision
+        ↓
+Epistemic receipt
+```
+
+The dense hexagonal lattice is a database topology and retrieval primitive using durable axial coordinates and validated bonds; it is not a material-science simulator. FiberBundle is the deterministic evidence-path projection used by the reasoning runtime to preserve target, role, lineage and independent-support structure.
+
+The implementation is organised into four layers.
 
 ## 1. Storage layer
 

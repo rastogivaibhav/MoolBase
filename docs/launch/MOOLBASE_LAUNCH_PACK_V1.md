@@ -16,7 +16,20 @@ The launch is not a claim of universal superiority. It is an invitation to test 
 
 ### One-sentence explanation
 
-MoolBase persists evidence, provenance, competing explanations and inspectable receipts so an application can show why an agent's current answer is justified, when it stops being justified and what caused it to change.
+MoolBase combines durable evidence/provenance storage, a graphene-inspired dense hexagonal lattice, deterministic FiberBundle evidence projections, HypoKosh competing-hypothesis reasoning, DWM dialectical challenge/reopen and inspectable receipts so an application can show why an agent's current answer is justified, when it stops being justified and what caused it to change.
+
+### Technical stack to preserve in launch messaging
+
+When space allows, describe the architecture in this order:
+
+1. **MoolBase Core** — durable evidence/provenance database and causal-memory substrate.
+2. **Dense hexagonal lattice topology** — durable axial coordinates, validated bonds and optional lattice-aware retrieval.
+3. **FiberBundle** — deterministic, hashable target/role/lineage-aware evidence projection.
+4. **HypoKosh / Hypothesis Engine** — competing hypotheses plus governed convergence/abstention.
+5. **DWM / Dialectic Engine** — material opposition, challenge, bounded reopen/re-expansion and revision.
+6. **Epistemic receipts** — inspectable machine-readable decision provenance.
+
+Do not imply that every user must adopt every layer, and do not describe the lattice as a material-science simulation.
 
 ### The canonical demo
 
@@ -115,7 +128,7 @@ EU resolved -> no operative answer -> US resolved.
 
 The interesting part is not the final US answer. It is that the system preserves why the old answer stopped being justified, which evidence is actually independent, what was superseded, and why the new answer eventually earned support.
 
-MoolBase is an experimental evidence-aware memory and persistent reasoning substrate for agents. It stores evidence, provenance, competing explanations, contradiction and inspectable decision receipts.
+MoolBase is an experimental evidence-aware memory and persistent reasoning substrate for agents. Underneath that story are its durable C++ core, graphene-inspired dense hexagonal lattice, deterministic FiberBundle evidence projections, HypoKosh/Hypothesis Engine, DWM/Dialectic Engine, and inspectable epistemic receipts.
 
 I have released a developer preview and a public Evidence Lab.
 

@@ -16,6 +16,35 @@ Use the `v0.6.0-alpha.2` release tag for the runnable customer workflows. The de
 
 **Store the evidence. Preserve the alternatives. Know why belief changed.**
 
+### Full stack at a glance
+
+MoolBase combines a persistent evidence database with deterministic reasoning structures rather than treating agent memory as a single retrieval layer:
+
+- **MoolBase Core** — embedded C++20 storage for evidence, vectors, provenance, typed causal relationships, WAL/checkpoint durability, validation and versioned state. Historical package/API names remain `GrapheneDB` / `graphene`.
+- **Dense hexagonal lattice topology** — durable axial `q/r/layer` coordinates, validated same-layer and cross-layer bonds, deterministic placement and optional lattice-aware retrieval. It is a database topology/retrieval primitive, not a material-science simulator.
+- **FiberBundle** — a deterministic, hashable projection of evidence paths grouped by target, role and lineage, designed to distinguish raw path multiplicity from genuinely independent support.
+- **HypoKosh / Hypothesis Engine** — preserves and competes alternative hypotheses, performs governed convergence or abstention, and emits inspectable hypothesis/decision events.
+- **DWM / Dialectic Engine** — applies material opposition, challenge, bounded reopen/re-expansion and governed revision/synthesis when the evidence process warrants it.
+- **Epistemic receipts** — compact machine-readable provenance for status, evidence families, selected paths, contradiction, reopen/revision and terminal state.
+
+Conceptually:
+
+```text
+Evidence
+  ↓
+MoolBase Core + dense hexagonal lattice
+  ↓
+FiberBundle
+  ↓
+HypoKosh / Hypothesis Engine
+  ↓
+DWM / Dialectic Engine
+  ↓
+Decision / Reopen / Revision
+  ↓
+Inspectable epistemic receipt
+```
+
 MoolBase is an experimental persistent reasoning and agent-memory substrate for AI agents operating under **changing, incomplete, duplicated or contradictory evidence**.
 
 Most memory systems answer:
