@@ -37,7 +37,7 @@ if(GRAPHENEDB_BUILD_SERVER)
 endif()
 '''
 entries['CMakeLists.txt']=cmake.encode()
-entries['BUILD_PROVENANCE.json']=(json.dumps({'repository':'https://github.com/rastogivaibhav/graphenedb_v1','source_commit':commit,'version':version,'dataClass':'realistic synthetic fixtures','browserBuild':'Emscripten 3.1.74 when included'},indent=2)+'\n').encode()
+entries['BUILD_PROVENANCE.json']=(json.dumps({'repository':'https://github.com/rastogivaibhav/MoolBase','source_commit':commit,'version':version,'dataClass':'realistic synthetic fixtures','browserBuild':'Emscripten 3.1.74 when included'},indent=2)+'\n').encode()
 with zipfile.ZipFile(OUT,'w',zipfile.ZIP_DEFLATED) as archive:
  for name,data in sorted(entries.items()):archive.writestr(name,data)
 sha=lambda data:hashlib.sha256(data).hexdigest()

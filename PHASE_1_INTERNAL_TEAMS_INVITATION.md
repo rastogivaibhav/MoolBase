@@ -1,5 +1,7 @@
 # GrapheneDB Phase 1 Pilot: Internal Teams Invitation
 
+> **Historical invitation (August 2026).** Retained as a record of the v0.6.0-rc1 internal pilot. Current evaluators should use [Developer quickstart](docs/DEVELOPER_QUICKSTART.md) and [moolbase.rasvai.com](https://moolbase.rasvai.com).
+
 **Subject:** Help us validate GrapheneDB v0.6.0-rc1 — Test, break, fix collaboratively
 
 ---
@@ -65,8 +67,8 @@ If we find critical issues (data loss, crashes), we fix them together before mov
 
 **2. Clone and build** (10 min)
 ```bash
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 ./scripts/build.sh  # or PowerShell on Windows
 ```
 

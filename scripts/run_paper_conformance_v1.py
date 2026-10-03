@@ -195,7 +195,7 @@ def main() -> int:
     report = {
         "schema_version": 1,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "repository": "rastogivaibhav/graphenedb_v1",
+        "repository": "rastogivaibhav/MoolBase",
         "commit": git_head(),
         "gate": "paper-system-conformance-v1",
         "gate_status": "INCOMPLETE" if extended_incomplete else "COMPLETE",

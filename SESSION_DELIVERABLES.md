@@ -1,5 +1,7 @@
 # GrapheneDB v0.6.0-rc1: Session Deliverables & Handoff
 
+> **Historical session record (17 August 2026).** Release names, dates and session conclusions below are preserved as historical context. Current setup guidance is in [Developer quickstart](docs/DEVELOPER_QUICKSTART.md) and the public [Evidence Lab](https://moolbase.rasvai.com).
+
 **Date:** August 17, 2026  
 **Session:** Complete Phase 1 Release Preparation  
 **Status:** ✅ ALL DELIVERABLES COMPLETE AND COMMITTED TO MASTER
@@ -68,7 +70,7 @@ GrapheneDB v0.6.0-rc1 is ready for Phase 1 pilot with internal teams. This sessi
 cat PHASE_1_INTERNAL_TEAMS_INVITATION.md
 
 # Or directly from GitHub:
-https://github.com/rastogivaibhav/graphenedb_v1/blob/master/PHASE_1_INTERNAL_TEAMS_INVITATION.md
+https://github.com/rastogivaibhav/MoolBase/blob/master/PHASE_1_INTERNAL_TEAMS_INVITATION.md
 ```
 
 **Step 2: Teams Get Started**
@@ -77,8 +79,8 @@ https://github.com/rastogivaibhav/graphenedb_v1/blob/master/PHASE_1_INTERNAL_TEA
 1. Read: PHASE_1_TEAM_HANDOFF.md
 2. Read: docs/QUICK_START_GUIDE.md
 3. Clone and build:
-   git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-   cd graphenedb_v1
+   git clone https://github.com/rastogivaibhav/MoolBase.git
+   cd MoolBase
    ./scripts/build.sh
 4. Run: ./build/graphenedb_cli init /tmp/test.db 768
 5. Work through: PHASE_1_TESTING_WORKBOOK.md
@@ -240,7 +242,7 @@ Code:
 5. Document findings for Phase 2 planning
 
 ### For Phase 1 Teams
-1. Clone repo: `git clone https://github.com/rastogivaibhav/graphenedb_v1.git`
+1. Clone repo: `git clone https://github.com/rastogivaibhav/MoolBase.git`
 2. Build: `./scripts/build.sh`
 3. Read: `PHASE_1_TEAM_HANDOFF.md`
 4. Follow: `PHASE_1_TESTING_WORKBOOK.md` (10 tests, ~2-3 hrs/week for 4 weeks)
@@ -348,8 +350,8 @@ git tag v0.6.0-rc1
 git status  # Should show "nothing to commit"
 
 # For next agent:
-git clone https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 cat PHASE_1_INTERNAL_TEAMS_INVITATION.md  # Ready to send
 ```
 

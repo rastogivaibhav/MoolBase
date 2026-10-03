@@ -234,7 +234,7 @@ It is closer to a durable transaction record for belief change than a transcript
 
 The fastest way to understand the project is the public Evidence Lab:
 
-https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site
+https://moolbase.rasvai.com
 
 The customer-memory scenario shows:
 

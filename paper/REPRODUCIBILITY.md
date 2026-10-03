@@ -46,8 +46,8 @@ From a clean clone of the frozen tag:
 
 ```bash
 git clone --branch <TAG> --depth 1 \
-  https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+  https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 bash scripts/run_alpha_release_gate.sh
 ```
 
