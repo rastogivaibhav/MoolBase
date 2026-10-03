@@ -1,4 +1,8 @@
-# GrapheneDB examples
+# MoolBase examples
+
+**Start with the [released customer examples](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase):** customer-memory correction, incident investigation and conflicting reports. Follow the [developer quickstart](../docs/DEVELOPER_QUICKSTART.md) and [agent integration guide](../docs/AGENT_INTEGRATION.md). These examples live on `v0.6.0-alpha.2`; the default branch also contains frozen research work.
+
+The examples below are additional embedded API demonstrations.
 
 Build examples with the default release preset:
 
