@@ -1,11 +1,11 @@
 cff-version: 1.2.0
-message: "If you use GrapheneDB or its epistemic-control benchmark, cite this software and the associated preprint."
-title: "GrapheneDB"
+message: "If you use MoolBase/GrapheneDB, cite the software version used. The associated historical preprint retains its GrapheneDB title."
+title: "MoolBase (formerly GrapheneDB)"
 type: software
 authors:
   - family-names: "Rastogi"
     given-names: "Vaibhav"
-version: "0.6.0-alpha.1"
+version: "0.6.0-alpha.2"
 repository-code: "https://github.com/rastogivaibhav/MoolBase"
 abstract: >-
   GrapheneDB is an experimental embedded C++20 evidence and causal-memory

@@ -1,6 +1,6 @@
 # MoolBase developer quickstart
 
-This guide is for a developer who wants a first successful GrapheneDB run before studying FiberBundle, the Lyapunov critic or the model-world architecture.
+This guide is for a developer who wants a first successful MoolBase run before studying FiberBundle, the Lyapunov critic or the model-world architecture.
 
 ## What you need
 
@@ -22,47 +22,34 @@ cd MoolBase
 
 The repository is public. The example checkout is separate from the frozen research work on the default branch. For complete Python lifecycle and HTTP examples, follow [Agent integration](AGENT_INTEGRATION.md).
 
-## 2. Run the first demo
+## 2. Run the customer-memory example
 
-Linux or macOS:
+Use the same first workflow shown in the README and Evidence Lab. Python 3 is required; no pip package or model key is needed.
+
+Linux/macOS:
 
 ```bash
-bash scripts/developer_quickstart.sh
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
+python3 examples/customer_showcase/python_memory.py
+python3 examples/customer_showcase/python_http.py
 ```
 
-Windows PowerShell:
+Windows PowerShell (native memory example; the HTTP server is POSIX-only):
 
 ```powershell
-.\scripts\developer_quickstart.ps1
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=OFF
+cmake --build build-showcase --config Release --target moolbase_customer_showcase -j2
+python examples/customer_showcase/python_memory.py --binary build-showcase/Release/moolbase_customer_showcase.exe
 ```
 
-The script configures a small Release build, compiles the complete HypoKosh runtime demo and runs a disposable incident example. Expected output includes:
+## 3. Interpret the result
 
-```text
-status=...
-primary_node=...
-bundle_hash=...
-stability=...
-opposition=...
-```
+The memory example demonstrates EU fulfilment resolved → open/no operative answer → US fulfilment resolved. It verifies native file reopen. The HTTP example checks retry-safe ingestion and evidence after server restart. Prior reasoning state is managed by the application, not automatically persisted by these examples.
 
-The exact governed status may remain provisional because the runtime deliberately retains residual uncertainty.
+The [released example directory](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) also contains the incident and conflicting-report scenarios. Their contested outcomes are intentional.
 
-## 3. Understand the first example
-
-The demo stores a small causal chain:
-
-```text
-release changed pool timeout
-        ↓
-connection pool exhausted
-        ↓
-checkout failures
-```
-
-It then asks the complete runtime to reason from the observed checkout-failure vector. The result exposes the selected target, governed status, immutable FiberBundle hash, stability score and opposition score.
-
-Start with `examples/hypokosh_runtime.cpp`. It is intentionally small and uses an in-process temporary database.
+For a separate introductory incident/runtime demo, run `bash scripts/developer_quickstart.sh` or `.\scripts\developer_quickstart.ps1`. That is an additional embedded API example, not the customer-memory workflow above.
 
 ## 4. Verify installation as a real dependency
 
@@ -120,7 +107,7 @@ The receipt preserves selected path IDs, evidence/source/derivation lineage, bun
 
 ## 7. Run the complete alpha release gate
 
-On an authenticated Linux/macOS clone:
+For maintainers intentionally validating a release on Linux/macOS:
 
 ```bash
 bash scripts/run_alpha_release_gate.sh
@@ -155,7 +142,7 @@ ctest --test-dir build/release --output-on-failure
 
 | Goal | Start here |
 |---|---|
-| See it run | `scripts/developer_quickstart.sh` or `.ps1` |
+| Run the first customer workflow | `examples/customer_showcase/python_memory.py` on the released tag |
 | Learn the embedded API | `examples/installed_consumer/main.cpp` |
 | Explore governed reasoning | `examples/hypokosh_runtime.cpp` |
 | Persist compact results | `include/graphene/epistemic_receipt.hpp` |
@@ -167,4 +154,4 @@ ctest --test-dir build/release --output-on-failure
 
 ## Current platform boundary
 
-The embedded library is intended to build across supported C++ platforms. The controlled-pilot HTTP server is POSIX-oriented and should remain disabled on Windows. Use `-DGRAPHENEDB_BUILD_SERVER=OFF` for the first developer build on every platform.
+The embedded library is intended to build across supported C++ platforms. The controlled-pilot HTTP server is POSIX-oriented and should remain disabled on Windows. Use `-DGRAPHENEDB_BUILD_SERVER=OFF` on Windows.
