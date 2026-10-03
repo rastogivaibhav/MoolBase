@@ -1,8 +1,9 @@
 # IP and license provenance
 
 This document records the repository-level provenance checks required before a
-GrapheneDB public source or binary release is represented as Apache-2.0
-licensed.
+MoolBase public source or binary release is represented as Apache-2.0
+licensed. Historical GrapheneDB identifiers remain part of the compatibility
+and research lineage.
 
 It is an engineering/release control, not legal advice.
 
@@ -30,7 +31,7 @@ commit author is legally the copyright owner.
 Before the first hardened public release/tag is created, the maintainer must
 confirm all of the following:
 
-- [ ] I have the right to license the GrapheneDB code and documentation under
+- [ ] I have the right to license the MoolBase code and documentation under
       Apache-2.0.
 - [ ] No material part of the repository is confidential or proprietary code
       belonging to an employer, client, previous employer, contractor,
