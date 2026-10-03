@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0-alpha.2 — Developer preview (2026-10-02)
+
+- Released bounded customer-memory correction, incident investigation and conflicting-report examples, plus Python native/HTTP runners.
+- Added atomic evidence retirement and replacement, retry/restart checks and an actual-engine WebAssembly Evidence Lab.
+- Published Linux and source/example bundles with checksums, source-bound manifests and SPDX inventories.
+- Developer preview for evaluation and controlled pilots; not enterprise GA. GrapheneDB API/package names remain supported.
+- See the [release](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2) for exact assets and limitations. Subsequent documentation updates do not change that release's tags or artifacts.
+
 ## Unreleased - Complete discrete Lyapunov critic
 
 - Replaced heuristic-only runtime use of `StabilityCriticV0` with `LyapunovCritic`.
