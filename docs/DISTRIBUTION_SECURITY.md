@@ -1,7 +1,8 @@
-# Distribution security and license verification
+# MoolBase distribution security and license verification
 
-GrapheneDB source and official project-built binary distributions are licensed
-under the Apache License, Version 2.0.
+MoolBase source and official project-built binary distributions are licensed
+under the Apache License, Version 2.0. Historical `GrapheneDB` package and API
+names remain part of the compatibility surface.
 
 ## Files that must ship
 
@@ -23,7 +24,7 @@ attestations when GitHub artifact attestations are available.
 For a downloaded release bundle:
 
 ```bash
-sha256sum -c graphenedb-<version>-linux-x86_64.zip.sha256
+sha256sum -c moolbase-<version>-linux-x86_64.zip.sha256
 ```
 
 The digest must also match `package_sha256` in the adjacent
@@ -37,7 +38,7 @@ this repository and that the version fields match the intended release.
 For an attested artifact, GitHub CLI can verify provenance:
 
 ```bash
-gh attestation verify graphenedb-<version>-linux-x86_64.zip \
+gh attestation verify moolbase-<version>-linux-x86_64.zip \
   -R rastogivaibhav/MoolBase
 ```
 
@@ -47,14 +48,14 @@ Official distribution runs generate an SPDX JSON SBOM and, outside pull
 requests, attest it against the release artifact.
 
 ```bash
-gh attestation verify graphenedb-<version>-linux-x86_64.zip \
+gh attestation verify moolbase-<version>-linux-x86_64.zip \
   -R rastogivaibhav/MoolBase \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 
 ## Optional FAISS builds
 
-The default GrapheneDB distribution does not bundle FAISS. If
+The default MoolBase distribution does not bundle FAISS. If
 `GRAPHENEDB_USE_FAISS=ON` is used, FAISS is supplied separately by the build
 environment. Redistributors of a FAISS-linked package must include the
 applicable FAISS and transitive notices from the exact FAISS distribution they
@@ -62,11 +63,11 @@ ship.
 
 ## Contribution provenance
 
-GrapheneDB uses Apache-2.0 plus Developer Certificate of Origin 1.1 sign-off for
+MoolBase uses Apache-2.0 plus Developer Certificate of Origin 1.1 sign-off for
 incoming contributions. See `CONTRIBUTING.md` and `DCO-1.1.txt`.
 
 ## Release status is not a security certification
 
 Checksums, SBOMs and attestations establish integrity/provenance of an artifact.
-They do not mean GrapheneDB is enterprise GA, formally verified, or suitable
+They do not mean MoolBase is enterprise GA, formally verified, or suitable
 for high-stakes deployment. See `SECURITY.md` for the current boundary.
