@@ -18,8 +18,8 @@ This developer preview includes the embedded C++20 database, optional POSIX HTTP
 Use the versioned source archive on this release, or clone the tag:
 
 ```bash
-git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/graphenedb_v1.git
-cd graphenedb_v1
+git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
 python3 examples/customer_showcase/python_memory.py
