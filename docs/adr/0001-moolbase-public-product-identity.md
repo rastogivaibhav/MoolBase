@@ -1,6 +1,6 @@
 # ADR-0001: Public product identity — MoolBase by RASVAI
 
-- **Status:** Provisional
+- **Status:** Accepted for public developer-preview use
 - **Date:** 2026-09-23
 - **Issue:** #34
 - **Scope:** Public product naming and migration only
@@ -20,7 +20,7 @@ Those names are valuable as research lineage, but asking a new developer to lear
 
 ## Decision
 
-Adopt the following **provisional** public naming architecture:
+Adopt the following public naming architecture for the developer preview:
 
 ### Umbrella brand
 
@@ -73,7 +73,7 @@ Existing commits, benchmark hashes, receipts, frozen protocols, papers, issue hi
 
 A migration note may describe the relationship prospectively, for example:
 
-> GrapheneDB is the historical research name of the system now being prepared for public distribution as MoolBase by RASVAI.
+> GrapheneDB is the historical research and implementation name of the system publicly distributed as MoolBase by RASVAI.
 
 ## Why not Dwand / Sanvad as primary public module names
 
@@ -93,7 +93,7 @@ As of 2026-09-23:
 - indexed searches of npm, PyPI and crates.io found no obvious package using the exact name;
 - indexed UK/US/WIPO trademark searches surfaced no obvious exact match.
 
-This is **not** legal trademark clearance and does not prove domain/package availability. Domain registry availability and formal trademark clearance must be confirmed before the first branded public release.
+This is **not** legal trademark clearance and does not establish registrability or freedom to operate. The project may use MoolBase as its open-source developer-preview identity while formal trademark/domain decisions remain a separate owner/legal matter.
 
 ## Migration constraints
 
@@ -132,4 +132,8 @@ Until #34 is closed:
 
 - GrapheneDB remains visible in historical commits and papers for some time;
 - a compatibility/migration period is required;
-- the public product name remains provisional until domain and formal clearance gates are complete.
+- formal trademark/domain clearance remains a separate owner/legal matter.
+
+## Decision update — 2026-10-03
+
+The repository rename to `rastogivaibhav/MoolBase`, developer-preview release, public Evidence Lab and current documentation now use MoolBase as the selected public identity. Frozen research artifacts and compatibility APIs continue to retain their historical names. A current public-web search on 2026-10-03 found no obvious exact-name software/product collision; that search is not legal clearance.
