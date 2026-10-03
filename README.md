@@ -6,7 +6,7 @@ MoolBase keeps observations, competing explanations and an inspectable record of
 
 **Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
 
-**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) (public; no sign-in required) · [Versioned Python examples](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase.rasvai.com) (public; no sign-in required) · [Versioned Python examples](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
 
 Use the `v0.6.0-alpha.2` release tag for the runnable customer workflows. The default branch also carries the research programme.
 
@@ -65,7 +65,7 @@ MoolBase is built around the harder question:
 
 ## See the answer change
 
-The [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) explains MoolBase through a customer-memory correction: **which fulfilment region should the assistant use?**
+The [Evidence Lab](https://moolbase.rasvai.com) explains MoolBase through a customer-memory correction: **which fulfilment region should the assistant use?**
 
 ![Actual Evidence Lab replay: EU fulfilment resolved, no operative answer after supersession, then US fulfilment resolved](docs/images/evidence-lab-memory.gif)
 
@@ -89,15 +89,15 @@ The Lab includes **incident investigation**, **agent-memory correction**, and **
 
 ## Choose your download
 
-The [Evidence Lab](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site) offers three separate downloads with checksums, manifests and SPDX inventories:
+The [Evidence Lab](https://moolbase.rasvai.com) offers three separate downloads with checksums, manifests and SPDX inventories:
 
 | Download | Use it when |
 |---|---|
-| [Compiled database — Linux x86_64](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
-| [Examples for the installed database](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
-| [Optional source](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/downloads/moolbase-0.6.0-alpha.2-source.zip) | You want to inspect or build the database and examples yourself. |
+| [Compiled database — Linux x86_64](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
+| [Examples for the installed database](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
+| [Optional source](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-source.zip) | You want to inspect or build the database and examples yourself. |
 
-Follow the [download installation instructions](https://moolbase-evidence-lab.vaibhav-rastogi90.chatgpt.site/INSTALL.md). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
+Follow the [download installation instructions](https://moolbase.rasvai.com/INSTALL.md). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
 
 ## Your first application
 
