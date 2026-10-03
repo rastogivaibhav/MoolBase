@@ -155,3 +155,40 @@ main{padding-top:0}
   .architecture{padding:48px 22px}.architecture-flow{grid-template-columns:1fr}
   .future-section{margin-left:0;margin-right:0;padding:25px}.decision-flow{grid-template-columns:1fr}.decision-flow i{text-align:center;transform:rotate(90deg)}
 }
+
+
+/* Story-first MoolBase v4 — founder-origin narrative and guided proof. */
+.hero-copy em{font-style:normal;color:var(--ink);background:linear-gradient(transparent 66%,rgba(215,235,156,.75) 66%);padding:0 .04em}
+.hero-thesis{max-width:760px;margin:-4px 0 26px;padding:15px 18px;border-left:3px solid var(--lime);background:rgba(255,254,248,.62);font-size:14px;line-height:1.55;color:var(--ink)}
+.origin-label{font-size:10px!important;letter-spacing:1.4px!important;text-transform:uppercase;color:var(--muted)!important;margin:0 0 11px!important;font-weight:700}
+.thesis-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:-32px 0 70px}
+.thesis-strip>div{min-width:0;background:var(--white);padding:20px 18px}
+.thesis-strip small{display:block;font-size:9px;letter-spacing:1.2px;color:var(--muted);margin-bottom:18px}
+.thesis-strip strong{display:block;font:600 15px 'Manrope',sans-serif;margin-bottom:6px}
+.thesis-strip span{display:block;font-size:11px;line-height:1.5;color:var(--muted)}
+.fit-section{padding:82px 0;border-bottom:1px solid var(--line)}
+.fit-section>.section-kicker{max-width:880px;margin-bottom:30px}
+.fit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fit-card{min-width:0;border:1px solid var(--ink);border-radius:11px;background:#eef4db;padding:28px}
+.fit-card.quiet{border-color:var(--line);background:var(--white)}
+.fit-card>span{display:block;font-size:9px;letter-spacing:1.25px;color:var(--muted);font-weight:700;margin-bottom:30px}
+.fit-card h3{font:600 23px/1.28 'Manrope',sans-serif;letter-spacing:-.5px;margin:0 0 12px}
+.fit-card p{font-size:14px;line-height:1.65;color:var(--muted);margin:0}
+.lab-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:4px 0 24px}
+.lab-guide article{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--white);padding:18px}
+.lab-guide small{display:block;font-size:9px;letter-spacing:1.25px;color:var(--muted);margin-bottom:14px}
+.lab-guide strong{display:block;font:600 15px 'Manrope',sans-serif;margin-bottom:5px}
+.lab-guide span{display:block;font-size:11px;line-height:1.5;color:var(--muted)}
+.future-question{font:600 18px/1.4 'Manrope',sans-serif!important;color:var(--ink)!important;margin:2px 0 18px!important}
+@media(max-width:1100px){
+  .thesis-strip{grid-template-columns:repeat(3,1fr)}
+  .thesis-strip>div:nth-child(4),.thesis-strip>div:nth-child(5){border-top:1px solid var(--line)}
+}
+@media(max-width:780px){
+  .fit-grid,.lab-guide{grid-template-columns:1fr}
+  .thesis-strip{grid-template-columns:1fr;margin-top:-18px}
+  .thesis-strip>div{padding:16px 18px}
+  .thesis-strip small{margin-bottom:8px}
+  .thesis-strip>div+div{border-top:1px solid var(--line)}
+  .fit-section{padding:62px 0}
+}

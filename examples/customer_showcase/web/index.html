@@ -1,34 +1,44 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MoolBase — Temporal epistemic database for evolving facts</title><meta name="description" content="MoolBase is a temporal epistemic database designed to reconcile changing evidence from multiple sources into established, revisable facts with an inspectable reasoning trail."><link rel="canonical" href="https://moolbase.rasvai.com/"><meta property="og:type" content="website"><meta property="og:url" content="https://moolbase.rasvai.com/"><meta property="og:title" content="MoolBase — A temporal epistemic database for evolving facts"><meta property="og:description" content="From temporal evidence to competing hypotheses, dialectical challenge and established, revisable facts."><meta property="og:image" content="https://opengraph.githubassets.com/1/rastogivaibhav/MoolBase"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="MoolBase — A temporal epistemic database for evolving facts"><meta name="twitter:description" content="From temporal evidence to competing hypotheses, dialectical challenge and established, revisable facts."><meta name="twitter:image" content="https://opengraph.githubassets.com/1/rastogivaibhav/MoolBase"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23213c38'/%3E%3Cpath d='M6 23V9l10 9L26 9v14' fill='none' stroke='%23d7eb9c' stroke-width='3'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"><script defer src="app.js"></script></head><body>
-<header class="site-header"><a class="brand" href="./"><span class="mark">M</span><span>MoolBase <small>by RASVAI</small></span></a><span class="release">DEVELOPER PREVIEW</span><div class="top-nav" aria-label="Primary navigation"><a href="#story">Why MoolBase</a><a href="#how">How it works</a><a href="#lab">Evidence Lab</a><a href="#future">Decision systems</a><a class="nav-download" href="#developer">Download</a></div></header>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MoolBase — A temporal database for evolving facts</title><meta name="description" content="MoolBase is a temporal epistemic database designed to reconcile changing evidence from multiple sources into established, revisable facts with an inspectable reasoning trail."><link rel="canonical" href="https://moolbase.rasvai.com/"><meta property="og:type" content="website"><meta property="og:url" content="https://moolbase.rasvai.com/"><meta property="og:title" content="MoolBase — A temporal database for evolving facts"><meta property="og:description" content="From temporal evidence to competing hypotheses, dialectical challenge and established, revisable facts."><meta property="og:image" content="https://opengraph.githubassets.com/1/rastogivaibhav/MoolBase"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="MoolBase — A temporal database for evolving facts"><meta name="twitter:description" content="From temporal evidence to competing hypotheses, dialectical challenge and established, revisable facts."><meta name="twitter:image" content="https://opengraph.githubassets.com/1/rastogivaibhav/MoolBase"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23213c38'/%3E%3Cpath d='M6 23V9l10 9L26 9v14' fill='none' stroke='%23d7eb9c' stroke-width='3'/%3E%3C/svg%3E"><link rel="stylesheet" href="style.css"><script defer src="app.js"></script></head><body>
+<header class="site-header"><a class="brand" href="./"><span class="mark">M</span><span>MoolBase <small>by RASVAI</small></span></a><span class="release">DEVELOPER PREVIEW</span><div class="top-nav" aria-label="Primary navigation"><a href="#story">Origin</a><a href="#how">What it solves</a><a href="#lab">Evidence Lab</a><a href="#future">Decision layer</a><a class="nav-download" href="#developer">Build with it</a></div></header>
 <main>
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero-copy">
-    <p class="eyebrow">TEMPORAL EPISTEMIC DATABASE / DEVELOPER PREVIEW</p>
-    <h1 id="hero-title">What if a database could establish facts, not just store them?</h1>
-    <p class="hero-lede">MoolBase is designed to reconcile changing, conflicting evidence from multiple sources through repeated convergence and divergence — producing facts that can be established, challenged, revised and inspected over time.</p>
-    <div class="hero-actions"><a class="button" href="#story">See why it exists</a><a class="button secondary" href="#lab">Run the Evidence Lab</a></div>
+    <p class="eyebrow">MOOLBASE / TEMPORAL EPISTEMIC DATABASE</p>
+    <h1 id="hero-title">Facts don’t arrive finished.</h1>
+    <p class="hero-lede">MoolBase began with a database question: when evidence arrives over time, from different sources, and sometimes disagrees, can the database help determine what should be treated as established <em>now</em> — without losing how it got there?</p>
+    <p class="hero-thesis"><strong>Evidence → convergence → challenge → re-convergence → currently established fact.</strong></p>
+    <div class="hero-actions"><a class="button" href="#story">Read the origin</a><a class="button secondary" href="#lab">Run the live Evidence Lab</a></div>
     <div class="hero-proof"><span>Embedded C++20</span><span>Actual WebAssembly engine</span><span>Apache-2.0</span><span>No API key</span></div>
   </div>
   <div class="hero-model" aria-label="Illustration of temporal evidence converging and diverging into an established fact">
-    <p class="eyebrow">EVIDENCE OVER TIME</p>
-    <div class="timeline-source"><span>A</span><strong>Source A</strong><small>Observation arrives</small></div>
-    <div class="timeline-source"><span>B</span><strong>Source B</strong><small>Independent support</small></div>
-    <div class="timeline-source opposed"><span>C</span><strong>Source C</strong><small>Contradictory evidence</small></div>
+    <p class="eyebrow">THE CORE IDEA</p>
+    <div class="timeline-source"><span>A</span><strong>Source A</strong><small>An observation arrives at T₁</small></div>
+    <div class="timeline-source"><span>B</span><strong>Source B</strong><small>Independent support arrives at T₂</small></div>
+    <div class="timeline-source opposed"><span>C</span><strong>Source C</strong><small>Contradictory evidence arrives at T₃</small></div>
     <div class="model-cycle"><div><small>ROUND 1</small><strong>Converge</strong></div><i>→</i><div><small>CHALLENGE</small><strong>Diverge</strong></div><i>→</i><div><small>ROUND 2</small><strong>Re-converge</strong></div></div>
-    <div class="established-fact"><small>CURRENTLY ESTABLISHED</small><strong>Derived fact F₁</strong><span>valid under the current evidence policy · revisable when evidence changes</span></div>
+    <div class="established-fact"><small>CURRENTLY ESTABLISHED</small><strong>Fact F₁ — for now</strong><span>supported under the current evidence policy · opposition retained · revisable when evidence changes</span></div>
   </div>
 </section>
 
 <section class="story-section" id="story">
   <div class="story-heading">
-    <p class="eyebrow">WHERE THE IDEA STARTED</p>
-    <h2>MoolBase did not begin as an AI memory product.</h2>
+    <p class="eyebrow">WHY I STARTED MOOLBASE</p>
+    <h2>The idea came before “AI memory”.</h2>
   </div>
   <div class="story-copy">
-    <p class="founder-line">“I originally imagined a temporal database that could reason across facts from different sources, move through multiple rounds of convergence and divergence, and establish a new fact from that process.”</p>
-    <p>The starting problem was not simply retrieval. Real evidence arrives at different times, from sources with different lineage, confidence and independence. Some observations repeat the same origin. Some contradict one another. Some become stale. A database can preserve all of those records and still leave the hardest question unanswered:</p>
-    <p class="big-question">What should be treated as the currently established fact — and why?</p>
+    <p class="origin-label">THE ORIGINAL PREMISE</p>
+    <p class="founder-line">“I wanted a temporal database that could take facts from different sources, reason across them, diverge when they conflict, converge when support becomes strong enough, and establish a new current fact without erasing the path that produced it.”</p>
+    <p>That is the shape MoolBase started from. The problem was not just remembering more data or retrieving the nearest chunk. Real evidence has time, lineage, independence, contradiction and revision. A system can store every record correctly and still fail to answer the question an operator, analyst or agent actually cares about:</p>
+    <p class="big-question">Given everything we know right now, what fact is currently established — and what would make us change it?</p>
   </div>
+</section>
+
+<section class="thesis-strip" aria-label="MoolBase reasoning loop">
+  <div><small>01</small><strong>Observe</strong><span>Evidence arrives over time.</span></div>
+  <div><small>02</small><strong>Converge</strong><span>Independent support strengthens candidates.</span></div>
+  <div><small>03</small><strong>Diverge</strong><span>Contradictions and alternatives stay alive.</span></div>
+  <div><small>04</small><strong>Re-converge</strong><span>The leading fact must survive challenge.</span></div>
+  <div><small>05</small><strong>Revise</strong><span>New evidence can reopen the result.</span></div>
 </section>
 
 <section class="problem-grid" aria-label="The four problems MoolBase was designed around">
@@ -39,11 +49,11 @@
 </section>
 
 <section class="evolution-section">
-  <div class="section-kicker"><p class="eyebrow">HOW THE SYSTEM EVOLVED</p><h2>Each layer appeared because the previous layer exposed another problem.</h2></div>
+  <div class="section-kicker"><p class="eyebrow">HOW THE IDEA GREW</p><h2>The original database problem forced two reasoning layers to emerge.</h2><p>MoolBase stores the evidence state. HypoKosh exists because one evidence state can support multiple plausible explanations. DWM exists because even a converged explanation should be challenged before the system settles.</p></div>
   <div class="evolution-steps">
-    <article><div class="step-no">01</div><div><p class="eyebrow">MOOLBASE CORE</p><h3>Preserve the temporal evidence state.</h3><p>Store observations, provenance, typed relationships, causal context, supersession and durable state so later reasoning has something trustworthy to work from.</p></div></article>
-    <article><div class="step-no">02</div><div><p class="eyebrow">HYPOKOSH</p><h3>Keep competing possible facts alive.</h3><p>Once several explanations can fit the same evidence, the system needs hypotheses rather than premature certainty. HypoKosh competes alternatives and allows convergence or abstention.</p></div></article>
-    <article><div class="step-no">03</div><div><p class="eyebrow">DWM / DIALECTIC ENGINE</p><h3>Challenge the apparent winner.</h3><p>Convergence can reinforce a weak conclusion. DWM introduces material opposition, bounded reopen and targeted re-expansion so a leading hypothesis must survive challenge before the process settles again.</p></div></article>
+    <article><div class="step-no">01</div><div><p class="eyebrow">MOOLBASE CORE</p><h3>What happened, when, and where did it come from?</h3><p>Preserve observations, provenance, typed relationships, causal context, supersession and durable state so later reasoning has a trustworthy temporal substrate.</p></div></article>
+    <article><div class="step-no">02</div><div><p class="eyebrow">HYPOKOSH</p><h3>What explanations are still plausible?</h3><p>When several interpretations fit the same evidence, premature certainty is the failure mode. HypoKosh keeps competing hypotheses alive and allows convergence or abstention.</p></div></article>
+    <article><div class="step-no">03</div><div><p class="eyebrow">DWM / DIALECTIC ENGINE</p><h3>What would make us change our mind?</h3><p>DWM introduces material opposition, bounded reopen and targeted re-expansion so the apparent winner has to survive a deliberate divergent phase before re-convergence.</p></div></article>
   </div>
 </section>
 
@@ -65,24 +75,32 @@
 </section>
 
 <section class="difference-section" id="how">
-  <div class="section-kicker"><p class="eyebrow">WHERE MOOLBASE FITS</p><h2>It is not trying to make every other AI database obsolete.</h2><p>Different systems answer different questions. MoolBase focuses on the evidence process that turns evolving observations into a revisable current fact state.</p></div>
-  <div class="comparison-wrap"><table class="comparison-table"><thead><tr><th>System focus</th><th>Primary question</th></tr></thead><tbody>
+  <div class="section-kicker"><p class="eyebrow">WHAT MOOLBASE ACTUALLY SOLVES</p><h2>It answers a different question from retrieval, graphs or event storage.</h2><p>MoolBase is not trying to replace those systems. It focuses on the evidence process between raw observations and a revisable current fact state.</p></div>
+  <div class="comparison-wrap"><table class="comparison-table"><thead><tr><th>System focus</th><th>The question it is good at answering</th></tr></thead><tbody>
     <tr><td>Vector / semantic database</td><td>What stored information is most similar to this query?</td></tr>
     <tr><td>Knowledge graph</td><td>What entities and relationships are represented?</td></tr>
     <tr><td>Event store</td><td>What happened, and in what order?</td></tr>
     <tr><td>Agent memory</td><td>What should this agent retain and retrieve later?</td></tr>
-    <tr class="moolbase-row"><td><strong>MoolBase</strong></td><td><strong>Given changing evidence, what fact is currently established — and why?</strong></td></tr>
+    <tr class="moolbase-row"><td><strong>MoolBase</strong></td><td><strong>Given changing evidence, what fact is currently established — why — and what could reopen it?</strong></td></tr>
   </tbody></table></div>
-  <p class="comparison-note">MoolBase can complement these systems. It is a temporal epistemic layer, not a claim that similarity search, graph traversal or event storage are unnecessary.</p>
+  <p class="comparison-note">MoolBase is designed to complement retrieval, graph and event infrastructure. “Established” means established under the configured evidence policy and available evidence — not objective truth.</p>
 </section>
 
-<section class="try-section">
-  <div><p class="eyebrow">WHY TRY IT?</p><h2>You probably do not need MoolBase for simple retrieval.</h2></div>
-  <div><p>It becomes interesting when your application must deal with stale facts, contradictory sources, copied evidence, competing explanations, conclusions that may need reopening, or users asking <strong>“why did this fact change?”</strong></p><a class="text-link" href="#lab">Try one evidence process in the browser →</a></div>
+<section class="fit-section">
+  <div class="section-kicker"><p class="eyebrow">SHOULD YOU USE IT?</p><h2>You probably do not need MoolBase for simple retrieval.</h2></div>
+  <div class="fit-grid">
+    <article class="fit-card quiet"><span>USE SOMETHING SIMPLER WHEN</span><h3>The answer does not depend on evolving evidence.</h3><p>If you only need key-value lookup, semantic search, ordinary graph traversal or an append-only event history, specialised systems already solve those jobs well.</p></article>
+    <article class="fit-card"><span>MOOLBASE BECOMES INTERESTING WHEN</span><h3>Your system must explain why the answer changed.</h3><p>Use it when facts can become stale, sources disagree, copied evidence must not count twice, multiple explanations remain plausible, or a conclusion may need to be reopened later.</p><a class="text-link" href="#lab">See that happen in the browser →</a></article>
+  </div>
 </section>
 
 <section id="lab" class="lab-section">
-<div class="intro"><div><p class="eyebrow">EVIDENCE LAB / LIVE DATABASE</p><h2>Now watch the evidence process happen.</h2><p>Choose a scenario and watch temporal evidence accumulate, compete, contradict and change the currently established result.</p></div><div class="engine-label">Actual C++ engine · WebAssembly<br><span>Isolated browser session · synthetic fixtures · no API key</span></div></div>
+<div class="intro"><div><p class="eyebrow">EVIDENCE LAB / LIVE DATABASE</p><h2>Do not take the story on faith. Watch the answer move.</h2><p>The lab runs the actual MoolBase C++ engine in WebAssembly. Choose a scenario, add evidence one observation at a time, and inspect exactly why the current result changes.</p></div><div class="engine-label">Actual C++ engine · WebAssembly<br><span>Isolated browser session · synthetic fixtures · no API key</span></div></div>
+<div class="lab-guide" aria-label="How to use the Evidence Lab">
+  <article><small>STEP 1</small><strong>Pick a scenario</strong><span>Incident investigation, agent memory or conflicting reports.</span></article>
+  <article><small>STEP 2</small><strong>Add evidence</strong><span>Notice copied sources, independent support and contradictions.</span></article>
+  <article><small>STEP 3</small><strong>Inspect the change</strong><span>See the current state, opposition, provenance and downloadable receipt.</span></article>
+</div>
 <nav id="scenarios" aria-label="Customer scenarios"></nav>
 <div class="workspace"><section class="scenario-panel"><p class="eyebrow" id="category"></p><h2 id="question"></h2><p id="description"></p><div class="phase"><span id="progress">0 events</span><span id="engine-status" role="status">Loading database…</span></div><div class="actions"><button id="next" disabled>Add next evidence</button><button class="secondary" id="run" disabled>Run full scenario</button></div><button class="text-button" id="reset" disabled>Reset scenario</button><p class="helper" id="session-capacity"></p><div class="next-event"><p class="eyebrow">NEXT OBSERVATION</p><p id="next-text"></p></div><div class="use-case"><p class="eyebrow">WHEN TO USE IT</p><p id="when"></p><p class="eyebrow">THE SIMPLER ALTERNATIVE</p><p id="alternative"></p></div></section>
 <section class="result-panel" aria-live="polite"><div class="result-top"><span class="eyebrow">CURRENT DATABASE RESULT</span><span class="status" id="status">Starting</span></div><h2 id="answer">Waiting for evidence</h2><p class="helper">An operative answer is the current selection. Only a resolved status indicates sufficient support under this demo’s configured policy.</p><div class="change-summary" id="change-summary" role="status"></div><div id="state-explanation" class="state-explanation" role="status"></div><div id="targets" class="targets"></div><details class="technical-details"><summary>Technical reasoning details</summary><p class="helper">These diagnostics explain the current epistemic state; they are not application errors.</p><div class="receipt-line"><div><span>Snapshot</span><strong id="snapshot">—</strong></div><div><span>Bundle hash</span><strong id="hash">—</strong></div><div><span>Visited states</span><strong id="visited">—</strong></div></div><div id="uncertainty"></div><h3>Native reasoning events</h3><div id="events"></div></details></section></div>
@@ -107,17 +125,18 @@
 
 <section class="future-section" id="future">
   <div class="future-copy">
-    <p class="eyebrow">WHERE THIS COULD GO</p>
-    <h2>From establishing facts to making inspectable decisions.</h2>
-    <p>If MoolBase can maintain an explicit, revisable world state, a natural next research question is whether a decision runtime can operate above that state: not only <strong>“what is currently established?”</strong> but <strong>“given what is currently established, what should we do?”</strong></p>
-    <p class="future-boundary">This is a research direction, not a capability claim for the current developer preview.</p>
+    <p class="eyebrow">THE NEXT RESEARCH QUESTION</p>
+    <h2>Could this become the world-state layer beneath a decision system?</h2>
+    <p class="future-question">That is the direction worth testing next.</p>
+    <p>MoolBase currently focuses on establishing and revising an explicit evidence-backed state. A decision runtime could sit above that state and ask a second question: <strong>“Given what is currently established, what should we do?”</strong></p>
+    <p class="future-boundary">This is a research direction, not a capability claim for the current developer preview. The present release does not claim utility optimisation, policy selection or autonomous action execution.</p>
   </div>
   <div class="decision-flow" aria-label="Possible future decision system flow">
-    <div><small>01</small><strong>Established facts</strong></div><i>→</i>
+    <div><small>01</small><strong>Established world state</strong></div><i>→</i>
     <div><small>02</small><strong>Candidate actions</strong></div><i>→</i>
-    <div><small>03</small><strong>Challenge + constraints</strong></div><i>→</i>
+    <div><small>03</small><strong>Constraints + challenge</strong></div><i>→</i>
     <div class="decision-outcome"><small>04</small><strong>Act · Abstain · Escalate</strong></div>
-    <p>Outcome becomes new temporal evidence ↺</p>
+    <p>The outcome becomes new temporal evidence and can change the next decision ↺</p>
   </div>
 </section>
 <section id="developer" class="distribution"><p class="eyebrow">INSTALL → RUN → CONNECT</p><h2>Build on the evidence process.</h2><p>Start with the compiled database, run the synthetic examples, inspect the source, or reproduce the mechanism. Cloning the full research repository is optional for the packaged developer path.</p><p class="helper">v0.6.0-alpha.2 developer preview · Packaging revision 1 · Compiled download: Linux x86_64 only. Use source for other supported build environments.</p><div class="download-grid"><article class="download-card"><h3>Compiled database</h3><p>Linux x86_64. Compiled library, server, CLI, headers and CMake package. No DB implementation source, research or tests.</p><p class="package-size">1.83 MB ZIP · Apache-2.0</p><a class="button" href="downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip" download>Download DB for Linux</a><div class="integrity"><a href="downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip.sha256" download>SHA-256</a> · <a href="downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip.manifest.json" download>Manifest</a> · <a href="downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip.spdx.json" download>SPDX inventory</a></div></article><article class="download-card"><h3>Examples for the installed DB</h3><p>Three synthetic use cases and a small native adapter. Links against the installed DB; includes no DB implementation.</p><p class="package-size">29 KB ZIP · Apache-2.0</p><a class="button" href="downloads/moolbase-0.6.0-alpha.2-examples-only.zip" download>Download examples</a><div class="integrity"><a href="downloads/moolbase-0.6.0-alpha.2-examples-only.zip.sha256" download>SHA-256</a> · <a href="downloads/moolbase-0.6.0-alpha.2-examples-only.zip.manifest.json" download>Manifest</a> · <a href="downloads/moolbase-0.6.0-alpha.2-examples-only.zip.spdx.json" download>SPDX inventory</a></div></article><article class="download-card"><h3>Optional source</h3><p>Build the DB yourself. Contains the complete engine source needed by the examples, without the full research repository.</p><p class="package-size">262 KB ZIP · Apache-2.0</p><a class="button" href="downloads/moolbase-0.6.0-alpha.2-source.zip" download>Download source</a><div class="integrity"><a href="downloads/moolbase-0.6.0-alpha.2-source.zip.sha256" download>SHA-256</a> · <a href="downloads/moolbase-0.6.0-alpha.2-source.zip.manifest.json" download>Manifest</a> · <a href="downloads/moolbase-0.6.0-alpha.2-source.zip.spdx.json" download>SPDX inventory</a></div></article></div><div class="install-panel"><h3>Run your first application</h3><p>Download and extract the DB and examples ZIPs in the same directory. With C++20, CMake and Python 3:</p><pre><code>export MOOLBASE_PREFIX="$PWD/moolbase-0.6.0-alpha.2-linux-x86_64"
@@ -128,4 +147,4 @@ cmake --build build-showcase -j2
 python3 examples/customer_showcase/python_memory.py
 python3 examples/customer_showcase/python_http.py \
   --server "$MOOLBASE_PREFIX/bin/graphenedb_server"</code></pre><p>Memory correction: EU resolved → no operative answer → US resolved. The HTTP example also checks persisted evidence after restarting the server. Fixtures are synthetic; these are not customer case studies.</p><div class="actions"><a class="button secondary" href="https://github.com/rastogivaibhav/MoolBase/blob/master/docs/INSTALL.md" target="_blank" rel="noopener">Complete install and integration guide</a><a class="button secondary" href="https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2" target="_blank" rel="noopener">GitHub release</a></div></div><p class="helper">The browser demo uses the actual engine with session-local files; refreshing starts fresh. Native examples persist to disk. Applications establish provenance, verification and retirement of stale copies. Prior reasoning state requires separate application persistence.</p><p><a href="https://github.com/rastogivaibhav/MoolBase/blob/master/docs/AGENT_INTEGRATION.md" target="_blank" rel="noopener">Developer and agent guide</a> · <a href="https://github.com/rastogivaibhav/MoolBase/blob/master/examples/customer_showcase/VALIDATION.md" target="_blank" rel="noopener">Verification boundaries</a> · <a href="https://github.com/rastogivaibhav/MoolBase/blob/master/docs/RELEASE_v0.6.0-alpha.2.md" target="_blank" rel="noopener">Release notes</a></p></section>
-<footer><span>MoolBase by RASVAI</span><span>Temporal evidence → convergence → challenge → revisable fact.</span></footer></main></body></html>
+<footer><span>MoolBase by RASVAI</span><span>Observe → converge → challenge → re-converge → revise.</span></footer></main></body></html>
