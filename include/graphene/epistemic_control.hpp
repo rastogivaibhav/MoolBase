@@ -19,6 +19,7 @@ struct EpistemicAdmissibility {
 
   bool evidence_admissible{false};
   bool contradiction_blocks_resolution{false};
+  bool semantic_tie{false};
   bool sufficient_independent_support{false};
   bool requires_external_verification{true};
   SemanticVerificationStatus semantic_verification{
@@ -60,7 +61,8 @@ class EpistemicController {
       const FiberBundle& bundle,
       const EpistemicAdmissibility& admissibility,
       const StabilityAssessment& stability,
-      const DialecticOptions& options = {}) const;
+      const DialecticOptions& options = {},
+      const StabilityThresholds& thresholds = {}) const;
 
   OppositionReport oppose(
       const FiberBundle& bundle,

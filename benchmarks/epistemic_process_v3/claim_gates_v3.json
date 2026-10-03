@@ -1,0 +1,341 @@
+{
+  "schema": "epistemic-process-v3-claim-gates-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "statuses": [
+    "EARNED",
+    "NOT_EARNED",
+    "INELIGIBLE_DESIGN"
+  ],
+  "ranking_forbidden": true,
+  "thresholds": {
+    "tie_absolute_tolerance": 1e-9,
+    "tie_relative_tolerance": 0.000001,
+    "tie_invariance_rate_min": 1,
+    "exact_tie_unique_selection_rate_max": 0,
+    "exact_tie_abstention_rate_min": 1,
+    "near_tie_correct_selection_rate_min": 0.95,
+    "persistence_history_accuracy_delta_min": 0.05,
+    "persistence_single_step_regression_max": 0.03,
+    "evidence_exactness_min": 0.99,
+    "cross_episode_leakage_max": 0,
+    "invalidated_active_support_leakage_max": 0,
+    "invalidation_visibility_min": 0.99,
+    "hypokosh_clear_case_regression_max": 0.03,
+    "replacement_policy_conformity_min": 0.95,
+    "revision_success_rate_min": 0.8,
+    "false_revision_rate_max": 0.05,
+    "revision_latency_steps_max": 2,
+    "native_revision_receipt_completeness_min": 0.99,
+    "challenge_precision_min": 0.85,
+    "challenge_recall_min": 0.7,
+    "unnecessary_challenge_rate_max": 0.15,
+    "unnecessary_reopen_rate_max": 0.1,
+    "reopen_opportunity_precision_min": 0.9,
+    "exhausted_frontier_reopen_rate_max": 0.05,
+    "reopen_usefulness_rate_min": 0.6,
+    "evidence_discovery_after_reopen_rate_min": 0.5,
+    "false_commitment_incidence_reduction_min": 0.05,
+    "false_commitment_incidence_absolute_max": 0.05,
+    "appropriate_abstention_regression_max": 0.03,
+    "commitment_coverage_regression_max": 0.05,
+    "correct_commitment_yield_regression_max": 0.05,
+    "operative_accuracy_regression_max": 0.03,
+    "committed_accuracy_regression_max": 0.03,
+    "earned_resolution_rate_min": 0.7,
+    "false_convergence_rate_max": 0.05,
+    "adjusted_alpha": 0.05
+  },
+  "claims": {
+    "CLAIM-TIE-SYMMETRY": {
+      "comparison": "G1 metamorphic tie families",
+      "all": [
+        [
+          "tie_invariance_rate",
+          ">=",
+          1
+        ],
+        [
+          "exact_tie_unique_selection_rate",
+          "<=",
+          0
+        ],
+        [
+          "appropriate_abstention_rate_on_exact_ties",
+          ">=",
+          1
+        ],
+        [
+          "near_tie_correct_selection_rate",
+          ">=",
+          0.95
+        ]
+      ]
+    },
+    "CLAIM-PERSISTENCE": {
+      "comparison": "C0->C1",
+      "all": [
+        [
+          "history_dependent_operative_accuracy_delta",
+          ">=",
+          0.05
+        ],
+        [
+          "history_dependent_delta_ci_low",
+          ">",
+          0
+        ],
+        [
+          "history_dependent_Holm_p",
+          "<=",
+          0.05
+        ],
+        [
+          "single_step_control_accuracy_delta",
+          ">=",
+          -0.03
+        ],
+        [
+          "evidence_retention_exactness",
+          ">=",
+          0.99
+        ],
+        [
+          "evidence_family_identity_exactness",
+          ">=",
+          0.99
+        ],
+        [
+          "dependency_lineage_exactness",
+          ">=",
+          0.99
+        ],
+        [
+          "cross_episode_leakage_rate",
+          "<=",
+          0
+        ]
+      ]
+    },
+    "CLAIM-INVALIDATION": {
+      "comparison": "mechanical persistence surfaces",
+      "all": [
+        [
+          "invalidated_active_support_leakage_rate",
+          "<=",
+          0
+        ],
+        [
+          "revocation_visibility_rate",
+          ">=",
+          0.99
+        ],
+        [
+          "supersession_visibility_rate",
+          ">=",
+          0.99
+        ]
+      ]
+    },
+    "CLAIM-HYPOKOSH-SELECTION": {
+      "comparison": "C1->G1 plus semantic conformance families",
+      "all": [
+        [
+          "tie_invariance_rate",
+          ">=",
+          1
+        ],
+        [
+          "exact_tie_unique_selection_rate",
+          "<=",
+          0
+        ],
+        [
+          "clear_non_tie_accuracy_delta",
+          ">=",
+          -0.03
+        ],
+        [
+          "incumbent_replacement_policy_conformity",
+          ">=",
+          0.95
+        ]
+      ]
+    },
+    "CLAIM-REVISION": {
+      "comparison": "G1 revision-required vs negative-control families",
+      "all": [
+        [
+          "native_revision_rate",
+          ">=",
+          0.8
+        ],
+        [
+          "false_revision_rate",
+          "<=",
+          0.05
+        ],
+        [
+          "revision_latency_steps_p95",
+          "<=",
+          2
+        ],
+        [
+          "native_revision_receipt_completeness",
+          ">=",
+          0.99
+        ]
+      ]
+    },
+    "CLAIM-DWM-PRECISION": {
+      "comparison": "G2 process",
+      "all": [
+        [
+          "challenge_precision",
+          ">=",
+          0.85
+        ],
+        [
+          "challenge_recall",
+          ">=",
+          0.7
+        ],
+        [
+          "unnecessary_challenge_rate",
+          "<=",
+          0.15
+        ],
+        [
+          "unnecessary_reopen_rate",
+          "<=",
+          0.1
+        ],
+        [
+          "reopen_opportunity_precision",
+          ">=",
+          0.9
+        ],
+        [
+          "exhausted_frontier_reopen_rate",
+          "<=",
+          0.05
+        ]
+      ]
+    },
+    "CLAIM-DWM-USEFULNESS": {
+      "comparison": "G2 expansion-available positive controls",
+      "all": [
+        [
+          "reopen_usefulness_rate",
+          ">=",
+          0.6
+        ],
+        [
+          "evidence_discovery_after_reopen_rate",
+          ">=",
+          0.5
+        ],
+        [
+          "exhausted_frontier_reopen_rate",
+          "<=",
+          0.05
+        ]
+      ]
+    },
+    "CLAIM-DWM-SAFETY": {
+      "comparison": "G1->G2",
+      "all": [
+        [
+          "false_commitment_incidence_delta",
+          "<=",
+          -0.05
+        ],
+        [
+          "false_commitment_incidence_delta_ci_high",
+          "<",
+          0
+        ],
+        [
+          "false_commitment_incidence_Holm_p",
+          "<=",
+          0.05
+        ],
+        [
+          "G2_false_commitment_incidence",
+          "<=",
+          0.05
+        ],
+        [
+          "appropriate_abstention_delta",
+          ">=",
+          -0.03
+        ]
+      ]
+    },
+    "CLAIM-DWM-BROAD-OUTCOME": {
+      "comparison": "G1->G2",
+      "prerequisites": [
+        "CLAIM-DWM-SAFETY"
+      ],
+      "all": [
+        [
+          "commitment_coverage_delta",
+          ">=",
+          -0.05
+        ],
+        [
+          "correct_commitment_yield_delta",
+          ">=",
+          -0.05
+        ],
+        [
+          "operative_hypothesis_accuracy_delta",
+          ">=",
+          -0.03
+        ],
+        [
+          "committed_accuracy_delta",
+          ">=",
+          -0.03
+        ]
+      ],
+      "note": "No weighted composite score is used. Safety improvement cannot compensate for material coverage/yield collapse."
+    },
+    "CLAIM-EARNED-RESOLUTION": {
+      "comparison": "resolution-eligible G1/G2 families",
+      "all": [
+        [
+          "earned_resolution_rate",
+          ">=",
+          0.7
+        ],
+        [
+          "false_convergence_rate",
+          "<=",
+          0.05
+        ]
+      ]
+    }
+  },
+  "derived_metrics": [
+    "appropriate_abstention_rate_on_exact_ties",
+    "near_tie_correct_selection_rate",
+    "history_dependent_operative_accuracy_delta",
+    "history_dependent_delta_ci_low",
+    "history_dependent_Holm_p",
+    "single_step_control_accuracy_delta",
+    "clear_non_tie_accuracy_delta",
+    "incumbent_replacement_policy_conformity",
+    "revision_latency_steps_p95",
+    "native_revision_receipt_completeness",
+    "false_commitment_incidence_delta",
+    "false_commitment_incidence_delta_ci_high",
+    "false_commitment_incidence_Holm_p",
+    "G2_false_commitment_incidence",
+    "appropriate_abstention_delta",
+    "commitment_coverage_delta",
+    "correct_commitment_yield_delta",
+    "operative_hypothesis_accuracy_delta",
+    "committed_accuracy_delta"
+  ]
+}

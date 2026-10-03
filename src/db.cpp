@@ -439,6 +439,22 @@ struct GrapheneDB::Impl {
     add_dense_lattice_node_unlocked(n, version ? version - 1 : 0);
   }
 
+  void apply_committed_delete(uint32_t id, uint64_t deleted_version) {
+    std::unordered_set<uint32_t> affected;
+    if (auto it = in_edges.find(id); it != in_edges.end())
+      affected.insert(it->second.begin(), it->second.end());
+    if (auto it = out_edges.find(id); it != out_edges.end())
+      affected.insert(it->second.begin(), it->second.end());
+    size_t hidden = 0;
+    for (uint32_t eid : affected)
+      if (eid < edges.size() && visible_edge(edges[eid], nodes, deleted_version - 1)) ++hidden;
+    nodes[id].deleted_version = deleted_version;
+    if (nodes[id].lattice) lattice_nodes.erase(*nodes[id].lattice);
+    if (live_node_count) --live_node_count;
+    live_edge_count = hidden > live_edge_count ? 0 : live_edge_count - hidden;
+    if (vector_index) (void)vector_index->remove(id);
+  }
+
   void apply_committed_edge(const Edge& e) {
     ensure_edge_slot(e.id);
     edges[e.id] = e;
@@ -1543,7 +1559,7 @@ Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
 Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
   std::unique_lock lock(impl_->mu);
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
-  if (input.nodes.empty() && input.edges.empty()) {
+  if (input.nodes.empty() && input.edges.empty() && input.delete_node_ids.empty()) {
     if (out) *out = {};
     return Status::ok();
   }
@@ -1559,15 +1575,24 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
     return std::to_string(c.q) + "," + std::to_string(c.r) + "," + std::to_string(c.layer);
   };
 
-  uint32_t next_node = impl_->next_node_id;
+  std::unordered_set<uint32_t> deleted_ids;
   uint64_t next_version = impl_->version;
+  std::vector<std::pair<uint32_t, uint64_t>> deletions;
+  for (uint32_t id : input.delete_node_ids) {
+    if (!deleted_ids.insert(id).second)
+      return Status::error(ErrorCode::InvalidInput, "duplicate batch deletion");
+    if (id >= impl_->nodes.size() || !visible_node(impl_->nodes[id], impl_->version - 1))
+      return Status::error(ErrorCode::NodeNotFound, "batch deletion must reference a visible node");
+    deletions.emplace_back(id, next_version++);
+  }
+  uint32_t next_node = impl_->next_node_id;
   for (const auto& ni : input.nodes) {
     std::string reason;
     if (!impl_->vector_valid(ni.vector, &reason)) return Status::error(ErrorCode::DimensionMismatch, reason);
     if (ni.content.size() > 16 * 1024 * 1024) return Status::error(ErrorCode::InvalidInput, "content too large");
     if (impl_->opt.require_lattice && !ni.lattice) return Status::error(ErrorCode::InvalidInput, "lattice coordinate required");
     if (ni.lattice) {
-      if (impl_->lattice_nodes.find(*ni.lattice) != impl_->lattice_nodes.end()) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
+      if (auto existing = impl_->lattice_nodes.find(*ni.lattice); existing != impl_->lattice_nodes.end() && !deleted_ids.count(existing->second)) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate");
       if (!batch_lattice_keys.insert(lattice_key(*ni.lattice)).second) return Status::error(ErrorCode::InvalidInput, "duplicate lattice coordinate in batch");
       if (impl_->opt.physical_lattice_primary) {
         uint64_t ignored = 0;
@@ -1592,6 +1617,7 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
 
   auto node_visible_in_batch = [&](uint32_t id) {
     uint64_t snap = impl_->version - 1;
+    if (deleted_ids.count(id)) return false;
     if (id < impl_->nodes.size() && visible_node(impl_->nodes[id], snap)) return true;
     return batch_node_ids.count(id) > 0;
   };
@@ -1632,8 +1658,9 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
 
   uint64_t tx = impl_->txid;
   std::vector<std::string> frames;
-  frames.reserve(2 + new_nodes.size() + new_edges.size());
+  frames.reserve(2 + deletions.size() + new_nodes.size() + new_edges.size());
   frames.push_back("BEGIN\t" + std::to_string(tx));
+  for (const auto& [id, version] : deletions) frames.push_back("DELETE_NODE\t" + std::to_string(tx) + "\t" + std::to_string(id) + "\t" + std::to_string(version));
   for (const auto& n : new_nodes) frames.push_back("PUT_NODE\t" + std::to_string(tx) + "\t" + impl_->node_payload(n, "PUT_NODE").substr(std::string("PUT_NODE\t").size()));
   for (const auto& e : new_edges) frames.push_back("PUT_EDGE\t" + std::to_string(tx) + "\t" + impl_->edge_payload(e, "PUT_EDGE").substr(std::string("PUT_EDGE\t").size()));
   frames.push_back("COMMIT\t" + std::to_string(tx));
@@ -1644,6 +1671,7 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
   impl_->next_node_id = next_node;
   impl_->next_edge_id = next_edge;
   impl_->version = next_version;
+  for (const auto& [id, version] : deletions) impl_->apply_committed_delete(id, version);
   for (const auto& n : new_nodes) impl_->apply_committed_node(n);
   for (const auto& e : new_edges) impl_->apply_committed_edge(e);
   if (out) {
@@ -2002,21 +2030,7 @@ Status GrapheneDB::delete_node(uint32_t id) {
   if (!st) return st;
   ++impl_->version;
   ++impl_->txid;
-  std::unordered_set<uint32_t> affected_edges;
-  auto in_it = impl_->in_edges.find(id);
-  if (in_it != impl_->in_edges.end()) affected_edges.insert(in_it->second.begin(), in_it->second.end());
-  auto out_it = impl_->out_edges.find(id);
-  if (out_it != impl_->out_edges.end()) affected_edges.insert(out_it->second.begin(), out_it->second.end());
-  uint64_t before_snap = delver - 1;
-  size_t hidden_edges = 0;
-  for (uint32_t eid : affected_edges) {
-    if (eid < impl_->edges.size() && visible_edge(impl_->edges[eid], impl_->nodes, before_snap)) ++hidden_edges;
-  }
-  impl_->nodes[id].deleted_version = delver;
-  if (impl_->nodes[id].lattice) impl_->lattice_nodes.erase(*impl_->nodes[id].lattice);
-  if (impl_->live_node_count > 0) --impl_->live_node_count;
-  impl_->live_edge_count = hidden_edges > impl_->live_edge_count ? 0 : impl_->live_edge_count - hidden_edges;
-  if (impl_->vector_index) (void)impl_->vector_index->remove(id);
+  impl_->apply_committed_delete(id, delver);
   auto plst = impl_->write_physical_lattice_unlocked();
   if (!plst) impl_->note_maintenance_failure("physical lattice maintenance", plst);
   auto rst = impl_->maybe_rotate_wal_unlocked();

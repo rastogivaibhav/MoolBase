@@ -1,0 +1,45 @@
+{
+  "schema": "epistemic-process-v3-task-generation-receipt-v1",
+  "status": "CYCLE_3_VALIDATED_UNSCORED",
+  "score_bearing_authorized": false,
+  "outcome_peeking": false,
+  "production_behavior_changed": false,
+  "cycle2_source_commit": "d0f3680c426602561e0664b9ad5b4892df4789ae",
+  "cycle2_scientific_commit": "d5f41522634153900b1f0aac12f8e9cfb90010d0",
+  "cycle2_scientific_tree": "b911b4e7625a2cb9dac2365649637c236f5a2244",
+  "validated_cycle3_branch_commit": "1cf44168086d7c99d36656aaad6a24f2d6e51eeb",
+  "validated_cycle3_branch_tree": "5e640d94829c27892b890443ec7a39d25f1f9a1a",
+  "workflow_run_id": 36763261140,
+  "audit_artifact_id": 11119229011,
+  "audit_artifact_digest": "sha256:1f1ab1b19d0a5a8afb5df675c07a9ced627bb507e31f6ef9b2e50953b2603116",
+  "generator_seed": 20261003,
+  "generator_sha256": "b14184302fcf736f7fab46edf72c11e528719d7f639fd1ecd517cfc9365185d7",
+  "task_candidate_sha256": "575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829",
+  "runtime_oracle_stripping_sha256": "d298532080f8235ac19468a9a236792d56a386444e0bddeaf54dccff7746a91b",
+  "validator_hashes": {
+    "validate_tasks_v3_candidate_py": "4a8db05d85445e2060ae76e1ae3e536d4b7f84cf345f1247bf70f020a4b343eb",
+    "test_task_symmetry_v3_py": "414eb0cdc39f0b6e094d7d2f280e271552bece3e65489e624bf400a20fbc7b6c",
+    "test_task_oracle_boundary_v3_py": "d44e4b2af50eed77e37de05b929f024617bf6a95d49a41a9bc83dffc67589e74",
+    "test_task_dwm_topology_v3_py": "88bb815ed3967bcca30f03813112ac95c4f45db70c39845c1caf7ae8a69e1c90",
+    "test_task_revision_structure_v3_py": "9a23e57be9548fe6905964bd523846e2d3cb4b5718042f9b7a1ccdb04e85cd93",
+    "test_task_determinism_v3_py": "0fbe656a663b32f28e4c6e8d9d281eb3efcaf9a15285a8068f71708193570de4",
+    "test_task_adversarial_mutations_v3_py": "7b4aa6b75f445b9607d5507761cfbb421256c791c2bb7d2d4aa3cad6ea71c99b",
+    "strip_runtime_tasks_v3_py": "c678bc41a1c7c299350efe11d085fbbea961c9094b867039fbf7e620c2deb138"
+  },
+  "universe": {
+    "episode_count": 384,
+    "family_count": 24,
+    "episodes_per_family": 16,
+    "mirror_counts": {
+      "H1": 192,
+      "H2": 192
+    },
+    "total_events": 1328,
+    "hidden_evidence_positive_controls": 48,
+    "exhausted_frontier_controls": 16,
+    "revision_required": 80,
+    "resolution_eligible": 192,
+    "abstention_required": 176,
+    "adversarial_mutations_rejected": 20
+  }
+}

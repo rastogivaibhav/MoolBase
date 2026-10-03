@@ -1,0 +1,35 @@
+{
+  "schema": "epistemic-process-v3-failure-policy-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "automatic_score_retry": false,
+  "score_run_count": 1,
+  "imputation": false,
+  "preserve_failures": true,
+  "preserve_negative_results": true,
+  "global_invalidation": [
+    "oracle_leakage",
+    "candidate_tree_or_checksum_mismatch",
+    "wrong_seed",
+    "evaluator_or_statistics_hash_mismatch",
+    "duplicate_task_config_pair",
+    "unexpected_extra_task",
+    "missing_task_config_pair",
+    "cross_episode_evidence_leakage",
+    "score_workflow_interrupted",
+    "wrong_environment_contract"
+  ],
+  "claim_unscorable": [
+    "malformed_receipt_on_required_episode",
+    "missing_required_transition_telemetry",
+    "telemetry_gap_in_primary_metric",
+    "evaluator_error_for_claim"
+  ],
+  "runtime_failure": {
+    "crash_or_timeout": "preserve as failure; do not retry or impute; paired claim using that episode becomes unscorable for that pair",
+    "operationally_inconclusive_if_overall_rate_above": 0.01,
+    "counts_reported": true
+  },
+  "partial_reporting": "Descriptive unaffected metrics may be reported, but no invalidated or unscorable claim may be labeled EARNED.",
+  "rerun_forbidden": true
+}

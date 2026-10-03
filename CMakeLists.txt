@@ -30,6 +30,12 @@ if(MSVC AND TARGET graphenedb_rc_stress_tests)
     PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/tests/msvc_compat.hpp")
 endif()
 
+if(NOT GRAPHENEDB_BUILD_FUZZERS)
+  add_executable(graphenedb_epistemic_process_runtime_runner_v3_cycle5
+                 tools/epistemic_process_runtime_runner_v3_cycle5.cpp)
+  target_link_libraries(graphenedb_epistemic_process_runtime_runner_v3_cycle5 PRIVATE graphenedb)
+endif()
+
 if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_epistemic_process_runtime_runner
                  tools/epistemic_process_runtime_runner.cpp)
@@ -38,6 +44,10 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_executable(graphenedb_epistemic_process_runtime_runner_v2_cycle4
                  tools/epistemic_process_runtime_runner_v2_cycle4.cpp)
   target_link_libraries(graphenedb_epistemic_process_runtime_runner_v2_cycle4 PRIVATE graphenedb)
+
+  add_executable(graphenedb_epistemic_process_v3_cycle1_probe
+                 tools/epistemic_process_v3_cycle1_probe.cpp)
+  target_link_libraries(graphenedb_epistemic_process_v3_cycle1_probe PRIVATE graphenedb)
 
   add_executable(graphenedb_moolbase_monkey_v1
                  tests/test_moolbase_monkey_v1.cpp)
@@ -114,6 +124,12 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_epistemic_control_tests
            COMMAND graphenedb_epistemic_control_tests)
 
+  add_executable(graphenedb_epistemic_process_v3_cycle4_tests
+                 tests/test_epistemic_process_v3_cycle4.cpp)
+  target_link_libraries(graphenedb_epistemic_process_v3_cycle4_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_epistemic_process_v3_cycle4_tests
+           COMMAND graphenedb_epistemic_process_v3_cycle4_tests)
+
   add_executable(graphenedb_epistemic_receipt_tests
                  tests/test_epistemic_receipt.cpp)
   target_link_libraries(graphenedb_epistemic_receipt_tests PRIVATE graphenedb)
@@ -156,4 +172,15 @@ if(GRAPHENEDB_BUILD_BENCH)
   add_executable(graphenedb_dialectic_intervention_bench
                  bench/bench_dialectic_intervention.cpp)
   target_link_libraries(graphenedb_dialectic_intervention_bench PRIVATE graphenedb)
+endif()
+
+if(GRAPHENEDB_BUILD_EXAMPLES)
+  add_executable(moolbase_customer_showcase examples/customer_showcase/engine.cpp)
+  target_link_libraries(moolbase_customer_showcase PRIVATE graphenedb)
+endif()
+
+if(GRAPHENEDB_BUILD_TESTS AND NOT WIN32)
+  add_executable(graphenedb_atomic_lifecycle_tests tests/test_atomic_lifecycle.cpp)
+  target_link_libraries(graphenedb_atomic_lifecycle_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_atomic_lifecycle_tests COMMAND graphenedb_atomic_lifecycle_tests)
 endif()

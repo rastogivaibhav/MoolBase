@@ -115,3 +115,5 @@ call `OutcomeLearningEngine`, which calls `put_extraction()` once. HypoKosh and
 policy evaluation are read-only. The server generates the pilot vector and
 lattice coordinate, but it does not duplicate episode identity, utility,
 eligibility, promotion, rollback, or legal-hold logic.
+
+`BatchInput::delete_node_ids` retires existing visible nodes atomically with batch insertions. Invalid deletion references, duplicate deletions, or edges to retired endpoints reject the whole batch before writing. The embedded API preserves existing WAL records and replay rules.

@@ -130,6 +130,10 @@ void emit_phase(const char* name, const PhaseResult& phase) {
       << "|requires_external_verification="
       << boolean(phase.admissibility.requires_external_verification)
       << "|stable=" << boolean(phase.stability.stable)
+      << "|dialectical_challenge="
+      << boolean(phase.opposition.dialectical_challenge)
+      << "|corroboration_search_required="
+      << boolean(phase.opposition.corroboration_search_required)
       << "|opposition_requests_reexpansion="
       << boolean(phase.opposition.requests_reexpansion)
       << "|reopen_count=" << phase.opposition.reopen_nodes.size()
@@ -181,11 +185,12 @@ int main() {
   assert(phase_b.answer.has_answer);
   assert(phase_b.answer.primary_node == h1);
   assert(!phase_b.answer.discarded_paths.empty());
-  assert(phase_b.opposition.requests_reexpansion);
-  assert(std::find(
-      phase_b.opposition.reopen_nodes.begin(),
-      phase_b.opposition.reopen_nodes.end(), h2) !=
-      phase_b.opposition.reopen_nodes.end());
+  // V3 semantic contract: a separately supported alternative remains visible,
+  // but is not itself material opposition and must not manufacture a DWM
+  // challenge/reopen event.
+  assert(!phase_b.opposition.dialectical_challenge);
+  assert(!phase_b.opposition.requests_reexpansion);
+  assert(phase_b.opposition.reopen_nodes.empty());
 
   // Phase C: material opposition is retained as opposition rather than erased.
   // This is the negative control: a blocking contradiction must prevent final
@@ -198,6 +203,7 @@ int main() {
   const PhaseResult phase_c = evaluate(phase_c_raw);
   assert(phase_c.admissibility.contradiction_blocks_resolution);
   assert(!phase_c.admissibility.evidence_admissible);
+  assert(phase_c.opposition.dialectical_challenge);
   assert(phase_c.opposition.requests_reexpansion);
 
   // Phase E: discriminating evidence is represented without deleting the

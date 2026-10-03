@@ -1,6 +1,7 @@
 #include "graphene/epistemic_control.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <set>
 
 namespace graphene {
@@ -120,6 +121,28 @@ double independent_union_strength(const std::vector<double>& scores) {
   return std::clamp(1.0 - residual, 0.0, 1.0);
 }
 
+constexpr double kSemanticTieAbsoluteTolerance = 1e-9;
+constexpr double kSemanticTieRelativeTolerance = 1e-6;
+
+bool semantic_double_equal(double left, double right) {
+  const double scale = std::max(std::abs(left), std::abs(right));
+  return std::abs(left - right) <=
+         std::max(kSemanticTieAbsoluteTolerance,
+                  kSemanticTieRelativeTolerance * scale);
+}
+
+bool semantic_target_equal(const TargetCandidate& left,
+                           const TargetCandidate& right) {
+  return semantic_double_equal(left.belief_strength, right.belief_strength) &&
+         semantic_double_equal(left.support_strength, right.support_strength) &&
+         semantic_double_equal(left.opposition_strength,
+                               right.opposition_strength) &&
+         left.semantic_verification == right.semantic_verification &&
+         left.independent_support_count == right.independent_support_count &&
+         semantic_double_equal(left.best_support_score,
+                               right.best_support_score);
+}
+
 std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
   const auto supports = support_candidates(bundle);
   std::vector<TargetCandidate> output;
@@ -188,32 +211,59 @@ std::vector<TargetCandidate> target_candidates(const FiberBundle& bundle) {
 }
 
 const TargetCandidate* select_primary_target(
-    const std::vector<TargetCandidate>& ranked_targets) {
+    const std::vector<TargetCandidate>& ranked_targets,
+    const StabilityThresholds& thresholds = StabilityThresholds{}) {
   if (ranked_targets.empty()) return nullptr;
+
   const TargetCandidate* belief_leader = &ranked_targets.front();
+
+  // V3 semantic contract: storage identity is not epistemic evidence.
+  // The sort remains deterministically ordered for receipts/diagnostics, but
+  // an exact semantic tie must not be converted into an operative hypothesis
+  // by the final target_node ordering.
+  if (ranked_targets.size() > 1 &&
+      semantic_target_equal(ranked_targets[0], ranked_targets[1])) {
+    return nullptr;
+  }
+
   const TargetCandidate* support_leader = belief_leader;
+  bool support_leader_tied = false;
   for (const TargetCandidate& candidate : ranked_targets) {
-    if (candidate.support_strength > support_leader->support_strength ||
-        (candidate.support_strength == support_leader->support_strength &&
-         candidate.fiber->target_node < support_leader->fiber->target_node)) {
+    if (candidate.support_strength >
+        support_leader->support_strength +
+            std::max(kSemanticTieAbsoluteTolerance,
+                     kSemanticTieRelativeTolerance *
+                         std::max(std::abs(candidate.support_strength),
+                                  std::abs(support_leader->support_strength)))) {
       support_leader = &candidate;
+      support_leader_tied = false;
+    } else if (&candidate != support_leader &&
+               semantic_double_equal(candidate.support_strength,
+                                     support_leader->support_strength)) {
+      support_leader_tied = true;
     }
   }
 
   if (belief_leader->fiber->target_node ==
-      support_leader->fiber->target_node) {
+          support_leader->fiber->target_node ||
+      support_leader_tied) {
     return belief_leader;
   }
 
-  // The corroboration safeguard applies only when target-level opposition
-  // has demoted a *strictly stronger* support leader. Equal-support ties are
-  // already resolved by the declared ranking coordinates above (verification,
-  // independent-family count, best support, deterministic target id) and must
-  // not be overwritten here.
   if (support_leader->support_strength >
       belief_leader->support_strength) {
     if (belief_leader->independent_support_count >= 2) {
       return belief_leader;
+    }
+
+    // V3 frozen incumbent/replacement policy:
+    // a materially refuted historical support leader is not restored merely
+    // because the replacement has not yet earned two independent families.
+    // The governed state must remain contested with no operative target until
+    // the replacement earns corroboration.
+    if (support_leader->opposition_strength >=
+        thresholds.material_contradiction) {
+      return nullptr;
     }
     return support_leader;
   }
@@ -256,7 +306,10 @@ EpistemicAdmissibility EpistemicController::assess(
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
   const TargetCandidate* selected =
-      select_primary_target(targets);
+      select_primary_target(targets, thresholds);
+  output.semantic_tie =
+      !selected && targets.size() > 1 &&
+      semantic_target_equal(targets[0], targets[1]);
   const uint32_t selected_target =
       selected ? selected->fiber->target_node : 0;
   const auto selected_candidates =
@@ -271,6 +324,19 @@ EpistemicAdmissibility EpistemicController::assess(
   // weak H2 wins" while still allowing a well-corroborated H2 to replace H1.
   output.unresolved_contradiction =
       selected_fiber ? selected_fiber->contradiction_mass : 0.0;
+  // When V3 intentionally clears selection because a materially refuted
+  // incumbent has not yet earned a corroborated replacement, retain the
+  // contradiction signal so governed projection can emit Contested rather
+  // than collapsing the state into generic abstention.
+  if (!selected) {
+    for (const TargetCandidate& candidate : targets) {
+      if (candidate.opposition_strength >= thresholds.material_contradiction) {
+        output.unresolved_contradiction =
+            std::max(output.unresolved_contradiction,
+                     candidate.opposition_strength);
+      }
+    }
+  }
   double displaced_material_contradiction = 0.0;
   if (selected_fiber &&
       selected_fiber->independent_evidence_family_count < 2 &&
@@ -366,7 +432,8 @@ ConvergedAnswer EpistemicController::converge(
     const FiberBundle& bundle,
     const EpistemicAdmissibility& admissibility,
     const StabilityAssessment& stability,
-    const DialecticOptions& options) const {
+    const DialecticOptions& options,
+    const StabilityThresholds& thresholds) const {
   ConvergedAnswer output;
   const auto candidates = support_candidates(bundle);
   const auto targets = target_candidates(bundle);
@@ -377,7 +444,7 @@ ConvergedAnswer EpistemicController::converge(
   }
 
   const TargetCandidate* primary_target =
-      select_primary_target(targets);
+      select_primary_target(targets, thresholds);
   if (!primary_target) {
     output.residual_uncertainty.push_back(
         "no target earned an operative selection");
@@ -480,50 +547,42 @@ OppositionReport EpistemicController::oppose(
       output.falsification_questions.push_back(
           "What independently sourced observation discriminates target " +
           std::to_string(fiber.target_node) + " from its opposition?");
+      // Reopen both the challenged hypothesis and the concrete opposition
+      // anchor. V3 latent-frontier tasks attach newly discoverable evidence
+      // downstream of the observed challenge/evidence anchor, not necessarily
+      // directly below the hypothesis root.
       reopen.insert(fiber.target_node);
-    }
-  }
-
-  // A separately supported target is not discarded noise. It is a competing
-  // hypothesis and must remain visible to opposition and falsification. Use
-  // the same target-level aggregate used by convergence rather than the best
-  // individual support path.
-  if (answer.has_answer) {
-    const auto ranked_targets = target_candidates(bundle);
-    for (const TargetCandidate& candidate : ranked_targets) {
-      if (candidate.fiber->target_node == answer.primary_node) continue;
-      strongest = std::max(strongest, candidate.belief_strength);
-      output.challenged_claims.push_back(
-          "independently supported alternative target " +
-          std::to_string(candidate.fiber->target_node) +
-          " competes with selected target " +
-          std::to_string(answer.primary_node));
-      output.falsification_questions.push_back(
-          "Which observation discriminates selected target " +
-          std::to_string(answer.primary_node) + " from alternative target " +
-          std::to_string(candidate.fiber->target_node) + "?");
-      reopen.insert(answer.primary_node);
-      reopen.insert(candidate.fiber->target_node);
+      if (path_it->anchor_node != 0) {
+        reopen.insert(path_it->anchor_node);
+      }
     }
   }
 
   output.opposition_score = std::max(
       strongest, admissibility.unresolved_contradiction);
-  if (stability.retrieval_noise_penalty > 0.0) {
-    output.challenged_claims.push_back(
-        "retrieval included paths unrelated to the selected target");
-  }
+
+  // V3 semantic split:
+  // - Challenge is reserved for actual material opposition.
+  // - Missing corroboration is an evidence-acquisition request, not a
+  //   dialectical challenge.
+  output.dialectical_challenge =
+      !output.challenged_claims.empty() &&
+      output.opposition_score >= options.reexpansion_threshold;
+
   if (!admissibility.sufficient_independent_support && answer.has_answer) {
-    output.falsification_questions.push_back(
+    output.corroboration_search_required = true;
+    output.corroboration_questions.push_back(
         "Which new evidence family could independently corroborate the selected answer?");
-    reopen.insert(answer.primary_node);
   }
+
   output.reopen_nodes.assign(reopen.begin(), reopen.end());
   output.requests_reexpansion =
-      output.opposition_score >= options.reexpansion_threshold ||
-      !admissibility.evidence_admissible ||
-      !admissibility.sufficient_independent_support ||
-      stability.retrieval_noise_penalty > 0.10;
+      output.dialectical_challenge &&
+      !output.reopen_nodes.empty();
+
+  // Retrieval noise remains a recovery concern handled by the generic escape
+  // planner. It is not promoted into a DWM challenge.
+  (void)stability;
   return output;
 }
 

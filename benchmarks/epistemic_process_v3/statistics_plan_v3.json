@@ -1,0 +1,34 @@
+{
+  "schema": "epistemic-process-v3-statistics-plan-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "alpha": 0.05,
+  "independent_unit": "episode",
+  "binary_paired_test": "two-sided exact McNemar",
+  "paired_interval": "paired bootstrap percentile 95% CI of treatment-minus-control mean",
+  "bootstrap_seed": 20261002,
+  "bootstrap_resamples": 20000,
+  "multiple_testing": "Holm within each preregistered primary claim family",
+  "zero_discordant_pairs": {
+    "p_value": 1,
+    "effect_delta": 0
+  },
+  "reporting": [
+    "numerator",
+    "denominator",
+    "effect_size",
+    "confidence_interval",
+    "raw_p_value",
+    "Holm_adjusted_p_value"
+  ],
+  "primary_pairing": "same episode across compared configurations",
+  "family_reporting": "Report every family separately; primary causal tests pool only the preregistered families attached to that claim.",
+  "sample_size": {
+    "planned_total": 384,
+    "families": 24,
+    "episodes_per_family": 16,
+    "rationale": "384 keeps the preregistered universe within the 300-400 target while providing 16 deterministic/mirrored observations per structural family. Primary claims pool multiple preregistered families and use paired comparisons, increasing sensitivity relative to unpaired analysis.",
+    "intended_primary_effects": "5-10 percentage-point paired differences for broad causal claims; exact-invariance claims require zero asymmetry on deterministic transformation families.",
+    "post_hoc_power_forbidden": true
+  }
+}

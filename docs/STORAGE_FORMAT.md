@@ -78,3 +78,5 @@ Corrupt manifests fail with `DataCorrupt`; unsupported future formats fail with 
 ## Non-Goals
 
 The format is currently an embedded text/framed storage format, not a stable cross-language binary wire format. It is designed for local durability, testability, and compatibility gates first.
+
+Atomic lifecycle batches use the existing `DELETE_NODE`, `PUT_NODE` and `PUT_EDGE` WAL records inside one `BEGIN`/`COMMIT` transaction. There is no durable-format version change. Uncommitted lifecycle batches are ignored by existing replay.

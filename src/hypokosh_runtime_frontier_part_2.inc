@@ -12,6 +12,14 @@ GovernedProjection project_status(
     QueryMode mode,
     const StabilityThresholds& thresholds) {
   if (!convergence.has_answer) {
+    if (admissibility.contradiction_blocks_resolution) {
+      return {GovernedEpistemicStatus::Contested,
+              "material_contradiction_without_earned_replacement"};
+    }
+    if (admissibility.semantic_tie) {
+      return {GovernedEpistemicStatus::Open,
+              "unresolved_semantic_tie"};
+    }
     return {
         stability.missing_evidence_penalty > 0.0
             ? GovernedEpistemicStatus::EvidenceRequired
@@ -185,7 +193,8 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       options.dialectic.mode);
   result.initial_convergence = controller.converge(
       result.initial_bundle, result.initial_admissibility,
-      result.initial_stability, options.dialectic);
+      result.initial_stability, options.dialectic,
+      options.stability_thresholds);
   result.initial_opposition =
       options.enable_dwm
           ? controller.oppose(
@@ -240,6 +249,12 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
   result.final_self_healing = result.initial_self_healing;
 
   std::vector<LyapunovSample> samples;
+  if (options.prior_epistemic_state.available &&
+      options.prior_epistemic_state.bundle_hash != 0) {
+    samples.push_back(
+        {options.prior_epistemic_state.bundle_hash,
+         options.prior_epistemic_state.stability});
+  }
   samples.push_back(
       {reasoning_state_hash(result.initial_bundle, options.dialectic),
        result.initial_stability});
@@ -259,10 +274,24 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     trace.searchable_escape = has_searchable_action(current_escape);
     trace.recovery_search_requested =
         trace.requires_escape && trace.searchable_escape;
+    trace.dialectical_challenge_present =
+        options.enable_dwm &&
+        result.final_opposition.dialectical_challenge;
+    trace.corroboration_search_requested =
+        result.final_opposition.corroboration_search_required;
+    const ExpansionOpportunity expansion_opportunity =
+        assess_expansion_opportunity(
+            db_, result.final_bundle, result.final_opposition,
+            current_options, resolved_snapshot);
+    trace.expansion_opportunity_available =
+        expansion_opportunity.available;
+    trace.expansion_opportunity_class =
+        expansion_opportunity.classification;
     trace.opposition_search_requested =
         options.enable_dwm &&
         options.enable_opposition_research &&
-        result.final_opposition.requests_reexpansion;
+        result.final_opposition.requests_reexpansion &&
+        expansion_opportunity.available;
     trace.generic_expansion_allowed =
         current_escape.generic_expansion_allowed;
     trace.depth_repair_active = depth_repair_active(current_escape);
@@ -311,7 +340,7 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
         trace.recovery_search_requested;
     const bool opposition_search_requested =
         trace.opposition_search_requested;
-    if (opposition_search_requested) {
+    if (trace.dialectical_challenge_present) {
       NativeEpistemicEvent challenge;
       challenge.round_index = round;
       challenge.source = EpistemicEventSource::DialecticalModelWorlds;
@@ -323,17 +352,44 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       challenge.competing_hypotheses =
           hypothesis_nodes(result.final_bundle);
       challenge.reopen_nodes =
-          result.final_opposition.reopen_nodes;
+          opposition_search_requested
+              ? result.final_opposition.reopen_nodes
+              : std::vector<uint32_t>{};
       challenge.evidence_edges = evidence_edges_for_nodes(
-          result.final_bundle, challenge.reopen_nodes);
+          result.final_bundle, result.final_opposition.reopen_nodes);
       challenge.evidence_family_ids = evidence_families_for_nodes(
-          result.final_bundle, challenge.reopen_nodes);
-      challenge.epistemic_state = "challenged";
+          result.final_bundle, result.final_opposition.reopen_nodes);
+      challenge.epistemic_state =
+          opposition_search_requested
+              ? "challenged_expandable"
+              : "challenged_frontier_exhausted";
       challenge.reason =
           result.final_opposition.challenged_claims.empty()
-              ? "opposition requested bounded re-expansion"
+              ? "material opposition challenges the current hypothesis"
               : result.final_opposition.challenged_claims.front();
       append_epistemic_event(&result.receipt, std::move(challenge));
+    }
+    if (trace.corroboration_search_requested) {
+      NativeEpistemicEvent corroboration;
+      corroboration.round_index = round;
+      corroboration.source = EpistemicEventSource::HypoKosh;
+      corroboration.type = EpistemicEventType::CorroborationSearch;
+      corroboration.hypothesis_node =
+          result.final_convergence.has_answer
+              ? result.final_convergence.primary_node
+              : 0;
+      corroboration.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      corroboration.evidence_edges =
+          all_evidence_edges(result.final_convergence);
+      corroboration.evidence_family_ids = selected_evidence_families(
+          result.final_bundle, result.final_convergence);
+      corroboration.epistemic_state = "evidence_insufficient";
+      corroboration.reason =
+          result.final_opposition.corroboration_questions.empty()
+              ? "additional independent corroboration is required"
+              : result.final_opposition.corroboration_questions.front();
+      append_epistemic_event(&result.receipt, std::move(corroboration));
     }
     if (!recovery_search_requested && !opposition_search_requested) {
       trace.next_max_hops = current_options.max_hops;

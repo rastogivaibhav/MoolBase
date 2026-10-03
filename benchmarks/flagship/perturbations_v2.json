@@ -1,0 +1,87 @@
+{
+  "schema_version": 2,
+  "protocol_id": "moolbase-flagship-perturbations-v2",
+  "canonical_parent_commit": "e7465b09f59c50d836a462601cca998d4adac25e",
+  "canonical_flagship_scenario": "benchmarks/flagship/scenario.json",
+  "canonical_flagship_mechanism_receipt_sha256": "12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89",
+  "integrity_rules": [
+    "do_not_modify_v1_manifest_or_runner",
+    "do_not_modify_v2_canonical_flagship_mechanism_hash_after_preregistration",
+    "preserve_all_perturbation_results_including_failures",
+    "separate_corroboration_search_from_dialectical_challenge",
+    "no_gj_eval_semantic_changes",
+    "no_jev_tuning"
+  ],
+  "perturbations": [
+    {
+      "id": "P1",
+      "name": "duplicate_family_injection",
+      "intent": "Add graph-distinct support that resolves to an already represented evidence family.",
+      "expected": {
+        "raw_path_count": "may_increase",
+        "independent_evidence_family_count": "must_not_increase_from_duplication",
+        "corroboration": "must_not_be_earned_solely_from_duplication",
+        "final_resolution": "must_not_be_enabled_solely_by_duplication",
+        "corroboration_search": "required_when_independent_support_is_insufficient",
+        "dialectical_challenge": "forbidden_without_material_opposition",
+        "dwm_reexpansion": "forbidden_without_material_opposition"
+      },
+      "failure_priority": "P0"
+    },
+    {
+      "id": "P2",
+      "name": "decisive_independent_family_removal",
+      "intent": "Remove one genuinely independent support family from a state that previously had corroboration.",
+      "expected": {
+        "independent_evidence_family_count": "must_decrease",
+        "corroboration": "must_decrease_when_removed_family_is_required",
+        "path_multiplicity_substitution": "forbidden",
+        "corroboration_search": "required_after_decisive_family_removal",
+        "dialectical_challenge": "forbidden_without_material_opposition",
+        "dwm_reexpansion": "forbidden_without_material_opposition"
+      },
+      "failure_priority": "P0"
+    },
+    {
+      "id": "P3",
+      "name": "material_contradiction_injection",
+      "intent": "Inject material opposition against the current leading hypothesis.",
+      "expected": {
+        "contradiction_visibility": "must_remain_visible",
+        "final_resolution": "must_be_blocked_under_current_flagship_contract",
+        "opposition_or_reopen": "must_remain_inspectable",
+        "dialectical_challenge": "required_for_material_opposition"
+      },
+      "failure_priority": "P0"
+    },
+    {
+      "id": "P4",
+      "name": "deterministic_ingestion_order_permutation",
+      "intent": "Permute insertion/path presentation while preserving semantic evidence identities.",
+      "expected": {
+        "epistemic_outcome": "must_be_equivalent",
+        "semantic_drift_from_order_only": "forbidden",
+        "receipt_difference": "allowed_only_if_explained_by_declared_provenance_or_order_fields"
+      },
+      "failure_priority": "P1_or_P0_if_final_convergence_changes"
+    },
+    {
+      "id": "P5",
+      "name": "bounded_search_depth_alteration",
+      "intent": "Change permitted depth/search budget without changing evidence.",
+      "expected": {
+        "receipt_budget_visibility": "required",
+        "silent_cross_dimension_widening": "forbidden",
+        "non_convergence_when_budget_insufficient": "acceptable_and_must_be_preserved"
+      },
+      "failure_priority": "P0_for_silent_widening_P1_for_unexplained_state_change"
+    }
+  ],
+  "required_artifacts": [
+    "per_perturbation_receipts",
+    "aggregate_summary_with_failures",
+    "clean_checkout_reproduction_instructions",
+    "ci_artifact_publication",
+    "failure_to_implementation_priority_mapping"
+  ]
+}

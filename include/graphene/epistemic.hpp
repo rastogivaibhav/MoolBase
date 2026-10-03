@@ -18,13 +18,15 @@ struct EvidenceRef {
               std::string observation_time = {},
               std::string family = {},
               std::string derivation = {},
-              std::string hash = {})
+              std::string hash = {},
+              std::string lifecycle = "active")
       : source_id(std::move(source)),
         span(std::move(evidence_span)),
         observed_at(std::move(observation_time)),
         evidence_family_id(std::move(family)),
         derivation_id(std::move(derivation)),
-        content_hash(std::move(hash)) {}
+        content_hash(std::move(hash)),
+        lifecycle_state(std::move(lifecycle)) {}
 
   std::string source_id;
   std::string span;
@@ -36,6 +38,10 @@ struct EvidenceRef {
   std::string evidence_family_id;
   std::string derivation_id;
   std::string content_hash;
+  // Runtime lifecycle is preserved for audit even when evidence is no longer
+  // operative. Active/refuted remain usable; revoked/superseded/invalidated
+  // and audit_only are non-operative.
+  std::string lifecycle_state{"active"};
 };
 
 struct ProvenanceFinding {

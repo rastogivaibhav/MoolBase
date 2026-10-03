@@ -78,7 +78,8 @@
         options.stability_thresholds);
     ConvergedAnswer reopened_convergence = controller.converge(
         reopened_bundle, reopened_admissibility,
-        reopened_stability, current_options);
+        reopened_stability, current_options,
+        options.stability_thresholds);
     OppositionReport reopened_opposition =
         options.enable_dwm
             ? controller.oppose(
@@ -191,6 +192,71 @@
           trace.next_has_answer ? trace.next_primary_node : 0;
     }
     current_trace_status = trace.next_status;
+
+    // Emit commitment-layer transitions only after the governed/Lyapunov
+    // projection has finalized this round's status.
+    if (trace.previous_committed_node != 0 &&
+        trace.next_committed_node != trace.previous_committed_node) {
+      NativeEpistemicEvent decommitment;
+      decommitment.round_index = round;
+      decommitment.source = EpistemicEventSource::HypoKosh;
+      decommitment.type = EpistemicEventType::Decommitment;
+      decommitment.previous_hypothesis_node =
+          trace.previous_committed_node;
+      decommitment.hypothesis_node = 0;
+      decommitment.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      decommitment.evidence_edges =
+          all_evidence_edges(result.final_convergence);
+      decommitment.evidence_family_ids = selected_evidence_families(
+          result.final_bundle, result.final_convergence);
+      decommitment.epistemic_state = "decommitted";
+      decommitment.reason =
+          "governed projection withdrew the previous commitment";
+      append_epistemic_event(&result.receipt, std::move(decommitment));
+    }
+
+    if (trace.previous_committed_node != 0 &&
+        trace.next_committed_node != 0 &&
+        trace.next_committed_node != trace.previous_committed_node) {
+      NativeEpistemicEvent recommitment;
+      recommitment.round_index = round;
+      recommitment.source = EpistemicEventSource::HypoKosh;
+      recommitment.type = EpistemicEventType::Recommitment;
+      recommitment.previous_hypothesis_node =
+          trace.previous_committed_node;
+      recommitment.hypothesis_node = trace.next_committed_node;
+      recommitment.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      recommitment.evidence_edges =
+          all_evidence_edges(result.final_convergence);
+      recommitment.evidence_family_ids = selected_evidence_families(
+          result.final_bundle, result.final_convergence);
+      recommitment.epistemic_state = "recommitted";
+      recommitment.reason =
+          "governed projection committed to the revised hypothesis";
+      append_epistemic_event(&result.receipt, std::move(recommitment));
+    }
+
+    if (trace.previous_status != GovernedEpistemicStatus::Resolved &&
+        trace.next_status == GovernedEpistemicStatus::Resolved &&
+        trace.next_committed_node != 0) {
+      NativeEpistemicEvent resolution;
+      resolution.round_index = round;
+      resolution.source = EpistemicEventSource::HypoKosh;
+      resolution.type = EpistemicEventType::Resolution;
+      resolution.hypothesis_node = trace.next_committed_node;
+      resolution.competing_hypotheses =
+          hypothesis_nodes(result.final_bundle);
+      resolution.evidence_edges =
+          all_evidence_edges(result.final_convergence);
+      resolution.evidence_family_ids = selected_evidence_families(
+          result.final_bundle, result.final_convergence);
+      resolution.epistemic_state = "resolved";
+      resolution.reason =
+          "all governed resolution conditions were earned";
+      append_epistemic_event(&result.receipt, std::move(resolution));
+    }
 
     if (trace.lyapunov_limit_cycle ||
         trace.lyapunov_oscillation) {

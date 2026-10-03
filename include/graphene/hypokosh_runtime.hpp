@@ -18,6 +18,7 @@ enum class GovernedEpistemicStatus : uint8_t {
   ProvisionallyResolved,
   Contested,
   EvidenceRequired,
+  Open,
   Abstain,
   Speculative
 };
@@ -32,8 +33,12 @@ enum class EpistemicEventType : uint8_t {
   HypothesisSet,
   Decision,
   Challenge,
+  CorroborationSearch,
   Reopen,
   Revision,
+  Decommitment,
+  Recommitment,
+  Resolution,
   Terminal
 };
 
@@ -52,6 +57,17 @@ struct NativeEpistemicEvent {
   std::string reason;
 };
 
+struct PriorEpistemicState {
+  bool available{false};
+  bool has_answer{false};
+  uint32_t operative_node{0};
+  uint32_t committed_node{0};
+  uint32_t last_committed_node{0};
+  GovernedEpistemicStatus status{GovernedEpistemicStatus::Abstain};
+  uint64_t bundle_hash{0};
+  StabilityAssessment stability;
+};
+
 struct RuntimeOptions {
   DialecticOptions dialectic;
   StabilityWeights stability_weights;
@@ -59,6 +75,10 @@ struct RuntimeOptions {
   LyapunovWeights lyapunov_weights;
   LyapunovTargets lyapunov_targets;
   const PathVerifier* path_verifier{nullptr};
+  // Optional persistent state from the immediately preceding evidence update.
+  // This lets native transition receipts and Lyapunov dwell span sequential
+  // production calls without relying on evaluator/oracle state.
+  PriorEpistemicState prior_epistemic_state;
   uint32_t max_recursive_cycles{2};
   bool enable_opposition_research{false};
   uint32_t unchanged_recovery_patience{2};
@@ -78,6 +98,10 @@ struct RecoveryRoundTrace {
   bool searchable_escape{false};
   bool recovery_search_requested{false};
   bool opposition_search_requested{false};
+  bool dialectical_challenge_present{false};
+  bool corroboration_search_requested{false};
+  bool expansion_opportunity_available{false};
+  std::string expansion_opportunity_class{"NO_EXPANSION_OPPORTUNITY"};
   bool generic_expansion_allowed{false};
   bool options_changed{false};
   bool depth_repair_active{false};

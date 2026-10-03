@@ -1,0 +1,83 @@
+{
+  "schema": "epistemic-process-v3-telemetry-contract-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "behavior_influencing": false,
+  "canonical_family_id": "family:<raw-id>",
+  "target_rank_fields": [
+    "target_node",
+    "semantic_hypothesis_label",
+    "support_strength",
+    "opposition_strength",
+    "belief_strength",
+    "semantic_verification",
+    "independent_support_family_count",
+    "best_support_score",
+    "admissibility",
+    "contradiction_state"
+  ],
+  "evidence_state_fields": [
+    "evidence_id",
+    "canonical_family_id",
+    "source_id",
+    "derivation_lineage",
+    "role",
+    "active",
+    "revoked",
+    "superseded",
+    "invalidated",
+    "contradicted",
+    "contributes_positive_support",
+    "contributes_opposition",
+    "audit_only"
+  ],
+  "dwm_before_fields": [
+    "trigger_class",
+    "opposition_present",
+    "insufficient_corroboration",
+    "selected_hypothesis",
+    "competing_hypotheses",
+    "reopen_nodes",
+    "semantic_candidate_count",
+    "path_count",
+    "visited_states",
+    "semantic_candidate_limit",
+    "path_limit",
+    "visited_state_limit",
+    "frontier_exhausted",
+    "expansion_opportunity_class"
+  ],
+  "expansion_opportunity_classes": [
+    "NEW_ELIGIBLE_NODE_AVAILABLE",
+    "NEW_ADMISSIBLE_PATH_AVAILABLE",
+    "BUDGET_BOUND_AND_EXPANDABLE",
+    "DEPENDENCY_STATE_CHANGED",
+    "EXTERNAL_EVIDENCE_ARRIVED",
+    "FRONTIER_EXHAUSTED",
+    "NO_EXPANSION_OPPORTUNITY"
+  ],
+  "dwm_after_fields": [
+    "candidate_set_delta",
+    "path_set_delta",
+    "evidence_ref_delta",
+    "bundle_hash_changed",
+    "visited_state_delta",
+    "rank_changed",
+    "operative_hypothesis_changed",
+    "status_changed",
+    "commitment_changed",
+    "decommitment",
+    "recommitment",
+    "stop_reason"
+  ],
+  "native_transition_events": [
+    "operative_change",
+    "revision",
+    "decommitment",
+    "recommitment",
+    "challenge",
+    "corroboration_search",
+    "reopen"
+  ],
+  "telemetry_gap_policy": "Any missing field required by a primary claim makes that claim unscorable; systematic or cross-configuration gaps invalidate the run under failure_policy_v3.json."
+}

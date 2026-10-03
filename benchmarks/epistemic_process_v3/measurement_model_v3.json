@@ -1,0 +1,121 @@
+{
+  "schema": "epistemic-process-v3-measurement-model-v1",
+  "status": "FROZEN_PRE_IMPLEMENTATION",
+  "score_bearing_authorized": false,
+  "experiment_id_candidate": "EP-PROCESS-V3-SCORE-001",
+  "planned_episode_count": 384,
+  "planned_family_count": 24,
+  "episodes_per_family": 16,
+  "semantic_contract": "semantic_contract_v3.json",
+  "controls": "controls_v3.json",
+  "task_family_requirements": "task_family_requirements_v3.json",
+  "telemetry_contract": "telemetry_contract_v3.json",
+  "metric_definitions": "metric_definitions_v3.json",
+  "claim_gates": "claim_gates_v3.json",
+  "statistics_plan": "statistics_plan_v3.json",
+  "failure_policy": "failure_policy_v3.json",
+  "hypotheses": [
+    {
+      "id": "H-TIE",
+      "claim": "CLAIM-TIE-SYMMETRY",
+      "statement": "Semantic outcome is invariant to irrelevant identity/order transformations; exact unresolved symmetry yields no unique operative target."
+    },
+    {
+      "id": "H-PERSIST",
+      "claim": "CLAIM-PERSISTENCE",
+      "statement": "Persistent state adds history-dependent value without material single-step regression."
+    },
+    {
+      "id": "H-REVOCATION",
+      "claim": "CLAIM-INVALIDATION",
+      "statement": "Revoked/superseded evidence ceases active positive contribution while audit evidence remains available."
+    },
+    {
+      "id": "H-REFUTATION",
+      "claim": "CLAIM-HYPOKOSH-SELECTION",
+      "statement": "Refutation remains opposition, not deletion; selection obeys frozen contested/replacement semantics."
+    },
+    {
+      "id": "H-REPLACEMENT",
+      "claim": "CLAIM-HYPOKOSH-SELECTION",
+      "statement": "A materially refuted incumbent is not retained solely because replacement corroboration is insufficient."
+    },
+    {
+      "id": "H-REVISION",
+      "claim": "CLAIM-REVISION",
+      "statement": "Defeated beliefs revise natively when adequate replacement evidence arrives."
+    },
+    {
+      "id": "H-DWM-PRECISION",
+      "claim": "CLAIM-DWM-PRECISION",
+      "statement": "Dialectical challenge corresponds to actual opposition, not mere insufficiency."
+    },
+    {
+      "id": "H-DWM-OPPORTUNITY",
+      "claim": "CLAIM-DWM-PRECISION",
+      "statement": "Reopen requires a production-observable expansion opportunity."
+    },
+    {
+      "id": "H-DWM-USEFULNESS",
+      "claim": "CLAIM-DWM-USEFULNESS",
+      "statement": "Opportunity-positive reopens produce meaningful downstream change."
+    },
+    {
+      "id": "H-DWM-SAFETY",
+      "claim": "CLAIM-DWM-SAFETY",
+      "statement": "DWM materially reduces unsafe commitments or preserves appropriate abstention."
+    },
+    {
+      "id": "H-DWM-COVERAGE",
+      "claim": "CLAIM-DWM-BROAD-OUTCOME",
+      "statement": "Safety gains do not depend on material coverage/correct-yield collapse."
+    },
+    {
+      "id": "H-EARNED-RESOLUTION",
+      "claim": "CLAIM-EARNED-RESOLUTION",
+      "statement": "Structurally eligible cases can reach genuinely resolved correct commitments."
+    }
+  ],
+  "thresholds": {
+    "tie_absolute_tolerance": 1e-9,
+    "tie_relative_tolerance": 0.000001,
+    "tie_invariance_rate_min": 1,
+    "exact_tie_unique_selection_rate_max": 0,
+    "exact_tie_abstention_rate_min": 1,
+    "near_tie_correct_selection_rate_min": 0.95,
+    "persistence_history_accuracy_delta_min": 0.05,
+    "persistence_single_step_regression_max": 0.03,
+    "evidence_exactness_min": 0.99,
+    "cross_episode_leakage_max": 0,
+    "invalidated_active_support_leakage_max": 0,
+    "invalidation_visibility_min": 0.99,
+    "hypokosh_clear_case_regression_max": 0.03,
+    "replacement_policy_conformity_min": 0.95,
+    "revision_success_rate_min": 0.8,
+    "false_revision_rate_max": 0.05,
+    "revision_latency_steps_max": 2,
+    "native_revision_receipt_completeness_min": 0.99,
+    "challenge_precision_min": 0.85,
+    "challenge_recall_min": 0.7,
+    "unnecessary_challenge_rate_max": 0.15,
+    "unnecessary_reopen_rate_max": 0.1,
+    "reopen_opportunity_precision_min": 0.9,
+    "exhausted_frontier_reopen_rate_max": 0.05,
+    "reopen_usefulness_rate_min": 0.6,
+    "evidence_discovery_after_reopen_rate_min": 0.5,
+    "false_commitment_incidence_reduction_min": 0.05,
+    "false_commitment_incidence_absolute_max": 0.05,
+    "appropriate_abstention_regression_max": 0.03,
+    "commitment_coverage_regression_max": 0.05,
+    "correct_commitment_yield_regression_max": 0.05,
+    "operative_accuracy_regression_max": 0.03,
+    "committed_accuracy_regression_max": 0.03,
+    "earned_resolution_rate_min": 0.7,
+    "false_convergence_rate_max": 0.05,
+    "adjusted_alpha": 0.05
+  },
+  "composite_utility": {
+    "used_for_primary_claims": false,
+    "reason": "Use multidimensional non-inferiority/Pareto gates to prevent arbitrary weighting and always-abstain gaming."
+  }
+}

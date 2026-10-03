@@ -18,7 +18,7 @@ import sys
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-EXPECTED_MECHANISM_RECEIPT_SHA256 = "36ca5817494325870b81dbe96c261086c13ff09e040b7604242bcbf92d6dedef"
+EXPECTED_MECHANISM_RECEIPT_SHA256 = "12f2c843774027b33b2e81869fc24b232f849e81f84936d7d7b8b1be189fde89"
 
 
 def checked(cmd: list[str], *, cwd: pathlib.Path = ROOT) -> subprocess.CompletedProcess[str]:
@@ -154,10 +154,12 @@ def main() -> int:
     require(phases["B"]["primary"] == 101, "phase B primary changed")
     require(phases["B"]["discarded_paths"] >= 1,
             "phase B competing path disappeared")
-    require(phases["B"]["opposition_requests_reexpansion"] is True,
-            "phase B alternative did not drive opposition")
-    require(phases["B"]["reopen_count"] >= 2,
-            "phase B did not retain both reopen targets")
+    require(phases["B"]["dialectical_challenge"] is False,
+            "phase B alternative was incorrectly promoted to dialectical opposition")
+    require(phases["B"]["opposition_requests_reexpansion"] is False,
+            "phase B alternative incorrectly requested DWM re-expansion")
+    require(phases["B"]["reopen_count"] == 0,
+            "phase B alternative incorrectly created reopen targets")
 
     # C: negative control. More evidence includes decisive opposition, so the
     # correct result is refusal of final resolution.
@@ -165,6 +167,8 @@ def main() -> int:
             "phase C contradiction did not block resolution")
     require(phases["C"]["admissible"] is False,
             "phase C contradiction remained admissible")
+    require(phases["C"]["dialectical_challenge"] is True,
+            "phase C material opposition did not become a dialectical challenge")
     require(phases["C"]["opposition_requests_reexpansion"] is True,
             "phase C did not request challenge/reopen")
 
@@ -264,7 +268,7 @@ Scenario: **{manifest['title']}**
 ## What the run demonstrated
 
 - **Phase A — correlated evidence:** {phases['A']['raw_paths']} raw paths remained only {phases['A']['independent_families']} independent evidence family; independent corroboration was not fabricated.
-- **Phase B — competing hypothesis:** H2 remained visible after H1 was selected; opposition requested bounded re-expansion with {phases['B']['reopen_count']} reopen targets.
+- **Phase B — competing hypothesis:** H2 remained visible after H1 was selected without being mislabeled as material opposition; no DWM challenge/reopen was manufactured.
 - **Phase C — negative control:** material contradiction made the evidence inadmissible for final resolution. The candidate answer remains visible for audit, but it is **not eligible for final resolution** while the contradiction remains.
 - **Phase D — DWM/recovery:** bounded dialectic produced a reopened bundle with no durable writes. Missing-hop recovery executed {recovery['expansion_rounds']} depth expansions without widening semantic candidates.
 - **Phase E — discriminating evidence:** independent support increased and the contradiction blocker cleared while the earlier Phase C receipt hash remained recorded.

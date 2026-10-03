@@ -21,6 +21,136 @@
     }
   }
 
+  const PriorEpistemicState& prior =
+      options.prior_epistemic_state;
+  const uint32_t current_operative =
+      result.final_convergence.has_answer ? result.primary_node : 0;
+  const uint32_t current_committed =
+      result.final_convergence.has_answer &&
+              trace_status_commits(result.status)
+          ? result.primary_node
+          : 0;
+
+  auto already_has_transition =
+      [&](EpistemicEventType type,
+          uint32_t previous_node,
+          uint32_t current_node) {
+        for (const NativeEpistemicEvent& event :
+             result.receipt.epistemic_events) {
+          if (event.type == type &&
+              event.previous_hypothesis_node == previous_node &&
+              event.hypothesis_node == current_node) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+  if (prior.available && prior.has_answer &&
+      prior.operative_node != 0 &&
+      prior.operative_node != current_operative &&
+      !already_has_transition(
+          EpistemicEventType::Revision,
+          prior.operative_node,
+          current_operative)) {
+    NativeEpistemicEvent revision;
+    revision.round_index = result.receipt.expansion_rounds;
+    revision.source = EpistemicEventSource::HypoKosh;
+    revision.type = EpistemicEventType::Revision;
+    revision.previous_hypothesis_node = prior.operative_node;
+    revision.hypothesis_node = current_operative;
+    revision.competing_hypotheses =
+        hypothesis_nodes(result.final_bundle);
+    revision.evidence_edges = result.evidence_edges;
+    revision.evidence_family_ids = selected_evidence_families(
+        result.final_bundle, result.final_convergence);
+    revision.epistemic_state =
+        current_operative == 0 ? "revised_to_no_operative"
+                               : "revised_across_evidence_update";
+    revision.reason =
+        "new persistent evidence changed the previously governed operative hypothesis";
+    append_epistemic_event(&result.receipt, std::move(revision));
+  }
+
+  if (prior.available && prior.committed_node != 0 &&
+      prior.committed_node != current_committed &&
+      !already_has_transition(
+          EpistemicEventType::Decommitment,
+          prior.committed_node,
+          0)) {
+    NativeEpistemicEvent decommitment;
+    decommitment.round_index = result.receipt.expansion_rounds;
+    decommitment.source = EpistemicEventSource::HypoKosh;
+    decommitment.type = EpistemicEventType::Decommitment;
+    decommitment.previous_hypothesis_node = prior.committed_node;
+    decommitment.hypothesis_node = 0;
+    decommitment.competing_hypotheses =
+        hypothesis_nodes(result.final_bundle);
+    decommitment.evidence_edges = result.evidence_edges;
+    decommitment.evidence_family_ids = selected_evidence_families(
+        result.final_bundle, result.final_convergence);
+    decommitment.epistemic_state = "decommitted";
+    decommitment.reason =
+        "new persistent evidence withdrew the previous governed commitment";
+    append_epistemic_event(&result.receipt, std::move(decommitment));
+  }
+
+  const bool direct_commitment_change =
+      prior.available && prior.committed_node != 0 &&
+      current_committed != 0 &&
+      current_committed != prior.committed_node;
+  const bool recommit_after_gap =
+      prior.available && prior.committed_node == 0 &&
+      prior.last_committed_node != 0 &&
+      current_committed != 0;
+  const uint32_t recommit_from =
+      direct_commitment_change
+          ? prior.committed_node
+          : prior.last_committed_node;
+  if ((direct_commitment_change || recommit_after_gap) &&
+      !already_has_transition(
+          EpistemicEventType::Recommitment,
+          recommit_from,
+          current_committed)) {
+    NativeEpistemicEvent recommitment;
+    recommitment.round_index = result.receipt.expansion_rounds;
+    recommitment.source = EpistemicEventSource::HypoKosh;
+    recommitment.type = EpistemicEventType::Recommitment;
+    recommitment.previous_hypothesis_node = recommit_from;
+    recommitment.hypothesis_node = current_committed;
+    recommitment.competing_hypotheses =
+        hypothesis_nodes(result.final_bundle);
+    recommitment.evidence_edges = result.evidence_edges;
+    recommitment.evidence_family_ids = selected_evidence_families(
+        result.final_bundle, result.final_convergence);
+    recommitment.epistemic_state = "recommitted";
+    recommitment.reason =
+        "new persistent evidence earned a governed commitment after a previous commitment";
+    append_epistemic_event(&result.receipt, std::move(recommitment));
+  }
+
+  if (prior.available &&
+      prior.status != GovernedEpistemicStatus::Resolved &&
+      result.status == GovernedEpistemicStatus::Resolved &&
+      current_committed != 0 &&
+      !already_has_transition(
+          EpistemicEventType::Resolution, 0, current_committed)) {
+    NativeEpistemicEvent resolution;
+    resolution.round_index = result.receipt.expansion_rounds;
+    resolution.source = EpistemicEventSource::HypoKosh;
+    resolution.type = EpistemicEventType::Resolution;
+    resolution.hypothesis_node = current_committed;
+    resolution.competing_hypotheses =
+        hypothesis_nodes(result.final_bundle);
+    resolution.evidence_edges = result.evidence_edges;
+    resolution.evidence_family_ids = selected_evidence_families(
+        result.final_bundle, result.final_convergence);
+    resolution.epistemic_state = "resolved";
+    resolution.reason =
+        "persistent evidence updates satisfied governed resolution and stability requirements";
+    append_epistemic_event(&result.receipt, std::move(resolution));
+  }
+
   std::sort(result.residual_uncertainty.begin(),
             result.residual_uncertainty.end());
   result.residual_uncertainty.erase(
@@ -140,6 +270,7 @@ const char* governed_status_name(GovernedEpistemicStatus status) {
     case GovernedEpistemicStatus::Contested: return "contested";
     case GovernedEpistemicStatus::EvidenceRequired:
       return "evidence_required";
+    case GovernedEpistemicStatus::Open: return "open";
     case GovernedEpistemicStatus::Abstain: return "abstain";
     case GovernedEpistemicStatus::Speculative: return "speculative";
   }
@@ -160,8 +291,13 @@ const char* epistemic_event_type_name(EpistemicEventType type) {
     case EpistemicEventType::HypothesisSet: return "hypothesis_set";
     case EpistemicEventType::Decision: return "decision";
     case EpistemicEventType::Challenge: return "challenge";
+    case EpistemicEventType::CorroborationSearch:
+      return "corroboration_search";
     case EpistemicEventType::Reopen: return "reopen";
     case EpistemicEventType::Revision: return "revision";
+    case EpistemicEventType::Decommitment: return "decommitment";
+    case EpistemicEventType::Recommitment: return "recommitment";
+    case EpistemicEventType::Resolution: return "resolution";
     case EpistemicEventType::Terminal: return "terminal";
   }
   return "decision";

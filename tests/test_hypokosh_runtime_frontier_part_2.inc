@@ -113,8 +113,9 @@
   assert(reloaded_world.event_log_hash() == runtime_world.event_log_hash());
   assert(reloaded_world.audit().empty());
 
-  // RC4: when opposition research is enabled, an actual DWM challenge must
-  // be visible as Challenge/Reopen events as well as durable capability flags.
+  // RC4 / V3: a separately supported alternative is not, by itself,
+  // material opposition. Enabling DWM research must not manufacture a
+  // Challenge/Reopen event from ordinary competing support.
   RuntimeOptions g2_research_options = runtime_options;
   g2_research_options.enable_dwm = true;
   g2_research_options.enable_opposition_research = true;
@@ -133,14 +134,13 @@
     saw_reopen =
         saw_reopen || event.type == EpistemicEventType::Reopen;
   }
-  assert(saw_challenge);
-  assert(saw_reopen);
+  assert(!saw_challenge);
+  assert(!saw_reopen);
   const CompactEpistemicReceipt g2_research_compact =
       build_compact_epistemic_receipt(g2_research_result);
   assert(g2_research_compact.dwm_capability_enabled);
   assert(g2_research_compact.opposition_research_enabled);
   assert(g2_research_compact.opposition_executed);
-  assert(g2_research_compact.bounded_recovery_executed);
 
   // Production capability boundary: disabling DWM must prevent opposition
   // execution even when opposition research is explicitly requested.
