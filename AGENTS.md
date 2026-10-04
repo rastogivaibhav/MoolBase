@@ -1,10 +1,10 @@
 # MoolBase / GrapheneDB Agent Context
 
-MoolBase v0.6.0-alpha.2 is a released developer preview of a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
+MoolBase has an original v0.6.0-alpha.2 developer-preview release and a recommended corrected 0.6.0-audit.2 evaluation build of a C++20 embedded database and optional controlled-pilot HTTP server for causal/lattice AI memory. The durable core stores nodes, vectors, metadata, snapshots, WAL/checkpoint state, typed edges, and physical hex-lattice coordinates. The server adds bounded concurrency, authenticated API access, readiness/metrics, retry-safe writes, checkpointing, backup, and a versioned pilot API.
 
 The project is **not** a distributed database, SQL engine, internet edge proxy, general vector-database replacement, or material-science simulator. Keep the embedded library authoritative. The compact HTTP server is an optional product surface and must remain behind a TLS reverse proxy for non-loopback deployment.
 
-MoolBase is the public product name; `GrapheneDB`, `graphene` and `GRAPHENEDB_*` remain implementation/API names. For newcomer integrations, use [Agent integration](docs/AGENT_INTEGRATION.md) and the documented `v0.6.0-alpha.2` checkout. Do not assume the default branch contains customer examples. The repository is public and `LICENSE` contains Apache 2.0.
+MoolBase is the public product name; `GrapheneDB`, `graphene` and `GRAPHENEDB_*` remain implementation/API names. For newcomer integrations, use [Agent integration](docs/AGENT_INTEGRATION.md) and the documented corrected source pin `0f19727b80007e875dea62dca7ab50e281d008e6`. The current default branch includes the customer examples and historical research work. The repository is public and `LICENSE` contains Apache 2.0.
 
 ## Start Here
 
@@ -83,7 +83,7 @@ bash scripts/verify_package_install.sh
 
 ## Current maintenance scope
 
-Use the released `v0.6.0-alpha.2` tag for newcomer examples. Follow the user's task; do not default to another release-preparation or research programme.
+Use the corrected audit.2 packages or documented source pin `0f19727b80007e875dea62dca7ab50e281d008e6` for newcomer examples; historical release assets remain unchanged. Follow the user's task; do not default to another release-preparation or research programme.
 
 For documentation changes, check links, commands and the diff. Preserve release tags, assets, checksums, historical reports and frozen scientific contracts. Run implementation tests when the implementation changes.
 

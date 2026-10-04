@@ -1,21 +1,24 @@
+This Lab uses corrected evaluation commit `0f19727b80007e875dea62dca7ab50e281d008e6`. Use the [current installation guide](DEVELOPER_QUICKSTART.md) and its 0.6.0-audit.2 packages for exact replay parity. The original alpha.2 release remains unchanged.
+
 # Integrate MoolBase from a coding agent
 
 MoolBase stores evidence and exposes competing hypotheses, opposition and decision receipts. Applications establish provenance and verification; the database does not authenticate a source or discover independence from prose.
 
 ## Supported newcomer checkout
 
-Use the released `v0.6.0-alpha.2` tag for the examples in this guide. Its source commit is `6d276cacc3fd7e82ba38a364e818e91a3f1141ac`; the customer engine derives from tested fixes commit `6f5d9b95330ddb59a0d881c67ffb2fa5864f439f`. The repository default branch also contains frozen scientific experiments; it is not the customer example checkout.
+For exact parity with the corrected Lab, use commit `0f19727b80007e875dea62dca7ab50e281d008e6`. The first example needs only the two packages in [Install](DEVELOPER_QUICKSTART.md). Repository checkout is optional:
 
 ```bash
-git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/MoolBase.git
+git clone https://github.com/rastogivaibhav/MoolBase.git
 cd MoolBase
+git checkout 0f19727b80007e875dea62dca7ab50e281d008e6
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
-python3 examples/customer_showcase/python_memory.py
-python3 examples/customer_showcase/python_http.py
+python3 examples/customer_showcase/python_memory.py --binary build-showcase/moolbase_customer_showcase
+python3 examples/customer_showcase/python_http.py --server build-showcase/graphenedb_server
 ```
 
-Prerequisites: Git, Python 3, CMake 3.16+, C++20 compiler; the HTTP server is POSIX. No pip package or model API key is required. Python import setup and process teardown are included in the example files. Receipts are written beneath `reports/customer-showcase/`.
+Prerequisites: Git, Python 3, CMake 3.16+, C++20 compiler; the HTTP server is POSIX. No pip package or model API key is required. Python import setup and process teardown are included in the example files. Receipts are written beneath `reports/customer-showcase/`. Start with the single memory example in [Install](DEVELOPER_QUICKSTART.md); the HTTP run is optional. See an [actual observation/receipt exchange](API_EXAMPLE.md) and the [capability matrix](CAPABILITIES.md).
 
 ## Select the existing integration surface
 

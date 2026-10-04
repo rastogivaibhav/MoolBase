@@ -2,7 +2,7 @@
 
 Read [AGENTS.md](AGENTS.md) as the primary repository instruction file.
 
-MoolBase is a released developer-preview embedded C++20 evidence and causal-memory database with optional reasoning layers and a POSIX HTTP server. Use `v0.6.0-alpha.2` for runnable customer examples, not an old RC branch. The default branch also contains frozen research work.
+MoolBase is a released developer-preview embedded C++20 evidence and causal-memory database with optional reasoning layers and a POSIX HTTP server. Use the corrected audit.2 packages or source pin `0f19727b80007e875dea62dca7ab50e281d008e6` for runnable customer examples; the original alpha.2 release remains unchanged. The default branch also contains frozen research work.
 
 Start with [Developer quickstart](docs/DEVELOPER_QUICKSTART.md) and [Agent integration](docs/AGENT_INTEGRATION.md). They distinguish native evidence lifecycle operations, HTTP ingestion/runtime calls and session-local browser demonstrations.
 
