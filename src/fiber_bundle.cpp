@@ -588,8 +588,16 @@ FiberBundle FiberBundleBuilder::build(const BundleSet& input) const {
                           path.evidence_family_lineage.end());
         derivation_ids.insert(path.derivation_lineage.begin(),
                               path.derivation_lineage.end());
-        if (!best || quality(path) > quality(*best) ||
-            (quality(path) == quality(*best) && path.id < best->id)) {
+        // Audit-only or otherwise ineligible paths must not displace an
+        // eligible path when choosing the representative used for reasoning.
+        const bool operative =
+            path.eligible_for_support || path.eligible_for_opposition;
+        const bool best_operative =
+            best && (best->eligible_for_support || best->eligible_for_opposition);
+        if (!best || (operative && !best_operative) ||
+            (operative == best_operative &&
+             (quality(path) > quality(*best) ||
+              (quality(path) == quality(*best) && path.id < best->id)))) {
           best = &path;
         }
       }
