@@ -4,11 +4,11 @@
 
 MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Its embedded C++20 database stores nodes with content, vectors and provenance metadata, connected by typed relationships. Optional reasoning layers expose alternatives, opposition and decision receipts. Try a customer-memory correction before exploring the architecture.
 
-**Released:** [v0.6.0-alpha.2 — developer preview](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2). Download the Linux package or self-contained source examples, with checksums, manifests and SPDX inventories.
+**Recommended for new evaluations:** [0.6.0-audit.2 corrected build](https://moolbase.rasvai.com/RELEASE_v0.6.0-audit.2.html), from merged source `0f19727b80007e875dea62dca7ab50e281d008e6`. Use these packages and instructions for parity with the live Lab. [v0.6.0-alpha.2](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2) is the original developer-preview release; its tag and assets remain unchanged. audit.2 is an evaluation label, not a new official release tag or GA release.
 
-**Start:** [See the answer change](#see-the-answer-change) · [Run your first application](#your-first-application) · [Evidence Lab](https://moolbase.rasvai.com) (public; no sign-in required) · [Versioned Python examples](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) · [Developer and agent guide](docs/AGENT_INTEGRATION.md)
+**Start:** [Five-minute path](https://moolbase.rasvai.com/INSTALL.html) · [Interactive tutorial](https://moolbase.rasvai.com/learn.html) · [Observation/receipt exchange](https://moolbase.rasvai.com/API_EXAMPLE.html) · [Capabilities and maturity](https://moolbase.rasvai.com/CAPABILITIES.html) · [Integration guide](docs/AGENT_INTEGRATION.md).
 
-Use the `v0.6.0-alpha.2` release tag for the runnable customer workflows. The default branch also carries the research programme.
+**Your application supplies targets, evidence roles, provenance families and verification.** MoolBase does not infer these from prose or authenticate sources. Scores are not probabilities; resolved means the configured policy was satisfied. Applications separately persist receipts and prior reasoning state. Production-scale performance and external customer benefits remain unestablished.
 
 [![CI](https://github.com/rastogivaibhav/MoolBase/actions/workflows/ci.yml/badge.svg)](https://github.com/rastogivaibhav/MoolBase/actions/workflows/ci.yml)
 [![Alpha release gate](https://github.com/rastogivaibhav/MoolBase/actions/workflows/alpha-release-gate.yml/badge.svg)](https://github.com/rastogivaibhav/MoolBase/actions/workflows/alpha-release-gate.yml)
@@ -67,14 +67,13 @@ MoolBase is built around the harder question:
 
 The [Evidence Lab](https://moolbase.rasvai.com) explains MoolBase through a customer-memory correction: **which fulfilment region should the assistant use?**
 
-![Actual Evidence Lab replay: EU fulfilment resolved, no operative answer after supersession, then US fulfilment resolved](docs/images/evidence-lab-memory.gif)
-
-*Recorded from the published Lab’s UI and actual WebAssembly engine using its synthetic agent-memory fixture. The animation shows guided steps 3, 4 and 8; it is not a customer deployment result.*
+The current audit.2 replay retains active evidence copies when only the original record is superseded. The older animation is historical and is not used to illustrate this corrected flow.
 
 | What arrives | What the database returns | What that means for the agent |
 |---|---|---|
 | The stored EU preference has sufficient support under the demo policy. | **Resolved: use EU fulfilment.** | The current evidence supports the existing answer. |
-| A corrected profile supersedes the original preference, while stale derived copies remain. | **Open: no operative answer.** | The prior commitment is cleared; replacement evidence has not yet earned a new commitment. |
+| A corrected profile supersedes only the original preference, while other active sources remain. | **EU remains selected.** | Retiring one record does not automatically retire its copies or other sources. |
+| More competing US support arrives. | **Open: no operative answer.** | The current evidence no longer earns a commitment. |
 | Independent US evidence is added and the known stale copies are explicitly retired. | **Resolved: use US fulfilment.** | The corrected answer is supported, and the receipt preserves how it changed. |
 
 **Copies do not become independent corroboration.** In the outage example, the second alert repeats the first alert’s evidence family. The Lab shows independent support families staying **1 → 1**. New wording or another event ID does not make the same source independent.
@@ -83,7 +82,7 @@ The [Evidence Lab](https://moolbase.rasvai.com) explains MoolBase through a cust
 
 MoolBase stores the evidence and exposes alternatives, status changes and inspectable receipts. Your application supplies provenance, verification and explicit retirement of stale derived evidence. Scores are policy strengths, not calibrated probabilities.
 
-The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [released source examples](https://github.com/rastogivaibhav/MoolBase/releases/download/v0.6.0-alpha.2/moolbase-0.6.0-alpha.2-examples.zip) without using the browser demo.
+The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [corrected examples](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip) without using the browser demo.
 
 ---
 
@@ -93,30 +92,32 @@ The [Evidence Lab](https://moolbase.rasvai.com) offers three separate downloads 
 
 | Download | Use it when |
 |---|---|
-| [Compiled database — Linux x86_64](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
-| [Examples for the installed database](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
-| [Optional source](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-alpha.2-source.zip) | You want to inspect or build the database and examples yourself. |
+| [Compiled database — Linux x86_64](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
+| [Examples for the installed database](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
+| [Optional source](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-source.zip) | You want to inspect or build the database and examples yourself. |
 
-Follow the [download installation instructions](https://moolbase.rasvai.com/INSTALL.md). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
+Follow the [download installation instructions](https://moolbase.rasvai.com/INSTALL.html). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
 
 ## Your first application
 
-Use the released customer examples with Git, a C++20 compiler, CMake 3.16+ and Python 3. The commands below build the native adapter and POSIX HTTP server:
+Follow the [canonical five-minute path](https://moolbase.rasvai.com/INSTALL.html): download the Linux DB and examples ZIPs, verify and extract them, then run the memory example and inspect its JSON receipt. You need Linux x86_64, C++20, CMake 3.16+ and Python 3; no pip package or model key. First-time tool installation may take longer.
 
-```bash
-git clone --branch v0.6.0-alpha.2 --single-branch https://github.com/rastogivaibhav/MoolBase.git
-cd MoolBase
-cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
-cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
+After extracting both packages into one directory:
+
+```sh
+export MOOLBASE_PREFIX="$PWD/moolbase-0.6.0-audit.2-linux-x86_64"
+cd moolbase-0.6.0-audit.2-examples
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$MOOLBASE_PREFIX"
+cmake --build build-showcase -j2
 python3 examples/customer_showcase/python_memory.py
-python3 examples/customer_showcase/python_http.py
+python3 -m json.tool reports/customer-showcase/python-memory.json
 ```
 
-The first script shows EU fulfilment resolved → no committed answer after supersession → US fulfilment resolved after independent corroboration and retiring stale copies. It saves native receipts and verifies file reopen. The second starts an authenticated local HTTP server, ingests evidence, calls the complete runtime and verifies the evidence bundle after restarting the server process. The HTTP server requires POSIX. On Windows, set `GRAPHENEDB_BUILD_SERVER=OFF` and build only `moolbase_customer_showcase` for the native memory example.
+Expected: EU resolved → EU remains selected after retiring only the original → open as competing support grows → US resolved after corroboration and explicit retirement of stale copies. Reopen preserves the native evidence bundle. The runner uses temporary database files and saves reduced adapter receipts.
 
-No model key or pip package is required. The scripts manage imports, temporary databases and process cleanup. The memory example uses Python to drive the native adapter; HTTP currently does not expose its complete supersession lifecycle. See [Agent integration](docs/AGENT_INTEGRATION.md) for exact surfaces and responsibilities.
+For the full lifecycle, embed the C++ adapter. The optional pilot HTTP API supports ingestion and runtime evaluation, but does not expose the entire retirement lifecycle or restore prior reasoning state. Python drives these native/HTTP examples; it is not a separate database. `GrapheneDB` remains the compatible API/CMake name for MoolBase.
 
-The Python HTTP client’s `reason_hypokosh()` returns hypothetical proposals. `/v1/reason/runtime` runs the full governed runtime. Native files persist, but these examples do not persist prior reasoning state between processes; the browser demo is session-local.
+For macOS, Windows or incompatible Linux systems, use the pinned source path in [Developer quickstart](docs/DEVELOPER_QUICKSTART.md). See [Agent integration](docs/AGENT_INTEGRATION.md) for exact responsibilities. The HTTP server is POSIX-only; browser refresh resets the Lab files.
 
 ---
 

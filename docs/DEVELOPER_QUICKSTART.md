@@ -1,157 +1,89 @@
-# MoolBase developer quickstart
+# Start with one example
 
-This guide is for a developer who wants a first successful MoolBase run before studying FiberBundle, the Lyapunov critic or the model-world architecture.
+**Recommended build: 0.6.0-audit.2**, the corrected evaluation build from merged source `0f19727b80007e875dea62dca7ab50e281d008e6`. The original `v0.6.0-alpha.2` release is historical and unchanged. Use audit.2 for parity with this Lab. This is a developer preview, not enterprise GA.
 
-## What you need
+**Download → run the memory example → inspect its receipt → integrate.** On a compatible Linux x86_64 machine with the tools below already installed, this is the five-minute path; first-time tool installation and compilation may take longer. No model key, pip package or repository clone is required.
 
-- Git access to this repository;
-- CMake 3.16 or newer;
-- a C++20 compiler;
-- Linux or macOS for the shell quickstart;
-- Windows PowerShell plus a C++ build toolchain for the PowerShell quickstart.
+## 1. Download
 
-The reasoning runtime is an experimental developer alpha, not an enterprise-GA decision system.
+You need Linux x86_64, a C++20 compiler, CMake 3.16+, Python 3 and unzip. The compiled DB was built with GCC 13.3.0 on Ubuntu 24.04. For incompatible systems, macOS or Windows, use the optional source path below.
 
-## 1. Clone the supported newcomer examples
+Save these four files into one empty directory:
 
-```bash
-git clone --branch v0.6.0-alpha.2 --single-branch \
-  https://github.com/rastogivaibhav/MoolBase.git
-cd MoolBase
+- [Compiled DB ZIP](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-linux-x86_64-db.zip) and [its SHA-256 file](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-linux-x86_64-db.zip.sha256).
+- [Examples ZIP](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip) and [its SHA-256 file](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip.sha256).
+
+## 2. Run one example
+
+Open a terminal in that directory:
+
+```sh
+sha256sum -c moolbase-0.6.0-audit.2-linux-x86_64-db.zip.sha256
+sha256sum -c moolbase-0.6.0-audit.2-examples-only.zip.sha256
+unzip moolbase-0.6.0-audit.2-linux-x86_64-db.zip
+unzip moolbase-0.6.0-audit.2-examples-only.zip
+export MOOLBASE_PREFIX="$PWD/moolbase-0.6.0-audit.2-linux-x86_64"
+cd moolbase-0.6.0-audit.2-examples
+cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$MOOLBASE_PREFIX"
+cmake --build build-showcase -j2
+python3 examples/customer_showcase/python_memory.py
 ```
 
-The repository is public. The example checkout is separate from the frozen research work on the default branch. For complete Python lifecycle and HTTP examples, follow [Agent integration](AGENT_INTEGRATION.md).
+Expected: EU fulfilment is resolved initially. Superseding only the original record leaves EU selected because other active sources remain. More US support opens the result; independent corroboration selects US, and stale copies are explicitly retired. Reopening the native files preserves the evidence bundle. These are synthetic fixtures, not customer outcomes.
 
-## 2. Run the customer-memory example
+## 3. Inspect the receipt
 
-Use the same first workflow shown in the README and Evidence Lab. Python 3 is required; no pip package or model key is needed.
+```sh
+python3 -m json.tool reports/customer-showcase/python-memory.json
+```
 
-Linux/macOS:
+Read each state's `status`, `answer`, `targets`, `evidence`, `receipt` and `runtimeContract`. `answer` is a target ID, not a truth verdict. Compare supporting families and opposition; scores are policy strengths, not probabilities. `resolved` means the configured evidence policy was satisfied. The export is a reduced adapter receipt, not a complete native runtime receipt.
 
-```bash
+The runner uses temporary native database files and saves JSON receipts. Persistent applications choose their own data directory and separately persist and restore prior reasoning state.
+
+## 4. Integrate
+
+Start with the embedded C++ adapter for the complete correction/retirement flow. `MoolBase` is the product name; `GrapheneDB` is the compatible C++/CMake API name. Python in this example only drives the native executable.
+
+```cmake
+find_package(GrapheneDB CONFIG REQUIRED)
+target_link_libraries(your_app PRIVATE GrapheneDB::graphenedb)
+```
+
+Read `examples/customer_showcase/engine.cpp` and the [minimal observation/receipt exchange](API_EXAMPLE.md). Applications supply targets, evidence roles, provenance families and verification. MoolBase does not infer those from prose or authenticate sources.
+
+If HTTP fits your prototype, run the optional pilot example:
+
+```sh
+python3 examples/customer_showcase/python_http.py --server "$MOOLBASE_PREFIX/bin/graphenedb_server"
+```
+
+It starts an authenticated local server, ingests evidence through `/v1/extractions`, evaluates `/v1/reason/runtime` and checks evidence after a server restart. HTTP does not expose the complete correction/retirement lifecycle and does not restore prior reasoning state. It is not a shared hosted service or a published MCP server. See [integration details](AGENT_INTEGRATION.md).
+
+## Optional source and other platforms
+
+The [source ZIP](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-source.zip) contains the complete pinned source, including tests and historical validation fixtures. Building the DB is optional for the recommended Linux path. Extract it and build from its root:
+
+```sh
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
 cmake --build build-showcase --target moolbase_customer_showcase graphenedb_server -j2
 python3 examples/customer_showcase/python_memory.py
-python3 examples/customer_showcase/python_http.py
 ```
 
-Windows PowerShell (native memory example; the HTTP server is POSIX-only):
+On Windows, set `GRAPHENEDB_BUILD_SERVER=OFF`, build only `moolbase_customer_showcase`, and pass your executable path with `--binary` (for Visual Studio, normally `build-showcase/Release/moolbase_customer_showcase.exe`). HTTP is POSIX-only. No compiled macOS or Windows downloads are supplied here.
 
-```powershell
-cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=OFF
-cmake --build build-showcase --config Release --target moolbase_customer_showcase -j2
-python examples/customer_showcase/python_memory.py --binary build-showcase/Release/moolbase_customer_showcase.exe
+## Build identity and maturity
+
+The DB ZIP includes the library, server, CLI, headers, CMake package and essential storage docs. The examples ZIP includes the native adapter and Python runners. Each ZIP has SHA-256, per-file manifest and SPDX inventory links in [Downloads](https://moolbase.rasvai.com/index.html#developer). These identify bytes and contents; they are not signatures, security scans or build attestations. Packages include Apache-2.0 and applicable notices.
+
+The artifact build was tested at `b01c22334a08e1ad26dee0cff21a37b04ef22c82`; its tree is identical to merged source `0f19727b80007e875dea62dca7ab50e281d008e6`. Historical release assets are unchanged. See [audit.2 notes](RELEASE_v0.6.0-audit.2.md), [capabilities](CAPABILITIES.md) and [validation boundaries](https://moolbase.rasvai.com/VALIDATION.html). Production-scale measurements and external customer outcomes are not established.
+
+## Optional pinned repository checkout
+
+```sh
+git clone https://github.com/rastogivaibhav/MoolBase.git
+cd MoolBase
+git checkout 0f19727b80007e875dea62dca7ab50e281d008e6
 ```
 
-## 3. Interpret the result
-
-The memory example demonstrates EU fulfilment resolved → open/no operative answer → US fulfilment resolved. It verifies native file reopen. The HTTP example checks retry-safe ingestion and evidence after server restart. Prior reasoning state is managed by the application, not automatically persisted by these examples.
-
-The [released example directory](https://github.com/rastogivaibhav/MoolBase/tree/v0.6.0-alpha.2/examples/customer_showcase) also contains the incident and conflicting-report scenarios. Their contested outcomes are intentional.
-
-For a separate introductory incident/runtime demo, run `bash scripts/developer_quickstart.sh` or `.\scripts\developer_quickstart.ps1`. That is an additional embedded API example, not the customer-memory workflow above.
-
-## 4. Verify installation as a real dependency
-
-Run:
-
-```bash
-bash scripts/verify_developer_install.sh
-```
-
-This performs a clean five-stage check:
-
-1. configure GrapheneDB with no prior build cache;
-2. build all installable targets;
-3. install headers, library, CLI and CMake package files into a temporary prefix;
-4. build a separate application using `find_package(GrapheneDB CONFIG REQUIRED)`;
-5. run that external consumer.
-
-Set `GRAPHENEDB_KEEP_VERIFY_DIR=1` to retain the temporary installation for inspection.
-
-## 5. Use GrapheneDB from another CMake project
-
-```cmake
-cmake_minimum_required(VERSION 3.16)
-project(MyGrapheneApp LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 20)
-find_package(GrapheneDB CONFIG REQUIRED)
-
-add_executable(my_app main.cpp)
-target_link_libraries(my_app PRIVATE GrapheneDB::graphenedb)
-```
-
-Configure the consumer with the install prefix:
-
-```bash
-cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/graphenedb/install
-cmake --build build
-```
-
-A complete consumer is available in `examples/installed_consumer`.
-
-## 6. Persist a compact answer receipt
-
-Do not persist every complete FiberBundle by default. Reduce the runtime result to a deterministic receipt:
-
-```cpp
-#include "graphene/epistemic_receipt.hpp"
-
-HypoKoshRuntimeResult result = runtime.reason(query, signature, options);
-CompactEpistemicReceipt receipt =
-    build_compact_epistemic_receipt(result);
-```
-
-The receipt preserves selected path IDs, evidence/source/derivation lineage, bundle and evidence references, governed status, energy and uncertainty while avoiding duplicate storage of source data, indexes and full recursive workspaces.
-
-## 7. Run the complete alpha release gate
-
-For maintainers intentionally validating a release on Linux/macOS:
-
-```bash
-bash scripts/run_alpha_release_gate.sh
-```
-
-The gate performs:
-
-1. clean exact-head Release configuration;
-2. build of all configured targets;
-3. full CTest execution;
-4. installed-package external consumer verification;
-5. the controlled dialectic intervention benchmark;
-6. the offline cross-dataset structural gate;
-7. immutable manifest and SHA-256 generation.
-
-Use `GRAPHENEDB_CROSS_DATASET_MODE=public` only on a networked machine when you intentionally want the downloaded public-data run.
-
-## 8. Run the standard validation suite
-
-```bash
-cmake -S . -B build/release \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DGRAPHENEDB_BUILD_TESTS=ON \
-  -DGRAPHENEDB_BUILD_SERVER=OFF \
-  -DGRAPHENEDB_BUILD_BENCH=ON \
-  -DGRAPHENEDB_BUILD_EXAMPLES=ON
-cmake --build build/release --parallel 2
-ctest --test-dir build/release --output-on-failure
-```
-
-## Choose the right entry point
-
-| Goal | Start here |
-|---|---|
-| Run the first customer workflow | `examples/customer_showcase/python_memory.py` on the released tag |
-| Learn the embedded API | `examples/installed_consumer/main.cpp` |
-| Explore governed reasoning | `examples/hypokosh_runtime.cpp` |
-| Persist compact results | `include/graphene/epistemic_receipt.hpp` |
-| Validate package installation | `scripts/verify_developer_install.sh` |
-| Run the complete alpha gate | `scripts/run_alpha_release_gate.sh` |
-| Reproduce recursion experiments | `scripts/run_dialectic_intervention.sh` |
-| Run structural benchmarks | `docs/benchmarks/PORTABLE_CROSS_DATASET_VALIDATION.md` |
-| Study the critic | `docs/LYAPUNOV_CRITIC_V1.md` |
-
-## Current platform boundary
-
-The embedded library is intended to build across supported C++ platforms. The controlled-pilot HTTP server is POSIX-oriented and should remain disabled on Windows. Use `-DGRAPHENEDB_BUILD_SERVER=OFF` on Windows.
+Then follow the optional source build above.
