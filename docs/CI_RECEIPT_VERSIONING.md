@@ -16,3 +16,5 @@ python3 scripts/run_flagship_perturbations_v2.py
 ```
 
 CI must pass on the exact PR head before merging. Existing versioned research evidence does not automatically establish accuracy or performance claims for a new engine revision.
+
+The Cycle 1 probe intentionally demonstrates the old lower-node-ID tie bias. Later Cycle 4 changes repaired that behavior. CI therefore builds this historical diagnostic from its original commit `094db8715ab820fb18d86723e09a01088425fded`, records its separate head/tree identity, and still runs inherited production contracts against the current PR engine. Historical defect reproduction is not an expected defect in the current engine.

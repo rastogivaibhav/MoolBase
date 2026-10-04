@@ -77,7 +77,7 @@ jobs:
 
       - name: Build forensic probe and inherited epistemic tests
         run: |
-          cmake --build build-v3-cycle1 --parallel 2 --target             graphenedb_epistemic_process_v3_cycle1_probe             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests
+          cmake --build build-v3-cycle1 --parallel 2 --target             graphenedb_epistemic_control_tests             graphenedb_hypokosh_runtime_tests
 
       - name: Run inherited production behavior tests
         run: |
@@ -85,11 +85,25 @@ jobs:
           ./build-v3-cycle1/graphenedb_epistemic_control_tests
           ./build-v3-cycle1/graphenedb_hypokosh_runtime_tests
 
-      - name: Run V3 Cycle 1 forensic runtime probe
+      - name: Build recorded historical Cycle 1 probe
+        run: |
+          set -euo pipefail
+          git worktree add --detach build-v3-cycle1-frozen-source 094db8715ab820fb18d86723e09a01088425fded
+          cmake -S build-v3-cycle1-frozen-source -B build-v3-cycle1-frozen \
+            -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+          cmake --build build-v3-cycle1-frozen --parallel 2 --target graphenedb
+          c++ -std=c++20 -O2 -I build-v3-cycle1-frozen-source/include \
+            build-v3-cycle1-frozen-source/tools/epistemic_process_v3_cycle1_probe.cpp \
+            build-v3-cycle1-frozen/libgraphenedb.a -pthread \
+            -o build-v3-cycle1-frozen/cycle1-forensic-probe
+
+      - name: Run recorded historical V3 Cycle 1 forensic runtime probe
         run: |
           set -euo pipefail
           mkdir -p reports/epistemic-process-v3-cycle1
-          ./build-v3-cycle1/graphenedb_epistemic_process_v3_cycle1_probe             | tee reports/epistemic-process-v3-cycle1/probe.json
+          ./build-v3-cycle1-frozen/cycle1-forensic-probe             | tee reports/epistemic-process-v3-cycle1/probe.json
 
       - name: Validate probe conclusions
         run: |
@@ -121,8 +135,10 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD > reports/epistemic-process-v3-cycle1/head.txt
+          git -C build-v3-cycle1-frozen-source rev-parse HEAD > reports/epistemic-process-v3-cycle1/historical-probe-head.txt
+          git -C build-v3-cycle1-frozen-source rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle1/historical-probe-tree.txt
           git rev-parse 'HEAD^{tree}' > reports/epistemic-process-v3-cycle1/tree.txt
-          sha256sum             tools/epistemic_process_v3_cycle1_probe.cpp             benchmarks/epistemic_process_v3/test_cycle1_forensic_contracts.py             benchmarks/epistemic_process_v3/v2_forensic_evidence_v1.json             reports/epistemic-process-v3-cycle1/probe.json             > reports/epistemic-process-v3-cycle1/checksums.sha256
+          sha256sum             build-v3-cycle1-frozen-source/tools/epistemic_process_v3_cycle1_probe.cpp             benchmarks/epistemic_process_v3/test_cycle1_forensic_contracts.py             benchmarks/epistemic_process_v3/v2_forensic_evidence_v1.json             reports/epistemic-process-v3-cycle1/probe.json             > reports/epistemic-process-v3-cycle1/checksums.sha256
 
       - name: Upload Cycle 1 forensic evidence
         uses: actions/upload-artifact@v4
