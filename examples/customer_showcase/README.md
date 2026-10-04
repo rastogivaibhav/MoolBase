@@ -10,7 +10,7 @@ Build once using the commands below, then run:
 python3 examples/customer_showcase/python_memory.py
 ```
 
-Expected progression: EU resolved → open after supersession → US resolved after independent corroboration and explicit retirement of stale copies. The script saves all native receipts and verifies file reopen. It starts a disposable native database and uses no model or API key.
+Expected progression: EU resolved → EU remains selected after retiring only the original → open as competing support grows → US resolved after independent corroboration and explicit retirement of stale copies. The script saves all native receipts and verifies file reopen. It starts a disposable native database and uses no model or API key.
 
 For HTTP ingestion, full runtime evaluation and process restart, also build the server:
 
@@ -48,7 +48,7 @@ Rows are tab-separated: evidence ID, description, family, zero-based target (0 o
 | Scenario | Useful customer workflow | Observed behavior | Simpler alternative |
 |---|---|---|---|
 | Incident | Investigating changing telemetry with multiple plausible causes | Deployment initially selected; rollback contradiction clears the commitment; independent traces select connection exhaustion; final state remains contested | Log search plus a human investigation is enough when decisions need no governed provenance |
-| Agent memory | Retiring stale account facts and tracking an authenticated update | EU memory initially selected; supersession produces an open state; independent US evidence produces recommitment; final US state resolved | Last-write-wins is simpler for one authoritative preference source |
+| Agent memory | Retiring stale account facts and tracking an authenticated update | EU memory initially selected; retiring only the original leaves other active sources; competing support opens the result; independent US evidence and explicit stale-copy retirement resolve US | Last-write-wins is simpler for one authoritative preference source |
 | Conflicting reports | Procurement or research with duplicated, corrected and unverified sources | Seven-day claim initially selected; supplier correction causes decommitment; independent records select 21 days; final state remains contested | A source list is enough if users manually compare and reconcile claims |
 
 The exact fixtures are in `scenarios.json`. Repeated notices intentionally share family IDs. Different IDs are meaningful only when the application has established genuinely independent provenance; the database does not infer independence from natural language. Supersession/revocation retirement is explicit: applications must retire known derived copies too. Contradictory evidence does not automatically disappear when another target leads.
@@ -107,3 +107,7 @@ python3 examples/customer_showcase/verify_cli.py build-evaluator/moolbase_custom
 The Playwright script serves the supplied site assets locally, exercises desktop
 and mobile flows, validates real worker inputs and capacity limits, and injects
 failed and partial WAL writes into the actual compiled engine.
+
+## Current distribution boundaries
+
+The audit.2 DB ZIP contains compiled binaries, headers and the CMake package. The examples ZIP contains the adapter and Python runners. The optional source ZIP is complete pinned source, including tests and historical validation fixtures; it excludes Git repository history only. Historical package documentation can reflect an earlier packaging boundary. Use the [current installation guide](https://moolbase.rasvai.com/INSTALL.html) and [package errata](https://moolbase.rasvai.com/PACKAGE_ERRATA.html) for the current distributions. Published archive bytes and checksums remain immutable.
