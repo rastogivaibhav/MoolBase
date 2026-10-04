@@ -9,6 +9,8 @@ on:
       - "tests/test_moolbase_metamorphic_v1.cpp"
       - "tests/test_moolbase_monkey_v1.cpp"
       - "tests/moolbase_monkey_v1_manifest.json"
+      - "scripts/run_flagship_perturbations_v2.py"
+      - "benchmarks/flagship/perturbations_v2.json"
       - "CMakeLists.txt"
       - ".github/workflows/epistemic-process-prefreeze.yml"
   push:
@@ -20,6 +22,8 @@ on:
       - "tests/test_moolbase_metamorphic_v1.cpp"
       - "tests/test_moolbase_monkey_v1.cpp"
       - "tests/moolbase_monkey_v1_manifest.json"
+      - "scripts/run_flagship_perturbations_v2.py"
+      - "benchmarks/flagship/perturbations_v2.json"
       - "CMakeLists.txt"
       - ".github/workflows/epistemic-process-prefreeze.yml"
 
@@ -64,8 +68,8 @@ jobs:
       - name: Reproduce frozen flagship
         run: python3 scripts/run_flagship_proof.py
 
-      - name: Run frozen flagship perturbations
-        run: python3 scripts/run_flagship_perturbations_v1.py
+      - name: Run preregistered V2 flagship perturbations
+        run: python3 scripts/run_flagship_perturbations_v2.py
 
       - name: Configure adversarial verification binaries
         run: |
@@ -244,6 +248,6 @@ jobs:
             reports/epistemic-process-prefreeze/
             reports/alpha-release-gate/
             reports/flagship-proof/
-            reports/flagship-perturbations-v1/
+            reports/flagship-perturbations-v2/
           if-no-files-found: warn
           retention-days: 60

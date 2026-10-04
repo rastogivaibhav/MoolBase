@@ -5,7 +5,6 @@ on:
     paths:
       - "benchmarks/epistemic_process_v3/**"
       - "tools/epistemic_process_v3_cycle1_probe.cpp"
-      - "CMakeLists.txt"
       - ".github/workflows/epistemic-process-v3-cycle1-forensics.yml"
   workflow_dispatch:
 
@@ -33,6 +32,11 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin master
+          campaign_changes="$(git diff --name-only origin/master...HEAD -- benchmarks/epistemic_process_v3 tools/epistemic_process_v3_cycle1_probe.cpp)"
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -z "$campaign_changes" ]; then
+            echo "No campaign inputs changed; current-engine contracts run without claiming a frozen campaign."
+            exit 0
+          fi
           changed="$(git diff --name-only origin/master...HEAD)"
           echo "$changed"
           if echo "$changed" | grep -E '^(src/|include/)'; then

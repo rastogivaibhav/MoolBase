@@ -5,7 +5,6 @@ on:
     paths:
       - "tools/epistemic_process_runtime_runner_v3_cycle5.cpp"
       - "benchmarks/epistemic_process_v3/**"
-      - "CMakeLists.txt"
       - ".github/workflows/epistemic-process-v3-cycle5-blind-unscored.yml"
   workflow_dispatch:
 
@@ -32,14 +31,22 @@ jobs:
       - name: Protect frozen experiment and Cycle 4 production
         run: |
           set -euo pipefail
-          BASE=0b729b6f4c5b78614107c0fa1e97ee7aaf386ff8
-          changed="$(git diff --name-only "$BASE"...HEAD)"
-          echo "$changed"
-          if echo "$changed" | grep -E '^(src/|include/|tests/)'; then
-            echo "Cycle 5 may not change production implementation or tests" >&2
-            exit 1
+          git fetch origin master
+          campaign_changes="$(git diff --name-only origin/master...HEAD -- benchmarks/epistemic_process_v3 tools/epistemic_process_runtime_runner_v3_cycle5.cpp)"
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -z "$campaign_changes" ]; then
+            echo "No campaign inputs changed; current-engine contracts run without claiming a frozen campaign."
+          else
+            BASE=0b729b6f4c5b78614107c0fa1e97ee7aaf386ff8
+            changed="$(git diff --name-only "$BASE"...HEAD)"
+            echo "$changed"
+            if echo "$changed" | grep -E '^(src/|include/|tests/)'; then
+              echo "Cycle 5 may not change production implementation or tests" >&2
+              exit 1
+            fi
+
           fi
 
+          # Frozen input hashes remain mandatory even for CI maintenance.
           check() {
             file="$1"; expected="$2"
             actual="$(sha256sum "$file" | awk '{print $1}')"
@@ -59,7 +66,7 @@ jobs:
           check benchmarks/epistemic_process_v3/generate_tasks_v3.py b14184302fcf736f7fab46edf72c11e528719d7f639fd1ecd517cfc9365185d7
           check benchmarks/epistemic_process_v3/tasks_v3_candidate.json 575c89930859bc6f23ecd218c7ed4c27032ec3a9f5a8c12bea1bbe84ab356829
 
-          echo "cycle5_frozen_boundary=passed"
+          echo "cycle5_frozen_input_hashes=passed"
 
       - name: Assert scoring remains impossible
         run: |

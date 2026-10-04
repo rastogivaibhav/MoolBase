@@ -1,4 +1,4 @@
-name: Flagship perturbation pack V1
+name: Flagship perturbation pack V2
 
 on:
   pull_request:
@@ -11,6 +11,8 @@ on:
       - "benchmarks/flagship/**"
       - "scripts/run_flagship_proof.py"
       - "scripts/run_flagship_perturbations_v1.py"
+      - "scripts/run_flagship_perturbations_v2.py"
+      - "scripts/test_flagship_perturbations_v2.py"
       - ".github/workflows/flagship-perturbations-v1.yml"
   workflow_dispatch:
 
@@ -28,16 +30,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Validate runner syntax
-        run: python3 -m py_compile scripts/run_flagship_perturbations_v1.py
+        run: python3 -m py_compile scripts/run_flagship_perturbations_v2.py
+
+      - name: Test V2 failure boundaries
+        run: python3 scripts/test_flagship_perturbations_v2.py
 
       - name: Run pre-registered perturbation pack
-        run: python3 scripts/run_flagship_perturbations_v1.py
+        run: python3 scripts/run_flagship_perturbations_v2.py
 
       - name: Publish all perturbation evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: graphenedb-flagship-perturbations-v1
+          name: moolbase-flagship-perturbations-v2
           path: |
-            reports/flagship-perturbations-v1/
+            reports/flagship-perturbations-v2/
           if-no-files-found: warn
