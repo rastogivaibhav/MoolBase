@@ -73,6 +73,17 @@ def canonical_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def scenario_hashes(raw: bytes) -> tuple[dict[str, Any], str, str]:
+    """Keep the frozen LF identity; separately record parsed-JSON identity.
+
+    CRLF is a Git checkout transport difference. Other byte/content changes
+    remain detectable by the existing frozen mechanism receipt.
+    """
+    manifest = json.loads(raw.decode("utf-8"))
+    frozen_hash = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
+    return manifest, frozen_hash, canonical_hash(manifest)
+
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise SystemExit(f"FLAGSHIP_CONTRACT_FAILURE: {message}")
@@ -100,6 +111,7 @@ def main() -> int:
         ])
         checked([
             "cmake", "--build", str(build_dir), "--parallel", "2",
+            "--config", "Release",
             "--target", "graphenedb_epistemic_flagship_demo",
         ])
 
@@ -109,6 +121,8 @@ def main() -> int:
         else "graphenedb_epistemic_flagship_demo"
     )
     binary = build_dir / binary_name
+    if not binary.exists():
+        binary = build_dir / "Release" / binary_name
     require(binary.exists(), f"demo binary not found: {binary}")
 
     run = checked([str(binary)])
@@ -200,8 +214,7 @@ def main() -> int:
     require(history["durable_cross_run_belief_revision_claim"] is False,
             "demo overclaimed durable DWM revision")
 
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    manifest, manifest_hash, semantic_manifest_hash = scenario_hashes(manifest_path.read_bytes())
     commit = git_head()
 
     canonical = {
@@ -233,6 +246,9 @@ def main() -> int:
         "receipt_hash_sha256": receipt_hash,
         "provenance_hash_sha256": provenance_hash,
         "receipt_hash_excludes_commit_and_environment": True,
+        "scenario_checkout_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "scenario_semantic_json_sha256": semantic_manifest_hash,
+        "scenario_hash_policy": "frozen LF bytes; CRLF normalized; semantic JSON digest recorded separately",
         "environment": {
             "platform": platform.system(),
             "machine": platform.machine(),

@@ -37,6 +37,8 @@ python3 scripts/run_flagship_proof.py
 
 The runner builds the canonical demo, executes it, validates the current contract and writes a deterministic receipt.
 
+On Windows the runner builds the Release configuration and locates multi-configuration output. `.gitattributes` preserves LF for frozen JSON inputs even with `core.autocrlf=true`. The proof normalizes CRLF to the original LF representation before hashing the scenario, preserving the existing frozen mechanism receipt. Other formatting or content changes remain failures. A separate `scenario_semantic_json_sha256` records canonical parsed-JSON identity; raw checkout bytes are recorded separately. This is a transport correction, not a new scientific contract.
+
 ## Expected canonical mechanism receipt
 
 ~~~text

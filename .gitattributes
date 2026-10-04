@@ -1,0 +1,6 @@
+# Preserve frozen JSON/hash inputs across core.autocrlf=true checkouts.
+*.json text eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

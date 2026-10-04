@@ -9,6 +9,9 @@ on:
       - "examples/epistemic_flagship_demo.cpp"
       - "benchmarks/flagship/**"
       - "scripts/run_flagship_proof.py"
+      - "scripts/test_flagship_checkout.py"
+      - "scripts/verify_flagship_checkout.py"
+      - ".gitattributes"
       - ".github/workflows/flagship-proof.yml"
   workflow_dispatch:
 
@@ -17,24 +20,39 @@ permissions:
 
 jobs:
   flagship-proof:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
+      - name: Enable normal Windows CRLF checkout behavior
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf true
+
       - name: Checkout exact source commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Validate checkout identities
+        run: python scripts/test_flagship_checkout.py
+
       - name: Run deterministic flagship proof
-        run: python3 scripts/run_flagship_proof.py
+        run: python scripts/run_flagship_proof.py
+
+      - name: Replay CRLF input and reject a changed manifest
+        run: python scripts/verify_flagship_checkout.py
 
       - name: Publish receipt-first evidence
         uses: actions/upload-artifact@v4
         with:
-          name: graphenedb-flagship-proof
+          name: graphenedb-flagship-proof-${{ matrix.os }}
           path: |
             reports/flagship-proof/receipt.json
             reports/flagship-proof/summary.md
             reports/flagship-proof/scenario_manifest.json
             reports/flagship-proof/raw_output.txt
+            reports/flagship-checkout/
           if-no-files-found: error
