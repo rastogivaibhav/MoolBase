@@ -130,7 +130,7 @@ MoolBase is designed to preserve:
 - **competing hypotheses** — alternatives stay visible instead of disappearing when one currently ranks higher;
 - **contradiction** — conflicting evidence remains part of state rather than being silently overwritten;
 - **belief revision** — late evidence can reopen a prior decision;
-- **decision provenance** — a durable receipt records why a governed state was reached or changed.
+- **decision provenance** — the runtime emits a receipt explaining why a governed state was reached or changed; applications must persist that receipt and prior reasoning state separately.
 
 | System focus | Typical question |
 |---|---|

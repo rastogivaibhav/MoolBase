@@ -100,6 +100,10 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_lyapunov_critic_tests
            COMMAND graphenedb_lyapunov_critic_tests)
 
+  add_executable(graphenedb_active_family_tests tests/test_active_vs_retired_family.cpp)
+  target_link_libraries(graphenedb_active_family_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_active_family_tests COMMAND graphenedb_active_family_tests)
+
   add_executable(graphenedb_fiber_bundle_v2_tests
                  tests/test_fiber_bundle_v2.cpp)
   target_link_libraries(graphenedb_fiber_bundle_v2_tests PRIVATE graphenedb)

@@ -61,6 +61,19 @@ std::string evaluate() {
     << ",\"snapshot\":" << r.receipt.snapshot_version
     << ",\"visitedStates\":" << r.final_bundle.visited_states
     << ",\"truncated\":" << (r.final_bundle.truncated?"true":"false")
+    << ",\"runtimeContract\":{\"schema\":\"moolbase-showcase-contract-v1\",\"hypokoshEnabled\":" << (options.enable_hypokosh?"true":"false")
+    << ",\"dwmEnabled\":" << (options.enable_dwm?"true":"false")
+    << ",\"oppositionResearchEnabled\":" << (options.enable_opposition_research?"true":"false")
+    << ",\"modelWorldUpdatesEnabled\":" << (options.update_model_world?"true":"false")
+    << ",\"maxRecursiveCycles\":" << options.max_recursive_cycles
+    << ",\"maxHops\":" << options.dialectic.max_hops
+    << ",\"maxPaths\":" << options.dialectic.max_paths
+    << ",\"maxPathsPerRoot\":" << options.dialectic.max_paths_per_root
+    << ",\"maxVisitedStates\":" << options.dialectic.max_visited_states
+    << ",\"semanticCandidates\":" << options.dialectic.semantic_candidates
+    << ",\"minimumConfidence\":" << options.dialectic.minimum_confidence
+    << ",\"verifier\":\"customer-fixture-certificate-v1\",\"verificationSource\":\"caller-supplied synthetic certificates\",\"sourceFamilies\":\"caller-supplied; not authenticated by adapter\",\"textSemantics\":\"adapter does not infer target or role from prose\",\"receiptPersistence\":\"application responsibility\",\"priorStateAvailable\":" << (options.prior_epistemic_state.available?"true":"false")
+    << ",\"priorBundleHash\":" << quote(std::to_string(options.prior_epistemic_state.bundle_hash)) << "}"
     << ",\"capacity\":{\"active\":" << std::count_if(records.begin(), records.end(), [](const auto& entry) {return entry.second.state == "active";})
     << ",\"events\":" << records.size() << ",\"maxActive\":" << max_active_evidence << ",\"maxEvents\":" << max_evidence_events << "}"
     << ",\"targets\":[";
