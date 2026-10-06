@@ -526,7 +526,9 @@ OppositionReport EpistemicController::oppose(
     const DialecticOptions& options) const {
   OppositionReport output;
   std::set<uint32_t> reopen;
+  std::set<uint32_t> challenged_targets;
   double strongest = 0.0;
+  double selected_strongest = 0.0;
   for (const auto& fiber : bundle.fibers) {
     for (const auto& group : fiber.correlation_groups) {
       if (group.role != FiberPathRole::Opposition) continue;
@@ -541,8 +543,12 @@ OppositionReport EpistemicController::oppose(
       }
       const double score = candidate_score(*path_it);
       strongest = std::max(strongest, score);
+      if (answer.has_answer && fiber.target_node == answer.primary_node) {
+        selected_strongest = std::max(selected_strongest, score);
+      }
+      challenged_targets.insert(fiber.target_node);
       output.challenged_claims.push_back(
-          "independent opposition challenges target " +
+          "material opposition challenges target " +
           std::to_string(fiber.target_node));
       output.falsification_questions.push_back(
           "What independently sourced observation discriminates target " +
@@ -560,6 +566,11 @@ OppositionReport EpistemicController::oppose(
 
   output.opposition_score = std::max(
       strongest, admissibility.unresolved_contradiction);
+  output.selected_answer_opposition_score = answer.has_answer
+      ? std::max(selected_strongest, admissibility.unresolved_contradiction)
+      : 0.0;
+  output.challenged_targets.assign(challenged_targets.begin(),
+                                   challenged_targets.end());
 
   // V3 semantic split:
   // - Challenge is reserved for actual material opposition.

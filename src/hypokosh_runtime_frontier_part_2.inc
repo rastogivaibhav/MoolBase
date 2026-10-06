@@ -41,7 +41,7 @@ GovernedProjection project_status(
     return {GovernedEpistemicStatus::Contested,
             "material_contradiction_blocks_resolution"};
   }
-  if (opposition.opposition_score >= 0.50) {
+  if (opposition.selected_answer_opposition_score >= 0.50) {
     return {GovernedEpistemicStatus::Contested,
             "dialectic_opposition_blocks_resolution"};
   }
@@ -66,7 +66,7 @@ GovernedProjection project_status(
       admissibility.sufficient_independent_support &&
       admissibility.semantic_verification ==
           SemanticVerificationStatus::Verified &&
-      opposition.opposition_score == 0.0) {
+      opposition.selected_answer_opposition_score == 0.0) {
     return {GovernedEpistemicStatus::Resolved, "earned_resolution"};
   }
   return {GovernedEpistemicStatus::ProvisionallyResolved,
@@ -341,33 +341,31 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
     const bool opposition_search_requested =
         trace.opposition_search_requested;
     if (trace.dialectical_challenge_present) {
-      NativeEpistemicEvent challenge;
-      challenge.round_index = round;
-      challenge.source = EpistemicEventSource::DialecticalModelWorlds;
-      challenge.type = EpistemicEventType::Challenge;
-      challenge.hypothesis_node =
-          result.final_convergence.has_answer
-              ? result.final_convergence.primary_node
-              : 0;
-      challenge.competing_hypotheses =
-          hypothesis_nodes(result.final_bundle);
-      challenge.reopen_nodes =
-          opposition_search_requested
-              ? result.final_opposition.reopen_nodes
-              : std::vector<uint32_t>{};
-      challenge.evidence_edges = evidence_edges_for_nodes(
-          result.final_bundle, result.final_opposition.reopen_nodes);
-      challenge.evidence_family_ids = evidence_families_for_nodes(
-          result.final_bundle, result.final_opposition.reopen_nodes);
-      challenge.epistemic_state =
-          opposition_search_requested
-              ? "challenged_expandable"
-              : "challenged_frontier_exhausted";
-      challenge.reason =
-          result.final_opposition.challenged_claims.empty()
-              ? "material opposition challenges the current hypothesis"
-              : result.final_opposition.challenged_claims.front();
-      append_epistemic_event(&result.receipt, std::move(challenge));
+      for (uint32_t challenged_target :
+           result.final_opposition.challenged_targets) {
+        NativeEpistemicEvent challenge;
+        challenge.round_index = round;
+        challenge.source = EpistemicEventSource::DialecticalModelWorlds;
+        challenge.type = EpistemicEventType::Challenge;
+        challenge.hypothesis_node = challenged_target;
+        challenge.competing_hypotheses =
+            hypothesis_nodes(result.final_bundle);
+        challenge.reopen_nodes =
+            opposition_search_requested
+                ? result.final_opposition.reopen_nodes
+                : std::vector<uint32_t>{};
+        challenge.evidence_edges = evidence_edges_for_nodes(
+            result.final_bundle, {challenged_target});
+        challenge.evidence_family_ids = evidence_families_for_nodes(
+            result.final_bundle, {challenged_target});
+        challenge.epistemic_state =
+            opposition_search_requested
+                ? "challenged_expandable"
+                : "challenged_frontier_exhausted";
+        challenge.reason = "material opposition challenges target " +
+            std::to_string(challenged_target);
+        append_epistemic_event(&result.receipt, std::move(challenge));
+      }
     }
     if (trace.corroboration_search_requested) {
       NativeEpistemicEvent corroboration;
@@ -409,4 +407,3 @@ HypoKoshRuntimeResult CompleteHypoKoshRuntime::reason(
       result.receipt.recovery_trace.push_back(std::move(trace));
       break;
     }
-
