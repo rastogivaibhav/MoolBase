@@ -1,3 +1,5 @@
+> **Latest evaluation build: 0.6.0-audit.3.** Use the [installation guide](https://moolbase.rasvai.com/INSTALL.html). PR #114 corrects opposition scoping: rejecting an alternative no longer incorrectly contests the selected answer. Original alpha.2 and audit.2 artifacts remain unchanged.
+
 # MoolBase by RASVAI
 
 **Evidence-aware memory for agents whose answers must change when the evidence changes.**

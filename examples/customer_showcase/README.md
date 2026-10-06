@@ -47,9 +47,9 @@ Rows are tab-separated: evidence ID, description, family, zero-based target (0 o
 
 | Scenario | Useful customer workflow | Observed behavior | Simpler alternative |
 |---|---|---|---|
-| Incident | Investigating changing telemetry with multiple plausible causes | Deployment initially selected; rollback contradiction clears the commitment; independent traces select connection exhaustion; final state remains contested | Log search plus a human investigation is enough when decisions need no governed provenance |
+| Incident | Investigating changing telemetry with multiple plausible causes | Deployment initially selected; rollback contradiction clears the commitment; independent traces select connection exhaustion; final state is provisional | Log search plus a human investigation is enough when decisions need no governed provenance |
 | Agent memory | Retiring stale account facts and tracking an authenticated update | EU memory initially selected; retiring only the original leaves other active sources; competing support opens the result; independent US evidence and explicit stale-copy retirement resolve US | Last-write-wins is simpler for one authoritative preference source |
-| Conflicting reports | Procurement or research with duplicated, corrected and unverified sources | Seven-day claim initially selected; supplier correction causes decommitment; independent records select 21 days; final state remains contested | A source list is enough if users manually compare and reconcile claims |
+| Conflicting reports | Procurement or research with duplicated, corrected and unverified sources | Seven-day claim initially selected; supplier correction causes decommitment; independent records select 21 days; final state is provisional | A source list is enough if users manually compare and reconcile claims |
 
 The exact fixtures are in `scenarios.json`. Repeated notices intentionally share family IDs. Different IDs are meaningful only when the application has established genuinely independent provenance; the database does not infer independence from natural language. Supersession/revocation retirement is explicit: applications must retire known derived copies too. Contradictory evidence does not automatically disappear when another target leads.
 

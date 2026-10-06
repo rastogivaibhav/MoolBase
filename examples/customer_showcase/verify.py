@@ -19,7 +19,12 @@ for s in scenarios:
  p,states=replay(s);assert p.returncode==0,p.stderr
  assert states[-1]['bundleHash']==states[-2]['bundleHash']
  assert states[-1]['answer']==2
- assert states[-1]['status']==('resolved' if s['id']=='memory' else 'contested')
+ assert states[-1]['status']==('resolved' if s['id']=='memory' else 'provisionally_resolved')
+ # Rejected alternatives must not contest the replacement; direct opposition
+ # to the initially selected explanation still produces a contested state.
+ if s['id'] != 'memory':
+  assert any(x['status']=='contested' for x in states)
+  assert any(e['type']=='challenge' and e['to']==1 for x in states for e in x['events'])
  assert all(x['receipt']['coreExecuted'] and x['receipt']['noSilentPromotion'] for x in states)
  assert states[1]['targets'][0]['families']==states[2]['targets'][0]['families'] if s['id']!='memory' else states[2]['targets'][0]['families']==states[3]['targets'][0]['families']
  events={e['type'] for x in states for e in x['events']}
