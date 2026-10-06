@@ -1,10 +1,12 @@
+> **Latest evaluation build: 0.6.0-audit.3.** Use the [installation guide](https://moolbase.rasvai.com/INSTALL.html). PR #114 corrects opposition scoping: rejecting an alternative no longer incorrectly contests the selected answer. Original alpha.2 and audit.2 artifacts remain unchanged.
+
 # MoolBase by RASVAI
 
 **Evidence-aware memory for agents whose answers must change when the evidence changes.**
 
 MoolBase keeps observations, competing explanations and an inspectable record of why a decision changed. Its embedded C++20 database stores nodes with content, vectors and provenance metadata, connected by typed relationships. Optional reasoning layers expose alternatives, opposition and decision receipts. Try a customer-memory correction before exploring the architecture.
 
-**Recommended for new evaluations:** [0.6.0-audit.2 corrected build](https://moolbase.rasvai.com/RELEASE_v0.6.0-audit.2.html), from merged source `0f19727b80007e875dea62dca7ab50e281d008e6`. Use these packages and instructions for parity with the live Lab. [v0.6.0-alpha.2](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2) is the original developer-preview release; its tag and assets remain unchanged. audit.2 is an evaluation label, not a new official release tag or GA release.
+**Recommended for new evaluations:** [0.6.0-audit.3 corrected build](https://moolbase.rasvai.com/RELEASE_v0.6.0-audit.3.html), from merged source `f78640d11bc204a8571c1c31e58b6a0f4464880a`. Use these packages and instructions for parity with the live Lab. [v0.6.0-alpha.2](https://github.com/rastogivaibhav/MoolBase/releases/tag/v0.6.0-alpha.2) is the original developer-preview release; its tag and assets remain unchanged. audit.3 is an evaluation label, not a new official release tag or GA release.
 
 **Start:** [Five-minute path](https://moolbase.rasvai.com/INSTALL.html) · [Interactive tutorial](https://moolbase.rasvai.com/learn.html) · [Observation/receipt exchange](https://moolbase.rasvai.com/API_EXAMPLE.html) · [Capabilities and maturity](https://moolbase.rasvai.com/CAPABILITIES.html) · [Integration guide](docs/AGENT_INTEGRATION.md).
 
@@ -67,7 +69,7 @@ MoolBase is built around the harder question:
 
 The [Evidence Lab](https://moolbase.rasvai.com) explains MoolBase through a customer-memory correction: **which fulfilment region should the assistant use?**
 
-The current audit.2 replay retains active evidence copies when only the original record is superseded. The older animation is historical and is not used to illustrate this corrected flow.
+The current audit.3 replay retains active evidence copies when only the original record is superseded. The older animation is historical and is not used to illustrate this corrected flow.
 
 | What arrives | What the database returns | What that means for the agent |
 |---|---|---|
@@ -82,7 +84,7 @@ The current audit.2 replay retains active evidence copies when only the original
 
 MoolBase stores the evidence and exposes alternatives, status changes and inspectable receipts. Your application supplies provenance, verification and explicit retirement of stale derived evidence. Scores are policy strengths, not calibrated probabilities.
 
-The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [corrected examples](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip) without using the browser demo.
+The Lab includes **incident investigation**, **agent-memory correction**, and **conflicting supplier reports**. It runs the C++ database and reasoning engine in a browser worker. Refresh discards that browser session; the native examples use real disk files. You can reproduce the same workflows from the [corrected examples](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.3-examples-only.zip) without using the browser demo.
 
 ---
 
@@ -92,9 +94,9 @@ The [Evidence Lab](https://moolbase.rasvai.com) offers three separate downloads 
 
 | Download | Use it when |
 |---|---|
-| [Compiled database — Linux x86_64](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
-| [Examples for the installed database](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-examples-only.zip) | You want to build the example adapter against the compiled package. |
-| [Optional source](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.2-source.zip) | You want to inspect or build the database and examples yourself. |
+| [Compiled database — Linux x86_64](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.3-linux-x86_64-db.zip) | You want the library, headers, CMake package and executables without building the database. |
+| [Examples for the installed database](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.3-examples-only.zip) | You want to build the example adapter against the compiled package. |
+| [Optional source](https://moolbase.rasvai.com/downloads/moolbase-0.6.0-audit.3-source.zip) | You want to inspect or build the database and examples yourself. |
 
 Follow the [download installation instructions](https://moolbase.rasvai.com/INSTALL.html). These Site packages are separately identified distributions; the existing GitHub release bundles remain available unchanged. The source-build path follows below.
 
@@ -105,8 +107,8 @@ Follow the [canonical five-minute path](https://moolbase.rasvai.com/INSTALL.html
 After extracting both packages into one directory:
 
 ```sh
-export MOOLBASE_PREFIX="$PWD/moolbase-0.6.0-audit.2-linux-x86_64"
-cd moolbase-0.6.0-audit.2-examples
+export MOOLBASE_PREFIX="$PWD/moolbase-0.6.0-audit.3-linux-x86_64"
+cd moolbase-0.6.0-audit.3-examples
 cmake -S . -B build-showcase -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$MOOLBASE_PREFIX"
 cmake --build build-showcase -j2
 python3 examples/customer_showcase/python_memory.py
