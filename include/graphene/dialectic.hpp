@@ -105,6 +105,10 @@ struct OppositionReport {
   bool dialectical_challenge{false};
   bool corroboration_search_required{false};
   bool requests_reexpansion{false};
+  // Bundle-wide opposition still drives exploration. Only opposition to the
+  // selected answer may block that answer's resolution.
+  double selected_answer_opposition_score{0.0};
+  std::vector<uint32_t> challenged_targets;
 };
 
 struct DialecticSynthesis {

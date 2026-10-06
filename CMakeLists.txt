@@ -88,6 +88,11 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_hypokosh_runtime_tests
            COMMAND graphenedb_hypokosh_runtime_tests)
 
+  add_executable(graphenedb_opposition_scope_tests tests/test_opposition_scope.cpp)
+  target_link_libraries(graphenedb_opposition_scope_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_opposition_scope_tests
+           COMMAND graphenedb_opposition_scope_tests)
+
   add_executable(graphenedb_stability_critic_adversarial_tests
                  tests/test_stability_critic_adversarial.cpp)
   target_link_libraries(graphenedb_stability_critic_adversarial_tests PRIVATE graphenedb)
