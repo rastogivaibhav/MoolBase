@@ -33,9 +33,12 @@ uint64_t event_checksum(const ModelWorldEvent& event) {
 // not independent verification that the referenced evidence is authentic.
 bool verified_state_admissible(const ModelWorldNode& node) {
   if (node.status != ModelWorldStatus::Verified) return true;
-  return node.origin != EdgeOrigin::Hypothetical &&
-         node.origin != EdgeOrigin::Inferred &&
-         !node.evidence_edges.empty();
+  // Reinforcement tracks repeated usefulness and is not new evidence.
+  // Only observed or independently discovered origins are admissible.
+  const bool admissible_origin =
+      node.origin == EdgeOrigin::Observed ||
+      node.origin == EdgeOrigin::Discovered;
+  return admissible_origin && !node.evidence_edges.empty();
 }
 
 }  // namespace
