@@ -1,0 +1,178 @@
+{
+  "schema_version": "moolbase.polymath.typed.mechanism.v1",
+  "classification": "project_authored_pedagogical_not_scientifically_verified",
+  "usage": "strict allowlisted native executor, not an eval string",
+  "mechanisms": [
+    {
+      "mechanism_id": "toy.network.finite_queue.v1",
+      "version": "1",
+      "domain": "networks",
+      "card_id": "card-network-queue-v1",
+      "formula_id": "FINITE_QUEUE",
+      "source_family": "original-project-authored-networks",
+      "description": "Finite capacity discrete-time packet queue, not actual TCP.",
+      "input_fields": [
+        [
+          "queue",
+          "integer",
+          "packets"
+        ],
+        [
+          "arrivals",
+          "integer",
+          "packets"
+        ],
+        [
+          "service",
+          "integer",
+          "packets"
+        ],
+        [
+          "buffer",
+          "integer",
+          "packets"
+        ]
+      ],
+      "output_fields": [
+        [
+          "next_queue",
+          "integer",
+          "packets"
+        ],
+        [
+          "drops",
+          "integer",
+          "packets"
+        ]
+      ],
+      "constraints": [
+        "all_counts_nonnegative",
+        "queue_lte_buffer"
+      ],
+      "source_status": "unverified",
+      "license_status": "project_authored",
+      "scientific_truth_claim": false
+    },
+    {
+      "mechanism_id": "toy.bio.saturated_regulator.v1",
+      "version": "1",
+      "domain": "biology",
+      "card_id": "card-biology-homeostat-v1",
+      "formula_id": "SATURATED_REGULATOR",
+      "source_family": "original-project-authored-biology",
+      "description": "Single-step saturated proportional controller, not actual physiology.",
+      "input_fields": [
+        [
+          "observed",
+          "float",
+          "state_units"
+        ],
+        [
+          "setpoint",
+          "float",
+          "state_units"
+        ],
+        [
+          "gain",
+          "float",
+          "dimensionless"
+        ],
+        [
+          "limit",
+          "float",
+          "state_units"
+        ],
+        [
+          "disturbance",
+          "float",
+          "state_units"
+        ]
+      ],
+      "output_fields": [
+        [
+          "control",
+          "float",
+          "state_units"
+        ],
+        [
+          "next_state",
+          "float",
+          "state_units"
+        ]
+      ],
+      "constraints": [
+        "all_finite",
+        "gain_nonnegative",
+        "limit_positive"
+      ],
+      "source_status": "unverified",
+      "license_status": "project_authored",
+      "scientific_truth_claim": false
+    },
+    {
+      "mechanism_id": "toy.supply.reorder.v1",
+      "version": "1",
+      "domain": "supply_chain",
+      "card_id": "card-supply-replenishment-v1",
+      "formula_id": "REORDER_POLICY",
+      "source_family": "original-project-authored-supply_chain",
+      "description": "Discrete inventory reorder threshold and quantity, not a vendor ERP policy.",
+      "input_fields": [
+        [
+          "daily_demand",
+          "integer",
+          "items_per_day"
+        ],
+        [
+          "lead_days",
+          "integer",
+          "days"
+        ],
+        [
+          "safety",
+          "integer",
+          "items"
+        ],
+        [
+          "on_hand",
+          "integer",
+          "items"
+        ],
+        [
+          "on_order",
+          "integer",
+          "items"
+        ],
+        [
+          "backorders",
+          "integer",
+          "items"
+        ],
+        [
+          "target",
+          "integer",
+          "items"
+        ]
+      ],
+      "output_fields": [
+        [
+          "reorder_point",
+          "integer",
+          "items"
+        ],
+        [
+          "order_qty",
+          "integer",
+          "items"
+        ]
+      ],
+      "constraints": [
+        "all_counts_nonnegative",
+        "all_inputs_present"
+      ],
+      "source_status": "unverified",
+      "license_status": "project_authored",
+      "scientific_truth_claim": false
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+name: Polymath Foundation v6 Typed Native Mechanisms
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v6/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v6.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v6/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typed-source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pure Python source/version and no-gold adversarial tests
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v6/test_typed.py
+
+  native-scientific-procedure:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve immutable protocol and environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v6
+          {
+            echo "github_sha=${GITHUB_SHA}"
+            python3 --version
+            cmake --version | head -1
+            c++ --version | head -1
+            uname -a
+          } > reports/polymath_foundation_v6/environment.txt
+          sha256sum \
+            research/polymath_foundation/v6/PREREGISTRATION.md \
+            research/polymath_foundation/v6/mechanisms.json \
+            research/polymath_foundation/v6/native_typed_executor.cpp \
+            research/polymath_foundation/v6/export_typed.py \
+            research/polymath_foundation/v6/score_native.py \
+            research/polymath_foundation/v6/test_typed.py \
+            research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/scorer.py \
+            research/polymath_foundation/v3/challenge.py \
+            > reports/polymath_foundation_v6/source_hashes.sha256
+      - name: Run fail-closed protocol tests before scoring
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v6/test_typed.py \
+            2>&1 | tee reports/polymath_foundation_v6/contract_tests.log
+      - name: Build actual C++ persistent MoolBase mechanism executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-f6 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-f6 --parallel 3 \
+            --target moolbase_polymath_v6_executor \
+            graphenedb_polymath_relation_direction_tests
+          ctest --test-dir build-f6 --output-on-failure \
+            -R graphenedb_polymath_relation_direction_tests \
+            2>&1 | tee reports/polymath_foundation_v6/ontology_direction_tests.log
+      - name: Generate frozen 72 typed challenges with withheld answers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v6/export_typed.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --mechanisms research/polymath_foundation/v6/mechanisms.json \
+            --manifest reports/polymath_foundation_v6/mechanisms.tsv \
+            --tasks reports/polymath_foundation_v6/tasks.tsv \
+            --receipt reports/polymath_foundation_v6/input_receipt.json \
+            2>&1 | tee reports/polymath_foundation_v6/export.log
+      - name: Execute verified-schema procedures via reopened native GrapheneDB
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-f6/moolbase_polymath_v6_executor \
+            reports/polymath_foundation_v6/mechanisms.tsv \
+            reports/polymath_foundation_v6/tasks.tsv \
+            reports/polymath_foundation_v6/native_results.tsv \
+            2>&1 | tee reports/polymath_foundation_v6/native_execute.log
+      - name: Independently score through ORIGINAL v3 toy oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v6/score_native.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --mechanisms research/polymath_foundation/v6/mechanisms.json \
+            --native reports/polymath_foundation_v6/native_results.tsv \
+            --out reports/polymath_foundation_v6/evaluation.json \
+            2>&1 | tee reports/polymath_foundation_v6/score.log
+      - name: Negative execution controls against genuine C++ engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v6/test_typed.py \
+            --native-bin ./build-f6/moolbase_polymath_v6_executor \
+            2>&1 | tee reports/polymath_foundation_v6/native_negative_tests.log
+      - name: Seal native evidence and negative results
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/polymath_foundation_v6
+          (cd reports/polymath_foundation_v6 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Upload raw typed questions, source manifest and native receipts even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v6-real-typed-engine-${{ github.sha }}
+          path: reports/polymath_foundation_v6/
+          if-no-files-found: warn
+          retention-days: 90
