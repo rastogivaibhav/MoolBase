@@ -73,7 +73,6 @@ static void write(const std::string& path,const std::vector<Card>& cards) {
     node.content=card.description;
     node.vector=deterministic_text_vector(card.title+" "+card.description,16);
     node.signature=deterministic_text_signature(card.title+" "+card.description);
-    node.origin=EdgeOrigin::Hypothetical;
     node.root=true;
     node.metadata={
         {"domain",card.domain}, {"card_id",card.id},
@@ -91,7 +90,6 @@ static void write(const std::string& path,const std::vector<Card>& cards) {
     assumed.content=card.assumptions;
     assumed.vector=deterministic_text_vector(card.assumptions,16);
     assumed.signature=deterministic_text_signature(card.assumptions);
-    assumed.origin=EdgeOrigin::Hypothetical;
     assumed.metadata={
         {"domain",card.domain},{"category","declared_assumptions"},
         {"source_family","original-project-authored-"+card.domain},
@@ -155,8 +153,16 @@ static void write(const std::string& path,const std::vector<Card>& cards) {
     // current task target. A3 must run the native reasoner as implemented.
     const auto inference=native.reason(n.vector,n.signature,runtime_options);
     insist(world.nodes().empty(),"inference wrote into model world unexpectedly");
-    insist(inference.evidence_edges.empty(),
-           "toy hypothetical graph produced verified evidence edges");
+    // Runtime evidence-edge IDs are *not* proof of independent verification.
+    // Every returned edge must still be tagged hypothetical and unverified.
+    for(uint32_t eid:inference.evidence_edges) {
+      const auto edge=db.get_edge(eid);
+      insist(bool(edge) && edge->origin==EdgeOrigin::Hypothetical,
+             "runtime returned non-hypothetical edge");
+      const auto it=edge->metadata.find("evidence_status");
+      insist(it!=edge->metadata.end() && it->second=="unverified",
+             "runtime returned a falsely verified evidence edge");
+    }
     output<<f("card_id")<<'\t'<<f("domain")<<'\t'<<f("title")<<'\t'
           <<n.content<<'\t'<<f("assumptions")<<'\t'<<f("boundaries")<<'\t'
           <<f("source_family")<<'\t'<<f("evidence_status")<<'\t'
