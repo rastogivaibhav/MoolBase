@@ -18,7 +18,7 @@ from build_trials import QUERY_FIELDS,ROUTE_FIELDS
 from select_baselines import read
 
 def prepare(queries,routes,selected_file):
-    if len(queries)!=len(routes)!=108:
+    if len(queries)!=108 or len(routes)!=108:
         raise ValueError("frozen 108-question trial count invalid")
     qids=[q["opaque_id"] for q in queries]
     if qids!=[r["opaque_id"] for r in routes] or len(set(qids))!=108:
