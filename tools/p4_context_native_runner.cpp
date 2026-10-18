@@ -189,7 +189,7 @@ void run_weather(const std::string& path, std::ofstream& out) {
       // Label is accessed strictly after forecasts have been persisted.
       const bool y=today.precipitation>0.0;
       WorldVerifiedOutcome o{"rain",today.date,y,edge++,
-                             "vega_weather_"+city+"_"+today.date,
+                             "vega_weather_"+(city=="New York"?std::string("NewYork"):std::string("Seattle"))+"_"+today.date,
                              "vega_public_unverified"};
       uint64_t b_id=0,c_id=0;
       if(!state.base.observe(o,&b_id))
