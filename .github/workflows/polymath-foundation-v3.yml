@@ -1,0 +1,97 @@
+name: Polymath Foundation v3 Applied Comprehension Instrument
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v3/**"
+      - ".github/workflows/polymath-foundation-v3.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v3/**"
+      - ".github/workflows/polymath-foundation-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  applied-comprehension-instrument:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source and experiment version
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v3
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+          } > reports/polymath_foundation_v3/environment.txt
+          sha256sum \
+            research/polymath_foundation/v3/PREREGISTRATION.md \
+            research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/challenge.py \
+            research/polymath_foundation/v3/scorer.py \
+            research/polymath_foundation/v3/test_instrument.py \
+            research/polymath_foundation/v3/README.md \
+            > reports/polymath_foundation_v3/source_hashes.sha256
+      - name: Adversarial gate (source rights, no gold leakage, wrong answers)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v3/test_instrument.py \
+            2>&1 | tee reports/polymath_foundation_v3/test_log.txt
+      - name: Generate fixed novel-parameter challenge packets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v3/challenge.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --out reports/polymath_foundation_v3/challenge_packet.json \
+            2>&1 | tee reports/polymath_foundation_v3/generation_log.txt
+      - name: Validate independent grader with scripted nonlearned ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v3/scorer.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --challenge reports/polymath_foundation_v3/challenge_packet.json \
+            --selftest reference_oracle_not_learned \
+            --out reports/polymath_foundation_v3/reference_instrument_selftest.json \
+            2>&1 | tee reports/polymath_foundation_v3/reference_log.txt
+          python3 research/polymath_foundation/v3/scorer.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --challenge reports/polymath_foundation_v3/challenge_packet.json \
+            --selftest abstain_only_not_learned \
+            --out reports/polymath_foundation_v3/abstain_instrument_selftest.json \
+            2>&1 | tee reports/polymath_foundation_v3/abstain_log.txt
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("reports/polymath_foundation_v3")
+          ref = json.loads((root / "reference_instrument_selftest.json").read_text())
+          abstain = json.loads((root / "abstain_instrument_selftest.json").read_text())
+          assert ref["metrics"]["correct_total"] == 72
+          assert abstain["metrics"]["correct_total"] == 12
+          assert ref["metrics"]["boundary_n"] == 12
+          assert ref["claim_status"] == "EVALUATOR_SELFTEST_NOT_MODEL_LEARNING"
+          assert abstain["model_executed"] is False
+          print("f3_ci_evaluation_contract=PASS external_learner=NOT_RUN")
+          PY
+      - name: Seal reproducible artifacts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v3
+          (cd reports/polymath_foundation_v3 && find . -type f ! -name manifest.sha256 -print0 | sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive experiment, including negative outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymath-foundation-v3-${{ github.sha }}
+          path: reports/polymath_foundation_v3/
+          retention-days: 90
+          if-no-files-found: warn

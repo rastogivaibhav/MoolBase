@@ -1,0 +1,111 @@
+{
+  "schema_version": "polymath-domain-cards-v3",
+  "content_status": "project_authored_instructional",
+  "publisher_rights": "license_review_required_before_external_republication",
+  "training_rights": "original_project_content_only_no_external_source_training_rights_implied",
+  "disclaimer": "Toy mathematical systems for evaluating application and abstention; not exact claims about RFC TCP, real human physiology or commercial ERP behavior.",
+  "cards": [
+    {
+      "id": "card-network-queue-v1",
+      "domain": "networks",
+      "title": "Finite-capacity discrete queue (pedagogical abstraction)",
+      "description": "Starting queue q receives arrivals a and can serve up to s units during one time step, with buffer capacity b. Calculate unserved=max(0,q+a-s); next_queue=min(b,unserved); drops=max(0,unserved-b).",
+      "inputs": [
+        "queue",
+        "arrivals",
+        "service",
+        "buffer"
+      ],
+      "outputs": [
+        "next_queue",
+        "drops"
+      ],
+      "assumptions": [
+        "All input counts are nonnegative integers",
+        "queue <= buffer",
+        "Service and arrivals apply to the same interval"
+      ],
+      "must_abstain_when": [
+        "Any count is negative",
+        "queue exceeds buffer",
+        "An input is missing or not an integer"
+      ],
+      "worked_example": "queue=5, arrivals=9, service=7, buffer=6: unserved=7, next_queue=6, drops=1.",
+      "external_reference_context": [
+        "rfc5681",
+        "rfc3168"
+      ],
+      "source_authority": "project_authored_toy_model_not_an_ietf_standard"
+    },
+    {
+      "id": "card-biology-homeostat-v1",
+      "domain": "biology",
+      "title": "Saturated proportional regulator (pedagogical abstraction)",
+      "description": "Compute control=clip(gain*(setpoint-observed),-limit,+limit); next_state=observed+disturbance+control. Clip(v,lo,hi) is max(lo,min(hi,v)).",
+      "inputs": [
+        "observed",
+        "setpoint",
+        "gain",
+        "limit",
+        "disturbance"
+      ],
+      "outputs": [
+        "control",
+        "next_state"
+      ],
+      "assumptions": [
+        "All scalar values are finite",
+        "gain is nonnegative",
+        "limit is strictly positive",
+        "Linear one-step correction is only a toy abstraction"
+      ],
+      "must_abstain_when": [
+        "gain is negative",
+        "limit is zero or negative",
+        "Any input is missing or nonfinite"
+      ],
+      "worked_example": "observed=7, setpoint=10, gain=2, limit=4, disturbance=-1: control=4 and next_state=10.",
+      "external_reference_context": [
+        "phys-homeostasis-framework",
+        "phys-regulation"
+      ],
+      "source_authority": "project_authored_toy_model_not_an_empirical_biological_law"
+    },
+    {
+      "id": "card-supply-replenishment-v1",
+      "domain": "supply_chain",
+      "title": "Inventory position and reorder threshold (pedagogical abstraction)",
+      "description": "inventory_position=on_hand+on_order-backorders; reorder_point=daily_demand*lead_days+safety. If inventory_position <= reorder_point, order_qty=max(0,target-inventory_position); else order_qty=0.",
+      "inputs": [
+        "daily_demand",
+        "lead_days",
+        "safety",
+        "on_hand",
+        "on_order",
+        "backorders",
+        "target"
+      ],
+      "outputs": [
+        "reorder_point",
+        "order_qty"
+      ],
+      "assumptions": [
+        "All counts, days and targets are nonnegative integers",
+        "All quantities use compatible units",
+        "A fixed deterministic lead time is assumed"
+      ],
+      "must_abstain_when": [
+        "Any count or day is negative",
+        "lead_days is missing",
+        "Any value is not an integer"
+      ],
+      "worked_example": "daily_demand=5,lead_days=3,safety=4,on_hand=13,on_order=1,backorders=2,target=30: point=19, position=12, order_qty=18.",
+      "external_reference_context": [
+        "oracle-reorder",
+        "microsoft-safety",
+        "microsoft-reordering"
+      ],
+      "source_authority": "project_authored_toy_model_not_a_vendor_erp_guarantee"
+    }
+  ]
+}
