@@ -132,7 +132,16 @@ int main() {
   assert(model_world.nodes().size() == original_nodes);
   assert(model_world.events().size() == original_events);
 
+  // Evidence links cannot legitimise hypothetical or inferred provenance.
+  fabricated.evidence_edges = {17};
+  assert(model_world.add(fabricated, "reject hypothetical with evidence") == 0);
+  fabricated.origin = EdgeOrigin::Inferred;
+  assert(model_world.add(fabricated, "reject inferred with evidence") == 0);
+  assert(model_world.nodes().size() == original_nodes);
+  assert(model_world.events().size() == original_events);
+
   fabricated.origin = EdgeOrigin::Observed;
+  fabricated.evidence_edges.clear();
   assert(model_world.add(fabricated, "reject missing evidence") == 0);
   assert(model_world.nodes().size() == original_nodes);
   assert(model_world.events().size() == original_events);
