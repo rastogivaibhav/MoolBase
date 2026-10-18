@@ -37,6 +37,14 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(graphenedb_polymath_relation_direction_tests
+                 tests/test_polymath_relation_direction.cpp)
+  target_link_libraries(graphenedb_polymath_relation_direction_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_polymath_relation_direction_tests
+           COMMAND graphenedb_polymath_relation_direction_tests)
+  set_tests_properties(graphenedb_polymath_relation_direction_tests
+                       PROPERTIES LABELS "polymath;ontology;semantic-safety")
+
   add_executable(graphenedb_epistemic_process_runtime_runner
                  tools/epistemic_process_runtime_runner.cpp)
   target_link_libraries(graphenedb_epistemic_process_runtime_runner PRIVATE graphenedb)

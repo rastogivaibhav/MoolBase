@@ -11,7 +11,31 @@ namespace fs = std::filesystem;
 int main() {
   RelationOntology ontology = RelationOntology::with_core_relations();
   assert(ontology.size() >= 10);
-  assert(ontology.canonicalise("calls") == std::optional<std::string>("depends_on"));
+  // Preserve true relation semantics: calls != requires != uses != depends_on.
+  assert(ontology.canonicalise("calls") == std::optional<std::string>("calls"));
+  assert(ontology.canonicalise("uses") == std::optional<std::string>("uses"));
+  assert(ontology.canonicalise("requires") == std::optional<std::string>("requires"));
+  assert(ontology.canonicalise("depends_on") == std::optional<std::string>("depends_on"));
+  assert(!ontology.canonicalise("caused_by"));
+  const auto inverse_cause = ontology.resolve("caused_by");
+  assert(inverse_cause && inverse_cause->canonical_id == "caused");
+  assert(inverse_cause->swap_endpoints);
+  const auto forward_cause = ontology.resolve("causes");
+  assert(forward_cause && forward_cause->canonical_id == "caused");
+  assert(!forward_cause->swap_endpoints);
+  const auto parent_relation = ontology.resolve("mother_of");
+  assert(parent_relation && parent_relation->canonical_id == "mother");
+  assert(parent_relation->swap_endpoints);
+  const auto evidence_relation = ontology.resolve("supported_by");
+  assert(evidence_relation && evidence_relation->canonical_id == "supports");
+  assert(evidence_relation->swap_endpoints);
+  RelationDefinition collision;
+  collision.id = "bad_inverse_collision";
+  collision.aliases = {"same_word"};
+  collision.inverse_aliases = {"same_word"};
+  const size_t size_before = ontology.size();
+  assert(!ontology.register_relation(collision));
+  assert(ontology.size() == size_before);
   assert(ontology.canonicalise("current depot") == std::optional<std::string>("located_in"));
   assert(!ontology.canonicalise("unmapped-predicate"));
   const auto invalid_types = ontology.validate("authored_by", "person", "work");
@@ -88,6 +112,30 @@ int main() {
   assert(ingestor.ingest(db, {unknown}, ontology, ingest_options, &unknown_result));
   assert(!unknown_result.warnings.empty());
   assert(unknown_result.inserted_edges.size() == 1);
+
+  // The literal triple ("latency", "caused_by", "cache_failure")
+  // must persist as cache_failure -> latency, NOT latency -> failure.
+  GenericRelationRecord reversed{"latency", "caused_by", "cache_failure",
+                                 "event", "event", "evidence-ref-1", 0.9, "", ""};
+  GenericIngestResult reverse_result;
+  assert(ingestor.ingest(db, {reversed}, ontology, ingest_options, &reverse_result));
+  assert(reverse_result.inserted_edges.size() == 1);
+  const auto causal_edge = db.get_edge(reverse_result.inserted_edges.front());
+  assert(causal_edge);
+  assert(causal_edge->from == reverse_result.entity_nodes.at("cache failure"));
+  assert(causal_edge->to == reverse_result.entity_nodes.at("latency"));
+  assert(causal_edge->role == EdgeRole::Causal);
+  assert(causal_edge->metadata.at("relation_id") == "caused");
+  assert(causal_edge->metadata.at("relation_original_predicate") == "caused_by");
+  assert(causal_edge->metadata.at("relation_direction_swapped") == "true");
+
+  // Non-equivalent relations must remain distinguishable in storage.
+  GenericRelationRecord used{"service-a", "uses", "data-b",
+                             "service", "data", "semantics", 0.8, "", ""};
+  GenericIngestResult used_result;
+  assert(ingestor.ingest(db, {used}, ontology, ingest_options, &used_result));
+  assert(db.get_edge(used_result.inserted_edges.front())->metadata.at("relation_id")
+         == "uses");
 
   assert(db.close());
   fs::remove_all(directory);

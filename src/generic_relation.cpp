@@ -177,17 +177,21 @@ Status GenericRelationIngestor::ingest(GrapheneDB& db,
   };
 
   for (const auto& record : records) {
-    auto canonical = ontology.canonicalise(record.predicate);
+    const auto resolved = ontology.resolve(record.predicate);
     std::string predicate;
-    if (!canonical) {
+    bool swap_endpoints = false;
+    if (!resolved) {
       predicate = normalise_relation_name(record.predicate);
       if (options.reject_unknown_relations) {
         return Status::error(ErrorCode::InvalidInput, "unknown relation: " + record.predicate);
       }
       result.warnings.push_back("UNKNOWN_RELATION_PRESERVED:" + predicate);
     } else {
-      predicate = *canonical;
-      const auto validation = ontology.validate(predicate, record.subject_type, record.object_type);
+      predicate = resolved->canonical_id;
+      swap_endpoints = resolved->swap_endpoints;
+      const auto validation = ontology.validate(
+          predicate, swap_endpoints ? record.object_type : record.subject_type,
+          swap_endpoints ? record.subject_type : record.object_type);
       result.warnings.insert(result.warnings.end(), validation.warnings.begin(), validation.warnings.end());
       if (!validation.valid && options.reject_unknown_relations) {
         return Status::error(ErrorCode::InvalidInput, "relation type validation failed: " + predicate);
@@ -200,12 +204,17 @@ Status GenericRelationIngestor::ingest(GrapheneDB& db,
       continue;
     }
     EdgeInput edge;
-    edge.from = *subject;
-    edge.to = *object;
+    // Preserve the original expression, but store a graph edge whose
+    // endpoints follow the canonical predicate direction.
+    edge.from = swap_endpoints ? *object : *subject;
+    edge.to = swap_endpoints ? *subject : *object;
     edge.origin = EdgeOrigin::Observed;
     edge.role = role_for(predicate);
     edge.confidence = std::clamp(record.confidence, 0.0, 1.0);
     edge.metadata["relation_id"] = predicate;
+    edge.metadata["relation_original_predicate"] = record.predicate;
+    edge.metadata["relation_direction_swapped"] = swap_endpoints ? "true" : "false";
+    edge.metadata["relation_ontology_contract"] = "direction-v1";
     edge.metadata["source_id"] = record.source_id.empty() ? "generic-input" : record.source_id;
     if (!record.valid_from.empty()) edge.metadata["valid_from"] = record.valid_from;
     if (!record.valid_until.empty()) edge.metadata["valid_until"] = record.valid_until;

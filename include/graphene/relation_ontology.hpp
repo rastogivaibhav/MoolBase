@@ -18,6 +18,14 @@ struct RelationDefinition {
   bool transitive{false};
   bool temporal{false};
   bool causal{false};
+  // An inverse alias reverses the endpoints; it is never a synonym.
+  // Kept last for source compatibility with existing aggregate definitions.
+  std::vector<std::string> inverse_aliases;
+};
+
+struct RelationResolution {
+  std::string canonical_id;
+  bool swap_endpoints{false};
 };
 
 struct RelationValidation {
@@ -28,6 +36,10 @@ struct RelationValidation {
 class RelationOntology {
  public:
   bool register_relation(RelationDefinition definition);
+  // Direction-aware lookup is mandatory for relation ingestion.
+  std::optional<RelationResolution> resolve(const std::string& predicate) const;
+  // Legacy canonicalisation only returns forward relations. Inverse aliases
+  // return nullopt rather than silently reversing a scientific assertion.
   std::optional<std::string> canonicalise(const std::string& predicate) const;
   std::optional<RelationDefinition> definition(const std::string& canonical_id) const;
   RelationValidation validate(const std::string& canonical_id,
@@ -39,7 +51,7 @@ class RelationOntology {
 
  private:
   std::map<std::string, RelationDefinition> definitions_;
-  std::map<std::string, std::string> alias_to_id_;
+  std::map<std::string, RelationResolution> alias_to_resolution_;
 };
 
 std::string normalise_relation_name(const std::string& value);
