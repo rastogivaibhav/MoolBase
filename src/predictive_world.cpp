@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <set>
 #include <utility>
 
 namespace graphene {
@@ -77,6 +78,8 @@ bool parse_probability(const std::string& encoded, double* probability) {
 WorldPredictionMetrics SinglePredictiveWorld::metrics(
     const std::string& event_key) const {
   WorldPredictionMetrics result;
+  std::set<std::string> seen_trial_ids;
+  std::set<std::string> seen_evidence_families;
   for (const auto& n : ledger_.nodes()) {
     if (!verified_outcome_for(n, world_id_, event_key)) continue;
     if (field(n, kOccurred) != "true" &&
@@ -92,10 +95,19 @@ WorldPredictionMetrics SinglePredictiveWorld::metrics(
         break;
       }
     }
-    if (!prediction) continue;
+    // Defensive replay: a forged/corrupted ledger record must not inflate
+    // learning by reusing a trial or evidence family, or by inventing a
+    // prediction created only AFTER the claimed observation.
+    if (!prediction || prediction->id >= n.id) continue;
+    const std::string family = field(n, kFamily);
+    if (!valid_key(trial) || !valid_key(family)) continue;
+    if (seen_trial_ids.count(trial) > 0 ||
+        seen_evidence_families.count(family) > 0) continue;
 
     double p = 0.0;
     if (!parse_probability(field(*prediction, kProbability), &p)) continue;
+    seen_trial_ids.insert(trial);
+    seen_evidence_families.insert(family);
     const bool occurred = field(n, kOccurred) == "true";
     const double error = p - (occurred ? 1.0 : 0.0);
     result.mean_brier += error * error;
