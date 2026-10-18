@@ -278,7 +278,7 @@ Status RegimePredictiveWorld::observe(const WorldVerifiedOutcome& input,
     return Status::error(ErrorCode::InvalidInput,
                          "no eligible prior prediction or duplicate evidence");
   const bool fires =
-      surprising(input.occurred, before.pending->adaptive_probability) &&
+      surprising(input.occurred, before.pending->adaptive) &&
       before.surprise_streak == 1 &&
       before.last_surprise == static_cast<int>(input.occurred);
   ModelWorldNode node;
