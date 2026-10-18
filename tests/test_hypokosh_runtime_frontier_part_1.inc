@@ -155,7 +155,7 @@ int main() {
     {
       std::ofstream forged(invalid_world_path, std::ios::trunc);
       assert(forged.good());
-      forged << "MWV1\\nNODE 1 2 3 4 \\"fabricated verified hypothesis\\" 0 0 0\\n";
+      forged << "MWV1\nNODE 1 2 3 4 \"fabricated verified hypothesis\" 0 0 0\n";
       assert(forged.good());
     }
     ModelWorld loaded_world;
