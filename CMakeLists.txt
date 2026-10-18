@@ -17,6 +17,7 @@ target_sources(graphenedb PRIVATE
   src/model_world.cpp
   src/predictive_world.cpp
   src/regime_world.cpp
+  src/context_world.cpp
   src/path_verifier.cpp
   src/relation_ontology.cpp
   src/self_healing.cpp
@@ -33,6 +34,10 @@ if(MSVC AND TARGET graphenedb_rc_stress_tests)
 endif()
 
 if(NOT GRAPHENEDB_BUILD_FUZZERS)
+  add_executable(moolbase_p4_context_native_runner
+                 tools/p4_context_native_runner.cpp)
+  target_link_libraries(moolbase_p4_context_native_runner PRIVATE graphenedb)
+
   add_executable(moolbase_p3_weather_native_runner
                  tools/p3_weather_native_runner.cpp)
   target_link_libraries(moolbase_p3_weather_native_runner PRIVATE graphenedb)
@@ -93,6 +98,11 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_predictive_world_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_predictive_world_tests
            COMMAND graphenedb_predictive_world_tests)
+
+  add_executable(graphenedb_context_world_tests tests/test_context_world.cpp)
+  target_link_libraries(graphenedb_context_world_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_context_world_tests
+           COMMAND graphenedb_context_world_tests)
 
   add_executable(graphenedb_regime_world_tests tests/test_regime_world.cpp)
   target_link_libraries(graphenedb_regime_world_tests PRIVATE graphenedb)
