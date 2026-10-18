@@ -27,7 +27,7 @@ def load_receipts(path):
 def evaluate(cards,bydomain,rows):
     master=generate(cards,SEED)
     questions=master["tasks"]
-    if len(rows)!=len(questions)!=72:
+    if len(rows)!=len(questions) or len(questions)!=72:
         raise ValueError("missing native task receipts")
     by_id={}
     for r in rows:
