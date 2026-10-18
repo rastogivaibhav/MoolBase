@@ -110,6 +110,43 @@ int main() {
   fs::remove(file, ec);
   assert(!ec);
 
+  // Bypass the public observation API to emulate malformed ledger records.
+  // Defensive replay must not count an outcome twice under a new family.
+  ModelWorldNode forged_duplicate;
+  forged_duplicate.type = ModelWorldNodeType::Outcome;
+  forged_duplicate.status = ModelWorldStatus::Verified;
+  forged_duplicate.origin = EdgeOrigin::Observed;
+  forged_duplicate.evidence_edges = {991};
+  forged_duplicate.related_nodes = {1};
+  forged_duplicate.metadata = {
+      {"pw_v1_type", "outcome"}, {"pw_v1_world", "supply"},
+      {"pw_v1_event", "delay"}, {"pw_v1_trial", "trial-1"},
+      {"pw_v1_occurred", "true"}, {"pw_v1_family", "forged-family"},
+      {"pw_v1_verifier", "claimed-auditor"}};
+  assert(loaded.add(forged_duplicate, "test forged duplicate") > 0);
+  assert(restored.metrics("delay").scored_predictions == 7);
+
+  // Another malformed record reuses a previously counted source family.
+  ModelWorldNode duplicated_family = forged_duplicate;
+  duplicated_family.related_nodes = {forecast.prediction_node_id};
+  duplicated_family.metadata["pw_v1_trial"] = "trial-9";
+  duplicated_family.metadata["pw_v1_family"] = "independent-1";
+  assert(loaded.add(duplicated_family, "test repeated evidence family") > 0);
+  assert(restored.metrics("delay").scored_predictions == 7);
+
+  // A record claiming an outcome before its precommitted prediction cannot
+  // become training evidence if the forecast is backfilled afterwards.
+  ModelWorldNode retroactive = forged_duplicate;
+  retroactive.metadata["pw_v1_trial"] = "retro";
+  retroactive.metadata["pw_v1_family"] = "retro-family";
+  retroactive.related_nodes = {static_cast<uint64_t>(loaded.nodes().size() + 2)};
+  const auto retro_id = loaded.add(retroactive, "test retroactive outcome");
+  assert(retro_id > 0);
+  WorldForecast retro_forecast;
+  assert(restored.forecast("delay", "retro", &retro_forecast));
+  assert(retro_forecast.prediction_node_id == retro_id + 1);
+  assert(restored.metrics("delay").scored_predictions == 7);
+
   // Independent worlds in one ledger do not share observations.
   SinglePredictiveWorld independent(loaded, "other");
   assert(independent.forecast("delay", "other-trial-1", &forecast));
