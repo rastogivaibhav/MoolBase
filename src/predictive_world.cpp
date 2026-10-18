@@ -6,6 +6,7 @@
 #include <sstream>
 #include <set>
 #include <utility>
+#include <unordered_map>
 
 namespace graphene {
 namespace {
@@ -80,6 +81,18 @@ WorldPredictionMetrics SinglePredictiveWorld::metrics(
   WorldPredictionMetrics result;
   std::set<std::string> seen_trial_ids;
   std::set<std::string> seen_evidence_families;
+  // Research P3 performance-only index: previous nested scan was O(n^2)
+  // per forecast. Preserve the earliest matching prediction in ledger order.
+  // Original integrity predicates and numerical updates are unchanged.
+  std::unordered_map<std::string, std::vector<const ModelWorldNode*>>
+      forecasts_by_trial;
+  for (const auto& candidate : ledger_.nodes()) {
+    if (candidate.type == ModelWorldNodeType::Hypothesis &&
+        field(candidate, kType) == "prediction" &&
+        field(candidate, kWorld) == world_id_ &&
+        field(candidate, kEvent) == event_key)
+      forecasts_by_trial[field(candidate, kTrial)].push_back(&candidate);
+  }
   for (const auto& n : ledger_.nodes()) {
     if (!verified_outcome_for(n, world_id_, event_key)) continue;
     if (field(n, kOccurred) != "true" &&
@@ -87,12 +100,14 @@ WorldPredictionMetrics SinglePredictiveWorld::metrics(
 
     const std::string trial = field(n, kTrial);
     const ModelWorldNode* prediction = nullptr;
-    for (const auto& candidate : ledger_.nodes()) {
-      if (prediction_for(candidate, world_id_, event_key, trial) &&
-          std::find(n.related_nodes.begin(), n.related_nodes.end(),
-                    candidate.id) != n.related_nodes.end()) {
-        prediction = &candidate;
-        break;
+    const auto matching = forecasts_by_trial.find(trial);
+    if (matching != forecasts_by_trial.end()) {
+      for (const ModelWorldNode* candidate : matching->second) {
+        if (std::find(n.related_nodes.begin(), n.related_nodes.end(),
+                      candidate->id) != n.related_nodes.end()) {
+          prediction = candidate;
+          break;
+        }
       }
     }
     // Defensive replay: a forged/corrupted ledger record must not inflate
