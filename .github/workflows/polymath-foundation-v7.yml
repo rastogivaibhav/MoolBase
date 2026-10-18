@@ -1,0 +1,163 @@
+name: Polymath Foundation v7 Native Mechanism Selection
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v7/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v7.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v7/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v7.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  selector-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fixed unknown, composite, poisoned-unit and no-label tests
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v7/test_selection.py
+
+  actual-native-selection:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exact source and environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v7
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+            c++ --version | head -1
+            cmake --version | head -1
+          } > reports/polymath_foundation_v7/environment.txt
+          sha256sum research/polymath_foundation/v7/* \
+            research/polymath_foundation/v6/mechanisms.json \
+            research/polymath_foundation/v6/native_typed_executor.cpp \
+            research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/challenge.py \
+            research/polymath_foundation/v3/scorer.py \
+            > reports/polymath_foundation_v7/source_hashes.sha256
+      - name: Validate research contracts before native execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v7/test_selection.py \
+            2>&1 | tee reports/polymath_foundation_v7/contract_tests.log
+      - name: Compile actual GrapheneDB selector and original v6 executor
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v7 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v7 --parallel 3 \
+            --target moolbase_polymath_v7_selector moolbase_polymath_v6_executor
+      - name: Generate unlabeled tasks with gold kept outside the selector
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v7/build_trials.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --mechanisms research/polymath_foundation/v6/mechanisms.json \
+            --manifest reports/polymath_foundation_v7/mechanisms.tsv \
+            --queries reports/polymath_foundation_v7/unlabeled_queries.tsv \
+            --gold reports/polymath_foundation_v7/gold_for_evaluator_only.json \
+            --receipt reports/polymath_foundation_v7/input_hashes.json \
+            2>&1 | tee reports/polymath_foundation_v7/generation.log
+      - name: Execute independent lexical and schema-only baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in B0 B1; do
+            python3 research/polymath_foundation/v7/select_baselines.py \
+              --manifest reports/polymath_foundation_v7/mechanisms.tsv \
+              --queries reports/polymath_foundation_v7/unlabeled_queries.tsv \
+              --mode "$arm" \
+              --out "reports/polymath_foundation_v7/routes_${arm}.tsv"
+          done
+      - name: Actually route using persisted/reopened native MoolBase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-v7/moolbase_polymath_v7_selector \
+            reports/polymath_foundation_v7/mechanisms.tsv \
+            reports/polymath_foundation_v7/unlabeled_queries.tsv \
+            reports/polymath_foundation_v7/routes_B2.tsv \
+            2>&1 | tee reports/polymath_foundation_v7/native_selection.log
+          python3 research/polymath_foundation/v7/test_selection.py \
+            --native ./build-v7/moolbase_polymath_v7_selector \
+            2>&1 | tee reports/polymath_foundation_v7/native_negative_tests.log
+      - name: Use original real C++ v6 engine on all selected mechanisms
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in B0 B1 B2; do
+            python3 research/polymath_foundation/v7/route_and_score.py \
+              --queries reports/polymath_foundation_v7/unlabeled_queries.tsv \
+              --routes "reports/polymath_foundation_v7/routes_${arm}.tsv" \
+              --arm "$arm" \
+              --selected-tasks "reports/polymath_foundation_v7/selected_${arm}.tsv"
+            ./build-v7/moolbase_polymath_v6_executor \
+              reports/polymath_foundation_v7/mechanisms.tsv \
+              "reports/polymath_foundation_v7/selected_${arm}.tsv" \
+              "reports/polymath_foundation_v7/executed_${arm}.tsv"
+          done
+      - name: Grade selection and applied execution against separate key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in B0 B1 B2; do
+            python3 research/polymath_foundation/v7/route_and_score.py \
+              --queries reports/polymath_foundation_v7/unlabeled_queries.tsv \
+              --routes "reports/polymath_foundation_v7/routes_${arm}.tsv" \
+              --arm "$arm" \
+              --selected-tasks "reports/polymath_foundation_v7/selected_${arm}.tsv" \
+              --gold reports/polymath_foundation_v7/gold_for_evaluator_only.json \
+              --executor-results "reports/polymath_foundation_v7/executed_${arm}.tsv" \
+              --mechanisms research/polymath_foundation/v6/mechanisms.json \
+              --cards research/polymath_foundation/v3/cards.json \
+              --out "reports/polymath_foundation_v7/evaluation_${arm}.json"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/polymath_foundation_v7")
+          scores={a:json.loads((root/f"evaluation_{a}.json").read_text())
+                  for a in ("B0","B1","B2")}
+          assert scores["B1"]["metrics"]==scores["B2"]["metrics"]
+          for a in ("B1","B2"):
+              categories=scores[a]["categories"]
+              assert categories["library"]["correct_n"]==72
+              for kind in ("poison_unit","out_of_domain","cross_domain_composite"):
+                  assert categories[kind]["correct_n"]==12
+          print("f7_engineering_acceptance=PASS independent_blind=NO")
+          PY
+      - name: Seal failure-or-success research evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/polymath_foundation_v7
+          (cd reports/polymath_foundation_v7 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Preserve all inputs, traces and null/negative results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-f7-native-routing-${{ github.sha }}
+          path: reports/polymath_foundation_v7/
+          retention-days: 90
+          if-no-files-found: warn
