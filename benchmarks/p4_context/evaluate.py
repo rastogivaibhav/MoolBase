@@ -8,6 +8,7 @@ import argparse
 import csv
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import math
 import random
@@ -20,8 +21,17 @@ SEED = 20261018
 BOOTSTRAPS = 5000
 BLOCK = 14
 MODELS = ("p1", "p4", "rolling")
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "p3_weather"))
-from evaluate import source_rows as read_weather, logistic_features as weather_features
+# Load the earlier frozen P3 helper under a distinct module name. Using
+# "from evaluate import ..." here creates circular import when P4's own
+# evaluator is imported by the adversarial contract test.
+_p3_path = Path(__file__).resolve().parents[1] / "p3_weather" / "evaluate.py"
+_spec = importlib.util.spec_from_file_location("moolbase_p3_frozen_evaluate", _p3_path)
+if _spec is None or _spec.loader is None:
+    raise ImportError("missing frozen P3 evaluation")
+_p3 = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_p3)
+read_weather = _p3.source_rows
+weather_features = _p3.logistic_features
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
