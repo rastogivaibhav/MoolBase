@@ -1,0 +1,69 @@
+name: P3 external weather chronological research
+
+on:
+  push:
+    paths:
+      - "benchmarks/p3_weather/**"
+      - "tools/p3_weather_native_runner.cpp"
+      - "src/predictive_world.cpp"
+      - "src/regime_world.cpp"
+      - "include/graphene/predictive_world.hpp"
+      - "include/graphene/regime_world.hpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/p3-weather-evaluation.yml"
+  pull_request:
+    paths:
+      - "benchmarks/p3_weather/**"
+      - "tools/p3_weather_native_runner.cpp"
+      - "src/predictive_world.cpp"
+      - "src/regime_world.cpp"
+      - "include/graphene/predictive_world.hpp"
+      - "include/graphene/regime_world.hpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/p3-weather-evaluation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chronological:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze evidence and environment receipt
+        run: |
+          mkdir -p reports/p3_weather
+          printf "source_commit=%s\n" "${GITHUB_SHA}" > reports/p3_weather/environment.txt
+          python3 --version >> reports/p3_weather/environment.txt
+          cmake --version | head -1 >> reports/p3_weather/environment.txt
+          c++ --version | head -1 >> reports/p3_weather/environment.txt
+          sha256sum benchmarks/p3_weather/PREREGISTRATION.md benchmarks/p3_weather/data/weather.csv benchmarks/p3_weather/evaluate.py tools/p3_weather_native_runner.cpp src/predictive_world.cpp src/regime_world.cpp > reports/p3_weather/source_checksums.sha256
+      - name: Build native P1 P2 and P3 runner
+        run: |
+          cmake -S . -B build-p3 -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_SERVER=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+          cmake --build build-p3 --parallel 2 --target graphenedb_predictive_world_tests graphenedb_regime_world_tests moolbase_p3_weather_native_runner
+      - name: Native safety contracts
+        run: ctest --test-dir build-p3 --output-on-failure -R "graphenedb_(predictive|regime)_world_tests"
+      - name: Predict first, then observe real historical weather
+        run: |
+          ./build-p3/moolbase_p3_weather_native_runner benchmarks/p3_weather/data/weather.csv reports/p3_weather/native_predictions.csv 2>&1 | tee reports/p3_weather/native_execution.log
+      - name: Frozen chronological scoring
+        run: |
+          python3 benchmarks/p3_weather/evaluate.py --source benchmarks/p3_weather/data/weather.csv --native reports/p3_weather/native_predictions.csv --output reports/p3_weather/evaluation.json | tee reports/p3_weather/evaluation_summary.log
+      - name: Negative control tests
+        run: |
+          python3 benchmarks/p3_weather/test_evaluation_contract.py --source benchmarks/p3_weather/data/weather.csv --native reports/p3_weather/native_predictions.csv | tee reports/p3_weather/negative_control_tests.log
+      - name: Seal outputs
+        if: always()
+        run: |
+          find reports/p3_weather -type f -name '*.json' -o -name '*.csv' -o -name '*.log' -o -name '*.txt' | sort | xargs -r sha256sum > reports/p3_weather/artifact_checksums.sha256
+      - name: Preserve research artifacts even on null/negative outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p3-weather-${{ github.sha }}
+          path: reports/p3_weather/
+          retention-days: 90
+          if-no-files-found: warn
