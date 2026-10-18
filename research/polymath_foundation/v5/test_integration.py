@@ -5,9 +5,13 @@ import copy
 import csv
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+HERE=Path(__file__).resolve().parent
+sys.path.insert(0,str(HERE.parent/"v3"))
+sys.path.insert(0,str(HERE.parent/"v4"))
 from challenge import cards_from
 from native_manifest import FIELDS,OUTPUT,manifest,check_native,read_native
 from run_integration import selected,prompt_for,native_card,ARMS
@@ -135,6 +139,8 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--native-bin")
     args=parser.parse_args()
-    unittest.main(argv=["f5_tests"],verbosity=2,exit=False)
+    outcome=unittest.main(argv=["f5_tests"],verbosity=2,exit=False)
+    if not outcome.result.wasSuccessful():
+        raise SystemExit(1)
     if args.native_bin:
         check_binary(Path(args.native_bin).resolve())
