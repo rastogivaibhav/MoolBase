@@ -1,0 +1,99 @@
+name: Polymath Foundation v1 Research Gate
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v1/**"
+      - "include/graphene/relation_ontology.hpp"
+      - "src/relation_ontology.cpp"
+      - "src/generic_relation.cpp"
+      - "tests/test_polymath_relation_direction.cpp"
+      - "tests/test_generic_reasoning_pipeline.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v1.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v1/**"
+      - "include/graphene/relation_ontology.hpp"
+      - "src/relation_ontology.cpp"
+      - "src/generic_relation.cpp"
+      - "tests/test_polymath_relation_direction.cpp"
+      - "tests/test_generic_reasoning_pipeline.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve input hashes and platform receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v1
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+            c++ --version | head -1
+            cmake --version | head -1
+          } > reports/polymath_foundation_v1/environment.txt
+          sha256sum \
+            research/polymath_foundation/v1/three_domain_fixture.json \
+            research/polymath_foundation/v1/metadata.schema.json \
+            research/polymath_foundation/v1/foundation.py \
+            research/polymath_foundation/v1/README.md \
+            src/generic_relation.cpp \
+            src/relation_ontology.cpp \
+            > reports/polymath_foundation_v1/source_hashes.txt
+      - name: Strict metadata, domain-competence and provenance negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v1/test_foundation.py 2>&1 | tee reports/polymath_foundation_v1/python_test_log.txt
+      - name: Generate deterministic non-executing research agenda
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v1/foundation.py \
+            --input research/polymath_foundation/v1/three_domain_fixture.json \
+            --output reports/polymath_foundation_v1/agenda.json \
+            2>&1 | tee reports/polymath_foundation_v1/triage_log.txt
+          python3 -m json.tool reports/polymath_foundation_v1/agenda.json >/dev/null
+      - name: Build native ontology / relation direction guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-polymath -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-polymath --parallel 2 \
+            --target graphenedb_polymath_relation_direction_tests
+      - name: Native graph insertion and inverted-causality regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir build-polymath --output-on-failure \
+            -R graphenedb_polymath_relation_direction_tests \
+            2>&1 | tee reports/polymath_foundation_v1/cpp_test_log.txt
+      - name: Seal evidence receipt
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/polymath_foundation_v1
+          (cd reports/polymath_foundation_v1 && find . -type f ! -name manifest.sha256 -print0 | sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Upload research evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymath-foundation-v1-${{ github.sha }}
+          path: reports/polymath_foundation_v1/
+          retention-days: 90
+          if-no-files-found: warn
