@@ -33,6 +33,10 @@ if(MSVC AND TARGET graphenedb_rc_stress_tests)
 endif()
 
 if(NOT GRAPHENEDB_BUILD_FUZZERS)
+  add_executable(moolbase_p3_weather_native_runner
+                 tools/p3_weather_native_runner.cpp)
+  target_link_libraries(moolbase_p3_weather_native_runner PRIVATE graphenedb)
+
   add_executable(graphenedb_epistemic_process_runtime_runner_v3_cycle5
                  tools/epistemic_process_runtime_runner_v3_cycle5.cpp)
   target_link_libraries(graphenedb_epistemic_process_runtime_runner_v3_cycle5 PRIVATE graphenedb)
