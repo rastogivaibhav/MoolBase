@@ -1,0 +1,79 @@
+name: P4 contextual cross-domain research
+
+on:
+  push:
+    paths:
+      - "benchmarks/p4_context/**"
+      - "tools/p4_context_native_runner.cpp"
+      - "src/context_world.cpp"
+      - "include/graphene/context_world.hpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/p4-contextual-research.yml"
+  pull_request:
+    paths:
+      - "benchmarks/p4_context/**"
+      - "tools/p4_context_native_runner.cpp"
+      - "src/context_world.cpp"
+      - "include/graphene/context_world.hpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/p4-contextual-research.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chronological:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record pinned sources and environment
+        run: |
+          mkdir -p reports/p4_context
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+            cmake --version | head -1
+            c++ --version | head -1
+          } > reports/p4_context/environment.txt
+          sha256sum \
+            benchmarks/p4_context/PREREGISTRATION.md \
+            benchmarks/p4_context/PRESCORE_BOUNDARY_CLARIFICATION.md \
+            benchmarks/p3_weather/data/weather.csv \
+            benchmarks/p4_context/data/stocks.csv \
+            benchmarks/p4_context/evaluate.py \
+            tools/p4_context_native_runner.cpp \
+            src/context_world.cpp \
+            include/graphene/context_world.hpp \
+            > reports/p4_context/source_checksums.sha256
+      - name: Build actual MoolBase native learning models
+        run: |
+          cmake -S . -B build-p4 -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_SERVER=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+          cmake --build build-p4 --parallel 2 --target graphenedb_context_world_tests graphenedb_predictive_world_tests moolbase_p4_context_native_runner
+      - name: Native persistence and adversarial replay
+        run: ctest --test-dir build-p4 --output-on-failure -R "graphenedb_(predictive|context)_world_tests"
+      - name: Precommit forecasts before chronology outcomes
+        run: |
+          set -euo pipefail
+          ./build-p4/moolbase_p4_context_native_runner benchmarks/p3_weather/data/weather.csv benchmarks/p4_context/data/stocks.csv reports/p4_context/native_predictions.csv 2>&1 | tee reports/p4_context/native_log.txt
+      - name: Evaluate fixed experiment without tuning
+        run: |
+          set -euo pipefail
+          python3 benchmarks/p4_context/evaluate.py --weather benchmarks/p3_weather/data/weather.csv --stocks benchmarks/p4_context/data/stocks.csv --native reports/p4_context/native_predictions.csv --out reports/p4_context/evaluation.json | tee reports/p4_context/evaluation_log.txt
+      - name: Run explicit failure and future-leakage checks
+        run: |
+          set -euo pipefail
+          python3 benchmarks/p4_context/test_evaluation_contract.py --weather benchmarks/p3_weather/data/weather.csv --stocks benchmarks/p4_context/data/stocks.csv --native reports/p4_context/native_predictions.csv | tee reports/p4_context/integrity_log.txt
+      - name: Seal evidence artifacts
+        if: always()
+        run: |
+          (cd reports/p4_context && find . -type f ! -name 'artifact_checksums.sha256' -print0 | sort -z | xargs -0 -r sha256sum > artifact_checksums.sha256)
+      - name: Preserve all outcomes including null and failed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p4-context-${{ github.sha }}
+          path: reports/p4_context/
+          retention-days: 90
+          if-no-files-found: warn
