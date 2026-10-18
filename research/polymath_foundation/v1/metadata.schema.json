@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moolbase.rasvai.com/research/polymath-foundation-1.schema.json",
+  "title": "MoolBase Polymath Foundation v1 — illustrative research package",
+  "description": "Proposed portable metadata contract, supplementary to the strict stdlib validator. It does not authenticate any evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_kind",
+    "sources",
+    "domains",
+    "concepts",
+    "mappings",
+    "knowledge_gaps",
+    "competence_tests"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "polymath-foundation-1"
+    },
+    "dataset_kind": {
+      "const": "synthetic_curated_fixture"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/domain"
+      }
+    },
+    "concepts": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "$ref": "#/$defs/concept"
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/mapping"
+      }
+    },
+    "knowledge_gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/gap"
+      }
+    },
+    "competence_tests": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/test"
+      }
+    }
+  },
+  "$defs": {
+    "ident": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "terms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ident"
+      },
+      "uniqueItems": true
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family_id",
+        "kind",
+        "uri",
+        "license",
+        "integrity",
+        "methodology"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "family_id": {
+          "$ref": "#/$defs/ident"
+        },
+        "kind": {
+          "const": "synthetic_fixture"
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^fixture://"
+        },
+        "license": {
+          "$ref": "#/$defs/ident"
+        },
+        "integrity": {
+          "const": "not_authenticated"
+        },
+        "methodology": {
+          "$ref": "#/$defs/ident"
+        }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ontology_version",
+        "competence_test_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "ontology_version": {
+          "$ref": "#/$defs/ident"
+        },
+        "competence_test_ids": {
+          "$ref": "#/$defs/terms"
+        }
+      }
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "domain",
+        "label",
+        "definition",
+        "roles",
+        "prerequisites",
+        "assumptions",
+        "boundaries",
+        "source_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "domain": {
+          "$ref": "#/$defs/ident"
+        },
+        "label": {
+          "$ref": "#/$defs/ident"
+        },
+        "definition": {
+          "$ref": "#/$defs/ident"
+        },
+        "roles": {
+          "$ref": "#/$defs/terms"
+        },
+        "prerequisites": {
+          "$ref": "#/$defs/terms"
+        },
+        "assumptions": {
+          "$ref": "#/$defs/terms"
+        },
+        "boundaries": {
+          "$ref": "#/$defs/terms"
+        },
+        "source_ids": {
+          "$ref": "#/$defs/terms"
+        }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "from",
+        "to",
+        "kind",
+        "shared_roles",
+        "boundary_conditions",
+        "question",
+        "prediction",
+        "falsifier",
+        "information_gain",
+        "transfer_value",
+        "feasibility",
+        "cost",
+        "risk"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "from": {
+          "$ref": "#/$defs/ident"
+        },
+        "to": {
+          "$ref": "#/$defs/ident"
+        },
+        "kind": {
+          "enum": [
+            "structural_candidate",
+            "lexical_only"
+          ]
+        },
+        "shared_roles": {
+          "$ref": "#/$defs/terms"
+        },
+        "boundary_conditions": {
+          "$ref": "#/$defs/terms"
+        },
+        "question": {
+          "$ref": "#/$defs/ident"
+        },
+        "prediction": {
+          "type": "string"
+        },
+        "falsifier": {
+          "type": "string"
+        },
+        "information_gain": {
+          "$ref": "#/$defs/score"
+        },
+        "transfer_value": {
+          "$ref": "#/$defs/score"
+        },
+        "feasibility": {
+          "$ref": "#/$defs/score"
+        },
+        "cost": {
+          "$ref": "#/$defs/score"
+        },
+        "risk": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "concept_id",
+        "question",
+        "method",
+        "information_gain",
+        "transfer_value",
+        "feasibility",
+        "cost",
+        "risk"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "concept_id": {
+          "$ref": "#/$defs/ident"
+        },
+        "question": {
+          "$ref": "#/$defs/ident"
+        },
+        "method": {
+          "$ref": "#/$defs/ident"
+        },
+        "information_gain": {
+          "$ref": "#/$defs/score"
+        },
+        "transfer_value": {
+          "$ref": "#/$defs/score"
+        },
+        "feasibility": {
+          "$ref": "#/$defs/score"
+        },
+        "cost": {
+          "$ref": "#/$defs/score"
+        },
+        "risk": {
+          "$ref": "#/$defs/score"
+        }
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "domain",
+        "concept_id",
+        "task",
+        "answer_access"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ident"
+        },
+        "domain": {
+          "$ref": "#/$defs/ident"
+        },
+        "concept_id": {
+          "$ref": "#/$defs/ident"
+        },
+        "task": {
+          "$ref": "#/$defs/ident"
+        },
+        "answer_access": {
+          "const": "withheld_not_in_fixture"
+        }
+      }
+    }
+  }
+}
