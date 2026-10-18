@@ -85,7 +85,9 @@ static void write(const std::string& path,const std::vector<Card>& cards) {
         {"ontology_version","polymath-v5-direction-v1"}
     };
     uint32_t nodeid=0;
-    insist(bool(db.put_node(node,&nodeid))&&nodeid!=0,"cannot insert concept");
+    const Status concept_insert=db.put_node(node,&nodeid);
+    insist(bool(concept_insert),"cannot insert concept: "+concept_insert.message);
+    // GrapheneDB may legitimately assign node id 0 on a newly created DB.
     NodeInput assumed;
     assumed.content=card.assumptions;
     assumed.vector=deterministic_text_vector(card.assumptions,16);
