@@ -89,8 +89,9 @@ class F6ContractTests(unittest.TestCase):
             p.write_text(json.dumps(d))
             parsed=mechanisms(p,self.cards)
             _,new_manifest,_=produce(self.cards,parsed)
-            self.assertNotEqual(new_manifest[0]["output_spec"],
-                                self.manifest[0]["output_spec"])
+            self.assertNotEqual(
+                next(x for x in new_manifest if x["domain"]=="networks")["output_spec"],
+                next(x for x in self.manifest if x["domain"]=="networks")["output_spec"])
 
     def test_duplicate_source_family_domain_denied(self):
         d=json.loads(MECHANISMS.read_text())
@@ -134,7 +135,9 @@ def native_checks(binary):
 
     def must_abstain(mutate,reason):
         changed=copy.deepcopy(tasks)
-        idx=next(i for i,r in enumerate(changed) if r["domain"]==mutate[0])
+        idx=next(i for i,r in enumerate(changed)
+                 if r["domain"]==mutate[0] and
+                 oracle(questions["tasks"][i]) is not None)
         t=changed[idx]
         mutate[1](t)
         p,r=execute(binary,manifest,changed)
@@ -155,7 +158,7 @@ def native_checks(binary):
         "mechanism_id","unknown_mechanism")), "unknown_mechanism")
     must_abstain(("biology",lambda t:t.__setitem__(
         "inputs",t["inputs"].replace("gain=", "gain=nan_invalid_",1))),
-                 "invalid_or_out_of_range_numeric")
+                 "nonfinite_or_invalid_float")
     must_abstain(("supply_chain",lambda t:t.__setitem__(
         "inputs",";".join(e for e in t["inputs"].split(";")
                         if not e.startswith("lead_days=")))),
