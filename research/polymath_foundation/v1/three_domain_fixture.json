@@ -1,0 +1,309 @@
+{
+  "schema_version": "polymath-foundation-1",
+  "dataset_kind": "synthetic_curated_fixture",
+  "sources": [
+    {
+      "id": "fixture-network",
+      "family_id": "family-network",
+      "kind": "synthetic_fixture",
+      "uri": "fixture://network",
+      "license": "fixture-only",
+      "integrity": "not_authenticated",
+      "methodology": "author_curated_illustration"
+    },
+    {
+      "id": "fixture-biology",
+      "family_id": "family-biology",
+      "kind": "synthetic_fixture",
+      "uri": "fixture://biology",
+      "license": "fixture-only",
+      "integrity": "not_authenticated",
+      "methodology": "author_curated_illustration"
+    },
+    {
+      "id": "fixture-supply",
+      "family_id": "family-supply",
+      "kind": "synthetic_fixture",
+      "uri": "fixture://supply",
+      "license": "fixture-only",
+      "integrity": "not_authenticated",
+      "methodology": "author_curated_illustration"
+    }
+  ],
+  "domains": [
+    {
+      "id": "networks",
+      "ontology_version": "networks-fixture-1",
+      "competence_test_ids": [
+        "network-test-1"
+      ]
+    },
+    {
+      "id": "biology",
+      "ontology_version": "biology-fixture-1",
+      "competence_test_ids": [
+        "biology-test-1"
+      ]
+    },
+    {
+      "id": "supply_chain",
+      "ontology_version": "supply-fixture-1",
+      "competence_test_ids": [
+        "supply-test-1"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "networks:queue",
+      "domain": "networks",
+      "label": "Congestion queue",
+      "definition": "A finite-capacity waiting process.",
+      "roles": [
+        "capacity_constraint",
+        "flow_control"
+      ],
+      "prerequisites": [],
+      "assumptions": [
+        "finite processing capacity"
+      ],
+      "boundaries": [
+        "nonnegative arrivals"
+      ],
+      "source_ids": [
+        "fixture-network"
+      ]
+    },
+    {
+      "id": "networks:backpressure",
+      "domain": "networks",
+      "label": "Network backpressure",
+      "definition": "A feedback-driven mechanism for limiting offered load when capacity is constrained.",
+      "roles": [
+        "feedback",
+        "capacity_constraint",
+        "signal_delay",
+        "flow_control"
+      ],
+      "prerequisites": [
+        "networks:queue"
+      ],
+      "assumptions": [
+        "observable downstream congestion"
+      ],
+      "boundaries": [
+        "feedback delay below instability threshold"
+      ],
+      "source_ids": [
+        "fixture-network"
+      ]
+    },
+    {
+      "id": "biology:control_variable",
+      "domain": "biology",
+      "label": "Regulated variable",
+      "definition": "A measured quantity in a regulatory system.",
+      "roles": [
+        "feedback",
+        "stability_target"
+      ],
+      "prerequisites": [],
+      "assumptions": [
+        "observable regulated state"
+      ],
+      "boundaries": [
+        "regulatory capacity can saturate"
+      ],
+      "source_ids": [
+        "fixture-biology"
+      ]
+    },
+    {
+      "id": "biology:homeostasis",
+      "domain": "biology",
+      "label": "Homeostasis",
+      "definition": "Biological regulation that maintains variables within viable ranges.",
+      "roles": [
+        "feedback",
+        "signal_delay",
+        "stability_target",
+        "adaptive_response"
+      ],
+      "prerequisites": [
+        "biology:control_variable"
+      ],
+      "assumptions": [
+        "active regulatory response"
+      ],
+      "boundaries": [
+        "organism adaptation differs from fixed controllers"
+      ],
+      "source_ids": [
+        "fixture-biology"
+      ]
+    },
+    {
+      "id": "supply_chain:inventory",
+      "domain": "supply_chain",
+      "label": "Inventory buffer",
+      "definition": "Stored units available to meet stochastic demand.",
+      "roles": [
+        "capacity_constraint",
+        "stability_target"
+      ],
+      "prerequisites": [],
+      "assumptions": [
+        "stock can be measured"
+      ],
+      "boundaries": [
+        "inventory is not conserved across spoilage"
+      ],
+      "source_ids": [
+        "fixture-supply"
+      ]
+    },
+    {
+      "id": "supply_chain:replenishment",
+      "domain": "supply_chain",
+      "label": "Replenishment control",
+      "definition": "A policy that changes orders based on capacity, stock and demand.",
+      "roles": [
+        "feedback",
+        "capacity_constraint",
+        "signal_delay",
+        "flow_control"
+      ],
+      "prerequisites": [
+        "supply_chain:inventory"
+      ],
+      "assumptions": [
+        "lead time is measurable"
+      ],
+      "boundaries": [
+        "stockouts constrain naive throttling"
+      ],
+      "source_ids": [
+        "fixture-supply"
+      ]
+    },
+    {
+      "id": "supply_chain:cash_flow",
+      "domain": "supply_chain",
+      "label": "Cash flow",
+      "definition": "Accounting inflows and outflows.",
+      "roles": [
+        "financial_accounting",
+        "time_aggregation"
+      ],
+      "prerequisites": [],
+      "assumptions": [
+        "currency units specified"
+      ],
+      "boundaries": [
+        "cash flow is not packet throughput"
+      ],
+      "source_ids": [
+        "fixture-supply"
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "id": "map-network-supply",
+      "from": "networks:backpressure",
+      "to": "supply_chain:replenishment",
+      "kind": "structural_candidate",
+      "shared_roles": [
+        "feedback",
+        "capacity_constraint",
+        "signal_delay"
+      ],
+      "boundary_conditions": [
+        "warehouse stockout penalties differ from packet-drop penalties"
+      ],
+      "question": "When does queue-aware replenishment reduce congestion without increasing stockouts?",
+      "prediction": "Under fixed capacity and bounded delay, throttled admission reduces maximum queue length relative to fixed admission.",
+      "falsifier": "A controlled simulator shows no queue improvement or a preregistered stockout regression.",
+      "information_gain": 0.85,
+      "transfer_value": 0.9,
+      "feasibility": 0.8,
+      "cost": 0.4,
+      "risk": 0.2
+    },
+    {
+      "id": "map-network-biology",
+      "from": "networks:backpressure",
+      "to": "biology:homeostasis",
+      "kind": "structural_candidate",
+      "shared_roles": [
+        "feedback",
+        "signal_delay"
+      ],
+      "boundary_conditions": [
+        "biological adaptation can change the controller itself"
+      ],
+      "question": "When does delayed regulation in biological systems exhibit feedback instability analogous to queues?",
+      "prediction": "Under a declared linearised regime, sufficient response delay yields measurable overshoot.",
+      "falsifier": "The specified mechanistic model remains stable under all preregistered delays.",
+      "information_gain": 0.7,
+      "transfer_value": 0.75,
+      "feasibility": 0.5,
+      "cost": 0.6,
+      "risk": 0.25
+    },
+    {
+      "id": "map-flow-word-only",
+      "from": "networks:backpressure",
+      "to": "supply_chain:cash_flow",
+      "kind": "lexical_only",
+      "shared_roles": [],
+      "boundary_conditions": [
+        "The word flow is used differently"
+      ],
+      "question": "Is packet flow the same as cash flow?",
+      "prediction": "",
+      "falsifier": "",
+      "information_gain": 0.1,
+      "transfer_value": 0.1,
+      "feasibility": 0.2,
+      "cost": 0.1,
+      "risk": 0.6
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "gap-bio-saturation",
+      "concept_id": "biology:homeostasis",
+      "question": "Which physiological conditions invalidate a linear controller analogy?",
+      "method": "Compare independently sourced saturation models with counterexample experiments.",
+      "information_gain": 0.65,
+      "transfer_value": 0.6,
+      "feasibility": 0.6,
+      "cost": 0.3,
+      "risk": 0.15
+    }
+  ],
+  "competence_tests": [
+    {
+      "id": "network-test-1",
+      "domain": "networks",
+      "concept_id": "networks:backpressure",
+      "task": "Predict queue behaviour after a finite processing-capacity reduction",
+      "answer_access": "withheld_not_in_fixture"
+    },
+    {
+      "id": "biology-test-1",
+      "domain": "biology",
+      "concept_id": "biology:homeostasis",
+      "task": "Explain regulatory saturation versus negative feedback",
+      "answer_access": "withheld_not_in_fixture"
+    },
+    {
+      "id": "supply-test-1",
+      "domain": "supply_chain",
+      "concept_id": "supply_chain:replenishment",
+      "task": "Predict stockout tradeoffs under longer lead time",
+      "answer_access": "withheld_not_in_fixture"
+    }
+  ]
+}
