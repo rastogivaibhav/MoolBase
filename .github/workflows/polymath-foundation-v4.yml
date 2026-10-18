@@ -1,0 +1,140 @@
+# Foundation v4 — real 0.5B model pilot, not a MoolBase-polymath claim.
+name: Polymath Foundation v4 Actual Model Pilot
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v4/**"
+      - ".github/workflows/polymath-foundation-v4.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v4/**"
+      - ".github/workflows/polymath-foundation-v4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check no-gold prompts, frozen 24-task selection and strict parsing
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v4/test_contracts.py
+
+  actual-cpu-inference:
+    # Avoid paying the network/download/inference cost twice on every PR.
+    # The push run is the scientific score-bearing execution.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze exact commit and source checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v4
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+            uname -a
+          } > reports/polymath_foundation_v4/environment.txt
+          sha256sum research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/challenge.py \
+            research/polymath_foundation/v3/scorer.py \
+            research/polymath_foundation/v4/PREREGISTRATION.md \
+            research/polymath_foundation/v4/run_actual_model.py \
+            research/polymath_foundation/v4/grade_pilot.py \
+            > reports/polymath_foundation_v4/source_hashes.sha256
+      - name: Compile pinned CPU-only llama.cpp server
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/ggml-org/llama.cpp /tmp/f4-llama
+          git -C /tmp/f4-llama checkout ff5a23376725e5a889fa0bfb987b7541dc304da0
+          git -C /tmp/f4-llama rev-parse HEAD > reports/polymath_foundation_v4/llama_commit.txt
+          cmake -S /tmp/f4-llama -B /tmp/f4-llama/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF \
+            -DLLAMA_BUILD_SERVER=ON \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF
+          cmake --build /tmp/f4-llama/build --parallel 3 --target llama-server
+          test -x /tmp/f4-llama/build/bin/llama-server
+      - name: Download public Apache-2.0 quantized weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/f4-model
+          curl --fail --location --retry 3 --retry-delay 5 \
+            --output /tmp/f4-model/qwen.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5d/qwen2.5-0.5b-instruct-q4_k_m.gguf"
+          test "$(stat -c %s /tmp/f4-model/qwen.gguf)" -gt 350000000
+          sha256sum /tmp/f4-model/qwen.gguf > reports/polymath_foundation_v4/model_sha256.txt
+          stat -c "model_size_bytes=%s" /tmp/f4-model/qwen.gguf >> reports/polymath_foundation_v4/environment.txt
+      - name: Start local CPU model server and confirm readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/f4-llama/build/bin/llama-server \
+            --model /tmp/f4-model/qwen.gguf \
+            --alias qwen2.5-0.5b-instruct \
+            --host 127.0.0.1 --port 8080 \
+            --ctx-size 4096 --threads 4 --parallel 1 \
+            > reports/polymath_foundation_v4/server_log.txt 2>&1 &
+          echo $! > reports/polymath_foundation_v4/server_pid.txt
+          python3 - <<'PY'
+          import time, urllib.request
+          for i in range(120):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8080/health",timeout=2) as r:
+                      if r.status == 200:
+                          print("f4_local_model_server=READY")
+                          break
+              except Exception:
+                  pass
+              time.sleep(2)
+          else:
+              raise SystemExit("Local inference server never became ready")
+          PY
+      - name: Run real model on both frozen arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v4/run_actual_model.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --model-file /tmp/f4-model/qwen.gguf \
+            --model qwen2.5-0.5b-instruct \
+            --server-commit ff5a23376725e5a889fa0bfb987b7541dc304da0 \
+            --output reports/polymath_foundation_v4/raw_inference.json \
+            2>&1 | tee reports/polymath_foundation_v4/inference_log.txt
+      - name: Score ACTUAL precommitted responses through v3 instrument
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v4/grade_pilot.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --inference reports/polymath_foundation_v4/raw_inference.json \
+            --out reports/polymath_foundation_v4/evaluation.json \
+            2>&1 | tee reports/polymath_foundation_v4/score_log.txt
+      - name: Preserve SHA receipt even on incomplete experiment
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/polymath_foundation_v4
+          (cd reports/polymath_foundation_v4 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Upload raw prompts, actual model answers and null/failure receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymath-v4-actual-model-${{ github.sha }}
+          path: reports/polymath_foundation_v4/
+          retention-days: 90
+          if-no-files-found: warn
