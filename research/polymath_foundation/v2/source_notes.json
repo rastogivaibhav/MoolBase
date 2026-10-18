@@ -1,0 +1,351 @@
+{
+  "schema_version": "polymath-foundation-2",
+  "collection": "external_source_paraphrase_notes",
+  "source_use": "citation_and_author_paraphrase_only",
+  "accessed_date": "2026-10-18",
+  "sources": [
+    {
+      "id": "rfc5681",
+      "domain": "networks",
+      "title": "RFC 5681 TCP Congestion Control",
+      "publisher": "IETF RFC Editor",
+      "url": "https://www.rfc-editor.org/rfc/rfc5681.html",
+      "section": "3.1 / 3.2",
+      "source_family": "rfc5681",
+      "publication_date": "2009-09",
+      "license_status": "review_required"
+    },
+    {
+      "id": "rfc3168",
+      "domain": "networks",
+      "title": "RFC 3168 Explicit Congestion Notification",
+      "publisher": "IETF RFC Editor",
+      "url": "https://www.rfc-editor.org/rfc/rfc3168.html",
+      "section": "5 / 6",
+      "source_family": "rfc3168",
+      "publication_date": "2001-09",
+      "license_status": "review_required"
+    },
+    {
+      "id": "phys-homeostasis-framework",
+      "domain": "biology",
+      "title": "A conceptual framework for homeostasis: development and validation",
+      "publisher": "Advances in Physiology Education (PMC-hosted)",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5002438/",
+      "section": "Homeostasis conceptual framework",
+      "source_family": "PMC5002438",
+      "publication_date": "2016",
+      "license_status": "review_required"
+    },
+    {
+      "id": "phys-regulation",
+      "domain": "biology",
+      "title": "How does homeostasis happen? Integrative physiological, systems biological, and evolutionary perspectives",
+      "publisher": "Autonomic Neuroscience / PMC-hosted",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6483214/",
+      "section": "How homeostasis happens",
+      "source_family": "PMC6483214",
+      "publication_date": "2019",
+      "license_status": "review_required"
+    },
+    {
+      "id": "oracle-reorder",
+      "domain": "supply_chain",
+      "title": "Oracle Inventory Help: Reorder Point Planning",
+      "publisher": "Oracle",
+      "url": "https://docs.oracle.com/cd/A60725_05/html/comnls/us/inv/roplan.htm",
+      "section": "Reorder Point Planning",
+      "source_family": "oracle-inventory-roplan",
+      "publication_date": "undated",
+      "license_status": "not_relicensed"
+    },
+    {
+      "id": "microsoft-safety",
+      "domain": "supply_chain",
+      "title": "Dynamics 365 Supply Chain Management: Safety stock fulfillment",
+      "publisher": "Microsoft Learn",
+      "url": "https://learn.microsoft.com/en-us/dynamics365/supply-chain/master-planning/safety-stock-replenishment",
+      "section": "Safety stock fulfillment for items / How master planning handles the constraint",
+      "source_family": "microsoft-d365-safety",
+      "publication_date": "undated",
+      "license_status": "review_required"
+    },
+    {
+      "id": "microsoft-reordering",
+      "domain": "supply_chain",
+      "title": "Business Central Design Details: Handling Reordering Policies",
+      "publisher": "Microsoft Learn",
+      "url": "https://learn.microsoft.com/en-us/dynamics365/business-central/design-details-handling-reordering-policies",
+      "section": "The role of the reorder point",
+      "source_family": "microsoft-bc-reorder",
+      "publication_date": "undated",
+      "license_status": "review_required"
+    }
+  ],
+  "notes": [
+    {
+      "id": "net-window",
+      "source_id": "rfc5681",
+      "domain": "networks",
+      "concept_id": "networks:net-window",
+      "label": "Congestion window",
+      "summary": "A TCP sender uses a congestion window to bound outstanding network data, separate from the receiving endpoint's advertised window.",
+      "roles": [
+        "capacity_constraint",
+        "flow_control"
+      ],
+      "assumptions": [
+        "TCP operation"
+      ],
+      "boundaries": [
+        "This describes sender congestion control, not every queuing policy."
+      ],
+      "source_anchor": "3.1 / 3.2",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "net-slowstart",
+      "source_id": "rfc5681",
+      "domain": "networks",
+      "concept_id": "networks:net-slowstart",
+      "label": "Slow start and congestion avoidance",
+      "summary": "TCP begins by probing network capacity and changes growth behaviour according to the slow-start threshold and congestion signals.",
+      "roles": [
+        "capacity_probe",
+        "feedback"
+      ],
+      "assumptions": [
+        "Acknowledgments and congestion signals are observed"
+      ],
+      "boundaries": [
+        "TCP's congestion state is not a direct measurement of warehouse demand."
+      ],
+      "source_anchor": "3.1 / 3.2",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "net-loss",
+      "source_id": "rfc5681",
+      "domain": "networks",
+      "concept_id": "networks:net-loss",
+      "label": "Congestion response to packet loss",
+      "summary": "Loss-based TCP congestion control responds to indications of congestion rather than assuming network capacity remains constant.",
+      "roles": [
+        "feedback",
+        "signal_delay"
+      ],
+      "assumptions": [
+        "Packet loss is used as a congestion signal"
+      ],
+      "boundaries": [
+        "A packet can be lost for reasons other than congestion."
+      ],
+      "source_anchor": "3.1 / 3.2",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "net-ecn",
+      "source_id": "rfc3168",
+      "domain": "networks",
+      "concept_id": "networks:net-ecn",
+      "label": "Explicit congestion notification",
+      "summary": "ECN allows compliant network endpoints to react to explicit congestion marks rather than relying exclusively on dropped packets.",
+      "roles": [
+        "measurement",
+        "feedback"
+      ],
+      "assumptions": [
+        "Devices and endpoints support ECN"
+      ],
+      "boundaries": [
+        "Congestion marking is not a general-purpose biological sensor."
+      ],
+      "source_anchor": "5 / 6",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "bio-sensor",
+      "source_id": "phys-homeostasis-framework",
+      "domain": "biology",
+      "concept_id": "biology:bio-sensor",
+      "label": "Sensors and regulated variables",
+      "summary": "A homeostatic control mechanism requires measurement of a regulated physiological variable and an appropriate corrective response.",
+      "roles": [
+        "measurement",
+        "feedback"
+      ],
+      "assumptions": [
+        "The mechanism is physiological"
+      ],
+      "boundaries": [
+        "Negative feedback alone does not make a system homeostatic."
+      ],
+      "source_anchor": "Homeostasis conceptual framework",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "bio-effector",
+      "source_id": "phys-homeostasis-framework",
+      "domain": "biology",
+      "concept_id": "biology:bio-effector",
+      "label": "Controller and effector",
+      "summary": "Sensors communicate deviations to control mechanisms, while effectors change bodily processes that influence the regulated variable.",
+      "roles": [
+        "feedback",
+        "control_action"
+      ],
+      "assumptions": [
+        "Sensor and effector pathways are active"
+      ],
+      "boundaries": [
+        "The simplified diagram omits many physiological interactions."
+      ],
+      "source_anchor": "Homeostasis conceptual framework",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "bio-anticipatory",
+      "source_id": "phys-regulation",
+      "domain": "biology",
+      "concept_id": "biology:bio-anticipatory",
+      "label": "Feedforward versus negative feedback",
+      "summary": "Biological regulation may use anticipatory feedforward actions and buffering in addition to reactive feedback after disturbances.",
+      "roles": [
+        "anticipation",
+        "buffering"
+      ],
+      "assumptions": [
+        "The organism can anticipate certain disturbances"
+      ],
+      "boundaries": [
+        "Anticipation is not a guarantee of perfect predictions."
+      ],
+      "source_anchor": "How homeostasis happens",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "bio-adapt",
+      "source_id": "phys-regulation",
+      "domain": "biology",
+      "concept_id": "biology:bio-adapt",
+      "label": "Limits of simplistic feedback analogy",
+      "summary": "Regulation combines several types of responses; a single simplified negative-feedback loop is insufficient for every organism-level process.",
+      "roles": [
+        "complexity",
+        "scope_boundary"
+      ],
+      "assumptions": [
+        "Multiple processes interact"
+      ],
+      "boundaries": [
+        "No universal one-controller model follows from this note."
+      ],
+      "source_anchor": "How homeostasis happens",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "supply-reorder",
+      "source_id": "oracle-reorder",
+      "domain": "supply_chain",
+      "concept_id": "supply_chain:supply-reorder",
+      "label": "Reorder point",
+      "summary": "Reorder-point planning compares projected inventory against expected usage during replenishment lead time plus safety stock.",
+      "roles": [
+        "capacity_constraint",
+        "replenishment"
+      ],
+      "assumptions": [
+        "Lead time and demand estimates available"
+      ],
+      "boundaries": [
+        "Different inventory platforms implement different planning conventions."
+      ],
+      "source_anchor": "Reorder Point Planning",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "supply-leadtime",
+      "source_id": "microsoft-reordering",
+      "domain": "supply_chain",
+      "concept_id": "supply_chain:supply-leadtime",
+      "label": "Lead time and reorder timing",
+      "summary": "Planners use the reorder threshold to initiate supply early enough to cover demand until replenishment arrives.",
+      "roles": [
+        "signal_delay",
+        "replenishment"
+      ],
+      "assumptions": [
+        "Expected procurement lead time known"
+      ],
+      "boundaries": [
+        "Unexpected supplier delay can invalidate expected coverage."
+      ],
+      "source_anchor": "The role of the reorder point",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "supply-safety",
+      "source_id": "microsoft-safety",
+      "domain": "supply_chain",
+      "concept_id": "supply_chain:supply-safety",
+      "label": "Safety stock",
+      "summary": "A safety inventory buffer helps reduce stockout risk during demand spikes or delays in obtaining additional supplies.",
+      "roles": [
+        "buffering",
+        "capacity_constraint"
+      ],
+      "assumptions": [
+        "Inventory is physically available"
+      ],
+      "boundaries": [
+        "Excess buffers impose costs and do not eliminate stockout risk."
+      ],
+      "source_anchor": "Safety stock fulfillment for items / How master planning handles the constraint",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    },
+    {
+      "id": "supply-priority",
+      "source_id": "microsoft-safety",
+      "domain": "supply_chain",
+      "concept_id": "supply_chain:supply-priority",
+      "label": "Inventory priority tradeoff",
+      "summary": "Certain master-planning decisions prioritise meeting actual orders over restoring a nominal safety buffer to avoid delaying fulfilment.",
+      "roles": [
+        "allocation",
+        "scope_boundary"
+      ],
+      "assumptions": [
+        "System planning setting permits such priorities"
+      ],
+      "boundaries": [
+        "Implementation can vary with settings and planning engine."
+      ],
+      "source_anchor": "Safety stock fulfillment for items / How master planning handles the constraint",
+      "content_form": "author_paraphrase",
+      "verification_status": "human_review_needed",
+      "allow_model_training": false
+    }
+  ]
+}

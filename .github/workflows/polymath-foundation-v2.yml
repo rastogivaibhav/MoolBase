@@ -1,0 +1,67 @@
+name: Polymath Foundation v2 Knowledge Intake Research Gate
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v2/**"
+      - ".github/workflows/polymath-foundation-v2.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v2/**"
+      - ".github/workflows/polymath-foundation-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-grounding:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seal source identity and environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v2
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+          } > reports/polymath_foundation_v2/environment.txt
+          sha256sum research/polymath_foundation/v2/PREREGISTRATION.md \
+            research/polymath_foundation/v2/source_notes.json \
+            research/polymath_foundation/v2/evaluation_questions.json \
+            research/polymath_foundation/v2/intake_retrieval.py \
+            research/polymath_foundation/v2/test_intake_retrieval.py \
+            > reports/polymath_foundation_v2/source_hashes.sha256
+      - name: Test rights metadata, provenance, abstention and adversarial mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v2/test_intake_retrieval.py \
+            2>&1 | tee reports/polymath_foundation_v2/tests.log
+      - name: Reproduce open-question descriptive retrieval
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v2/intake_retrieval.py \
+            --sources research/polymath_foundation/v2/source_notes.json \
+            --questions research/polymath_foundation/v2/evaluation_questions.json \
+            --out reports/polymath_foundation_v2/retrieval.json \
+            2>&1 | tee reports/polymath_foundation_v2/retrieval.log
+          python3 -m json.tool reports/polymath_foundation_v2/retrieval.json > /dev/null
+      - name: Seal experiment receipts
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v2
+          (cd reports/polymath_foundation_v2 && find . -type f ! -name manifest.sha256 -print0 | sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Preserve negative/null results and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: polymath-foundation-v2-${{ github.sha }}
+          path: reports/polymath_foundation_v2/
+          retention-days: 90
+          if-no-files-found: warn
