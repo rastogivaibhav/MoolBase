@@ -16,6 +16,7 @@ target_sources(graphenedb PRIVATE
   src/hypokosh_runtime.cpp
   src/model_world.cpp
   src/predictive_world.cpp
+  src/regime_world.cpp
   src/path_verifier.cpp
   src/relation_ontology.cpp
   src/self_healing.cpp
@@ -88,6 +89,13 @@ if(GRAPHENEDB_BUILD_TESTS)
   target_link_libraries(graphenedb_predictive_world_tests PRIVATE graphenedb)
   add_test(NAME graphenedb_predictive_world_tests
            COMMAND graphenedb_predictive_world_tests)
+
+  add_executable(graphenedb_regime_world_tests tests/test_regime_world.cpp)
+  target_link_libraries(graphenedb_regime_world_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_regime_world_tests
+           COMMAND graphenedb_regime_world_tests)
+  set_tests_properties(graphenedb_regime_world_tests
+                       PROPERTIES LABELS "research;p2;predictive")
 
   add_executable(graphenedb_hypokosh_runtime_tests tests/test_hypokosh_runtime.cpp)
   target_link_libraries(graphenedb_hypokosh_runtime_tests PRIVATE graphenedb)
