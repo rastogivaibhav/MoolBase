@@ -1,0 +1,177 @@
+{
+  "experiment": "MOOL-POLYMATH-F2-001",
+  "evaluation_kind": "open_authored_retrieval_targets_not_blind",
+  "question_count": 16,
+  "questions": [
+    {
+      "id": "q-net-window",
+      "domain": "networks",
+      "required_roles": [
+        "flow_control"
+      ],
+      "text": "Which sender-side constraint limits outstanding TCP data before an acknowledgment?",
+      "gold_note_ids": [
+        "net-window"
+      ]
+    },
+    {
+      "id": "q-net-start",
+      "domain": "networks",
+      "required_roles": [
+        "capacity_probe"
+      ],
+      "text": "How does TCP probe an unknown network path while it begins sending?",
+      "gold_note_ids": [
+        "net-slowstart"
+      ]
+    },
+    {
+      "id": "q-net-loss",
+      "domain": "networks",
+      "required_roles": [
+        "signal_delay"
+      ],
+      "text": "What should a TCP sender do after receiving evidence of packet loss congestion?",
+      "gold_note_ids": [
+        "net-loss"
+      ]
+    },
+    {
+      "id": "q-net-ecn",
+      "domain": "networks",
+      "required_roles": [
+        "measurement"
+      ],
+      "text": "How can an endpoint learn of network congestion through marked packets without packet drop?",
+      "gold_note_ids": [
+        "net-ecn"
+      ]
+    },
+    {
+      "id": "q-bio-sense",
+      "domain": "biology",
+      "required_roles": [
+        "measurement"
+      ],
+      "text": "What physiological component measures the variable whose value needs regulating?",
+      "gold_note_ids": [
+        "bio-sensor"
+      ]
+    },
+    {
+      "id": "q-bio-act",
+      "domain": "biology",
+      "required_roles": [
+        "control_action"
+      ],
+      "text": "Which physiological mechanism acts on the regulated bodily variable after error detection?",
+      "gold_note_ids": [
+        "bio-effector"
+      ]
+    },
+    {
+      "id": "q-bio-anticipation",
+      "domain": "biology",
+      "required_roles": [
+        "anticipation"
+      ],
+      "text": "How does an organism adjust before a predicted disturbance rather than reacting afterward?",
+      "gold_note_ids": [
+        "bio-anticipatory"
+      ]
+    },
+    {
+      "id": "q-bio-limits",
+      "domain": "biology",
+      "required_roles": [
+        "scope_boundary"
+      ],
+      "text": "Why is a single feedback controller an incomplete account of all biological regulation?",
+      "gold_note_ids": [
+        "bio-adapt"
+      ]
+    },
+    {
+      "id": "q-supply-reorder",
+      "domain": "supply_chain",
+      "required_roles": [
+        "replenishment"
+      ],
+      "text": "How do stock buffer and expected demand during replenishment lead time determine reorder threshold?",
+      "gold_note_ids": [
+        "supply-reorder"
+      ]
+    },
+    {
+      "id": "q-supply-lead",
+      "domain": "supply_chain",
+      "required_roles": [
+        "signal_delay"
+      ],
+      "text": "Why is replenishment placed early before an expected supplier delivery delay?",
+      "gold_note_ids": [
+        "supply-leadtime"
+      ]
+    },
+    {
+      "id": "q-supply-stock",
+      "domain": "supply_chain",
+      "required_roles": [
+        "buffering"
+      ],
+      "text": "What inventory reserve reduces the chance of a stockout during demand surges?",
+      "gold_note_ids": [
+        "supply-safety"
+      ]
+    },
+    {
+      "id": "q-supply-priority",
+      "domain": "supply_chain",
+      "required_roles": [
+        "allocation"
+      ],
+      "text": "Why can fulfilling actual customer orders outrank restoring nominal inventory reserves?",
+      "gold_note_ids": [
+        "supply-priority"
+      ]
+    },
+    {
+      "id": "q-cross-buffer",
+      "domain": null,
+      "required_roles": [
+        "buffering"
+      ],
+      "text": "Where are buffer methods described as a response to an unexpected disturbance?",
+      "gold_note_ids": [
+        "bio-anticipatory",
+        "supply-safety"
+      ]
+    },
+    {
+      "id": "q-cross-feedback",
+      "domain": null,
+      "required_roles": [
+        "feedback"
+      ],
+      "text": "Which scientific records discuss regulation and feedback rather than a lexical flow analogy?",
+      "gold_note_ids": [
+        "net-slowstart",
+        "bio-sensor"
+      ]
+    },
+    {
+      "id": "q-ood-quantum",
+      "domain": null,
+      "required_roles": [],
+      "text": "What quaternion entanglement tensor eliminates gravitational decoherence?",
+      "gold_note_ids": []
+    },
+    {
+      "id": "q-ood-art",
+      "domain": null,
+      "required_roles": [],
+      "text": "Who invented chiaroscuro engraving for Byzantine royal portraits?",
+      "gold_note_ids": []
+    }
+  ]
+}
