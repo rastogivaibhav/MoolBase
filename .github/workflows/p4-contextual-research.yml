@@ -55,12 +55,15 @@ jobs:
         run: ctest --test-dir build-p4 --output-on-failure -R "graphenedb_(predictive|context)_world_tests"
       - name: Precommit forecasts before chronology outcomes
         run: |
+          set -euo pipefail
           ./build-p4/moolbase_p4_context_native_runner benchmarks/p3_weather/data/weather.csv benchmarks/p4_context/data/stocks.csv reports/p4_context/native_predictions.csv 2>&1 | tee reports/p4_context/native_log.txt
       - name: Evaluate fixed experiment without tuning
         run: |
+          set -euo pipefail
           python3 benchmarks/p4_context/evaluate.py --weather benchmarks/p3_weather/data/weather.csv --stocks benchmarks/p4_context/data/stocks.csv --native reports/p4_context/native_predictions.csv --out reports/p4_context/evaluation.json | tee reports/p4_context/evaluation_log.txt
       - name: Run explicit failure and future-leakage checks
         run: |
+          set -euo pipefail
           python3 benchmarks/p4_context/test_evaluation_contract.py --weather benchmarks/p3_weather/data/weather.csv --stocks benchmarks/p4_context/data/stocks.csv --native reports/p4_context/native_predictions.csv | tee reports/p4_context/integrity_log.txt
       - name: Seal evidence artifacts
         if: always()
