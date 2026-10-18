@@ -28,9 +28,22 @@ uint64_t event_checksum(const ModelWorldEvent& event) {
   return hash;
 }
 
+// A snapshot or an initial insert must not bypass the same truth gate
+// used by status transitions. A nonzero evidence ID is a caller assertion,
+// not independent verification that the referenced evidence is authentic.
+bool verified_state_admissible(const ModelWorldNode& node) {
+  if (node.status != ModelWorldStatus::Verified) return true;
+  return node.origin != EdgeOrigin::Hypothetical &&
+         node.origin != EdgeOrigin::Inferred &&
+         !node.evidence_edges.empty();
+}
+
 }  // namespace
 
 uint64_t ModelWorld::add(ModelWorldNode node, const std::string& reason) {
+  // 0 is reserved as a failed insertion. Refuse the entire write:
+  // no new ID, node, or event may be created by an invalid initial state.
+  if (!verified_state_admissible(node)) return 0;
   node.id = next_id_++;
   nodes_.push_back(node);
   ModelWorldEvent event;
@@ -51,13 +64,10 @@ bool ModelWorld::update_status(uint64_t node_id, ModelWorldStatus status,
                          [&](const ModelWorldNode& node) { return node.id == node_id; });
   if (it == nodes_.end()) return false;
   const ModelWorldStatus before = it->status;
-  // Hypothetical or inferred model-world nodes cannot become verified without
-  // evidence edges and an explicit external/discovered origin.
-  if (status == ModelWorldStatus::Verified &&
-      (it->origin == EdgeOrigin::Hypothetical || it->origin == EdgeOrigin::Inferred ||
-       it->evidence_edges.empty())) {
-    return false;
-  }
+  // Initial insertion, transitions and snapshot loading share one gate.
+  ModelWorldNode proposed = *it;
+  proposed.status = status;
+  if (!verified_state_admissible(proposed)) return false;
   it->status = status;
   ModelWorldEvent event;
   event.sequence = events_.size() + 1;
@@ -187,6 +197,14 @@ Status ModelWorld::load(const std::filesystem::path& path) {
     }
   }
   if (!input.eof()) return Status::error(ErrorCode::IoError, "failed reading model-world snapshot");
+  // Check candidate state before replacing the existing in-memory world.
+  // Checksums alone establish record integrity, not truth admissibility.
+  for (const auto& node : nodes) {
+    if (!verified_state_admissible(node)) {
+      return Status::error(ErrorCode::DataCorrupt,
+                           "model-world snapshot contains inadmissible verified node");
+    }
+  }
   nodes_ = std::move(nodes);
   events_ = std::move(events);
   next_id_ = max_id + 1;
