@@ -37,6 +37,10 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_polymath_v5_native
+                 research/polymath_foundation/v5/native_card_context.cpp)
+  target_link_libraries(moolbase_polymath_v5_native PRIVATE graphenedb)
+
   add_executable(graphenedb_polymath_relation_direction_tests
                  tests/test_polymath_relation_direction.cpp)
   target_link_libraries(graphenedb_polymath_relation_direction_tests PRIVATE graphenedb)
