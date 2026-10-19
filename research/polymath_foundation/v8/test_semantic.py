@@ -40,7 +40,8 @@ class Contracts(unittest.TestCase):
         for q,g in zip(self.questions,self.gold):
             guess=rules(q["question"],q["opaque_id"])
             if g["category"] in ("in_library_valid","assumption_violation"):
-                self.assertEqual(guess["status"],"normalize")
+                self.assertEqual(guess["status"],"normalize",
+                                 msg=f"trial={q['opaque_id']} category={g['category']} reason={guess['reason']} question={q['question']}")
                 self.assertTrue(semantic_match(guess["normalized"],g["expected_normalized"]))
                 hit,_=schema_select({"target":guess["normalized"]["target"],
                      "target_unit":guess["normalized"]["target_unit"],
