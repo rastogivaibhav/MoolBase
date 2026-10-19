@@ -58,8 +58,9 @@ def transform(source_root):
                "source":"PROJECT_AUTHORED_DETERMINISTIC_RULE_BASELINE"}
             baselines.append(baseline)
             cause=next(e for e in events if e["stage"]=="T0")
+            diagnostic_source="wms_adapter" if chosen=="H-B" else "erp_adapter"
             related=next((e for e in events if e["stage"]=="T1" and
-                     e["source"]=="erp_adapter"),cause)
+                     e["source"]==diagnostic_source),cause)
             for hypothesis in ARMS:
                 labels=[("supports",0.35,cause)]
                 if cutoff=="T1" and chosen!="none":
