@@ -1,0 +1,162 @@
+name: Polymath Foundation v9 Two Gates
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v9/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v9.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v9/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v9.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  gate2-native-opposition:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record frozen source and version
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v9/gate2
+          echo "$GITHUB_SHA" > reports/polymath_foundation_v9/gate2/git_sha.txt
+          sha256sum research/polymath_foundation/v9/PREREGISTRATION.md \
+            research/polymath_foundation/v9/gate2_native_opposition.cpp \
+            research/polymath_foundation/v9/gate2_validate.py \
+            > reports/polymath_foundation_v9/gate2/source_hashes.txt
+      - name: Compile real HypoKosh–DWM engine
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v9 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v9 --parallel 3 \
+            --target moolbase_polymath_v9_native_opposition
+      - name: Execute 3 native competing-hypothesis snapshots x G0 G1 G2
+        run: |
+          set -euo pipefail
+          ./build-v9/moolbase_polymath_v9_native_opposition \
+            /tmp/moolbase-v9-synthetic-snapshots \
+            reports/polymath_foundation_v9/gate2/real_native_receipts.jsonl \
+            2>&1 | tee reports/polymath_foundation_v9/gate2/native.log
+          python3 research/polymath_foundation/v9/gate2_validate.py \
+            --inference reports/polymath_foundation_v9/gate2/real_native_receipts.jsonl \
+            --out reports/polymath_foundation_v9/gate2/gate2_summary.json \
+            2>&1 | tee reports/polymath_foundation_v9/gate2/validation.log
+      - name: Preserve complete or failed native gate evidence
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v9/gate2
+          (cd reports/polymath_foundation_v9/gate2 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive real DWM ablations and negative outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v9-gate2-real-hypokosh-dwm-${{ github.sha }}
+          path: reports/polymath_foundation_v9/gate2/
+          retention-days: 90
+          if-no-files-found: warn
+
+  gate1-strong-model:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze source, runtime and corpus versions
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v9/gate1
+          echo "$GITHUB_SHA" > reports/polymath_foundation_v9/gate1/git_sha.txt
+          python3 --version > reports/polymath_foundation_v9/gate1/environment.txt
+          free -h >> reports/polymath_foundation_v9/gate1/environment.txt
+          sha256sum research/polymath_foundation/v9/PREREGISTRATION.md \
+            research/polymath_foundation/v9/gate1_strong_model.py \
+            research/polymath_foundation/v9/gate1_pipeline.py \
+            research/polymath_foundation/v8/generate_pilot.py \
+            research/polymath_foundation/v8/score_semantic.py \
+            > reports/polymath_foundation_v9/gate1/source_hashes.txt
+      - name: Compile the unchanged native v8 selector and v6 calculator
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v9 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v9 --parallel 3 \
+            --target moolbase_polymath_v8_selector moolbase_polymath_v6_executor
+      - name: Build pinned CPU llama.cpp server
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/ggml-org/llama.cpp /tmp/f9-llama
+          git -C /tmp/f9-llama checkout ff5a23376725e5a889fa0bfb987b7541dc304da0
+          git -C /tmp/f9-llama rev-parse HEAD \
+            > reports/polymath_foundation_v9/gate1/llama_sha.txt
+          cmake -S /tmp/f9-llama -B /tmp/f9-llama/build \
+            -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF \
+            -DLLAMA_BUILD_SERVER=ON -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF
+          cmake --build /tmp/f9-llama/build --parallel 3 --target llama-server
+      - name: Download official Apache-2.0 Qwen 7B Q3_K_M quantized weights
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/f9-model
+          curl --fail --location --retry 3 --retry-delay 5 \
+            --output /tmp/f9-model/qwen.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/293ca9a10157b0e5fc5cb32af8b636a88bede891/qwen2.5-7b-instruct-q3_k_m.gguf"
+          test "$(stat -c %s /tmp/f9-model/qwen.gguf)" -gt 3000000000
+          sha256sum /tmp/f9-model/qwen.gguf \
+            > reports/polymath_foundation_v9/gate1/model_sha256.txt
+      - name: Start pinned local 7B CPU inference
+        run: |
+          set -euo pipefail
+          /tmp/f9-llama/build/bin/llama-server \
+            --model /tmp/f9-model/qwen.gguf \
+            --alias qwen2.5-7b-instruct \
+            --host 127.0.0.1 --port 8080 --ctx-size 4096 \
+            --threads 4 --parallel 1 \
+            > reports/polymath_foundation_v9/gate1/server.log 2>&1 &
+          python3 - <<'PY'
+          import time,urllib.request
+          for i in range(180):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8080/health",timeout=2) as r:
+                      if r.status==200:
+                          print("f9_gate1_real_7B_server=READY")
+                          break
+              except Exception:pass
+              time.sleep(2)
+          else:raise SystemExit("pinned Qwen 7B failed to start")
+          PY
+      - name: Run all 24 real semantic tasks and independently score via v8
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v9/gate1_pipeline.py \
+            2>&1 | tee reports/polymath_foundation_v9/gate1/pipeline.log
+      - name: Seal complete, incomplete or error evidence
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v9/gate1
+          (cd reports/polymath_foundation_v9/gate1 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Upload all 7B model raw answers and native scoring receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v9-gate1-real-7B-semantic-${{ github.sha }}
+          path: reports/polymath_foundation_v9/gate1/
+          retention-days: 90
+          if-no-files-found: warn
