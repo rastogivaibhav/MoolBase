@@ -33,7 +33,7 @@ def semantic_match(pred,truth):
     return all(p[k][1:]==g[k][1:] and math.isclose(p[k][0],g[k][0],rel_tol=0,abs_tol=1e-9) for k in g)
 
 def evaluate(predictions,routes,execs,gold,arm):
-    if len(predictions["records"])!=len(routes)!=24:
+    if len(predictions["records"])!=24 or len(routes)!=24:
         raise ValueError("invalid frozen question count")
     if len(gold)!=24:raise ValueError("missing gold trial data")
     ids=[t["opaque_id"] for t in gold]
