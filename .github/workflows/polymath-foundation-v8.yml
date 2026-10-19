@@ -1,0 +1,116 @@
+name: Polymath Foundation v8 Semantic Mechanism Pilot
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v8/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v8.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v8/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v8.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semantic-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify fixed semantic questions and malicious-response refusals
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v8/test_semantic.py
+  actual-model-native:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seal code and environment
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v8
+          echo "commit=$GITHUB_SHA" > reports/polymath_foundation_v8/environment.txt
+          python3 --version >> reports/polymath_foundation_v8/environment.txt
+          sha256sum research/polymath_foundation/v8/* \
+            research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/scorer.py \
+            research/polymath_foundation/v6/mechanisms.json \
+            > reports/polymath_foundation_v8/source_hashes.sha256
+      - name: Run F8 no-gold and semantic boundary tests
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v8/test_semantic.py \
+            2>&1 | tee reports/polymath_foundation_v8/tests.log
+      - name: Compile real native MoolBase router and frozen v6 calculator
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v8 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v8 --parallel 3 \
+            --target moolbase_polymath_v8_selector moolbase_polymath_v6_executor
+      - name: Build pinned local CPU llama.cpp
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout \
+            https://github.com/ggml-org/llama.cpp /tmp/f8-llama
+          git -C /tmp/f8-llama checkout ff5a23376725e5a889fa0bfb987b7541dc304da0
+          git -C /tmp/f8-llama rev-parse HEAD > reports/polymath_foundation_v8/llama_sha.txt
+          cmake -S /tmp/f8-llama -B /tmp/f8-llama/build \
+            -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF \
+            -DLLAMA_BUILD_SERVER=ON -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF
+          cmake --build /tmp/f8-llama/build --parallel 3 --target llama-server
+      - name: Download exact public Qwen 1.5B pretrained model
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/f8-model
+          curl --fail --location --retry 3 --retry-delay 5 \
+            --output /tmp/f8-model/qwen.gguf \
+            "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/91cad51170dc346986eccefdc2dd33a9da36ead9/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+          test "$(stat -c %s /tmp/f8-model/qwen.gguf)" -gt 600000000
+          sha256sum /tmp/f8-model/qwen.gguf > reports/polymath_foundation_v8/model_sha256.txt
+      - name: Start real local CPU inference server
+        run: |
+          set -euo pipefail
+          /tmp/f8-llama/build/bin/llama-server \
+            --model /tmp/f8-model/qwen.gguf --alias qwen2.5-1.5b-instruct \
+            --host 127.0.0.1 --port 8080 \
+            --ctx-size 4096 --threads 4 --parallel 1 \
+            > reports/polymath_foundation_v8/server.log 2>&1 &
+          python3 - <<'PY'
+          import time,urllib.request
+          for _ in range(180):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8080/health",timeout=2) as response:
+                      if response.status==200:
+                          print("f8_Qwen_real_CPU_server=READY")
+                          break
+              except Exception:pass
+              time.sleep(2)
+          else:raise SystemExit("Model server did not become ready")
+          PY
+      - name: Execute entire preregistered semantic model and native pipeline
+        run: |
+          set -euo pipefail
+          bash research/polymath_foundation/v8/run_pipeline.sh \
+            2>&1 | tee reports/polymath_foundation_v8/pipeline.log
+      - name: Seal raw, failure or score receipts
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v8
+          (cd reports/polymath_foundation_v8 &&
+             find . -type f ! -name manifest.sha256 -print0 |
+             sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive model responses, native receipts and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v8-semantic-model-${{ github.sha }}
+          path: reports/polymath_foundation_v8/
+          retention-days: 90
+          if-no-files-found: warn
