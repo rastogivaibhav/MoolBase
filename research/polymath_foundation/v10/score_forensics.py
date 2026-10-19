@@ -6,6 +6,7 @@ from pathlib import Path
 STAGES=("baseline","contradiction","revision")
 ARMS=("G0","G1","G2")
 COUNTS=("retrieved_target_fibers","retrieved_fiber_paths",
+    "path_edge_count","contradiction_edges_in_paths",
     "support_role_paths","opposition_role_paths","noise_role_paths",
     "unknown_role_paths","support_eligible_paths","opposition_eligible_paths",
     "hypothetical_paths","nonoperative_paths","critical_evidence_missing_paths",
@@ -41,6 +42,8 @@ def evaluate(rows,labels):
                 raise ValueError("unaccounted native path roles")
             if d["opposition_representatives_eligible"]>d["opposition_eligible_paths"]:
                 raise ValueError("eligible representative without opposing path")
+            if d["contradiction_edges_in_paths"]>d["path_edge_count"]:
+                raise ValueError("contradiction intersection exceeds actual path edges")
             if d["opposition_representatives_eligible"]>d["opposition_correlation_groups"]:
                 raise ValueError("eligible representative without group")
         if not math.isfinite(r["final_opposition_score"]):
@@ -65,8 +68,8 @@ def evaluate(rows,labels):
             d=r["final_bundle"]
             if r["persistent_contradiction_edges"]==0:
                 bottleneck="NO_RAW_CONTRADICTION_IN_STAGE"
-            elif d["retrieved_fiber_paths"]==0:
-                bottleneck="NOT_RETRIEVED_AS_FIBER_PATH"
+            elif d["contradiction_edges_in_paths"]==0:
+                bottleneck="RAW_CONTRADICTION_NOT_TRAVERSED_IN_PATH"
             elif d["opposition_role_paths"]==0:
                 bottleneck="RETRIEVED_NO_OPPOSITION_ROLE"
             elif d["opposition_eligible_paths"]==0:
@@ -81,6 +84,8 @@ def evaluate(rows,labels):
                 "stage":stage,"arm":arm,
                 "raw_contradiction_edges":r["persistent_contradiction_edges"],
                 "retrieved_paths":d["retrieved_fiber_paths"],
+                "path_edges_total":d["path_edge_count"],
+                "persisted_contradiction_edges_traversed":d["contradiction_edges_in_paths"],
                 "opposition_role_paths":d["opposition_role_paths"],
                 "opposition_eligible_paths":d["opposition_eligible_paths"],
                 "admissible_representative_groups":d["opposition_representatives_eligible"],
