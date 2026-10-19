@@ -44,7 +44,7 @@ def prepare(queries,routes,selected):
 def grade(original,routes,normalized,gold,executed,bydomain,arm):
     if arm not in ("B0","B1","B2"):
         raise ValueError("unknown F8 arm")
-    if (len(original)!=len(routes)!=len(normalized)!=120):
+    if len(original)!=120 or len(routes)!=120 or len(normalized)!=120:
         raise ValueError("missing trial records")
     truths=gold.get("trials")
     if gold.get("experiment")!="MOOL-POLYMATH-F8-001" or len(truths)!=120:
