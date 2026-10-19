@@ -1,0 +1,60 @@
+name: Evidence Learning v13 Time-Ordered Event Boundary
+on:
+  push:
+    paths:
+      - "research/evidence_learning_lab/v13/**"
+      - ".github/workflows/evidence-learning-lab-v13.yml"
+  pull_request:
+    paths:
+      - "research/evidence_learning_lab/v13/**"
+      - ".github/workflows/evidence-learning-lab-v13.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Adversarial pre-execution validation
+        run: |
+          set -euo pipefail
+          mkdir -p reports/evidence_learning_lab_v13
+          python3 research/evidence_learning_lab/v13/test_events.py \
+            2>&1 | tee reports/evidence_learning_lab_v13/negative_tests.log
+      - name: Generate reproducible source events and withheld labels
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/events.py \
+            --output reports/evidence_learning_lab_v13
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path("reports/evidence_learning_lab_v13")
+          r=json.loads((p/"validation.json").read_text())
+          assert r["event_count"]==12 and r["incident_count"]==3
+          assert r["native_reasoning"]=="NOT_RUN" and r["llm_baselines"]=="NOT_RUN"
+          for f,k in (("observations.jsonl","observation_file_sha256"),
+                      ("evaluator_only_truth.json","withheld_file_sha256")):
+              assert hashlib.sha256((p/f).read_bytes()).hexdigest()==r[k]
+          print("v13_heldout_event_contract=PASS independent_ground_truth=NO")
+          PY
+      - name: Archive hash-chained event payloads, failures and methodology
+        if: always()
+        run: |
+          mkdir -p reports/evidence_learning_lab_v13
+          echo "$GITHUB_SHA" > reports/evidence_learning_lab_v13/exact_commit.txt
+          sha256sum research/evidence_learning_lab/v13/PREREGISTRATION.md \
+            research/evidence_learning_lab/v13/events.py \
+            research/evidence_learning_lab/v13/test_events.py \
+            > reports/evidence_learning_lab_v13/source_hashes.sha256
+          (cd reports/evidence_learning_lab_v13 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v13-event-boundary-${{ github.sha }}
+          path: reports/evidence_learning_lab_v13/
+          retention-days: 90
+          if-no-files-found: warn
