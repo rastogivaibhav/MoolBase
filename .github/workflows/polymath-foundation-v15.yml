@@ -1,0 +1,100 @@
+name: Polymath Foundation v15 Twenty-Topic Associative Knowledge Test
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v15/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v15.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v15/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v15.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  knowledge-source-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test 20-article source integrity and no prewritten airline country edges
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v15/test_topics.py
+  real-native-twenty-topic-evaluation:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record exactly frozen source and test versions
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v15
+          echo "$GITHUB_SHA" > reports/polymath_foundation_v15/git_commit.txt
+          python3 --version > reports/polymath_foundation_v15/environment.txt
+          c++ --version | head -1 >> reports/polymath_foundation_v15/environment.txt
+          sha256sum \
+            research/polymath_foundation/v15/PREREGISTRATION.md \
+            research/polymath_foundation/v15/topics.json \
+            research/polymath_foundation/v15/native_topic_probe.cpp \
+            research/polymath_foundation/v15/prepare_topics.py \
+            research/polymath_foundation/v15/score_topics.py \
+            research/polymath_foundation/v15/test_topics.py \
+            > reports/polymath_foundation_v15/source_hashes.sha256
+      - name: Validate text corpus and controls without looking at native answers
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v15/test_topics.py \
+            2>&1 | tee reports/polymath_foundation_v15/source_tests.log
+          python3 research/polymath_foundation/v15/prepare_topics.py \
+            --topics research/polymath_foundation/v15/topics.json \
+            --out reports/polymath_foundation_v15/ \
+            2>&1 | tee reports/polymath_foundation_v15/corpus.log
+      - name: Compile actual native GrapheneDB plus HypoKosh and DWM
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v15 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v15 --parallel 3 --target moolbase_v15_twenty_topics
+      - name: Ingest real persisted 19 and 20 article corpora and issue 24 native reasoning calls
+        run: |
+          set -euo pipefail
+          ./build-v15/moolbase_v15_twenty_topics \
+            reports/polymath_foundation_v15/C0.tsv \
+            reports/polymath_foundation_v15/C1.tsv \
+            reports/polymath_foundation_v15/queries.tsv \
+            reports/polymath_foundation_v15/native_raw.jsonl \
+            2>&1 | tee reports/polymath_foundation_v15/native_execution.log
+      - name: Grade evidence coverage without fabricating generated answers
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v15/score_topics.py \
+            --native reports/polymath_foundation_v15/native_raw.jsonl \
+            --c0 reports/polymath_foundation_v15/C0.tsv \
+            --c1 reports/polymath_foundation_v15/C1.tsv \
+            --questions reports/polymath_foundation_v15/queries.tsv \
+            --manifest reports/polymath_foundation_v15/corpus_manifest.json \
+            --output reports/polymath_foundation_v15/evaluation.json \
+            2>&1 | tee reports/polymath_foundation_v15/scoring.log
+      - name: Preserve all source and native evidence hashes on success or failure
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v15
+          (cd reports/polymath_foundation_v15 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive raw MoolBase memory retrieval and DWM outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v15-twenty-topic-association-native-${{ github.sha }}
+          path: reports/polymath_foundation_v15/
+          retention-days: 90
+          if-no-files-found: warn
