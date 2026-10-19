@@ -1,0 +1,78 @@
+name: MoolBase v15 Three-Component Native Trace
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v15/native_topic_trace.cpp"
+      - ".github/workflows/polymath-foundation-v15-trace.yml"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-native-pipeline-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze source trace and input hashes
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_v15_trace
+          echo "$GITHUB_SHA" > reports/polymath_v15_trace/commit.txt
+          sha256sum research/polymath_foundation/v15/topics.json \
+            research/polymath_foundation/v15/PREREGISTRATION.md \
+            research/polymath_foundation/v15/native_topic_probe.cpp \
+            research/polymath_foundation/v15/native_topic_trace.cpp \
+            > reports/polymath_v15_trace/source.sha256
+      - name: Prepare exactly the same frozen 19-versus-20 document corpora
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v15/prepare_topics.py \
+            --topics research/polymath_foundation/v15/topics.json \
+            --out reports/polymath_v15_trace \
+            2>&1 | tee reports/polymath_v15_trace/prepare.log
+      - name: Compile isolated native diagnostic target
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v15-trace -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v15-trace --parallel 3 --target moolbase_v15_twenty_topics_trace
+      - name: Run native Graphene graph HypoKosh and DWM with full intermediate read-only receipts
+        run: |
+          set -euo pipefail
+          ./build-v15-trace/moolbase_v15_twenty_topics_trace \
+            reports/polymath_v15_trace/C0.tsv \
+            reports/polymath_v15_trace/C1.tsv \
+            reports/polymath_v15_trace/queries.tsv \
+            reports/polymath_v15_trace/actual_native_trace.jsonl \
+            2>&1 | tee reports/polymath_v15_trace/native_execution.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("reports/polymath_v15_trace/actual_native_trace.jsonl")
+          rows=[json.loads(x) for x in path.read_text().splitlines()]
+          assert len(rows)==34,(len(rows),set(x['arm'] for x in rows))
+          assert sum(x['arm']=="GRAPH" for x in rows)==2
+          assert sum(x['arm']=="VECTOR" for x in rows)==8
+          assert sum(x['arm'] in ("G0","G1","G2") for x in rows)==24
+          assert all(x['edge_count']==0 for x in rows if x['arm']=="GRAPH")
+          assert all(x['raw_native_diagnostics']['runtime_receipt']['graphene_executed'] for x in rows if x['arm'] in ("G0","G1","G2"))
+          assert all(x['raw_native_diagnostics']['runtime_receipt']['opposition_executed']==(x['arm']=="G2") for x in rows if x['arm'] in ("G0","G1","G2"))
+          print("V15_DIAGNOSTIC_NATIVE=PASS 2 real graphs 8 vector searches 24 actual native outcomes")
+          PY
+      - name: Seal exact raw evidence files whether tests succeed or fail
+        if: always()
+        run: |
+          mkdir -p reports/polymath_v15_trace
+          (cd reports/polymath_v15_trace &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Publish native three-stage pipeline trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v15-three-stage-native-trace-${{ github.sha }}
+          path: reports/polymath_v15_trace/
+          retention-days: 90
+          if-no-files-found: warn
