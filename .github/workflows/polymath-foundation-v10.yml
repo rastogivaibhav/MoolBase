@@ -40,6 +40,9 @@ jobs:
             research/polymath_foundation/v10/score_forensics.py \
             research/polymath_foundation/v10/synthetic_designer_labels.json \
             research/polymath_foundation/v9/gate2_native_opposition.cpp \
+            research/polymath_foundation/v10/FACTORIAL_PREREGISTRATION.md \
+            research/polymath_foundation/v10/native_topology_mode_counterfactual.cpp \
+            research/polymath_foundation/v10/score_factorial.py \
             > reports/polymath_foundation_v10/source_hashes.sha256
       - name: Run exact pre-execution negative tests
         run: |
@@ -55,7 +58,8 @@ jobs:
             -DGRAPHENEDB_BUILD_BENCH=OFF \
             -DGRAPHENEDB_BUILD_SERVER=OFF
           cmake --build build-v10 --parallel 3 \
-            --target moolbase_polymath_v10_admission_forensics
+            --target moolbase_polymath_v10_admission_forensics \
+            moolbase_polymath_v10_topology_counterfactual
       - name: Execute exact 3x3 real native ablations with path-forensic receipts
         run: |
           set -euo pipefail
@@ -68,6 +72,17 @@ jobs:
             --synthetic-labels research/polymath_foundation/v10/synthetic_designer_labels.json \
             --out reports/polymath_foundation_v10/evaluation.json \
             2>&1 | tee reports/polymath_foundation_v10/scoring.log
+      - name: Execute separately preregistered 2x2x3 topology and query-mode counterfactual
+        run: |
+          set -euo pipefail
+          ./build-v10/moolbase_polymath_v10_topology_counterfactual \
+            /tmp/moolbase-f10b-topology-factorial \
+            reports/polymath_foundation_v10/factorial_native_receipts.jsonl \
+            2>&1 | tee reports/polymath_foundation_v10/factorial_native.log
+          python3 research/polymath_foundation/v10/score_factorial.py \
+            --receipts reports/polymath_foundation_v10/factorial_native_receipts.jsonl \
+            --out reports/polymath_foundation_v10/factorial_evaluation.json \
+            2>&1 | tee reports/polymath_foundation_v10/factorial_scoring.log
       - name: Seal original evidence whether succeeded or failed
         if: always()
         run: |
