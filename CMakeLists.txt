@@ -37,6 +37,10 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_v15_twenty_topics_trace
+                 research/polymath_foundation/v15/native_topic_trace.cpp)
+  target_link_libraries(moolbase_v15_twenty_topics_trace PRIVATE graphenedb)
+
   add_executable(moolbase_v15_twenty_topics
                  research/polymath_foundation/v15/native_topic_probe.cpp)
   target_link_libraries(moolbase_v15_twenty_topics PRIVATE graphenedb)
