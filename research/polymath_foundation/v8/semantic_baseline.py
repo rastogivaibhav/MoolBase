@@ -82,7 +82,7 @@ def normalize(q,aliases):
         "target_unit":target["canonical_unit"],
         "inputs":";".join(records)
     }
-    return normalized,"NORMALIZED_UNVERIFIED",len(records)+1+1
+    return normalized,"NORMALIZED_UNVERIFIED",len(records)+1
 
 def resolve(queries,aliases):
     out=[]
