@@ -37,6 +37,10 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_polymath_v11_legacy_ingest
+                 research/polymath_foundation/v11/native_legacy_ingest_characterization.cpp)
+  target_link_libraries(moolbase_polymath_v11_legacy_ingest PRIVATE graphenedb)
+
   add_executable(moolbase_polymath_v10_topology_counterfactual
                  research/polymath_foundation/v10/native_topology_mode_counterfactual.cpp)
   target_link_libraries(moolbase_polymath_v10_topology_counterfactual PRIVATE graphenedb)
