@@ -10,6 +10,7 @@ def artificial():
     for stage in STAGES:
         for arm in ARMS:
             paths={"retrieved_target_fibers":3,"retrieved_fiber_paths":3,
+                   "path_edge_count":0,"contradiction_edges_in_paths":0,
                    "support_role_paths":3,"opposition_role_paths":0,
                    "noise_role_paths":0,"unknown_role_paths":0,
                    "support_eligible_paths":0,"opposition_eligible_paths":0,
@@ -65,6 +66,11 @@ class Contract(unittest.TestCase):
     def test_missing_correlation_rep(self):
         self.rows[0]["final_bundle"]["opposition_representatives_eligible"]=1
         with self.assertRaises(ValueError):evaluate(self.rows,self.labels)
+    def test_untraversed_raw_contradiction_gets_precise_diagnosis(self):
+        report=evaluate(self.rows,self.labels)
+        x=next(x for x in report["receipts"] if x["stage"]=="contradiction" and x["arm"]=="G2")
+        self.assertEqual(x["forensic_disposition"],"RAW_CONTRADICTION_NOT_TRAVERSED_IN_PATH")
+
     def test_native_false_execution(self):
         self.rows[-1]["actual_opposition_executed"]=False
         with self.assertRaises(ValueError):evaluate(self.rows,self.labels)
