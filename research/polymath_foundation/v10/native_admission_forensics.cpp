@@ -230,7 +230,7 @@ static void experiment(const fs::path& root,
     append_audit(output,initial_audit);
     output<<"\"end\":true},\"final_bundle\":{";
     append_audit(output,final_audit);
-    output<<"\"end\":true},";
+    output<<"\"end\":true},"
          <<"\"source_status\":\"project_authored_synthetic_unverified\","
          <<"\"status\":\""<<escaped(governed_status_name(result.status))<<"\","
          <<"\"primary_node\":"<<result.primary_node<<","
