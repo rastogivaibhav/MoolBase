@@ -1,0 +1,85 @@
+name: Polymath Foundation v10 Native Evidence Admission Forensics
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v10/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v10.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v10/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v10.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  forensic-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject fabricated evidence and forged opposition outcomes
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v10/test_forensics.py
+  actual-native-forensics:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seal protocol and source identifiers
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v10
+          echo "$GITHUB_SHA" > reports/polymath_foundation_v10/git_commit.txt
+          python3 --version > reports/polymath_foundation_v10/environment.txt
+          sha256sum research/polymath_foundation/v10/PREREGISTRATION.md \
+            research/polymath_foundation/v10/native_admission_forensics.cpp \
+            research/polymath_foundation/v10/score_forensics.py \
+            research/polymath_foundation/v10/synthetic_designer_labels.json \
+            research/polymath_foundation/v9/gate2_native_opposition.cpp \
+            > reports/polymath_foundation_v10/source_hashes.sha256
+      - name: Run exact pre-execution negative tests
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v10/test_forensics.py \
+            2>&1 | tee reports/polymath_foundation_v10/negative_tests.log
+      - name: Compile actual MoolBase graph and unchanged production DWM
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v10 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v10 --parallel 3 \
+            --target moolbase_polymath_v10_admission_forensics
+      - name: Execute exact 3x3 real native ablations with path-forensic receipts
+        run: |
+          set -euo pipefail
+          ./build-v10/moolbase_polymath_v10_admission_forensics \
+            /tmp/moolbase-f10-synthetic \
+            reports/polymath_foundation_v10/native_receipts.jsonl \
+            2>&1 | tee reports/polymath_foundation_v10/native_runtime.log
+          python3 research/polymath_foundation/v10/score_forensics.py \
+            --receipts reports/polymath_foundation_v10/native_receipts.jsonl \
+            --synthetic-labels research/polymath_foundation/v10/synthetic_designer_labels.json \
+            --out reports/polymath_foundation_v10/evaluation.json \
+            2>&1 | tee reports/polymath_foundation_v10/scoring.log
+      - name: Seal original evidence whether succeeded or failed
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v10
+          (cd reports/polymath_foundation_v10 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive all native evidence and adversarial tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v10-real-evidence-admission-${{ github.sha }}
+          path: reports/polymath_foundation_v10/
+          retention-days: 90
+          if-no-files-found: warn
