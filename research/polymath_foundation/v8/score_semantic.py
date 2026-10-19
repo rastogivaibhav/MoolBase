@@ -143,8 +143,10 @@ def grade(original,routes,normalized,gold,executed,bydomain,arm):
 
 def main():
     p=argparse.ArgumentParser()
-    for key in ("queries","normalized","routes","selected_tasks"):
+    for key in ("queries","normalized","routes"):
         p.add_argument("--"+key,required=True)
+    p.add_argument("--selected-tasks","--selected_tasks",
+                   dest="selected_tasks",required=True)
     p.add_argument("--arm",required=True,choices=["B0","B1","B2"])
     p.add_argument("--gold")
     p.add_argument("--executed")
