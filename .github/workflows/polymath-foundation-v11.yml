@@ -1,0 +1,90 @@
+name: Polymath Foundation v11 Source Integrity Boundary
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v11/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v11.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v11/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v11.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  source-integrity-negative-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute 27 strict source-integrity controls
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v11/test_source_boundary.py
+
+  actual-native-legacy-trust-characterization:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preserve immutable exact-source ledger
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v11
+          echo "$GITHUB_SHA" > reports/polymath_foundation_v11/source_commit.txt
+          sha256sum \
+            research/polymath_foundation/v11/PREREGISTRATION.md \
+            research/polymath_foundation/v11/source_boundary.py \
+            research/polymath_foundation/v11/test_source_boundary.py \
+            research/polymath_foundation/v11/native_legacy_ingest_characterization.cpp \
+            src/generic_relation.cpp src/epistemic.cpp src/fiber_bundle.cpp \
+            > reports/polymath_foundation_v11/source_sha256.txt
+      - name: Test every negative source authorization and integrity case
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v11/test_source_boundary.py \
+            2>&1 | tee reports/polymath_foundation_v11/adversarial_tests.log
+      - name: Build unchanged real native generic ingestion runtime
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v11 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF -DGRAPHENEDB_BUILD_EXAMPLES=OFF
+          cmake --build build-v11 --parallel 3 \
+            --target moolbase_polymath_v11_legacy_ingest
+      - name: Characterize legacy default Observed source promotion without pretending it is fixed
+        run: |
+          set -euo pipefail
+          ./build-v11/moolbase_polymath_v11_legacy_ingest \
+            /tmp/moolbase-f11-existing-generic-ingestion \
+            reports/polymath_foundation_v11/native_characterization.json \
+            2>&1 | tee reports/polymath_foundation_v11/native_characterization.log
+          python3 - <<'PY'
+          import json
+          d=json.load(open("reports/polymath_foundation_v11/native_characterization.json"))
+          assert d["real_native_generic_ingestor_executed"]
+          assert d["untrusted_source_can_set_observed_origin"]
+          assert d["source_id_fallback_generic_input"]
+          assert not d["scientific_truth_verified"]
+          assert d["production_issue_requires_fix"]
+          print("f11_known_trust_boundary=CONFIRMED_NOT_REMEDIATED")
+          PY
+      - name: Seal research files on success or failure
+        if: always()
+        run: |
+          mkdir -p reports/polymath_foundation_v11
+          (cd reports/polymath_foundation_v11 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive raw native vulnerability characterization and negative test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v11-source-integrity-and-untrusted-ingest-${{ github.sha }}
+          path: reports/polymath_foundation_v11/
+          if-no-files-found: warn
+          retention-days: 90
