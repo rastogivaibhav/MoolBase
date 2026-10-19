@@ -1,0 +1,24 @@
+{
+  "experiment": "MOOL-POLYMATH-F10-001",
+  "source": "author_defined_synthetic_designer_preferences_only",
+  "external_adjudication": false,
+  "may_be_presented_to_reasoner": false,
+  "labels": [
+    {
+      "stage": "baseline",
+      "preferred_hypothesis": "H-A",
+      "rationale": "Fixture designer's initial causal story, not verified"
+    },
+    {
+      "stage": "contradiction",
+      "preferred_hypothesis": "H-B",
+      "rationale": "Fixture designer's counterfactual preference, not independently adjudicated"
+    },
+    {
+      "stage": "revision",
+      "preferred_hypothesis": "H-B",
+      "rationale": "Fixture designer's further story, not scientifically verified"
+    }
+  ],
+  "scope": "Internal diagnostic illustrative labels; no credit for scientific truth"
+}
