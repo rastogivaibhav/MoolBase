@@ -1,0 +1,124 @@
+name: Evidence-to-Learning Lab v12 Native Trust and Fault Pilot
+on:
+  push:
+    paths:
+      - "research/evidence_learning_lab/v12/**"
+      - "src/generic_relation.cpp"
+      - "include/graphene/generic_relation.hpp"
+      - "tests/test_generic_reasoning_pipeline.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/evidence-learning-lab-v12.yml"
+  pull_request:
+    paths:
+      - "research/evidence_learning_lab/v12/**"
+      - "src/generic_relation.cpp"
+      - "include/graphene/generic_relation.hpp"
+      - "tests/test_generic_reasoning_pipeline.cpp"
+      - "CMakeLists.txt"
+      - ".github/workflows/evidence-learning-lab-v12.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  contract-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert source and scoring honesty before any result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v11/test_source_boundary.py
+          python3 research/evidence_learning_lab/v12/test_scoring.py
+
+  actual-native-safety-and-incident-lab:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record source hash and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/evidence_learning_lab_v12
+          echo "commit=$GITHUB_SHA" > reports/evidence_learning_lab_v12/environment.txt
+          python3 --version >> reports/evidence_learning_lab_v12/environment.txt
+          c++ --version | head -1 >> reports/evidence_learning_lab_v12/environment.txt
+          sha256sum \
+            research/evidence_learning_lab/v12/PREREGISTRATION.md \
+            research/evidence_learning_lab/v12/native_source_gate_test.cpp \
+            research/evidence_learning_lab/v12/native_inventory_lab.cpp \
+            research/evidence_learning_lab/v12/evaluator_only_injections.json \
+            research/evidence_learning_lab/v12/score_native_lab.py \
+            research/evidence_learning_lab/v12/test_scoring.py \
+            src/generic_relation.cpp include/graphene/generic_relation.hpp \
+            tests/test_generic_reasoning_pipeline.cpp \
+            > reports/evidence_learning_lab_v12/source_hashes.sha256
+      - name: Pre-execution source verification and adversarial scorer tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v11/test_source_boundary.py \
+            2>&1 | tee reports/evidence_learning_lab_v12/source_integrity_tests.log
+          python3 research/evidence_learning_lab/v12/test_scoring.py \
+            2>&1 | tee reports/evidence_learning_lab_v12/scorer_negative_tests.log
+      - name: Compile genuine production MoolBase ingest and HypoKosh-DWM
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v12 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v12 --parallel 3 --target \
+            moolbase_v12_source_gate_tests \
+            moolbase_v12_inventory_lab \
+            graphenedb_generic_reasoning_pipeline_tests
+      - name: Verify explicit legacy mode and new secure default with actual native DB restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-v12/moolbase_v12_source_gate_tests \
+            /tmp/moolbase-v12-generic-regression \
+            reports/evidence_learning_lab_v12/native_source_gate_receipt.json \
+            2>&1 | tee reports/evidence_learning_lab_v12/native_source_gate.log
+          ctest --test-dir build-v12 --output-on-failure \
+            -R '^graphenedb_generic_reasoning_pipeline_tests$' \
+            2>&1 | tee reports/evidence_learning_lab_v12/legacy_compatibility.log
+      - name: Execute 3 injected inventory faults x 2 evidence stages x actual G0-G1-G2
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-v12/moolbase_v12_inventory_lab \
+            /tmp/moolbase-v12-inventory \
+            reports/evidence_learning_lab_v12/native_reasoning_receipts.jsonl \
+            2>&1 | tee reports/evidence_learning_lab_v12/native_runtime.log
+      - name: Separately score with withheld synthetic intervention labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v12/score_native_lab.py \
+            --native reports/evidence_learning_lab_v12/native_reasoning_receipts.jsonl \
+            --labels research/evidence_learning_lab/v12/evaluator_only_injections.json \
+            --out reports/evidence_learning_lab_v12/evaluation.json \
+            2>&1 | tee reports/evidence_learning_lab_v12/scoring.log
+      - name: Seal raw logs, failed steps, and native receipts
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/evidence_learning_lab_v12
+          (cd reports/evidence_learning_lab_v12 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Publish reproducible primary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-evidence-to-learning-native-${{ github.sha }}
+          path: reports/evidence_learning_lab_v12/
+          retention-days: 90
+          if-no-files-found: warn

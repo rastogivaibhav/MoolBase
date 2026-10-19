@@ -73,6 +73,9 @@ int main() {
 
   GenericIngestOptions ingest_options;
   ingest_options.dimension = 16;
+  // Historical v1 expected empirical Observed edges; now opt in explicitly.
+  // This fixture tests backwards compatibility, NOT source authenticity.
+  ingest_options.source_trust = GenericSourceTrustMode::LegacyObservedExplicit;
   ingest_options.root_entities = {"shipment-22"};
   ingest_options.symptom_entities = {"depot-a"};
   GenericIngestResult ingest_result;
@@ -80,7 +83,8 @@ int main() {
   assert(ingestor.ingest(db, tsv.records, ontology, ingest_options, &ingest_result));
   assert(ingest_result.inserted_nodes.size() == 4);
   assert(ingest_result.inserted_edges.size() == 3);
-  assert(ingest_result.warnings.empty());
+  // Explicit unauthenticated legacy Observed mode must be visible to clients.
+  assert(!ingest_result.warnings.empty());
 
   const uint32_t shipment = ingest_result.entity_nodes.at("shipment 22");
   const auto depot_node = ingest_result.entity_nodes.at("depot a");

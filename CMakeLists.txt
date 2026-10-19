@@ -37,6 +37,14 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_v12_source_gate_tests
+                 research/evidence_learning_lab/v12/native_source_gate_test.cpp)
+  target_link_libraries(moolbase_v12_source_gate_tests PRIVATE graphenedb)
+
+  add_executable(moolbase_v12_inventory_lab
+                 research/evidence_learning_lab/v12/native_inventory_lab.cpp)
+  target_link_libraries(moolbase_v12_inventory_lab PRIVATE graphenedb)
+
   add_executable(moolbase_polymath_v11_legacy_ingest
                  research/polymath_foundation/v11/native_legacy_ingest_characterization.cpp)
   target_link_libraries(moolbase_polymath_v11_legacy_ingest PRIVATE graphenedb)

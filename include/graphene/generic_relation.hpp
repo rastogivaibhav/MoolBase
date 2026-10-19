@@ -27,7 +27,15 @@ struct GenericRelationParseResult {
   std::vector<std::string> errors;
 };
 
+// New untrusted relations cannot self-authorize empirical Observed edges.
+// LegacyObservedExplicit exists for migration/older call sites ONLY.
+enum class GenericSourceTrustMode {
+  QuarantineUnverified = 0,
+  LegacyObservedExplicit = 1
+};
+
 struct GenericIngestOptions {
+  GenericSourceTrustMode source_trust{GenericSourceTrustMode::QuarantineUnverified};
   uint32_t dimension{16};
   std::vector<std::string> root_entities;
   std::vector<std::string> symptom_entities;

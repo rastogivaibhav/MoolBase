@@ -1,0 +1,24 @@
+{
+  "experiment": "MOOL-EVIDENCE-LEARNING-V12-001",
+  "recorded_by": "project-authored synthetic fault controller",
+  "source": "INTERNAL_CONTROLLED_FIXTURE_NOT_INDEPENDENT",
+  "presented_to_reasoner": false,
+  "external_adjudication": false,
+  "incidents": [
+    {
+      "case_id": "incident-101",
+      "injected_cause": "H-A",
+      "intervention": "delay_goods_receipt_posting"
+    },
+    {
+      "case_id": "incident-102",
+      "injected_cause": "H-B",
+      "intervention": "stale_wms_snapshot"
+    },
+    {
+      "case_id": "incident-103",
+      "injected_cause": "H-C",
+      "intervention": "incorrect_replenishment_rule"
+    }
+  ]
+}
