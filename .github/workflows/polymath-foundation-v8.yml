@@ -1,0 +1,209 @@
+name: Polymath Foundation v8 Native Semantic Ontology
+
+on:
+  push:
+    paths:
+      - "research/polymath_foundation/v8/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v8.yml"
+  pull_request:
+    paths:
+      - "research/polymath_foundation/v8/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/polymath-foundation-v8.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authored ontology, units and adversarial case checks
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v8/test_semantics.py
+
+  real-native-semantic:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seal source hashes and environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p reports/polymath_foundation_v8
+          {
+            echo "commit=${GITHUB_SHA}"
+            python3 --version
+            c++ --version | head -1
+            cmake --version | head -1
+          } > reports/polymath_foundation_v8/environment.txt
+          sha256sum research/polymath_foundation/v8/* \
+            research/polymath_foundation/v6/mechanisms.json \
+            research/polymath_foundation/v6/native_typed_executor.cpp \
+            research/polymath_foundation/v3/cards.json \
+            research/polymath_foundation/v3/challenge.py \
+            > reports/polymath_foundation_v8/source_hashes.sha256
+      - name: Run all Python negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v8/test_semantics.py \
+            2>&1 | tee reports/polymath_foundation_v8/contract_tests.log
+      - name: Build native MoolBase ontology, native selector and v6 calculator
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v8 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v8 --parallel 3 --target \
+            moolbase_polymath_v8_semantic \
+            moolbase_polymath_v8_selector \
+            moolbase_polymath_v6_executor
+      - name: Generate internal semantic trials with separate evaluator key
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polymath_foundation/v8/build_semantic.py \
+            --cards research/polymath_foundation/v3/cards.json \
+            --mechanisms research/polymath_foundation/v6/mechanisms.json \
+            --aliases research/polymath_foundation/v8/aliases.json \
+            --alias_manifest reports/polymath_foundation_v8/aliases.tsv \
+            --queries reports/polymath_foundation_v8/queries.tsv \
+            --gold reports/polymath_foundation_v8/evaluator_gold.json \
+            --hash_receipt reports/polymath_foundation_v8/input_hashes.json
+      - name: Export original reviewed v6 mechanism manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          d=Path("research/polymath_foundation")
+          sys.path[:0]=[str(d/"v3"),str(d/"v6"),str(d/"v7")]
+          from challenge import cards_from
+          from export_typed import mechanisms,MANIFEST_FIELDS,write_tsv
+          from build_trials import records
+          cards=cards_from(d/"v3"/"cards.json")
+          definitions=mechanisms(d/"v6"/"mechanisms.json",cards)
+          write_tsv("reports/polymath_foundation_v8/mechanisms.tsv",
+                    MANIFEST_FIELDS,records(cards,definitions))
+          PY
+      - name: B0 no semantic dictionary and B1 nonnative alias ontology
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp reports/polymath_foundation_v8/queries.tsv \
+             reports/polymath_foundation_v8/normalized_B0.tsv
+          python3 research/polymath_foundation/v8/semantic_baseline.py \
+            --queries reports/polymath_foundation_v8/queries.tsv \
+            --alias_manifest reports/polymath_foundation_v8/aliases.tsv \
+            --normalized reports/polymath_foundation_v8/normalized_B1.tsv \
+            --audit reports/polymath_foundation_v8/audit_B1.tsv
+          for arm in B0 B1; do
+            python3 research/polymath_foundation/v7/select_baselines.py \
+              --manifest reports/polymath_foundation_v8/mechanisms.tsv \
+              --queries "reports/polymath_foundation_v8/normalized_${arm}.tsv" \
+              --mode B1 \
+              --out "reports/polymath_foundation_v8/routes_${arm}.tsv"
+          done
+      - name: B2 actually retrieve alias and mechanism records from native MoolBase
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-v8/moolbase_polymath_v8_semantic \
+            reports/polymath_foundation_v8/aliases.tsv \
+            reports/polymath_foundation_v8/queries.tsv \
+            reports/polymath_foundation_v8/normalized_B2.tsv \
+            reports/polymath_foundation_v8/audit_B2.tsv \
+            2>&1 | tee reports/polymath_foundation_v8/native_semantic.log
+          ./build-v8/moolbase_polymath_v8_selector \
+            reports/polymath_foundation_v8/mechanisms.tsv \
+            reports/polymath_foundation_v8/normalized_B2.tsv \
+            reports/polymath_foundation_v8/routes_B2.tsv \
+            2>&1 | tee reports/polymath_foundation_v8/native_selector.log
+          python3 research/polymath_foundation/v8/test_semantics.py \
+            --native-bin ./build-v8/moolbase_polymath_v8_semantic \
+            2>&1 | tee reports/polymath_foundation_v8/native_adversarial.log
+      - name: Apply identical unchanged v6 C++ arithmetic executor after selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0,"research/polymath_foundation/v6")
+          from export_typed import write_tsv,RECEIPT_FIELDS
+          write_tsv("reports/polymath_foundation_v8/empty_native.tsv",RECEIPT_FIELDS,[])
+          PY
+          for arm in B0 B1 B2; do
+            python3 research/polymath_foundation/v8/score_semantic.py \
+              --queries reports/polymath_foundation_v8/queries.tsv \
+              --normalized "reports/polymath_foundation_v8/normalized_${arm}.tsv" \
+              --routes "reports/polymath_foundation_v8/routes_${arm}.tsv" \
+              --selected-tasks "reports/polymath_foundation_v8/selected_${arm}.tsv" \
+              --arm "$arm"
+            if test "$(wc -l < reports/polymath_foundation_v8/selected_${arm}.tsv)" -gt 1; then
+              ./build-v8/moolbase_polymath_v6_executor \
+                reports/polymath_foundation_v8/mechanisms.tsv \
+                "reports/polymath_foundation_v8/selected_${arm}.tsv" \
+                "reports/polymath_foundation_v8/executed_${arm}.tsv"
+            else
+              cp reports/polymath_foundation_v8/empty_native.tsv \
+                 "reports/polymath_foundation_v8/executed_${arm}.tsv"
+            fi
+          done
+      - name: Independently score all 120 cases and enforce research-safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in B0 B1 B2; do
+            python3 research/polymath_foundation/v8/score_semantic.py \
+              --queries reports/polymath_foundation_v8/queries.tsv \
+              --normalized "reports/polymath_foundation_v8/normalized_${arm}.tsv" \
+              --routes "reports/polymath_foundation_v8/routes_${arm}.tsv" \
+              --selected-tasks "reports/polymath_foundation_v8/selected_${arm}.tsv" \
+              --arm "$arm" \
+              --gold reports/polymath_foundation_v8/evaluator_gold.json \
+              --executed "reports/polymath_foundation_v8/executed_${arm}.tsv" \
+              --mechanisms research/polymath_foundation/v6/mechanisms.json \
+              --cards research/polymath_foundation/v3/cards.json \
+              --out "reports/polymath_foundation_v8/evaluation_${arm}.json"
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("reports/polymath_foundation_v8")
+          outcomes={x:json.loads((root/f"evaluation_{x}.json").read_text())
+                    for x in ("B0","B1","B2")}
+          assert outcomes["B1"]["metrics"]==outcomes["B2"]["metrics"]
+          for a in ("B1","B2"):
+              assert outcomes[a]["categories"]["library"]["correct"]==72
+              for k in ("unsupported_unit","conflicting_alias","out_of_domain","composite"):
+                  assert outcomes[a]["categories"][k]["correct"]==12
+          print("f8_native_ontology_engineering_gate=PASS external_blind=NOT_RUN")
+          PY
+      - name: Seal file hashes even after failure
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports/polymath_foundation_v8
+          (cd reports/polymath_foundation_v8 &&
+             find . -type f ! -name manifest.sha256 -print0 |
+             sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive original prompts, native receipts, controls and null findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-f8-ontology-experiment-${{ github.sha }}
+          path: reports/polymath_foundation_v8/
+          retention-days: 90
+          if-no-files-found: warn
