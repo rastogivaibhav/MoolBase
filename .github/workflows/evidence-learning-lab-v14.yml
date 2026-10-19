@@ -1,0 +1,124 @@
+name: MoolBase v14 Neutral-Observation Cause-Label Ablation
+on:
+  push:
+    paths:
+      - "research/evidence_learning_lab/v14/**"
+      - ".github/workflows/evidence-learning-lab-v14.yml"
+      - "CMakeLists.txt"
+  pull_request:
+    paths:
+      - "research/evidence_learning_lab/v14/**"
+      - ".github/workflows/evidence-learning-lab-v14.yml"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-cutoff-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify label-free observation extraction and temporal cutoffs
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v14/test_neutral.py
+  real-native-paired-same-source-ablation:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record original and neutral experiment hashes
+        run: |
+          set -euo pipefail
+          mkdir -p reports/evidence_learning_lab_v14/public \
+            reports/evidence_learning_lab_v14/evaluator-only
+          echo "$GITHUB_SHA" > reports/evidence_learning_lab_v14/source_commit.txt
+          python3 --version > reports/evidence_learning_lab_v14/environment.txt
+          sha256sum \
+            research/evidence_learning_lab/v14/PREREGISTRATION.md \
+            research/evidence_learning_lab/v14/native_neutral_reasoner.cpp \
+            research/evidence_learning_lab/v14/neutral_observations.py \
+            research/evidence_learning_lab/v14/score_neutral.py \
+            research/evidence_learning_lab/v14/test_neutral.py \
+            research/evidence_learning_lab/v13/run_source_systems.py \
+            research/evidence_learning_lab/v13/derive_evidence.py \
+            research/evidence_learning_lab/v13/native_event_reasoner.cpp \
+            src/generic_relation.cpp \
+            > reports/evidence_learning_lab_v14/source_hashes.sha256
+      - name: Run 12 raw event integrity and no-causal-label controls
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v14/test_neutral.py \
+            2>&1 | tee reports/evidence_learning_lab_v14/negative_tests.log
+      - name: Compile the actual native MoolBase G1-G2 on unchanged production code
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v14 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v14 --parallel 3 --target \
+            moolbase_v14_neutral_reasoner moolbase_v13_event_reasoner
+      - name: Run identical source-system SQL faults and independently stored repair outcomes
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/run_source_systems.py \
+            --public reports/evidence_learning_lab_v14/public \
+            --oracle reports/evidence_learning_lab_v14/evaluator-only \
+            2>&1 | tee reports/evidence_learning_lab_v14/sql_run.log
+      - name: Run exact v13 hand-labelled adapter and actual native comparators
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/derive_evidence.py \
+            --public reports/evidence_learning_lab_v14/public \
+            --relations reports/evidence_learning_lab_v14/v13_cause_labeled_edges.tsv \
+            --baseline reports/evidence_learning_lab_v14/v13_rules.json \
+            --receipt reports/evidence_learning_lab_v14/v13_adapter.json \
+            2>&1 | tee reports/evidence_learning_lab_v14/v13_adapter.log
+          ./build-v14/moolbase_v13_event_reasoner \
+            reports/evidence_learning_lab_v14/v13_cause_labeled_edges.tsv \
+            /tmp/moolbase-v14-original \
+            reports/evidence_learning_lab_v14/v13_mapped_native.jsonl \
+            2>&1 | tee reports/evidence_learning_lab_v14/v13_native.log
+      - name: Strip manually imposed cause edges from the same source events
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v14/neutral_observations.py \
+            --public reports/evidence_learning_lab_v14/public \
+            --measurements reports/evidence_learning_lab_v14/neutral_measurements.tsv \
+            --receipts reports/evidence_learning_lab_v14/neutral_adapter_receipts.json \
+            2>&1 | tee reports/evidence_learning_lab_v14/neutral_adapter.log
+          ./build-v14/moolbase_v14_neutral_reasoner \
+            reports/evidence_learning_lab_v14/neutral_measurements.tsv \
+            /tmp/moolbase-v14-neutral \
+            reports/evidence_learning_lab_v14/v14_neutral_native.jsonl \
+            2>&1 | tee reports/evidence_learning_lab_v14/neutral_native.log
+      - name: Score separate actual native runs only after both are sealed
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v14/score_neutral.py \
+            --neutral reports/evidence_learning_lab_v14/v14_neutral_native.jsonl \
+            --v13 reports/evidence_learning_lab_v14/v13_mapped_native.jsonl \
+            --baseline reports/evidence_learning_lab_v14/v13_rules.json \
+            --oracle-dir reports/evidence_learning_lab_v14/evaluator-only \
+            --adapter-receipts reports/evidence_learning_lab_v14/neutral_adapter_receipts.json \
+            --out reports/evidence_learning_lab_v14/evaluation.json \
+            2>&1 | tee reports/evidence_learning_lab_v14/scoring.log
+      - name: Seal raw evidence even on failed executions
+        if: always()
+        run: |
+          mkdir -p reports/evidence_learning_lab_v14
+          (cd reports/evidence_learning_lab_v14 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Archive source data, both real native outputs, and negative tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v14-neutral-unbiased-observation-${{ github.sha }}
+          path: reports/evidence_learning_lab_v14/
+          retention-days: 90
+          if-no-files-found: warn

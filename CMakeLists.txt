@@ -37,6 +37,10 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_v14_neutral_reasoner
+                 research/evidence_learning_lab/v14/native_neutral_reasoner.cpp)
+  target_link_libraries(moolbase_v14_neutral_reasoner PRIVATE graphenedb)
+
   add_executable(moolbase_v13_event_reasoner
                  research/evidence_learning_lab/v13/native_event_reasoner.cpp)
   target_link_libraries(moolbase_v13_event_reasoner PRIVATE graphenedb)
