@@ -76,7 +76,13 @@ class EventTests(unittest.TestCase):
         e=copy.deepcopy(self.events);e[0]["recorded_at"]="2026-10-19T09:59:00Z"
         with self.assertRaisesRegex(ValueError,"RECORDED_BEFORE_EVENT"):validate(e)
     def test_18_case_missing_a_phase(self):
-        e=[x for x in self.events if not(x["case_id"]=="case-101" and x["phase"]=="T1")]
+        e=copy.deepcopy(self.events)
+        # Preserve 12 source records; relabel T1 as T0 and rebind hashes,
+        # so the missing-phase guard (not the count guard) is exercised.
+        for x in e:
+            if x["case_id"]=="case-101" and x["phase"]=="T1":
+                x["phase"]="T0"
+                x["sha256"]=digest({k:v for k,v in x.items() if k!="sha256"})
         with self.assertRaisesRegex(ValueError,"MISSING_PHASE"):validate(e)
 if __name__=="__main__":
     u=unittest.main(verbosity=2,exit=False)
