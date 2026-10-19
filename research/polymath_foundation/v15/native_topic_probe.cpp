@@ -1,6 +1,7 @@
 // F15 real 20-topic MoolBase test: raw knowledge paragraphs, no answer edges.
 // Native returns document IDs and epistemic status, NOT English answers.
 #include "graphene/db.hpp"
+#include "graphene/generic_relation.hpp"
 #include "graphene/hypokosh_runtime.hpp"
 #include "graphene/model_world.hpp"
 #include <algorithm>
