@@ -77,12 +77,23 @@ def evaluate(records,truth):
                 "case_id":cid,
                 "initial":before["selected_hypothesis"],
                 "after_new_evidence":after["selected_hypothesis"],
-                "any_change":before["selected_hypothesis"]!=after["selected_hypothesis"],
+                "selection_state_transition":before["selected_hypothesis"]!=after["selected_hypothesis"],
                 "initial_answer":before["has_proposed_answer"],
                 "final_answer":after["has_proposed_answer"],
-                "revised_to_fixture_preferred":bool(after["has_proposed_answer"] and
-                        after["selected_hypothesis"]==labeled[cid] and
-                        before["selected_hypothesis"]!=labeled[cid])
+                "new_proposal_after_evidence":bool(not before["has_proposed_answer"] and
+                        after["has_proposed_answer"]),
+                "changed_between_two_explicit_proposals":bool(before["has_proposed_answer"] and
+                        after["has_proposed_answer"] and
+                        before["selected_hypothesis"]!=after["selected_hypothesis"]),
+                "corrected_wrong_prior_proposal":bool(before["has_proposed_answer"] and
+                        after["has_proposed_answer"] and
+                        before["selected_hypothesis"]!=labeled[cid] and
+                        after["selected_hypothesis"]==labeled[cid]),
+                "corrected_wrong_committed_conclusion":bool(before["has_proposed_answer"] and
+                        before["status"] in ("resolved","provisionally_resolved") and
+                        after["has_proposed_answer"] and
+                        before["selected_hypothesis"]!=labeled[cid] and
+                        after["selected_hypothesis"]==labeled[cid])
             })
         arms[arm]={
             "n":len(rr),"proposed_answer_count":sum(x["has_proposed_answer"] for x in rr),
@@ -91,8 +102,11 @@ def evaluate(records,truth):
             "challenge_n":sum(x["dwm_challenge"] for x in rr),
             "reopen_n":sum(x["reopen_requested"] for x in rr),
             "mean_ms":sum(x["elapsed_ms"] for x in rr)/len(rr),
-            "changed_selected_hypothesis_n":sum(p["any_change"] for p in paired),
-            "revised_to_fixture_preferred_n":sum(p["revised_to_fixture_preferred"] for p in paired),
+            "selection_state_transition_n":sum(p["selection_state_transition"] for p in paired),
+            "new_proposals_after_evidence_n":sum(p["new_proposal_after_evidence"] for p in paired),
+            "changed_between_two_explicit_proposals_n":sum(p["changed_between_two_explicit_proposals"] for p in paired),
+            "corrected_wrong_prior_proposal_n":sum(p["corrected_wrong_prior_proposal"] for p in paired),
+            "corrected_wrong_committed_conclusion_n":sum(p["corrected_wrong_committed_conclusion"] for p in paired),
             "pairs":paired
         }
     return {
@@ -130,7 +144,8 @@ def main():
     for k,v in output["native_ablation_arms"].items():
         print(f"v12_native_{k}_scored proposed={v['proposed_answer_count']}/6 "
               f"matched_synthetic_label={v['proposed_match_synthetic_label']}/6 "
-              f"changed_after_evidence={v['changed_selected_hypothesis_n']}/3 "
+              f"new_after_evidence={v['new_proposals_after_evidence_n']}/3 "
+              f"wrong_commit_corrected={v['corrected_wrong_committed_conclusion_n']}/3 "
               f"challenges={v['challenge_n']}/6")
     print("v12_source_and_outcome_boundary=PASS empirical_science=NOT_MEASURABLE")
 if __name__=="__main__":main()
