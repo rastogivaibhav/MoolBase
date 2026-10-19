@@ -41,6 +41,10 @@ if(GRAPHENEDB_BUILD_TESTS)
                  research/polymath_foundation/v8/native_semantic.cpp)
   target_link_libraries(moolbase_polymath_v8_semantic PRIVATE graphenedb)
 
+  add_executable(moolbase_polymath_v8_selector
+                 research/polymath_foundation/v8/native_selector_120.cpp)
+  target_link_libraries(moolbase_polymath_v8_selector PRIVATE graphenedb)
+
   add_executable(moolbase_polymath_v7_selector
                  research/polymath_foundation/v7/native_selector.cpp)
   target_link_libraries(moolbase_polymath_v7_selector PRIVATE graphenedb)
