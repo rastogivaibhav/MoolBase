@@ -71,6 +71,8 @@ static void link(GrapheneDB& db,uint32_t from,uint32_t to,
 struct Audit {
   size_t target_fibers{0};
   size_t fiber_paths{0};
+  size_t path_edge_count{0};
+  size_t contradiction_edges_in_paths{0};
   size_t support_role{0};
   size_t opposition_role{0};
   size_t unknown_role{0};
@@ -83,12 +85,17 @@ struct Audit {
   size_t opposition_representatives_eligible{0};
   size_t missing_evidence_paths{0};
 };
-static Audit audit_paths(const FiberBundle& b) {
+static Audit audit_paths(const FiberBundle& b,
+                        const std::set<uint32_t>& contradiction_ids) {
   Audit out;
   out.target_fibers=b.fibers.size();
   for(const auto& fiber:b.fibers) {
     out.fiber_paths+=fiber.paths.size();
     for(const auto& path:fiber.paths) {
+      out.path_edge_count+=path.edges.size();
+      for(uint32_t edge_id:path.edges) {
+        out.contradiction_edges_in_paths+=contradiction_ids.count(edge_id);
+      }
       if(path.role==FiberPathRole::Support)++out.support_role;
       else if(path.role==FiberPathRole::Opposition)++out.opposition_role;
       else if(path.role==FiberPathRole::Noise)++out.noise_role;
@@ -116,6 +123,8 @@ static Audit audit_paths(const FiberBundle& b) {
 static void append_audit(std::ofstream& out,const Audit& a) {
   out<<"\"retrieved_target_fibers\":"<<a.target_fibers<<","
      <<"\"retrieved_fiber_paths\":"<<a.fiber_paths<<","
+     <<"\"path_edge_count\":"<<a.path_edge_count<<","
+     <<"\"contradiction_edges_in_paths\":"<<a.contradiction_edges_in_paths<<","
      <<"\"support_role_paths\":"<<a.support_role<<","
      <<"\"opposition_role_paths\":"<<a.opposition_role<<","
      <<"\"noise_role_paths\":"<<a.noise_role<<","
@@ -202,8 +211,12 @@ static void experiment(const fs::path& root,
       require(it!=stored->metadata.end()&&it->second=="unverified",
               "returned synthetic edge claims external verification");
     }
-    const Audit initial_audit=audit_paths(result.initial_bundle);
-    const Audit final_audit=audit_paths(result.final_bundle);
+    std::set<uint32_t> raw_contradiction_ids;
+    for(const auto& e:edges)
+      if(e.role==EdgeRole::Contradicts)
+        raw_contradiction_ids.insert(e.id);
+    const Audit initial_audit=audit_paths(result.initial_bundle,raw_contradiction_ids);
+    const Audit final_audit=audit_paths(result.final_bundle,raw_contradiction_ids);
     const bool operative_selection=result.final_convergence.has_answer;
     std::string selected_id="none";
     if(operative_selection) {
