@@ -39,10 +39,12 @@ static std::map<std::string,std::vector<Signal>> read_signals(const fs::path& fi
  require(bool(in),"could not read event adapter TSV");
  std::string text;
  require(bool(std::getline(in,text)),"missing adapter header");
+ if(!text.empty() && text.back()=='\r')text.pop_back();
  require(text=="case_id\tcutoff\thypothesis\tedge_role\tstrength\tevent_id\tevent_time\tsource_system\tsource_sha256",
          "unexpected or altered event schema");
  std::map<std::string,std::vector<Signal>> grouped;
  while(std::getline(in,text)) {
+   if(!text.empty() && text.back()=='\r')text.pop_back();
    auto v=split(text,'\t');
    require(v.size()==9,"malformed evidence TSV");
    require(v[1]=="T0"||v[1]=="T1","future repaired outcome leaked into inference");
