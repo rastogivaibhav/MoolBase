@@ -37,19 +37,19 @@ def normalize(q,aliases):
             number,remainder=rest.split("@",1)
             unit,kind=remainder.split("#",1)
         except ValueError:
-            return None,"MALFORMED_TYPED_INPUT",len(records)
+            return None,"MALFORMED_TYPED_INPUT",len(records)+1
         a=aliases.get(name)
         if a is None or a["field_kind"]!="input":
-            return None,"UNKNOWN_ALIAS",len(records)
+            return None,"UNKNOWN_ALIAS",len(records)+1
         if (a["domain"]!=domain or a["source_status"]!="unverified" or
             a["source_family"]!="original-project-authored-"+domain):
-            return None,"CROSS_DOMAIN_OR_PROVENANCE",len(records)
+            return None,"CROSS_DOMAIN_OR_PROVENANCE",len(records)+1
         if a["canonical"] in seen:
-            return None,"DUPLICATE_CANONICAL_CONCEPT",len(records)
+            return None,"DUPLICATE_CANONICAL_CONCEPT",len(records)+1
         if a["alias_unit"]!=unit:
-            return None,"INPUT_UNIT_MISMATCH",len(records)
+            return None,"INPUT_UNIT_MISMATCH",len(records)+1
         if a["canonical_type"]!=kind:
-            return None,"INPUT_TYPE_MISMATCH",len(records)
+            return None,"INPUT_TYPE_MISMATCH",len(records)+1
         seen.add(a["canonical"])
         try:
             if kind=="integer":
@@ -60,18 +60,18 @@ def normalize(q,aliases):
                     raise ValueError("nonfinite")
                 canonical=input_number*int(a["mul_num"])/int(a["mul_den"])
                 if not math.isfinite(canonical) or canonical<-(2**63) or canonical>=2**63:
-                    return None,"NUMERIC_OVERFLOW",len(records)
+                    return None,"NUMERIC_OVERFLOW",len(records)+1
                 if not canonical.is_integer():
-                    return None,"NONINTEGRAL_CANONICAL_VALUE",len(records)
+                    return None,"NONINTEGRAL_CANONICAL_VALUE",len(records)+1
                 val=str(int(canonical))
             else:
                 input_number=float(number)
                 canonical=input_number*int(a["mul_num"])/int(a["mul_den"])
                 if not math.isfinite(canonical):
-                    return None,"NONFINITE_CANONICAL_VALUE",len(records)
+                    return None,"NONFINITE_CANONICAL_VALUE",len(records)+1
                 val=format(canonical,".17g")
         except (ValueError,OverflowError):
-            return None,"INVALID_INPUT_NUMBER",len(records)
+            return None,"INVALID_INPUT_NUMBER",len(records)+1
         records.append(f"{a['canonical']}={val}@{a['canonical_unit']}#{kind}")
     if not records:
         return None,"MISSING_INPUTS",0
@@ -82,7 +82,7 @@ def normalize(q,aliases):
         "target_unit":target["canonical_unit"],
         "inputs":";".join(records)
     }
-    return normalized,"NORMALIZED_UNVERIFIED",len(records)+1
+    return normalized,"NORMALIZED_UNVERIFIED",len(records)+1+1
 
 def resolve(queries,aliases):
     out=[]
