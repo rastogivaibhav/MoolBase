@@ -56,9 +56,9 @@ SPECS={
 PATTERNS={
  "networks":[r"initially (-?\d+) packets wait",r"(-?\d+) packets arrive during",
              r"device serves (-?\d+)",r"buffer capacity is (-?\d+)"],
- "biology":[r"senses (-?[0-9.]+) state units",r"desired (-?[0-9.]+)",
-            r"dimensionless sensitivity is (-?[0-9.]+)",r"magnitude ceiling (-?[0-9.]+)",
-            r"outside disturbance (-?[0-9.]+)"],
+ "biology":[r"senses (-?\d+(?:\.\d+)?) state units",r"desired (-?\d+(?:\.\d+)?)",
+            r"dimensionless sensitivity is (-?\d+(?:\.\d+)?)",r"magnitude ceiling (-?\d+(?:\.\d+)?)",
+            r"outside disturbance (-?\d+(?:\.\d+)?)"],
  "supply_chain":[r"usage is (-?\d+) items per day",
                  r"supplier lead time is (-?\d+) days",
                  r"reserve is (-?\d+) items",r"There are (-?\d+) items physically held",
