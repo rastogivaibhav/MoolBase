@@ -208,14 +208,29 @@ Status GenericRelationIngestor::ingest(GrapheneDB& db,
     // endpoints follow the canonical predicate direction.
     edge.from = swap_endpoints ? *object : *subject;
     edge.to = swap_endpoints ? *subject : *object;
-    edge.origin = EdgeOrigin::Observed;
+    // Caller-supplied source_id is NOT proof of observed-world evidence.
+    // An explicit legacy compatibility choice preserves historic behaviour.
+    const bool legacy_observed =
+        options.source_trust == GenericSourceTrustMode::LegacyObservedExplicit;
+    edge.origin = legacy_observed ? EdgeOrigin::Observed : EdgeOrigin::Hypothetical;
     edge.role = role_for(predicate);
     edge.confidence = std::clamp(record.confidence, 0.0, 1.0);
     edge.metadata["relation_id"] = predicate;
     edge.metadata["relation_original_predicate"] = record.predicate;
     edge.metadata["relation_direction_swapped"] = swap_endpoints ? "true" : "false";
     edge.metadata["relation_ontology_contract"] = "direction-v1";
-    edge.metadata["source_id"] = record.source_id.empty() ? "generic-input" : record.source_id;
+    edge.metadata["source_id"] =
+        record.source_id.empty() ? "generic-input" : record.source_id;
+    edge.metadata["source_trust_contract"] = "generic-source-v2";
+    edge.metadata["evidence_authority"] =
+        legacy_observed ? "legacy_unverified" : "unverified_input";
+    edge.metadata["scientific_truth_verified"] = "false";
+    edge.metadata["authenticated_source"] = "false";
+    if (legacy_observed) {
+      result.warnings.push_back(
+          "LEGACY_OBSERVED_UNAUTHENTICATED: explicit compatibility mode; "
+          "source_id is not proof of empirical authority");
+    }
     if (!record.valid_from.empty()) edge.metadata["valid_from"] = record.valid_from;
     if (!record.valid_until.empty()) edge.metadata["valid_until"] = record.valid_until;
     uint32_t edge_id = 0;
