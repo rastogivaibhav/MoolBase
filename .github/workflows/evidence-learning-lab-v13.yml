@@ -1,0 +1,108 @@
+name: MoolBase Evidence-to-Learning v13 Executed ERP WMS Event Pilot
+on:
+  push:
+    paths:
+      - "research/evidence_learning_lab/v13/**"
+      - ".github/workflows/evidence-learning-lab-v13.yml"
+      - "CMakeLists.txt"
+  pull_request:
+    paths:
+      - "research/evidence_learning_lab/v13/**"
+      - ".github/workflows/evidence-learning-lab-v13.yml"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  event-integrity-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert real SQLite event source and no future/oracle leakage
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/test_event_flow.py
+
+  real-native-event-stream:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin experiment and source identifiers
+        run: |
+          set -euo pipefail
+          mkdir -p reports/evidence_learning_lab_v13
+          echo "$GITHUB_SHA" > reports/evidence_learning_lab_v13/commit.txt
+          python3 --version > reports/evidence_learning_lab_v13/environment.txt
+          sha256sum research/evidence_learning_lab/v13/* \
+            src/generic_relation.cpp \
+            include/graphene/generic_relation.hpp \
+            > reports/evidence_learning_lab_v13/source_hashes.sha256
+      - name: Execute event flow and temporal cutoff negative controls
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/test_event_flow.py \
+            2>&1 | tee reports/evidence_learning_lab_v13/event_tests.log
+      - name: Build genuine native MoolBase and HypoKosh-DWM
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-v13 -DCMAKE_BUILD_TYPE=Release \
+            -DGRAPHENEDB_BUILD_TESTS=ON \
+            -DGRAPHENEDB_BUILD_BENCH=OFF \
+            -DGRAPHENEDB_BUILD_EXAMPLES=OFF \
+            -DGRAPHENEDB_BUILD_SERVER=OFF
+          cmake --build build-v13 --parallel 3 \
+            --target moolbase_v13_event_reasoner
+      - name: Execute source-system SQL transactions and write hidden fault oracle
+        run: |
+          set -euo pipefail
+          mkdir -p reports/evidence_learning_lab_v13/raw-public \
+            reports/evidence_learning_lab_v13/controller-oracle
+          python3 research/evidence_learning_lab/v13/run_source_systems.py \
+            --public reports/evidence_learning_lab_v13/raw-public \
+            --oracle reports/evidence_learning_lab_v13/controller-oracle \
+            2>&1 | tee reports/evidence_learning_lab_v13/sql_event_run.log
+      - name: Adapt only time-scoped event data; freeze transparent rules baseline
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/derive_evidence.py \
+            --public reports/evidence_learning_lab_v13/raw-public \
+            --relations reports/evidence_learning_lab_v13/unverified_relations.tsv \
+            --baseline reports/evidence_learning_lab_v13/rule_baseline.json \
+            --receipt reports/evidence_learning_lab_v13/adapter_receipts.json \
+            2>&1 | tee reports/evidence_learning_lab_v13/adapter_run.log
+      - name: Run native G1 and G2 on exactly the same persisted data snapshots
+        run: |
+          set -euo pipefail
+          ./build-v13/moolbase_v13_event_reasoner \
+            reports/evidence_learning_lab_v13/unverified_relations.tsv \
+            /tmp/moolbase-v13-native-event-snapshots \
+            reports/evidence_learning_lab_v13/native_results.jsonl \
+            2>&1 | tee reports/evidence_learning_lab_v13/native_run.log
+      - name: Score AFTER inference using separately generated SQL intervention truth
+        run: |
+          set -euo pipefail
+          python3 research/evidence_learning_lab/v13/score_event_lab.py \
+            --native reports/evidence_learning_lab_v13/native_results.jsonl \
+            --baseline reports/evidence_learning_lab_v13/rule_baseline.json \
+            --oracle-dir reports/evidence_learning_lab_v13/controller-oracle \
+            --out reports/evidence_learning_lab_v13/scores.json \
+            2>&1 | tee reports/evidence_learning_lab_v13/scoring.log
+      - name: Seal every completed or failed stage
+        if: always()
+        run: |
+          mkdir -p reports/evidence_learning_lab_v13
+          (cd reports/evidence_learning_lab_v13 &&
+            find . -type f ! -name manifest.sha256 -print0 |
+            sort -z | xargs -0 -r sha256sum > manifest.sha256)
+      - name: Preserve SQL databases, event logs, separated oracle and native receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moolbase-v13-executed-sql-native-evidence-${{ github.sha }}
+          path: reports/evidence_learning_lab_v13/
+          retention-days: 90
+          if-no-files-found: warn
