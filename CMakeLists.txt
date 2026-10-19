@@ -37,6 +37,10 @@ if(NOT GRAPHENEDB_BUILD_FUZZERS)
 endif()
 
 if(GRAPHENEDB_BUILD_TESTS)
+  add_executable(moolbase_polymath_v9_native_opposition
+                 research/polymath_foundation/v9/gate2_native_opposition.cpp)
+  target_link_libraries(moolbase_polymath_v9_native_opposition PRIVATE graphenedb)
+
   add_executable(moolbase_polymath_v8_selector
                  research/polymath_foundation/v8/native_semantic_selector.cpp)
   target_link_libraries(moolbase_polymath_v8_selector PRIVATE graphenedb)
