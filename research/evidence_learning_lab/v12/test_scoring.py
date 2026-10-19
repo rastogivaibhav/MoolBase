@@ -70,6 +70,24 @@ class EvaluationTests(unittest.TestCase):
     def test_unmatched_temporal_snapshot_rejected(self):
         self.events[0]["native_graph_edges"]=999
         with self.assertRaises(ValueError):evaluate(self.events,self.truth)
+    def test_abstain_to_proposal_not_mislabeled_as_correction(self):
+        before=next(x for x in self.events if x["case_id"]=="incident-101"
+                    and x["stage"]=="T0" and x["arm"]=="G1")
+        before["has_proposed_answer"]=False
+        before["selected_hypothesis"]="none"
+        result=evaluate(self.events,self.truth)
+        self.assertEqual(result["native_ablation_arms"]["G1"]["new_proposals_after_evidence_n"],1)
+        self.assertEqual(result["native_ablation_arms"]["G1"]["corrected_wrong_prior_proposal_n"],0)
+        self.assertEqual(result["native_ablation_arms"]["G1"]["corrected_wrong_committed_conclusion_n"],0)
+
+    def test_wrong_speculative_proposal_correction_is_not_committed_learning(self):
+        before=next(x for x in self.events if x["case_id"]=="incident-101"
+                    and x["stage"]=="T0" and x["arm"]=="G1")
+        before["selected_hypothesis"]="H-B"
+        result=evaluate(self.events,self.truth)
+        self.assertEqual(result["native_ablation_arms"]["G1"]["corrected_wrong_prior_proposal_n"],1)
+        self.assertEqual(result["native_ablation_arms"]["G1"]["corrected_wrong_committed_conclusion_n"],0)
+
     def test_synthetic_matches_are_not_empirical_truth(self):
         r=evaluate(self.events,self.truth)
         self.assertEqual(r["independently_adjudicated_outcomes"],0)
