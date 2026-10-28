@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Generate ephemeral API key for smoke test
+        run: echo "GRAPHENEDB_API_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - name: Build and start MoolBase
         run: docker compose up -d --build
       - name: Wait for healthy engine
