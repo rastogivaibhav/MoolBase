@@ -5,15 +5,34 @@ This document prepares distribution; it does not assert that an image has been p
 ## Local Docker Desktop / Docker Engine
 
 ```bash
+cp .env.example .env
+# Edit .env: set GRAPHENEDB_API_KEY to a strong random value from openssl rand -hex 32
 docker compose build
 docker compose up -d
 docker compose ps
 docker compose logs -f moolbase
 ```
 
+On Windows PowerShell copy the file using `Copy-Item .env.example .env`. Create a strong key using `[Convert]::ToHexString([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))` and place it in `.env` as `GRAPHENEDB_API_KEY=...`. The local `.env` is ignored by Git. Do not share this key.
+
+**Security:** The native server explicitly refuses non-loopback binding without `GRAPHENEDB_API_KEY`. A pullable image without the key is expected to refuse to start rather than expose an unauthenticated API.
+
+To run the released image without Compose, first set `GRAPHENEDB_API_KEY` in your terminal, then:
+
+```bash
+docker run -d --name moolbase --platform linux/amd64 \
+  -e GRAPHENEDB_API_KEY \
+  -p 127.0.0.1:8080:8080 \
+  -v moolbase-data:/var/lib/graphenedb \
+  vaibhavrastogi90/moolbase:0.6.0-audit.3
+```
+
+This versioned tag is proposed and must be confirmed on Docker Hub before using it.
+
+
 The server listens on host loopback port 8080 by default (container port 8080). Storage is in the named Docker volume `moolbase-data`, mounted at `/var/lib/graphenedb`. The existing Dockerfile ships a native C++ executable, not an interactive browser frontend. Do not expose this evaluation server publicly without authentication, a TLS reverse proxy and resource controls. Verify API endpoints with the repo's actual server API documentation; do not assume an undocumented REST endpoint.
 
-To use a published image instead of a local build, set `MOOLBASE_IMAGE=docker.io/<publisher>/moolbase:<version>` and run `docker compose up -d --no-build`. Do not use an unqualified `latest` for scientific evaluations.
+To use a published image instead of a local build, set `MOOLBASE_IMAGE=docker.io/vaibhavrastogi90/moolbase:<version>` in `.env` and run `docker compose up -d --no-build`. Do not use an unqualified `latest` for scientific evaluations.
 
 ## Docker Hub
 
