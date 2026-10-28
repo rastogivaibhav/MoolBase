@@ -46,3 +46,33 @@ jobs:
           tags: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && format('docker.io/vaibhavrastogi90/moolbase:{0}', inputs.tag) || 'moolbase:ci' }}
           build-args: |
             SOURCE_COMMIT=${{ github.sha }}
+      - name: Verify anonymous Docker Hub download
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        env:
+          PUBLISHED_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$(mktemp -d)"
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+          docker pull "docker.io/vaibhavrastogi90/moolbase:$PUBLISHED_TAG"
+          docker image inspect "docker.io/vaibhavrastogi90/moolbase:$PUBLISHED_TAG" >/dev/null
+      - name: Verify downloaded image starts healthy
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        env:
+          PUBLISHED_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          key="$(openssl rand -hex 32)"
+          name="moolbase-published-smoke"
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run -d --name "$name" -e GRAPHENEDB_API_KEY="$key" \
+            "docker.io/vaibhavrastogi90/moolbase:$PUBLISHED_TAG"
+          for i in $(seq 1 36); do
+            health="$(docker inspect -f '{{.State.Health.Status}}' "$name")"
+            echo "Published image health: $health"
+            if [ "$health" = healthy ]; then exit 0; fi
+            if [ "$health" = unhealthy ]; then docker logs "$name"; exit 1; fi
+            sleep 5
+          done
+          docker logs "$name"
+          exit 1
