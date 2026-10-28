@@ -1,0 +1,10 @@
+{
+  "icon": "icon.svg",
+  "ui": {
+    "dashboard-tab": {
+      "title": "MoolBase",
+      "root": "/ui",
+      "src": "index.html"
+    }
+  }
+}
