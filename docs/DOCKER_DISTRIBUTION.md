@@ -22,7 +22,7 @@ The `docker-distribution.yml` workflow builds on pull requests and on master. Pu
 2. Run the **MoolBase container build and optional Docker Hub publish** workflow on the default branch, set `publish=true`, and specify a reviewed immutable version tag.
 3. Check the build result and verify the digest, architecture variants and application smoke test before advertising the published image.
 
-The current Dockerfile uses the Debian amd64 runtime dynamic-library paths. The publishing workflow requests both amd64 and arm64, but arm64 must be validated; until the Dockerfile is made architecture-neutral, prefer building amd64 only. Do not turn on publication of a multiarch tag until this is fixed.
+The current Dockerfile uses Debian amd64 runtime dynamic-library paths. The workflow therefore publishes **linux/amd64 only**. Before supporting ARM64, update the runtime dependency packaging and add architecture-specific build and runtime verification.
 
 ## Hugging Face Docker Space
 
