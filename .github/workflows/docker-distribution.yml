@@ -41,7 +41,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: linux/amd64
           push: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
           tags: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && format('docker.io/{0}/moolbase:{1}', secrets.DOCKERHUB_USERNAME, inputs.tag) || 'moolbase:ci' }}
           build-args: |
