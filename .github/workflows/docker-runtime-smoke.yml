@@ -1,0 +1,47 @@
+name: Docker runtime smoke
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - compose.yaml
+      - .github/workflows/docker-runtime-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start MoolBase
+        run: docker compose up -d --build
+      - name: Wait for healthy engine
+        run: |
+          set -eu
+          id="$(docker compose ps -q moolbase)"
+          test -n "$id"
+          for i in $(seq 1 36); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' "$id")"
+            echo "MoolBase health: $status"
+            if [ "$status" = healthy ]; then exit 0; fi
+            if [ "$status" = unhealthy ]; then exit 1; fi
+            sleep 5
+          done
+          exit 1
+      - name: Restart and verify health
+        run: |
+          docker compose restart moolbase
+          id="$(docker compose ps -q moolbase)"
+          for i in $(seq 1 36); do
+            status="$(docker inspect -f '{{.State.Health.Status}}' "$id")"
+            if [ "$status" = healthy ]; then exit 0; fi
+            if [ "$status" = unhealthy ]; then exit 1; fi
+            sleep 5
+          done
+          exit 1
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color moolbase
+      - name: Shutdown
+        if: always()
+        run: docker compose down
