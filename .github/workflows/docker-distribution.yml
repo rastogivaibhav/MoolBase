@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish to Docker Hub (requires repository secrets)'
+        description: 'Publish to Docker Hub vaibhavrastogi90/moolbase (requires repository secrets)'
         type: boolean
         default: false
       tag:
@@ -43,6 +43,6 @@ jobs:
           context: .
           platforms: linux/amd64
           push: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
-          tags: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && format('docker.io/{0}/moolbase:{1}', secrets.DOCKERHUB_USERNAME, inputs.tag) || 'moolbase:ci' }}
+          tags: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && format('docker.io/vaibhavrastogi90/moolbase:{0}', inputs.tag) || 'moolbase:ci' }}
           build-args: |
             SOURCE_COMMIT=${{ github.sha }}
