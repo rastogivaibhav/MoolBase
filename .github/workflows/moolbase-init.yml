@@ -1,0 +1,38 @@
+name: MoolBase first-run CLI
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - 'moolbase_installer/**'
+      - tests/test_moolbase_init.py
+      - docs/MOOLBASE_INIT.md
+      - .github/workflows/moolbase-init.yml
+  push:
+    branches: [master]
+    paths:
+      - pyproject.toml
+      - 'moolbase_installer/**'
+      - tests/test_moolbase_init.py
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test setup
+        run: python -m unittest discover -s tests -p test_moolbase_init.py -v
+      - name: Verify installable command
+        run: |
+          python -m pip install .
+          moolbase --help
+          moolbase init --dir "$RUNNER_TEMP/moolbase-install" --no-start
+          test -f "$RUNNER_TEMP/moolbase-install/.env"
+          test -f "$RUNNER_TEMP/moolbase-install/compose.yaml"
