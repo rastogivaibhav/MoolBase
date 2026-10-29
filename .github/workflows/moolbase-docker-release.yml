@@ -1,0 +1,76 @@
+name: Publish MoolBase audit.3 to Docker Hub
+on:
+  push:
+    branches:
+      - release/moolbase-docker-0.6.0-audit.3
+    paths:
+      - .github/workflows/moolbase-docker-release.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.repository == 'rastogivaibhav/MoolBase'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Guard against overwriting an existing image tag
+        run: |
+          set -euo pipefail
+          status="$(curl --retry 3 --silent --show-error -o /tmp/moolbase-tag.json -w '%{http_code}' \
+            'https://hub.docker.com/v2/repositories/vaibhavrastogi90/moolbase/tags/0.6.0-audit.3')"
+          if [ "$status" = 200 ]; then
+            echo "::error::Image tag already exists; immutable release must not overwrite it."
+            exit 1
+          fi
+          if [ "$status" != 404 ]; then
+            echo "::error::Unable to verify tag absence (HTTP $status); refusing to publish."
+            exit 1
+          fi
+      - name: Authenticate Docker Hub publisher
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and publish AMD64 native engine
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: docker.io/vaibhavrastogi90/moolbase:0.6.0-audit.3
+          build-args: |
+            SOURCE_COMMIT=${{ github.sha }}
+      - name: Verify unauthenticated pull from Docker Hub
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$(mktemp -d)"
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+          docker pull docker.io/vaibhavrastogi90/moolbase:0.6.0-audit.3
+          docker image inspect docker.io/vaibhavrastogi90/moolbase:0.6.0-audit.3 > /dev/null
+      - name: Verify pulled native engine starts healthy
+        run: |
+          set -euo pipefail
+          key="$(openssl rand -hex 32)"
+          name=moolbase-release-verification
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run -d --name "$name" --platform linux/amd64 \
+            -e GRAPHENEDB_API_KEY="$key" \
+            -v moolbase-release-evidence:/var/lib/graphenedb \
+            docker.io/vaibhavrastogi90/moolbase:0.6.0-audit.3
+          for attempt in $(seq 1 36); do
+            health="$(docker inspect -f '{{.State.Health.Status}}' "$name")"
+            if [ "$health" = healthy ]; then
+              echo "MoolBase published container is healthy."
+              exit 0
+            fi
+            if [ "$health" = unhealthy ]; then
+              docker logs "$name"
+              exit 1
+            fi
+            sleep 5
+          done
+          docker logs "$name"
+          exit 1
