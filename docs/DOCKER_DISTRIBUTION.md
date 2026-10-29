@@ -2,6 +2,10 @@
 
 This document prepares distribution; it does not assert that an image has been published or that the Docker Hub or Hugging Face applications are deployed.
 
+## One-command developer onboarding
+
+After installing the Python-based developer launcher (`python -m pip install .` from a checkout), run `moolbase init`. This generates a unique local API key, writes a private config at `~/.moolbase`, and starts the native Docker image. See [MOOLBASE_INIT.md](MOOLBASE_INIT.md) for pre-publication source-build fallback, Windows instructions, and key-handling details. The default Docker Hub image must actually be published before downloads can succeed.
+
 ## Local Docker Desktop / Docker Engine
 
 ```bash
