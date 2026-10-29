@@ -1,0 +1,21 @@
+name: moolbase
+services:
+  moolbase:
+    image: ${MOOLBASE_IMAGE:-moolbase:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      GRAPHENEDB_API_KEY: ${GRAPHENEDB_API_KEY:?Set a strong GRAPHENEDB_API_KEY in your environment or .env file}
+    ports:
+      - "127.0.0.1:${MOOLBASE_PORT:-8080}:8080"
+    volumes:
+      - moolbase-data:/var/lib/graphenedb
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+volumes:
+  moolbase-data:

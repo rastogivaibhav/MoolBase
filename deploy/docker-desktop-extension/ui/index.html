@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MoolBase</title><style>
+:root{font-family:system-ui,Segoe UI,sans-serif;color-scheme:dark;background:#0b1726;color:#f1f5f9}
+body{max-width:850px;margin:36px auto;padding:16px;line-height:1.6}
+h1{letter-spacing:-.04em;font-size:2.4rem}a{color:#81dfd1}
+article{border:1px solid #375065;border-radius:12px;padding:20px;margin:18px 0;background:#14283b}
+code,pre{font-family:Consolas,monospace;background:#071320;border-radius:6px;padding:4px 8px}
+pre{white-space:pre-wrap;padding:16px}small{color:#a7bdcf}
+</style></head><body>
+<header><h1>MoolBase</h1><p>Persistent evidence and inspectable reasoning for agents.</p><small>Docker Desktop quickstart — developer evaluation, not GA.</small></header>
+<article><h2>1. Start the native engine</h2>
+<p>Download the source, then run these commands in its root directory:</p>
+<pre>docker compose up -d --build
+docker compose ps
+docker compose logs moolbase</pre>
+<p>This extension is a documentation and discovery tab; it does not install, run or control the database automatically.</p></article>
+<article><h2>2. Verify the engine</h2>
+<p>The local server uses <code>127.0.0.1:8080</code> and persists evidence in the Docker volume <code>moolbase-data</code>. Verify the healthy status with <code>docker inspect</code> and exercise a documented API route before relying on results.</p></article>
+<article><h2>3. Explore the evidence</h2><p><a href="https://moolbase.rasvai.com/" target="_blank" rel="noopener noreferrer">Open Evidence Lab</a> · <a href="https://github.com/rastogivaibhav/MoolBase" target="_blank" rel="noopener noreferrer">Source and API documentation</a></p>
+<p>Scores represent policy strengths, not calibrated probabilities. The research interface and this extension are distinct from the local native server.</p></article></body></html>

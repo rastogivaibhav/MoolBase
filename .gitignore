@@ -40,3 +40,8 @@ tmp/
 # Local benchmark and soak output
 reports/container-soaks-resumable/
 reports/storage-reduction/
+
+# Local credentials
+.env
+.env.*
+!.env.example
