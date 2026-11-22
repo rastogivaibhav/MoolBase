@@ -18,6 +18,10 @@
     }
     const bool public_probe = path == "/v1/health" || path == "/v1/ready" || path == "/v1/version";
     const bool authorized = public_probe || authorized_request(header_text, api_key);
+    // Authenticated is stronger than authorized: an open server (no API key) authorizes everyone
+    // but authenticates nobody, so its callers can never assert Observed/Discovered origin.
+    const bool authenticated_caller = !api_key.empty() && !public_probe && authorized;
+    const TrustedAuthority* ingest_authority = authenticated_caller ? &server_authority : nullptr;
     const bool forwarded_https_ok = !require_forwarded_https || public_probe || lower_copy(header_value(header_text, "x-forwarded-proto")) == "https";
     const bool rate_allowed = public_probe || rate_limiter.allow(client_ip);
     const std::string idempotency_key = header_value(header_text, "idempotency-key");

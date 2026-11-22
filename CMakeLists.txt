@@ -83,6 +83,14 @@ if(GRAPHENEDB_BUILD_TESTS)
   add_test(NAME graphenedb_generic_reasoning_pipeline_tests
            COMMAND graphenedb_generic_reasoning_pipeline_tests)
 
+  add_executable(graphenedb_untrusted_observed_provenance_tests
+                 tests/test_untrusted_observed_provenance.cpp)
+  target_link_libraries(graphenedb_untrusted_observed_provenance_tests PRIVATE graphenedb)
+  add_test(NAME graphenedb_untrusted_observed_provenance_tests
+           COMMAND graphenedb_untrusted_observed_provenance_tests)
+  set_tests_properties(graphenedb_untrusted_observed_provenance_tests
+                       PROPERTIES LABELS "security;provenance;issue-135")
+
   add_executable(graphenedb_relation_direction_tests
                  tests/test_polymath_relation_direction.cpp)
   target_link_libraries(graphenedb_relation_direction_tests PRIVATE graphenedb)

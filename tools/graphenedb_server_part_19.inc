@@ -56,17 +56,19 @@
         ei.role = parse_role(role);
         ei.origin = parse_origin(origin);
         for (const char* k : {"source_id","span","observed_at","derived_from","promotion_status","evidence_ref","reinforcement_count","salience_boost"}) { std::string v = json_value(body, k); if (!v.empty()) ei.metadata[k] = v; }
+        ei.authority = ingest_authority;
         uint32_t eid = 0; st = db.put_edge(ei, &eid);
         if (!st) { code = http_status_for(st); out = "{\"error\":\"" + json_escape(st.message) + "\"}"; }
-        else { metrics.edge_inserts.fetch_add(1, std::memory_order_relaxed); code = 201; out = "{\"id\":" + std::to_string(eid) + "}"; }
+        else { metrics.edge_inserts.fetch_add(1, std::memory_order_relaxed); code = 201; out = "{\"id\":" + std::to_string(eid) + ",\"origin\":\"" + origin_name(db.get_edge(eid)->origin) + "\"}"; }
       } else if (method == "POST" && path == "/v1/edges/provenance") {
         EdgeInput ei; ei.from = json_u32(body, "from", UINT32_MAX); ei.to = json_u32(body, "to", UINT32_MAX); ei.confidence = json_double(body, "confidence", 0.9);
         ei.role = parse_role(json_value(body, "role"));
         ei.origin = parse_origin(json_value(body, "origin"));
         for (const char* k : {"source_id","span","observed_at","derived_from","promotion_status","evidence_ref","reinforcement_count","salience_boost"}) { std::string v = json_value(body, k); if (!v.empty()) ei.metadata[k] = v; }
+        ei.authority = ingest_authority;
         uint32_t eid = 0; st = db.put_edge(ei, &eid);
         if (!st) { code = http_status_for(st); out = "{\"error\":\"" + json_escape(st.message) + "\"}"; }
-        else { metrics.edge_inserts.fetch_add(1, std::memory_order_relaxed); code = 201; out = "{\"id\":" + std::to_string(eid) + ",\"origin\":\"" + origin_name(ei.origin) + "\",\"role\":\"" + role_name(ei.role) + "\"}"; }
+        else { metrics.edge_inserts.fetch_add(1, std::memory_order_relaxed); code = 201; const auto stored = db.get_edge(eid); const EdgeOrigin effective = stored ? stored->origin : ei.origin; out = "{\"id\":" + std::to_string(eid) + ",\"origin\":\"" + origin_name(effective) + "\",\"origin_requested\":\"" + origin_name(ei.origin) + "\",\"origin_demoted\":" + (effective != ei.origin ? "true" : "false") + ",\"role\":\"" + role_name(ei.role) + "\"}"; }
       } else if (method == "POST" && (path == "/v1/retrieve/bundle" || path == "/v1/retrieve/explain")) {
         uint32_t anchor = json_u32(body, "anchor", json_u32(body, "anchor_node_id", 0));
         uint32_t hops = std::clamp<uint32_t>(json_u32(body, "max_hops", json_u32(body, "hops", 3)), 1, kMaxBundleHops);

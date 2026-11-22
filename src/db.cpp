@@ -20,6 +20,7 @@
 #include <map>
 #include <mutex>
 #include <numeric>
+#include <random>
 #include <set>
 #include <sstream>
 #include <unordered_map>
@@ -286,6 +287,7 @@ struct GrapheneDB::Impl {
   std::string maintenance_warning;
   fs::path dir, wal_path, data_path, manifest_path, physical_lattice_path, physical_lattice_bin_path, nodeidx_path, lock_path;
   DBOptions opt;
+  uint64_t authority_nonce{0};
   platform::FileHandle wal_fd{platform::kInvalidFile};
   uint64_t version{1};
   uint64_t txid{1};
@@ -1403,6 +1405,12 @@ Status GrapheneDB::open(const fs::path& path, const DBOptions& options) {
   impl_->nodeidx_path = path / "graphene.nodeidx";
   impl_->lock_path = path / "LOCK";
   impl_->opt = options;
+  {
+    std::random_device entropy;
+    uint64_t nonce = 0;
+    while (nonce == 0) nonce = (static_cast<uint64_t>(entropy()) << 32) ^ entropy();
+    impl_->authority_nonce = nonce;
+  }
   auto vst = impl_->validate_vector_index_support();
   if (!vst) return vst;
   std::error_code ec;
@@ -1524,9 +1532,64 @@ Status GrapheneDB::put_node(const NodeInput& input, uint32_t* out_id) {
   return Status::ok();
 }
 
-Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
+namespace {
+
+bool constant_time_key_equal(const std::string& a, const std::string& b) {
+  unsigned char diff = static_cast<unsigned char>(a.size() != b.size());
+  const size_t n = std::max(a.size(), b.size());
+  for (size_t i = 0; i < n; ++i) {
+    const unsigned char x = i < a.size() ? static_cast<unsigned char>(a[i]) : 0;
+    const unsigned char y = i < b.size() ? static_cast<unsigned char>(b[i]) : 0;
+    diff |= static_cast<unsigned char>(x ^ y);
+  }
+  return diff == 0;
+}
+
+const char* origin_label(EdgeOrigin origin) {
+  switch (origin) {
+    case EdgeOrigin::Observed: return "observed";
+    case EdgeOrigin::Discovered: return "discovered";
+    case EdgeOrigin::Inferred: return "inferred";
+    case EdgeOrigin::Reinforced: return "reinforced";
+    case EdgeOrigin::Hypothetical: return "hypothetical";
+  }
+  return "unknown";
+}
+
+// Fail-closed provenance gate. Audit keys are reserved: callers cannot supply
+// them, so a stamp can only have been written by this function.
+void govern_untrusted_origin(EdgeOrigin& origin, std::map<std::string, std::string>& metadata) {
+  metadata.erase("origin_requested");
+  metadata.erase("origin_policy");
+  if (origin != EdgeOrigin::Observed && origin != EdgeOrigin::Discovered) return;
+  metadata["origin_requested"] = origin_label(origin);
+  metadata["origin_policy"] = "untrusted_demoted_v1";
+  origin = EdgeOrigin::Hypothetical;
+}
+
+}  // namespace
+
+TrustedAuthority GrapheneDB::issue_authority(const std::string& key) const {
+  std::shared_lock lock(impl_->mu);
+  if (!impl_->open) return {};
+  if (impl_->opt.observed_provenance != ObservedProvenancePolicy::RequireAuthority) return {};
+  if (impl_->opt.authority_key.empty()) return {};
+  if (!constant_time_key_equal(key, impl_->opt.authority_key)) return {};
+  return TrustedAuthority(impl_->authority_nonce);
+}
+
+Status GrapheneDB::put_edge(const EdgeInput& raw_input, uint32_t* out_id) {
   std::unique_lock lock(impl_->mu);
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
+  EdgeInput governed_edge;
+  const EdgeInput* input_ptr = &raw_input;
+  if (impl_->opt.observed_provenance == ObservedProvenancePolicy::RequireAuthority &&
+      !(raw_input.authority && raw_input.authority->matches(impl_->authority_nonce))) {
+    governed_edge = raw_input;
+    govern_untrusted_origin(governed_edge.origin, governed_edge.metadata);
+    input_ptr = &governed_edge;
+  }
+  const EdgeInput& input = *input_ptr;
   uint64_t snap = impl_->version - 1;
   if (input.from >= impl_->nodes.size() || input.to >= impl_->nodes.size() || !visible_node(impl_->nodes[input.from], snap) || !visible_node(impl_->nodes[input.to], snap)) {
     return Status::error(ErrorCode::EdgeInvalid, "edge endpoints must exist and be visible");
@@ -1556,9 +1619,23 @@ Status GrapheneDB::put_edge(const EdgeInput& input, uint32_t* out_id) {
   return Status::ok();
 }
 
-Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
+Status GrapheneDB::put_batch(const BatchInput& raw_input, BatchResult* out) {
   std::unique_lock lock(impl_->mu);
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
+  BatchInput governed_batch;
+  const BatchInput* batch_ptr = &raw_input;
+  if (impl_->opt.observed_provenance == ObservedProvenancePolicy::RequireAuthority) {
+    const bool batch_trusted =
+        raw_input.authority && raw_input.authority->matches(impl_->authority_nonce);
+    governed_batch = raw_input;
+    for (auto& edge : governed_batch.edges) {
+      const bool edge_trusted =
+          batch_trusted || (edge.authority && edge.authority->matches(impl_->authority_nonce));
+      if (!edge_trusted) govern_untrusted_origin(edge.origin, edge.metadata);
+    }
+    batch_ptr = &governed_batch;
+  }
+  const BatchInput& input = *batch_ptr;
   if (input.nodes.empty() && input.edges.empty() && input.delete_node_ids.empty()) {
     if (out) *out = {};
     return Status::ok();
@@ -1687,9 +1764,20 @@ Status GrapheneDB::put_batch(const BatchInput& input, BatchResult* out) {
   return Status::ok();
 }
 
-Status GrapheneDB::put_extraction(const ExtractionInput& input, ExtractionResult* out) {
+Status GrapheneDB::put_extraction(const ExtractionInput& raw_input, ExtractionResult* out) {
   std::unique_lock lock(impl_->mu);
   if (!impl_->open) return Status::error(ErrorCode::NotOpen, "database is not open");
+  ExtractionInput governed_extraction;
+  const ExtractionInput* extraction_ptr = &raw_input;
+  if (impl_->opt.observed_provenance == ObservedProvenancePolicy::RequireAuthority &&
+      !(raw_input.authority && raw_input.authority->matches(impl_->authority_nonce))) {
+    governed_extraction = raw_input;
+    for (auto& relation : governed_extraction.relations) {
+      govern_untrusted_origin(relation.origin, relation.metadata);
+    }
+    extraction_ptr = &governed_extraction;
+  }
+  const ExtractionInput& input = *extraction_ptr;
   if (input.schema_version != kExtractionSchemaVersion) return Status::error(ErrorCode::UnsupportedMode, "unsupported extraction schema version");
   if (input.source_id.empty()) return Status::error(ErrorCode::InvalidInput, "source_id is required");
   if (input.nodes.empty() && input.relations.empty()) {
