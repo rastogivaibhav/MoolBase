@@ -128,6 +128,38 @@ struct RetrievalTuning {
   double lattice_weight{0.25};
 };
 
+class GrapheneDB;
+
+// Opaque in-process capability that lets a caller assert empirical provenance
+// (Observed/Discovered) when ObservedProvenancePolicy::RequireAuthority is on.
+// It can only be obtained from GrapheneDB::issue_authority() with the
+// application-held DBOptions::authority_key, so it can never be conjured from
+// request fields, JSON, extraction output or plugin input.
+class TrustedAuthority {
+ public:
+  TrustedAuthority() = default;
+  bool valid() const { return token_ != 0; }
+  bool matches(uint64_t database_nonce) const {
+    return token_ != 0 && token_ == database_nonce;
+  }
+
+ private:
+  friend class GrapheneDB;
+  explicit TrustedAuthority(uint64_t token) : token_(token) {}
+  uint64_t token_{0};
+};
+
+enum class ObservedProvenancePolicy : uint8_t {
+  // Legacy behaviour: every in-process caller is trusted to choose any origin.
+  TrustedCallers = 0,
+  // Fail closed: Observed/Discovered edges from callers without a matching
+  // TrustedAuthority are stored as Hypothetical with an audit stamp
+  // (origin_requested / origin_policy). Authentication of a source is a
+  // separate decision from the truth of its claim; this gate only decides who
+  // may assert empirical authority.
+  RequireAuthority = 1
+};
+
 struct DBOptions {
   uint32_t dimension{0};
   bool create_if_missing{true};
@@ -157,6 +189,11 @@ struct DBOptions {
   // explicit opt-in backend when GrapheneDB is compiled with FAISS support.
   VectorIndexKind vector_index_kind{VectorIndexKind::Auto};
   RetrievalTuning tuning{};
+  // Appended last to keep aggregate initialisation source-compatible.
+  ObservedProvenancePolicy observed_provenance{ObservedProvenancePolicy::TrustedCallers};
+  // Application-held secret needed by GrapheneDB::issue_authority(). Never
+  // accept this value from a network request. Empty means no authority can be issued.
+  std::string authority_key;
 };
 
 struct NodeInput {
@@ -199,6 +236,8 @@ struct EdgeInput {
   DefectType defect_type{DefectType::None};
   LayerCoupling layer_coupling{LayerCoupling::None};
   double bond_strength{1.0};
+  // Used only under RequireAuthority; null means an untrusted caller.
+  const TrustedAuthority* authority{nullptr};
 };
 
 struct Edge {
@@ -252,6 +291,8 @@ struct BatchInput {
   std::vector<EdgeInput> edges;
   // Existing nodes retired in the same WAL transaction as inserted records.
   std::vector<uint32_t> delete_node_ids;
+  // Applies to every edge in the batch (an edge's own authority also counts).
+  const TrustedAuthority* authority{nullptr};
 };
 
 struct BatchResult {
@@ -308,6 +349,8 @@ struct ExtractionInput {
   bool idempotent{true};
   std::vector<ExtractionNode> nodes;
   std::vector<ExtractionRelation> relations;
+  // Applies to every relation; null means untrusted extraction output.
+  const TrustedAuthority* authority{nullptr};
 };
 
 struct ExtractionResult {

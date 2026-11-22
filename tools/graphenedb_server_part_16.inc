@@ -67,9 +67,21 @@
       return 2;
     }
   }
+  // #135: network input never gets empirical (Observed/Discovered) authority by
+  // default. The key below exists only in this process; no request field can
+  // supply it. Only API-key-authenticated callers receive the resulting
+  // capability (see ingest_authority in the request handler).
+  opt.observed_provenance = ObservedProvenancePolicy::RequireAuthority;
+  {
+    std::random_device entropy;
+    std::ostringstream key_stream;
+    for (int i = 0; i < 4; ++i) key_stream << std::hex << std::setw(8) << std::setfill('0') << entropy();
+    opt.authority_key = key_stream.str();
+  }
   GrapheneDB db;
   auto st = db.open(dir, opt);
   if (!st) { std::cerr << st.message << "\n"; return 1; }
+  const TrustedAuthority server_authority = db.issue_authority(opt.authority_key);
 
   int server_fd = ::socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) { perror("socket"); return 1; }

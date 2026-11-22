@@ -85,6 +85,7 @@
           }
           ExtractionResult result;
           const auto started = std::chrono::steady_clock::now();
+          extraction.authority = ingest_authority;
           st = db.put_extraction(extraction, &result);
           if (!st) {
             if (st.message.find("capacity") != std::string::npos ||

@@ -17,6 +17,10 @@ public:
   Status close();
   bool is_open() const;
 
+  // Returns a valid capability only when observed_provenance is RequireAuthority
+  // and key equals DBOptions::authority_key (constant-time comparison).
+  TrustedAuthority issue_authority(const std::string& key) const;
+
   Status put_node(const NodeInput& input, uint32_t* out_id = nullptr);
   Status put_edge(const EdgeInput& input, uint32_t* out_id = nullptr);
   Status put_batch(const BatchInput& input, BatchResult* out = nullptr);
