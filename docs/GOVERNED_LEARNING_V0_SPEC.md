@@ -200,6 +200,6 @@ This implementation is accepted only when:
 
 Passing `GDB-GL-0` demonstrates a governed learning mechanism. It does not pass
 the longitudinal `G8` or data-efficiency `G9` research gates in
-`deepmindtest.md`; those still require the preregistered blinded datasets,
+`docs/GOVERNED_LEARNING_V0_SPEC.md`; those still require the preregistered blinded datasets,
 1,000 verified training episodes, 300 held-out episodes, confidence intervals,
 and external reproduction.

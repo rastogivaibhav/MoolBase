@@ -4,7 +4,7 @@ import argparse,json,subprocess,tempfile
 from pathlib import Path
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--binary',type=Path,default=Path('build-showcase/moolbase_customer_showcase'));p.add_argument('--output',type=Path,default=Path('reports/customer-showcase/python-memory.json'));a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--binary',type=Path,default=Path('build/moolbase_customer_showcase'));p.add_argument('--output',type=Path,default=Path('reports/customer-showcase/python-memory.json'));a=p.parse_args()
  s=next(s for s in json.loads(Path(__file__).with_name('scenarios.json').read_text()) if s['id']=='memory')
  with tempfile.TemporaryDirectory(prefix='moolbase-memory-') as temp:
   tsv=Path(temp)/'events.tsv';tsv.write_text('\n'.join('\t'.join([e['id'],e['content'],e['family'],str(e['target']),e['kind'],str(int(e['verified'])),e['retire']]) for e in s['events'])+'\n')
