@@ -8,7 +8,7 @@ Date: 2026-07-24
 This result demonstrates governed retrieval-policy learning. It does not
 demonstrate autonomous LLM-weight training, longitudinal improvement, PayPal
 scale, cryptographic tenant isolation, or the preregistered `G8`/`G9`
-research claims in `deepmindtest.md`.
+research claims in `docs/DEEPMIND_BENCHMARK_DESIGN.md`.
 
 ## Evidence
 

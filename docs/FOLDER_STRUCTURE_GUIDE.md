@@ -329,7 +329,7 @@ fuzz/crash*/        # Fuzzing crash artifacts
 - ✅ `PHASE_1_TEAM_HANDOFF.md`
 - ✅ `PHASE_1_INTERNAL_TEAMS_INVITATION.md`
 - ✅ `HANDOFF_STATUS_SUMMARY.md`
-- ✅ `DATABASE_HANDS_ON_EXPERIENCE.md`
+- ✅ `docs/DATABASE_HANDS_ON_EXPERIENCE.md`
 - ✅ `WIDER_SHARING_READINESS.md` (created earlier)
 - ✅ `docs/QUICK_START_GUIDE.md` (created earlier)
 - ✅ CLI error handling fix (committed to master)
