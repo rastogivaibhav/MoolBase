@@ -1,14 +1,14 @@
-# EGPM gate ledger — iteration 06 (before new inference results)
+# EGPM gate ledger — iteration 07
 
-Scope: original MeMo MuSiQue selection; research branch only. Current development run [45905423044](https://github.com/rastogivaibhav/MoolBase/actions/runs/45905423044), code a49e7a1. At inspection one job model conversion running, seven queued. No duplicate run submitted.
+Current branch work follows [EGPM06](https://github.com/rastogivaibhav/MoolBase/actions/runs/45905423044), a49e7a1. Preregistration b937c0d unchanged. [EGPM03 full retrieval](https://github.com/rastogivaibhav/MoolBase/actions/runs/45883634716): 1000 QA selection, 5296 docs, native semantic recall@20 65.25%, BM25 62.30%, hybrid 68.23%; parity 99.75%.
 
-| Gate | Status | Evidence / unresolved condition |
+| Gate | Status | Evidence |
 |---|---|---|
-| G1 | PENDING | EGPM05 8/8 CI and eight fixture checks passed; new staged regression not yet verified. |
-| G2 | PENDING | EGPM05 all 126 proposed triples rejected before verification. 86 valid bracketed IDs, 40 other invalid IDs, zero admitted edges across 16 graph arms. New provenance auditor unit fixtures passed locally; need authoritative corpus audit of real outputs and adversarial acceptance tests. |
-| G3 | FAIL (EGPM05) | 0 independently verified proposals out of 126. EGPM06 staged extraction and oracle diagnostics running. |
-| G4 | FAIL (EGPM05) | 0 complete paths in real QA, despite native/Python fixture parity. Need real native complete paths and durable provenance/receipts. |
-| G5 | FAIL (development) | EGPM05 MeMo 2/8 EM, D text 1/8, D graph 0/8; no superiority. No statistical inference from tuned sample. |
-| G6 | PENDING | Preregistered two disjoint 100-question QA splits and fixed statistical comparison before running QA. No unseen QA experiment yet. |
+| G1 | PASS for EGPM06, PENDING for EGPM07 | 8/8 staged jobs and native regression tests passed; new tests submitted. |
+| G2 | PENDING | EGPM07 source audit on actual corpus and negative fixture cases; external validation of accepted answers pending. |
+| G3 | FAIL (development) | EGPM06 21 admitted edges, eight distinct claim/source/verdict combinations; 11 clearly supported, three ambiguous, seven unsupported as labelled in manual review. See EGPM07.md. Independent blinded precision evaluation pending. |
+| G4 | FAIL (development) | 0 complete native paths on 8 questions, including oracle; candidate-directed proof pipeline implemented. |
+| G5 | FAIL (development) | MeMo 2/8 EM, graph 0/8, oracle text 4/8. No superiority. |
+| G6 | PENDING | Two disjoint 100-question split definitions frozen; no held-out QA run. |
 
-Prior full retrieval: BM25 recall@20 62.30%, native MiniLM 65.25%, hybrid 68.23%; native cosine parity 99.75%; retrieval only. [Full benchmark](https://github.com/rastogivaibhav/MoolBase/actions/runs/45883634716). EGPM05 [run](https://github.com/rastogivaibhav/MoolBase/actions/runs/45900548360), audited all 8 artifact IDs 15156207012, 15155284632, 15156621099, 15155218115, 15156281599, 15156256697, 15156037809, 15155467939. Offline split reproducibility, invalid population, missing results rejection, synthetic positive and null paired controls passed on actual 1000-ID retrieval artifact. Eight provenance-audit fixture cases passed locally: complete path, unknown source, altered text, offset tamper, missing edge audit, reversed path, weak entailment, accepted answer without path. No model evaluations in this iteration. No claim of native execution for the local tests. Commit uses skip-ci to avoid triggering duplicate ongoing matrix jobs. Next: inspect EGPM06 completed artifacts, debug any failures, audit against full corpus, implement independent relationship precision evaluation and freeze full inference configuration before heldout. No paid resources or production changes.
+Next: inspect EGPM07 CI and per-question artifacts, check actual candidate paths, wrong-answer rate, source provenance and verifier disagreements. Do not launch held-out until development implementation and all prerequisite gates are satisfied. No production changes or paid resources.
