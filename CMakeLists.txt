@@ -215,3 +215,8 @@ if(GRAPHENEDB_BUILD_EGPM)
   add_executable(egpm_dense_native benchmarks/egpm01/dense_native.cpp)
   target_link_libraries(egpm_dense_native PRIVATE graphenedb)
 endif()
+
+if(GRAPHENEDB_BUILD_EGPM)
+  add_executable(egpm_graph_native benchmarks/egpm01/graph_native.cpp)
+  target_link_libraries(egpm_graph_native PRIVATE graphenedb)
+endif()
