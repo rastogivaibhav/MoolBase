@@ -10,7 +10,7 @@ permissions:
 jobs:
   native-retrieval:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Build actual MoolBase
@@ -19,8 +19,12 @@ jobs:
           cmake --build build-egpm --target graphenedb_server moolbase_customer_showcase -j2
       - name: Native lifecycle smoke
         run: python3 examples/customer_showcase/python_memory.py --binary build-egpm/moolbase_customer_showcase
-      - name: Real MuSiQue retrieval diagnostic
+      - name: Native evidence gate smoke
+        run: python3 benchmarks/egpm01/verify_native_gate.py build-egpm/moolbase_customer_showcase
+      - name: Matched pilot
         run: python3 benchmarks/egpm01/native_retrieval.py --server build-egpm/graphenedb_server --rows 40 --out egpm-results/native.json
+      - name: Full original MuSiQue selection (retrieval only)
+        run: python3 benchmarks/egpm01/native_retrieval.py --server build-egpm/graphenedb_server --rows 2417 --require-full --out egpm-results/native-full.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

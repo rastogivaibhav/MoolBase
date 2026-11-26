@@ -5,7 +5,7 @@ from collections import Counter
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/"clients/python"))
 from graphenedb_client import GrapheneDBClient, GrapheneDBError
-MANIFEST="https://raw.githubusercontent.com/arunv3rma/MeMo/main/data_synthesis_pipeline/data_subsets/musique_negative_N_doc_ids_per_query.json"
+MANIFEST="https://raw.githubusercontent.com/arunv3rma/MeMo/a679d322cf7723185f14603a67595bf0bdf98c69/data_synthesis_pipeline/data_subsets/musique_negative_N_doc_ids_per_query.json"
 DATASET="awinml/musique"
 ROWS="https://datasets-server.huggingface.co/rows?"
 STOP=set("a an the of in on to is was were are and or for by with from what which who whose where when how did does do has have had that this".split())
@@ -22,7 +22,7 @@ def prepare(n):
     manifest,mhash=load(MANIFEST)
     rows=[]; hashes={}; offset=0
     while offset<n:
-        url=ROWS+urllib.parse.urlencode(dict(dataset=DATASET,config="default",split="validation",offset=offset,length=min(20,n-offset)))
+        url=ROWS+urllib.parse.urlencode(dict(dataset=DATASET,config="default",split="validation",offset=offset,length=min(100 if n>40 else 20,n-offset)))
         page,sha=load(url); hashes[str(offset)]=sha
         batch=[r["row"] for r in page["rows"]]
         if not batch: break
@@ -51,8 +51,9 @@ def bm25(corpus):
 def metrics(records):
     return {arm:{str(k):{"macro_recall":sum(len(set(r[arm][:k])&set(r["gold"]))/len(r["gold"]) for r in records)/len(records),"all_evidence_count":sum(set(r["gold"]).issubset(r[arm][:k]) for r in records)} for k in (5,10,20)} for arm in ("bm25","moolbase_vector")}
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--server",required=True);p.add_argument("--rows",type=int,default=40);p.add_argument("--out",required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument("--server",required=True);p.add_argument("--rows",type=int,default=40);p.add_argument("--out",required=True);p.add_argument("--require-full",action="store_true");a=p.parse_args()
     selected,corpus,gold,manifest=prepare(a.rows)
+    if a.require_full and (len(selected)!=1000 or manifest['manifest_size']!=1000 or len({r['id'] for r in selected})!=1000): raise ValueError('full original manifest not covered')
     print(f"Matched {len(selected)} questions, {len(corpus)} documents",flush=True)
     with tempfile.TemporaryDirectory() as td:
         db=Path(td)/"db";db.mkdir()
