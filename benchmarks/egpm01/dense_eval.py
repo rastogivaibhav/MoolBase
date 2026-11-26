@@ -17,10 +17,12 @@ def embed(texts,model,tok):
             chunks.append(torch.nn.functional.normalize(v,p=2,dim=1).numpy())
     return np.concatenate(chunks)
 def main():
-    p=argparse.ArgumentParser();p.add_argument("--binary",required=True);p.add_argument("--rows",type=int,default=120);p.add_argument("--out",required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument("--binary",required=True);p.add_argument("--rows",type=int,default=120);p.add_argument("--out",required=True);p.add_argument("--require-full",action="store_true");a=p.parse_args()
     torch.set_num_threads(4);torch.manual_seed(0)
-    selected,corpus,gold,manifest=prepare(a.rows);docids=sorted(corpus);questions=[r["question"] for r in selected];k=min(20,len(docids))
-    revision=model_info(MODEL).sha;tok=AutoTokenizer.from_pretrained(MODEL,revision=revision);model=AutoModel.from_pretrained(MODEL,revision=revision).eval()
+    selected,corpus,gold,manifest=prepare(a.rows)
+    if a.require_full and (len(selected)!=1000 or len({r["id"] for r in selected})!=1000 or manifest["manifest_size"]!=1000): raise ValueError("incomplete author selection")
+    docids=sorted(corpus);questions=[r["question"] for r in selected];k=min(20,len(docids))
+    revision="1110a243fdf4706b3f48f1d95db1a4f5529b4d41";tok=AutoTokenizer.from_pretrained(MODEL,revision=revision);model=AutoModel.from_pretrained(MODEL,revision=revision).eval()
     D=embed([corpus[d] for d in docids],model,tok);Q=embed(questions,model,tok)
     with tempfile.TemporaryDirectory() as tmp:
         f=Path(tmp)/"vectors.txt"
