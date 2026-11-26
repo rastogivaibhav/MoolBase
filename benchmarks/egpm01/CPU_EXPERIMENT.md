@@ -1,0 +1,5 @@
+# EGPM-02 fair retrieval / CPU milestone
+
+EGPM-01 HTTP hash-vector scores are a negative control, not a verdict on MoolBase. Compare BM25 against exact MiniLM cosine, MoolBase Flat with identical normalised vectors, and reciprocal-rank fusion. The native adapter uses the real embedded GrapheneDB API, not server-side hashing. It stores opaque document IDs, with original text held in the benchmark corpus. Compare top-k parity to isolate index correctness. This does not yet measure graph reasoning. The 120-row pilot selection is not the full benchmark. Record the model revision, dataset hashes and per-question rankings.
+
+CPU smoke uses the authors' released Qwen2.5 1.5B MuSiQue checkpoint and a common Qwen2.5 0.5B executive. Its simplified protocol and exact match are deliberately distinct from the original MeMo evaluation; it includes a retrieval-augmented memory ablation without MoolBase. Four cases are a resource and compatibility smoke, not a scientific result. Next: original structured protocol on CPU, externally verified evidence graph, graph and lifecycle controls, full dataset and blinded scoring. No paid GPU, no Render service changes.

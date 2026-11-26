@@ -1,0 +1,53 @@
+name: EGPM-02 CPU fair retrieval and small MeMo
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/dense_*'
+      - 'benchmarks/egpm01/cpu_memo.py'
+      - '.github/workflows/egpm02-cpu.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fair-retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU models
+        run: |
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.51.3 numpy==2.2.6
+      - name: Build native adapter
+        run: |
+          cmake -S . -B build-fair -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EGPM=ON
+          cmake --build build-fair --target egpm_dense_native -j2
+      - name: Compare same MiniLM vectors
+        run: python benchmarks/egpm01/dense_eval.py --binary build-fair/egpm_dense_native --rows 120 --out egpm-results/dense.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm02-fair-retrieval
+          path: egpm-results/
+  small-memo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU models
+        run: |
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.51.3 numpy==2.2.6
+      - name: Genuine small checkpoint smoke
+        run: python benchmarks/egpm01/cpu_memo.py --questions 4 --out egpm-results/cpu.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm02-small-memo
+          path: egpm-results/
