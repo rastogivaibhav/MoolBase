@@ -17,12 +17,8 @@ SCHEMA = obj({'answer': {'type':'string','enum':['yes','no']},
 # These are not blind independent labels and never enter the inference prompt.
 SENTINELS = {
     'Kevin Smith founded SModcast Pictures.': 'support',
-    'Mike Medavoy co-founded Orion Pictures Orion Pictures.': 'unresolved', # malformed claim
-    'Orion Pictures supported UHF (film).': 'support',
     'North Carolina State University football team plays in Carter-Finley Stadium.': 'support',
     'West Ham United plays for Chelsea.': 'unresolved',
-    'Time Warner Cable acquired by Windjammer Cable.': 'unresolved',
-    'Benevento plays for Lega Pro Prima Divisione.': 'support',
 }
 # Sentinel ambiguity is intentional: unsupported is not automatically contradicted.
 # Their labels are advisory review targets; no automated gate is based on them.
