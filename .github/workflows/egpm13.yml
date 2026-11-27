@@ -1,0 +1,70 @@
+name: EGPM-13 frozen proposal verifier replay
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/verifier_replay13.py'
+      - '.github/workflows/egpm13.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: egpm13-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verifier-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        offset: [0,1,2,3,4,5,6,7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: egpm12-qa-${{ matrix.offset }}
+          run-id: '46008459005'
+          github-token: ${{ github.token }}
+          path: previous
+      - name: Install CPU inference dependencies
+        run: |
+          curl -fL --retry 3 https://github.com/ggml-org/llama.cpp/releases/download/b6500/llama-b6500-bin-ubuntu-x64.zip -o /tmp/llama.zip
+          unzip -q /tmp/llama.zip -d /tmp/llama-bin
+          SERVER=$(find /tmp/llama-bin -type f -name llama-server | head -1)
+          test -n "$SERVER"
+          chmod +x "$SERVER"
+          echo "LLAMA_SERVER=$SERVER" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$SERVER")" >> "$GITHUB_ENV"
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.56.2 numpy==1.26.4 sentencepiece protobuf
+      - name: Download pinned executive only (no MeMo in G3 diagnostic)
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from huggingface_hub import hf_hub_download,list_repo_files
+          repo='Qwen/Qwen2.5-3B-Instruct-GGUF'
+          rev='7dabda4d13d513e3e842b20f0d435c732f172cbe'
+          names=[x for x in list_repo_files(repo,revision=rev) if x.lower().endswith('q4_k_m.gguf')]
+          assert len(names)==1
+          path=Path(hf_hub_download(repo,names[0],revision=rev)).resolve()
+          with path.open('rb') as f: digest=hashlib.file_digest(f,'sha256').hexdigest()
+          assert digest=='626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d'
+          root=Path('egpm-models');root.mkdir(exist_ok=True)
+          (root/'manifest.json').write_text(json.dumps(dict(executive=repo,executive_revision=rev,executive_sha256=digest,executive_path=str(path),llama_cpp='b6500',quantization='Q4_K_M'),indent=2))
+          PY
+      - name: Replay real-document relationships
+        run: python benchmarks/egpm01/verifier_replay13.py --old previous/egpm-results/qa-${{ matrix.offset }}.json --offset ${{ matrix.offset }} --out egpm-results/qa-${{ matrix.offset }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm13-qa-${{ matrix.offset }}
+          path: |
+            egpm-results/
+            egpm-models/manifest.json
+            egpm-models/executive.log
+          if-no-files-found: warn
