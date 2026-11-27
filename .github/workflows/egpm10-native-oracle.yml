@@ -1,0 +1,138 @@
+name: EGPM-10 annotated real-document native diagnostic
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/egpm10-native-oracle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: egpm10-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  annotation-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native server
+        run: |
+          cmake -S . -B build-oracle -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+          cmake --build build-oracle --target graphenedb_server -j2
+      - name: Execute annotation-conditioned diagnostic and missing-hop control
+        run: |
+          mkdir -p egpm10-results
+          git rev-parse HEAD > egpm10-results/commit.txt
+          PYTHONPATH=benchmarks/egpm01 python3 - <<'PY'
+          import hashlib,json,os,secrets,socket,subprocess,time,urllib.request
+          from pathlib import Path
+          from native_retrieval import prepare,GrapheneDBClient,GrapheneDBError
+          out=Path('egpm10-results')
+          rows,corpus,gold,manifest=prepare(120)
+          assert len(rows)>=8
+          assert manifest['manifest_sha256']=='0508c3dac842757eb7cd3249b3c1e64b214f6f6a93441945dc4c9e95037c9dfa'
+          scope='Gold annotation-conditioned dependency projection, NOT independent semantic verification, extraction precision, QA accuracy, or a causal claim.'
+          def write(path,value):
+              path.write_text(json.dumps(value,indent=2,ensure_ascii=False)+'\n')
+          def sha(text):
+              return hashlib.sha256(text.encode()).hexdigest()
+          def run_case(index,question,steps,missing):
+              label=f'{index}-'+('missing' if missing else 'full')
+              folder=out/label
+              folder.mkdir()
+              db=folder/'db'
+              db.mkdir()
+              with socket.socket() as s:
+                  s.bind(('127.0.0.1',0));port=s.getsockname()[1]
+              key=secrets.token_urlsafe(24)
+              url=f'http://127.0.0.1:{port}'
+              client=GrapheneDBClient(url,api_key=key)
+              def post(endpoint,data):
+                  request=urllib.request.Request(url+endpoint,data=json.dumps(data).encode(),headers={'X-API-Key':key,'Content-Type':'application/json'},method='POST')
+                  with urllib.request.urlopen(request,timeout=30) as response:
+                      return json.load(response)
+              # Root-to-symptom orientation is an annotation dependency projection,
+              # not a real-world causal relationship or inferred answer.
+              nodes=[dict(external_id='answer',content=steps[1]['answer'],role='root'),
+                     dict(external_id='bridge',content=steps[0]['answer'],role='node'),
+                     dict(external_id='question',content=question,role='symptom')]
+              relations=[]
+              for j,(a,b,step) in enumerate([('answer','bridge',steps[1]),('bridge','question',steps[0])]):
+                  if missing and j==0:continue
+                  src=step['source']
+                  relations.append(dict(from_external_id=a,to_external_id=b,origin='discovered',role='supports',
+                    confidence=.9,evidence_id=src['doc'],evidence_text=src['text'],
+                    metadata={'evidence_family_id':src['doc'],'source_id':src['doc'],'source_sha256':src['sha256'],
+                      'source_start':'0','source_end':str(src['end']),'annotation_question':step['question'],
+                      'annotation_answer':step['answer'],'verification_scope':'benchmark_annotation_only'}))
+              payload=dict(schema_version=1,source_id=f'egpm10-{index}',signature=33,nodes=nodes,relations=relations)
+              write(folder/'input.json',payload)
+              query=dict(query=question,signature=33,mode='empirical',minimum_confidence=.3,max_hops=5,max_paths=32)
+              with open(folder/'server.log','w') as log:
+                  def start():
+                      process=subprocess.Popen([str(Path('build-oracle/graphenedb_server').resolve()),str(db.resolve()),'16',str(port),'--bind-address','127.0.0.1'],env={**os.environ,'GRAPHENEDB_API_KEY':key},stdout=log,stderr=log)
+                      for _ in range(200):
+                          if process.poll() is not None:raise RuntimeError('server exited')
+                          try:
+                              if client.ready().status==200:return process
+                          except GrapheneDBError:pass
+                          time.sleep(.05)
+                      process.kill();process.wait();raise RuntimeError('readiness timeout')
+                  def stop(process):
+                      process.terminate()
+                      try:process.wait(timeout=15)
+                      except subprocess.TimeoutExpired:process.kill();process.wait();raise
+                      assert process.returncode==0
+                  process=start()
+                  try:
+                      first=client.put_extraction(payload)
+                      replay=client.put_extraction(payload)
+                      assert first.status==201 and replay.status==200
+                      assert len(first.data['inserted_edge_ids'])==len(relations)
+                      write(folder/'ingest.json',first.data)
+                      receipt=post('/v1/reason/runtime',query)
+                      dialectic=post('/v1/reason/dialectic',query)
+                      write(folder/'runtime.json',receipt);write(folder/'dialectic.json',dialectic)
+                      assert receipt['receipt']['graphene_executed']
+                  finally:stop(process)
+                  process=start()
+                  try:
+                      again=post('/v1/reason/runtime',query)
+                      write(folder/'after-restart.json',again)
+                      assert receipt['receipt']['final_bundle_hash']==again['receipt']['final_bundle_hash']
+                  finally:stop(process)
+              return dict(status=receipt['status'],inserted_edges=len(relations),bundle_hash=receipt['receipt']['final_bundle_hash'],restart_parity=True)
+          results=[]
+          for i,row in enumerate(rows[:8]):
+              qid=row['id'];record={'id':qid,'question':row['question'],'scope':scope}
+              try:
+                  assert qid.startswith('2hop__')
+                  decomposition=row['question_decomposition']
+                  assert isinstance(decomposition,list) and len(decomposition)==2
+                  steps=[]
+                  for step in decomposition:
+                      doc=f"{qid}_para{step['paragraph_support_idx']}_chunk0"
+                      assert doc in gold[qid] and doc in corpus
+                      source=corpus[doc]
+                      assert isinstance(step['answer'],str) and step['answer'].strip()
+                      assert isinstance(step['question'],str) and step['question'].strip()
+                      steps.append(dict(question=step['question'],answer=step['answer'],
+                          source=dict(doc=doc,text=source,start=0,end=len(source),sha256=sha(source))))
+                  record['steps']=steps
+                  # Preserve actual annotated documents and their offsets for blind review.
+                  write(out/f'{i}-review.json',record)
+                  record['full']=run_case(i,row['question'],steps,False)
+                  record['missing']=run_case(i,row['question'],steps,True)
+              except Exception as e:
+                  record['error']=repr(e)
+              results.append(record)
+              write(out/'summary.json',dict(scope=scope,manifest=manifest,records=results))
+              print(json.dumps({k:v for k,v in record.items() if k!='steps'}),flush=True)
+          assert len(results)==8 and all('full' in r and 'missing' in r for r in results), 'one or more real-document diagnostic cases failed; inspect artifacts'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm10-native-oracle
+          path: egpm10-results/
+          if-no-files-found: warn
