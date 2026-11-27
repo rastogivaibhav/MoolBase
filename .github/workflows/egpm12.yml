@@ -1,0 +1,50 @@
+name: EGPM-12 atomic real-document extraction
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/atomic_eval12.py'
+      - '.github/workflows/egpm12.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        offset: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned llama.cpp and converter
+        run: |
+          git clone --depth 1 --branch b6500 https://github.com/ggml-org/llama.cpp.git /tmp/llama.cpp
+          curl -fL --retry 3 https://github.com/ggml-org/llama.cpp/releases/download/b6500/llama-b6500-bin-ubuntu-x64.zip -o /tmp/llama.zip
+          unzip -q /tmp/llama.zip -d /tmp/llama-bin
+          SERVER=$(find /tmp/llama-bin -type f -name llama-server | head -1)
+          QUANT=$(find /tmp/llama-bin -type f -name llama-quantize | head -1)
+          test -n "$SERVER" && test -n "$QUANT"
+          chmod +x "$SERVER" "$QUANT"
+          echo "LLAMA_SERVER=$SERVER" >> "$GITHUB_ENV"
+          echo "LLAMA_QUANTIZE=$QUANT" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$SERVER")" >> "$GITHUB_ENV"
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.56.2 numpy==1.26.4 sentencepiece protobuf mistral-common==1.8.5
+          pip install --no-cache-dir /tmp/llama.cpp/gguf-py
+      - name: Convert actual released MeMo and download executive GGUF
+        run: python benchmarks/egpm01/quant_backend.py
+      - name: Run atomic extraction on real documents
+        run: python benchmarks/egpm01/atomic_eval12.py --offset ${{ matrix.offset }} --out egpm-results/qa-${{ matrix.offset }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm12-qa-${{ matrix.offset }}
+          path: |
+            egpm-results/
+            egpm-models/manifest.json
+            egpm-models/*.log
+          if-no-files-found: warn
