@@ -1,0 +1,32 @@
+name: Independent transfer acceptance
+on:
+  pull_request:
+    paths:
+      - 'evaluation/transfer/**'
+      - '.github/workflows/transfer-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: transfer-acceptance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  independent-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Run external evaluator entry point
+        run: python3 evaluation/transfer/acceptance.py --out "$RUNNER_TEMP/moolbase-transfer-evidence" --jobs 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-acceptance
+          path: |
+            ${{ runner.temp }}/moolbase-transfer-evidence/*.json
+            ${{ runner.temp }}/moolbase-transfer-evidence/*.log
+            ${{ runner.temp }}/moolbase-transfer-evidence/SHA256SUMS
+          if-no-files-found: warn
