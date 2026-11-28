@@ -1,0 +1,58 @@
+name: EGPM-05 independent evidence graph
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/graph_*.py'
+      - 'benchmarks/egpm01/graph_native.cpp'
+      - 'benchmarks/egpm01/independent_nli.py'
+      - '.github/workflows/egpm05.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  graph-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        offset: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned llama.cpp and converter
+        run: |
+          git clone --depth 1 --branch b6500 https://github.com/ggml-org/llama.cpp.git /tmp/llama.cpp
+          curl -fL --retry 3 https://github.com/ggml-org/llama.cpp/releases/download/b6500/llama-b6500-bin-ubuntu-x64.zip -o /tmp/llama.zip
+          unzip -q /tmp/llama.zip -d /tmp/llama-bin
+          SERVER=$(find /tmp/llama-bin -type f -name llama-server | head -1)
+          QUANT=$(find /tmp/llama-bin -type f -name llama-quantize | head -1)
+          test -n "$SERVER" && test -n "$QUANT"
+          chmod +x "$SERVER" "$QUANT"
+          echo "LLAMA_SERVER=$SERVER" >> "$GITHUB_ENV"
+          echo "LLAMA_QUANTIZE=$QUANT" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$SERVER")" >> "$GITHUB_ENV"
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.56.2 numpy==1.26.4 sentencepiece protobuf mistral-common==1.8.5
+          pip install --no-cache-dir /tmp/llama.cpp/gguf-py
+      - name: Convert actual released MeMo and download executive GGUF
+        run: python benchmarks/egpm01/quant_backend.py
+      - name: Build native evidence gate
+        run: |
+          cmake -S . -B build-egpm -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=ON -DGRAPHENEDB_BUILD_EGPM=ON
+          cmake --build build-egpm --target moolbase_customer_showcase egpm_graph_native -j2
+      - name: Test native graph contract
+        run: python benchmarks/egpm01/graph_smoke.py build-egpm/egpm_graph_native
+      - name: Run isolated question
+        run: python benchmarks/egpm01/graph_eval.py --binary build-egpm/moolbase_customer_showcase --graph build-egpm/egpm_graph_native --offset ${{ matrix.offset }} --out egpm-results/qa-${{ matrix.offset }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm05-qa-${{ matrix.offset }}
+          path: |
+            egpm-results/
+            egpm-models/manifest.json
+            egpm-models/*.log
+          if-no-files-found: warn

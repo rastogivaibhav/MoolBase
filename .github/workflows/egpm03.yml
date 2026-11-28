@@ -1,0 +1,61 @@
+name: EGPM-03 full retrieval and native QA
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/structured_cpu.py'
+      - 'benchmarks/egpm01/dense_eval.py'
+      - '.github/workflows/egpm03.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU models
+        run: |
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.51.3 numpy==2.2.6
+      - name: Build actual MoolBase
+        run: |
+          cmake -S . -B build-egpm -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EGPM=ON
+          cmake --build build-egpm --target egpm_dense_native -j2
+      - name: Full 1000 selected questions
+        run: python benchmarks/egpm01/dense_eval.py --binary build-egpm/egpm_dense_native --rows 2417 --require-full --out egpm-results/dense-full.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm03-dense-full
+          path: egpm-results/
+  native-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU models
+        run: |
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.51.3 numpy==2.2.6
+      - name: Checkout pinned upstream protocol
+        run: |
+          git clone https://github.com/arunv3rma/MeMo.git /tmp/memo
+          git -C /tmp/memo checkout a679d322cf7723185f14603a67595bf0bdf98c69
+      - name: Compile native evidence gate
+        run: |
+          cmake -S . -B build-egpm -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=ON
+          cmake --build build-egpm --target moolbase_customer_showcase -j2
+      - name: Matched structured QA pilot
+        run: python benchmarks/egpm01/structured_cpu.py --upstream /tmp/memo --binary build-egpm/moolbase_customer_showcase --questions 4 --out egpm-results/qa.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm03-qa
+          path: egpm-results/

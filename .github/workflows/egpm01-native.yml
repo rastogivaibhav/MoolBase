@@ -1,0 +1,33 @@
+name: EGPM-01 Native MuSiQue retrieval
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/**'
+      - '.github/workflows/egpm01-native.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build actual MoolBase
+        run: |
+          cmake -S . -B build-egpm -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+          cmake --build build-egpm --target graphenedb_server moolbase_customer_showcase -j2
+      - name: Native lifecycle smoke
+        run: python3 examples/customer_showcase/python_memory.py --binary build-egpm/moolbase_customer_showcase
+      - name: Native evidence gate smoke
+        run: python3 benchmarks/egpm01/verify_native_gate.py build-egpm/moolbase_customer_showcase
+      - name: Matched pilot
+        run: python3 benchmarks/egpm01/native_retrieval.py --server build-egpm/graphenedb_server --rows 40 --out egpm-results/native.json
+      - name: Full original MuSiQue selection (retrieval only)
+        run: python3 benchmarks/egpm01/native_retrieval.py --server build-egpm/graphenedb_server --rows 2417 --require-full --out egpm-results/native-full.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm01-native-results
+          path: egpm-results/
+          if-no-files-found: warn

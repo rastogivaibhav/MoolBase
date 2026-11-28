@@ -1,0 +1,49 @@
+name: EGPM-09 native API validation
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/egpm09-native-api.yml'
+      - 'benchmarks/egpm01/native_api*'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: egpm09-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build existing native runtime and pilot server
+        run: |
+          mkdir -p egpm-api-results
+          git rev-parse HEAD > egpm-api-results/commit.txt
+          cmake -S . -B build-api -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_EXAMPLES=ON -DGRAPHENEDB_BUILD_SERVER=ON -DGRAPHENEDB_BUILD_EGPM=ON
+          cmake --build build-api --target moolbase_customer_showcase graphenedb_server egpm_graph_native -j2
+      - name: Native lifecycle and receipt replay
+        run: |
+          set -o pipefail
+          python3 examples/customer_showcase/verify.py build-api/moolbase_customer_showcase | tee egpm-api-results/native-replay.log
+      - name: Native malformed input rejection
+        if: success() || failure()
+        run: |
+          set -o pipefail
+          python3 examples/customer_showcase/verify_cli.py build-api/moolbase_customer_showcase | tee egpm-api-results/native-negative.log
+      - name: HTTP extraction and reasoning restart contract
+        if: success() || failure()
+        run: |
+          set -o pipefail
+          python3 examples/customer_showcase/python_http.py --server build-api/graphenedb_server --output egpm-api-results/http-receipts.json | tee egpm-api-results/http.log
+      - name: Existing EGPM adjacency control
+        if: success() || failure()
+        run: |
+          set -o pipefail
+          python3 benchmarks/egpm01/graph_smoke.py build-api/egpm_graph_native | tee egpm-api-results/adjacency.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm09-native-api
+          path: egpm-api-results/
+          if-no-files-found: error

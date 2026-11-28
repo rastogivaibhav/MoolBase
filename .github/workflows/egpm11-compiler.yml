@@ -1,0 +1,22 @@
+name: EGPM-11 atomic admission regression
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/egpm01/evidence_compiler11.py'
+      - '.github/workflows/egpm11-compiler.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admission:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -o pipefail
+          python3 benchmarks/egpm01/evidence_compiler11.py | tee egpm11.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm11-admission
+          path: egpm11.log
