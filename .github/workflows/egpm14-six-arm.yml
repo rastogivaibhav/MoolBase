@@ -1,0 +1,285 @@
+name: EGPM-14 six-arm memory substitution diagnostic
+# Development-only: E1 direct MeMo, E2 non-generative native retrieval/heuristic
+# span, E3 MeMo+executive, E4 native retrieval+same executive, E5 adds native
+# raw-document reasoning receipts, E6 native core ontology (quarantined triples).
+# E6 is not NVIDIA Auto Ontology; no empirical promotion, no held-out gate claim.
+# Original frozen D comparison and G1-G6 criteria remain unchanged.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/egpm14-six-arm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: egpm14-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  six-arm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        offset: [0,1,2,3,4,5,6,7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build native server and native ontology adapter
+        run: |
+          cmake -S . -B build-egpm14 -DCMAKE_BUILD_TYPE=Release -DGRAPHENEDB_BUILD_TESTS=OFF -DGRAPHENEDB_BUILD_BENCH=OFF -DGRAPHENEDB_BUILD_SERVER=ON
+          cmake --build build-egpm14 --target graphenedb_server -j2
+          cat > /tmp/egpm14-ontology.cpp <<'CPP'
+          #include "graphene/generic_relation.hpp"
+          #include "graphene/hypokosh_runtime.hpp"
+          #include <fstream>
+          #include <iostream>
+          #include <sstream>
+          #include <stdexcept>
+          using namespace graphene;
+          int main(int argc,char** argv){
+           if(argc!=4)return 2;
+           GrapheneDB db; DBOptions dbo; dbo.dimension=16;
+           if(!db.open(argv[1],dbo))return 3;
+           std::ifstream input(argv[2]); if(!input)return 4;
+           std::vector<GenericRelationRecord> rows; std::string line;
+           GenericIngestOptions opt; opt.dimension=16; opt.reject_unknown_relations=true;
+           const auto q=std::string(argv[3]);
+           const auto qnorm=normalise_entity_name(q);
+           auto mark=[&](const std::string& name){
+             auto n=normalise_entity_name(name);
+             if((" "+qnorm+" ").find(" "+n+" ")!=std::string::npos)opt.symptom_entities.push_back(name);
+             else opt.root_entities.push_back(name);
+           };
+           while(std::getline(input,line)){
+             std::istringstream ss(line); std::string a,p,b,source;
+             if(!std::getline(ss,a,'\t')||!std::getline(ss,p,'\t')||!std::getline(ss,b,'\t')||!std::getline(ss,source))return 5;
+             if(a.empty()||p.empty()||b.empty()||source.empty())return 6;
+             GenericRelationRecord row;row.subject=a;row.predicate=p;row.object=b;row.source_id=source;
+             rows.push_back(row);mark(a);mark(b);
+           }
+           auto ontology=RelationOntology::with_core_relations();
+           GenericIngestResult ingest; GenericRelationIngestor ingestor;
+           if(!ingestor.ingest(db,rows,ontology,opt,&ingest))return 7;
+           ModelWorld world; CompleteHypoKoshRuntime runtime(db,&world);
+           RuntimeOptions options; options.dialectic.mode=QueryMode::Balanced;
+           options.dialectic.semantic_candidates=12;options.dialectic.max_hops=5;options.dialectic.max_paths=32;
+           auto result=runtime.reason(deterministic_text_vector(q,16),deterministic_text_signature(q),options);
+           std::cout<<"status\t"<<governed_status_name(result.status)<<"\n";
+           std::cout<<"primary\t"<<result.primary_node<<"\n";
+           std::cout<<"core\t"<<result.receipt.graphene_executed<<"\n";
+           std::cout<<"fiber\t"<<result.receipt.fiber_bundle_built<<"\n";
+           std::cout<<"critic\t"<<result.receipt.stability_critic_executed<<"\n";
+           std::cout<<"bundle\t"<<result.receipt.final_bundle_hash<<"\n";
+           std::cout<<"inserted\t"<<ingest.inserted_edges.size()<<"\n";
+           for(auto id:result.evidence_edges)std::cout<<"evidence\t"<<id<<"\n";
+           for(auto id:ingest.inserted_edges){auto e=db.get_edge(id);if(!e)return 8;std::cout<<"edge\t"<<id<<"\t"<<e->from<<"\t"<<e->to<<"\t"<<e->metadata.at("relation_id")<<"\t"<<e->metadata.at("source_id")<<"\t"<<e->metadata.at("evidence_authority")<<"\n";}
+           if(auto node=db.get_node(result.primary_node))std::cout<<"candidate\t"<<node->content<<"\n";
+           if(!db.close())return 9;
+           return 0;
+          }
+          CPP
+          LIB=$(find build-egpm14 -name libgraphenedb.a -print -quit)
+          test -n "$LIB"
+          c++ -std=c++20 -O2 -Iinclude /tmp/egpm14-ontology.cpp "$LIB" -pthread -ldl -o /tmp/egpm14-ontology
+      - name: Install pinned CPU model runner and converter
+        run: |
+          git clone --depth 1 --branch b6500 https://github.com/ggml-org/llama.cpp.git /tmp/llama.cpp
+          curl -fL --retry 3 https://github.com/ggml-org/llama.cpp/releases/download/b6500/llama-b6500-bin-ubuntu-x64.zip -o /tmp/llama.zip
+          unzip -q /tmp/llama.zip -d /tmp/llama-bin
+          SERVER=$(find /tmp/llama-bin -type f -name llama-server | head -1)
+          QUANT=$(find /tmp/llama-bin -type f -name llama-quantize | head -1)
+          test -n "$SERVER" && test -n "$QUANT"
+          chmod +x "$SERVER" "$QUANT"
+          echo "LLAMA_SERVER=$SERVER" >> "$GITHUB_ENV"
+          echo "LLAMA_QUANTIZE=$QUANT" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$SERVER")" >> "$GITHUB_ENV"
+          pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install --no-cache-dir transformers==4.56.2 numpy==1.26.4 sentencepiece protobuf mistral-common==1.8.5
+          pip install --no-cache-dir /tmp/llama.cpp/gguf-py
+          python benchmarks/egpm01/quant_backend.py
+      - name: Execute six-arm diagnostic
+        run: |
+          cat > /tmp/egpm14.py <<'PY'
+          """Six-arm development comparison; no QA labels used for inference."""
+          import hashlib,json,os,re,secrets,socket,subprocess,tempfile,time
+          from pathlib import Path
+          from collections import Counter
+          from native_retrieval import prepare,bm25,GrapheneDBClient,GrapheneDBError,tokens
+          from candidate_eval08 import EXPECTED
+          from quant_backend import serve
+          from quant_eval import structured,GROUND,PIN,FINAL,score
+          from graph_adapter import normalize
+          
+          def sha(t):return hashlib.sha256(t.encode()).hexdigest()
+          def clean_answer(x):
+              if not isinstance(x,str) or normalize(x) in ('','no answer','i don t know','i do not know','unknown'):return 'No answer'
+              return x.strip()
+          def quote(d,s,a,z):
+              return dict(doc=d,start=a,end=z,text=s[a:z],sha256=sha(s[a:z]))
+          def phrases(text):
+              # Fixed generic proper-name candidate grammar; no benchmark-specific vocabulary.
+              return re.finditer(r"(?<![\w])(?:[A-Z][\w'’\-]*(?:[ \t]+(?:[A-Z][\w'’\-]*|of|the|and|de|van)){0,5})(?![\w])",text)
+          def extractive(q,ids,corpus):
+              # Non-generative extractive baseline, NOT a semantic proof.
+              qt=set(tokens(q)); candidates=[]
+              for rank,d in enumerate(ids):
+                  t=corpus[d]
+                  for m in phrases(t):
+                      s=m.group().strip();nt=set(tokens(s))
+                      if not nt or nt<=qt or normalize(s) in normalize(q) or len(s)<3:continue
+                      context=t[max(0,m.start()-120):m.end()+120]
+                      overlap=len(qt&set(tokens(context)))
+                      candidates.append((overlap,-rank,-m.start(),s,quote(d,t,m.start(),m.end())))
+              if not candidates:return 'No answer',None
+              _,_,_,s,c=max(candidates,key=lambda x:x[:3])
+              return s,c
+          def triples(ids,corpus):
+              # Literal relation phrase grammar; no inferred links or title substitution.
+              # Relations are quarantined by native GenericRelationIngestor.
+              ent=r"[A-Z][\w'’\-]*(?:[ \t]+(?:[A-Z][\w'’\-]*|of|the|and|de|van)){0,5}"
+              rel=r"was directed by|directed by|written by|authored by|was the mother of|is the mother of|was the father of|is the father of|was married to|is married to|is located in|was located in"
+              pat=re.compile(r"(?P<a>"+ent+r")\s+(?P<p>"+rel+r")\s+(?P<b>"+ent+r")")
+              mapping={'was directed by':'was_directed_by','directed by':'directed_by','written by':'written_by','authored by':'authored_by','was the mother of':'mother_of','is the mother of':'mother_of','was the father of':'father_of','is the father of':'father_of','was married to':'married_to','is married to':'married_to','is located in':'located_in','was located in':'located_in'}
+              out=[]
+              for d in ids:
+                  t=corpus[d]
+                  for m in pat.finditer(t):
+                      a,b=m.group('a').strip(),m.group('b').strip()
+                      if normalize(a)==normalize(b):continue
+                      c=quote(d,t,m.start(),m.end())
+                      out.append(dict(subject=a,predicate=mapping[m.group('p')],object=b,source=c,source_id=d+':'+str(c['start'])+':'+str(c['end'])+':'+c['sha256']))
+              return out
+          
+          def main():
+              import argparse
+              p=argparse.ArgumentParser();p.add_argument('--offset',type=int,choices=range(8),required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--server',required=True);p.add_argument('--ontology',required=True);args=p.parse_args()
+              rows,corpus,gold,manifest=prepare(120);assert manifest['manifest_sha256']=='0508c3dac842757eb7cd3249b3c1e64b214f6f6a93441945dc4c9e95037c9dfa'
+              row=rows[args.offset];qid=row['id'];q=row['question'];assert qid.startswith('2hop__')
+              models=json.loads(Path('egpm-models/manifest.json').read_text());assert all(models.get(k)==v for k,v in EXPECTED.items())
+              args.out.parent.mkdir(parents=True,exist_ok=True)
+              report=dict(id=qid,question=q,manifest=manifest,models={k:v for k,v in models.items() if not k.endswith('_path')},scope='eight previously exposed development questions; deterministic extractive adapter and quarantined native ontology, not full-corpus or heldout; no generative MoolBase ingestion/recall',arms={},calls=[],errors=[])
+              def save():args.out.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+              def setarm(name,answer,**kw):report['arms'][name]=dict(answer=clean_answer(answer),**kw);save()
+              def call(port,prompt,schema,cap,arm):
+                  start=time.monotonic();r,errors=structured(port,prompt,schema,cap)
+                  report['calls'].append(dict(arm=arm,model='memo' if port==18082 else 'executive',seconds=time.monotonic()-start,prompt_chars=len(prompt),cap=cap,errors=errors,raw=r))
+                  return r or {}
+              def recall_memo(query,arm):return call(18082,'Answer this question from memory. If uncertain say No answer.\n'+query,FINAL,96,arm).get('answer','No answer')
+              def stop(proc):
+                  if proc:
+                      proc.terminate()
+                      try:proc.wait(timeout=10)
+                      except subprocess.TimeoutExpired:proc.kill();proc.wait()
+              execproc=memproc=dbproc=None
+              with tempfile.TemporaryDirectory() as tmp:
+                  try:
+                      key=secrets.token_urlsafe(24)
+                      with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
+                      db=Path(tmp)/'db';db.mkdir()
+                      with (args.out.parent/'native-server.log').open('w') as log:
+                          dbproc=subprocess.Popen([str(Path(args.server).resolve()),str(db),'128',str(port),'--bind-address','127.0.0.1','--rate-limit-rps','10000','--rate-limit-burst','10000'],env={**os.environ,'GRAPHENEDB_API_KEY':key},stdout=log,stderr=log)
+                      client=GrapheneDBClient(f'http://127.0.0.1:{port}',api_key=key,timeout=60)
+                      for _ in range(200):
+                          if dbproc.poll() is not None:raise RuntimeError('database server exited')
+                          try:
+                              if client.ready().status==200:break
+                          except GrapheneDBError:pass
+                          time.sleep(.05)
+                      else:raise RuntimeError('database not ready')
+                      start=time.monotonic();node_to_doc={}
+                      for d,t in corpus.items():
+                          res=client.put_node(t,source=d,idempotency_key=d)
+                          assert res.status==201
+                          node_to_doc[res.data['id']]=d
+                      assert len(node_to_doc)==len(corpus)
+                      report['index']=dict(documents=len(corpus),seconds=time.monotonic()-start)
+                      def native(query):
+                          hits=client.search(query,top_k=5).data['results']
+                          ids=[node_to_doc[h['id']] for h in hits]
+                          assert len(ids)==len(set(ids))==5
+                          return ids
+                      def evidence(ids):return [{'doc':d,'text':corpus[d],'start':0,'end':len(corpus[d]),'sha256':sha(corpus[d])} for d in ids]
+                      def context(ids):return '\n'.join('['+d+'] '+corpus[d] for d in ids)
+                      ids=native(q);start=time.monotonic()
+                      answer,cite=extractive(q,ids,corpus)
+                      # Native runtime over raw nodes, no injected gold or invented graph edges.
+                      runtime=client._request('POST','/v1/reason/runtime',dict(query=q,signature=0,mode='balanced',minimum_confidence=.3,max_hops=5,max_paths=32)).data
+                      assert runtime['receipt']['graphene_executed']
+                      setarm('E2',answer,citation=cite,documents=ids,evidence=evidence(ids),native_runtime=runtime,seconds=time.monotonic()-start,qualification='native retrieval plus deterministic span ranking; native runtime diagnostic, not governed semantic answer')
+                      # E6 uses native ontology and native runtime, with all unverified inputs quarantined.
+                      start=time.monotonic();rels=triples(ids,corpus);inp=Path(tmp)/'ontology.tsv'
+                      inp.write_text(''.join('\t'.join([x['subject'],x['predicate'],x['object'],x['source_id']])+'\n' for x in rels))
+                      odb=Path(tmp)/'ontology-db'
+                      proc=subprocess.run([str(Path(args.ontology).resolve()),str(odb),str(inp),q],text=True,capture_output=True,timeout=120)
+                      if proc.returncode:
+                          report['arms']['E6']=dict(status='execution_error',returncode=proc.returncode,stderr=proc.stderr,stdout=proc.stdout,relations=rels);save()
+                      else:
+                          lines=[s.split('\t') for s in proc.stdout.splitlines()]
+                          vals={x[0]:x[1] for x in lines if len(x)==2}
+                          edges=[x[1:] for x in lines if x[0]=='edge']
+                          assert vals.get('core')=='1'
+                          assert all(x[-1]=='unverified_input' for x in edges)
+                          assert all(x[-2] in {z['source_id'] for z in rels} for x in edges)
+                          # Quarantined proposals cannot authorize a final answer.
+                          setarm('E6','No answer',native=vals,edges=edges,relations=rels,documents=ids,seconds=time.monotonic()-start,qualification='native ontology + governed runtime on unverified literal triples; speculative candidate reported separately, no promotion')
+                      save()
+                      execproc=serve(models['executive_path'],18081,'egpm-models/executive.log')
+                      memproc=serve(models['memory_path'],18082,'egpm-models/memory.log')
+                      setarm('E1',recall_memo(q,'E1'))
+                      # Shared executive decomposition, frozen across E3/E4/E5.
+                      plan=call(18081,'Split the question into one or two atomic factual questions.\n'+q,GROUND,192,'shared').get('questions',[])
+                      if not isinstance(plan,list):raise ValueError('bad plan')
+                      queries=[x for x in plan[:2] if isinstance(x,str) and x.strip()] or [q]
+                      report['queries']=queries
+                      memo_trace=[dict(question=s,answer=recall_memo(s,'E3')) for s in queries]
+                      # Shared initial query schedule; follow-up depends on arm evidence and is logged.
+                      def follow(trace,arm):
+                          f=call(18081,'Identify an intermediate entity and ask one follow-up question.\nOriginal: '+q+'\nReplies: '+json.dumps(trace,ensure_ascii=False),PIN,192,arm)
+                          return f.get('question') if isinstance(f.get('question'),str) else ''
+                      mq=follow(memo_trace,'E3')
+                      if mq:memo_trace.append(dict(question=mq,answer=recall_memo(mq,'E3')))
+                      def final(trace,arm,extra=''):
+                          return call(18081,'Synthesize the shortest answer from memory replies. If uncertain say No answer.\nQuestion: '+q+'\nMemory replies: '+json.dumps(trace,ensure_ascii=False)+extra,FINAL,64,arm).get('answer','No answer')
+                      setarm('E3',final(memo_trace,'E3'),trace=memo_trace)
+                      def passage_reply(s):
+                          got=native(s)
+                          return dict(question=s,passages=evidence(got))
+                      trace=[passage_reply(s) for s in queries]
+                      fq=follow(trace,'shared_native')
+                      if fq:trace.append(passage_reply(fq))
+                      setarm('E4',final(trace,'E4'),trace=trace,qualification='raw native document retrieval, no generative memory call')
+                      # Same evidence/query schedule as E4, with actual native runtime receipt.
+                      diagnostics=[]
+                      for entry in trace:
+                          rr=client._request('POST','/v1/reason/runtime',dict(query=entry['question'],signature=0,mode='balanced',minimum_confidence=.3,max_hops=5,max_paths=32)).data
+                          assert rr['receipt']['graphene_executed']
+                          diagnostics.append(dict(question=entry['question'],runtime=rr))
+                      summary=[dict(question=x['question'],status=x['runtime'].get('status'),receipt=x['runtime'].get('receipt')) for x in diagnostics]
+                      # Keep receipt text bounded; executive may answer only from passages, not infer evidence from a status.
+                      bounded=[dict(question=x['question'],status=x['status'],receipt={k:v for k,v in x['receipt'].items() if isinstance(v,(bool,int,float,str))}) for x in summary]
+                      setarm('E5',final(trace,'E5','\nNative reasoning diagnostics (not evidence; do not infer facts from status): '+json.dumps(bounded)),trace=trace,native=diagnostics,qualification='raw-doc native runtime; no verified relation edges, not a full structured reasoning test')
+                      # Labels used only after predictions are written.
+                      aliases=[row['answer']]+row.get('answer_aliases',[])
+                      report['scores']={k:score(v['answer'],aliases) for k,v in report['arms'].items() if 'answer' in v}
+                      report['aliases']=aliases;save()
+                      print(json.dumps(dict(id=qid,answers={k:v.get('answer') for k,v in report['arms'].items()},scores=report['scores']),ensure_ascii=False),flush=True)
+                      assert len(report['scores'])==6,'some arm failed; preserve partial artifacts'
+                  finally:
+                      for p in (memproc,execproc,dbproc):stop(p)
+          if __name__=='__main__':main()
+          PY
+          mkdir -p egpm14-results
+          git rev-parse HEAD > egpm14-results/commit.txt
+          PYTHONPATH=benchmarks/egpm01 python /tmp/egpm14.py --offset ${{ matrix.offset }} --out egpm14-results/qa-${{ matrix.offset }}.json --server build-egpm14/graphenedb_server --ontology /tmp/egpm14-ontology
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egpm14-qa-${{ matrix.offset }}
+          path: |
+            egpm14-results/
+            egpm-models/manifest.json
+            egpm-models/*.log
+          if-no-files-found: warn
