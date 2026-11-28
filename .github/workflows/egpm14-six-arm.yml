@@ -99,7 +99,11 @@ jobs:
           pip install --no-cache-dir torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
           pip install --no-cache-dir transformers==4.56.2 numpy==1.26.4 sentencepiece protobuf mistral-common==1.8.5
           pip install --no-cache-dir /tmp/llama.cpp/gguf-py
-          python benchmarks/egpm01/quant_backend.py
+          export LLAMA_SERVER="$SERVER" LLAMA_QUANTIZE="$QUANT" LD_LIBRARY_PATH="$(dirname "$SERVER")"
+          mkdir -p egpm14-results
+          git rev-parse HEAD > egpm14-results/commit.txt
+          set -o pipefail
+          python benchmarks/egpm01/quant_backend.py 2>&1 | tee egpm14-results/model-setup.log
       - name: Execute six-arm diagnostic
         run: |
           cat > /tmp/egpm14.py <<'PY'
